@@ -1644,7 +1644,7 @@ class KingdomsScene extends Phaser.Scene {
       ['调动', () => this.showMoveActorSelection()],
       ['情报', () => this.showIntelActorSelection('内政')],
       ['福利', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜民心 +6｜士气 +2', { treasury: -120, publicOrder: 6, morale: 2 })],
-      ['任命', () => this.showHeroManagement()],
+      ['任命', () => this.showAppointmentActorSelection()],
       ['税率', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '调整税率，府库增加但民心微降。', '金 +180｜民心 -3', { treasury: 180, publicOrder: -3 })],
       ['教育', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '设学讲武，政略与情报上升。', '金 -100｜情报 +4｜士气 +2', { treasury: -100, intel: 4, morale: 2 })],
       ['运输', () => this.showTransportActorSelection()],
@@ -2758,7 +2758,7 @@ class KingdomsScene extends Phaser.Scene {
     this.drawCitySelector()
     this.makeButton(438, 636, '切换城池', () => this.cycleControlledCity(), this.overlayLayer, 180, 44)
     this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
-    this.makeButton(842, 636, '任命武将', () => this.showHeroManagement(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '任命武将', () => this.showAppointmentActorSelection(), this.overlayLayer, 180, 44)
   }
 
   private drawCityStatsPanel() {
@@ -2804,7 +2804,7 @@ class KingdomsScene extends Phaser.Scene {
       ['调动', '移驻一名武将到邻城', () => this.showMoveActorSelection()],
       ['情报', '查看本城与邻城军情', () => this.showIntelActorSelection('内政')],
       ['福利', '金 -100，民心 +10，士气 +2', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
-      ['任命', '任命太守、先锋、军师', () => this.showHeroManagement()],
+      ['任命', '任命太守、先锋、军师', () => this.showAppointmentActorSelection()],
       ['税率', '金 +220，民心 -6', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '本月税率加重，府库充盈，民心略降。', '金 +220｜民心 -6', { treasury: 220, publicOrder: -6 })],
       ['教育', '金 -80，情报 +8，士气 +2', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '开设讲武讲堂，吏士见闻增长。', '金 -80｜情报 +8｜士气 +2', { treasury: -80, intel: 8, morale: 2 })],
       ['运输', '粮 -240，随军粮 +18', () => this.showTransportActorSelection()],
@@ -2999,20 +2999,92 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '22px',
       color: '#f8df9d',
     }))
-    this.makeButton(720, 552, '任太守', () => this.showAppointmentSelection('governor'), this.overlayLayer, 132, 36)
-    this.makeButton(858, 552, '任先锋', () => this.showAppointmentSelection('vanguard'), this.overlayLayer, 132, 36)
-    this.makeButton(996, 552, '任军师', () => this.showAppointmentSelection('strategist'), this.overlayLayer, 132, 36)
+    this.makeButton(720, 552, '任太守', () => this.showAppointmentActorSelection('governor'), this.overlayLayer, 132, 36)
+    this.makeButton(858, 552, '任先锋', () => this.showAppointmentActorSelection('vanguard'), this.overlayLayer, 132, 36)
+    this.makeButton(996, 552, '任军师', () => this.showAppointmentActorSelection('strategist'), this.overlayLayer, 132, 36)
   }
 
-  private showAppointmentSelection(role: keyof typeof this.appointments) {
-    const officers = this.currentCityOfficers()
+  private showAppointmentActorSelection(role?: keyof typeof this.appointments) {
+    const cities = this.controlledCities().filter((city) => this.officersInCity(city.id).length > 0)
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, `内政｜任命${role ? `：${appointmentRoleName(role)}` : '：选择发起城'}`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '任命命令先确定发起城，再选择职位和本城武将。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    if (cities.length === 0) {
+      this.overlayLayer.add(this.add.text(640, 414, '当前没有可任命武将的己方城。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+    }
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      const officers = this.officersInCity(city.id)
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        if (role) this.showAppointmentSelection(role, city)
+        else this.showAppointmentRoleSelection(city)
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `武将${officers.length}｜金${city.gold} 民心${this.cityState.publicOrder}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+  }
+
+  private showAppointmentRoleSelection(actorCity: StrategyCity) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 760, 300, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(640, 292, '内政｜任命：选择职位', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(640, 344, `${actorCity.name}太守府发起任命`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#ead7b3',
+    }).setOrigin(0.5))
+    const roles: [keyof typeof this.appointments, string][] = [['governor', '太守'], ['vanguard', '先锋'], ['strategist', '军师']]
+    roles.forEach(([role, label], index) => {
+      this.makeButton(456 + index * 184, 430, label, () => this.showAppointmentSelection(role, actorCity), this.overlayLayer, 142, 40)
+    })
+    this.makeButton(540, 566, '重选发起城', () => this.showAppointmentActorSelection(), this.overlayLayer, 150, 38)
+    this.makeButton(740, 566, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+  }
+
+  private showAppointmentSelection(role: keyof typeof this.appointments, actorCity = this.selectedCity) {
+    const city = actorCity
+    if (!city) return
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    const officers = this.officersInCity(city.id)
     if (officers.length === 0) {
       this.showHeroMessage('本城没有可任命武将。')
       return
     }
-    this.showHeroManagement()
+    this.showCampaign()
     this.overlayLayer.add(this.add.rectangle(640, 394, 760, 330, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
-    this.overlayLayer.add(this.add.text(640, 276, `选择${appointmentRoleName(role)}`, {
+    this.overlayLayer.add(this.add.text(640, 276, `${city.name}｜选择${appointmentRoleName(role)}`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '34px',
       color: '#f8df9d',
@@ -3022,19 +3094,24 @@ class KingdomsScene extends Phaser.Scene {
       const row = Math.floor(index / 3)
       const x = 410 + col * 230
       const y = 346 + row * 74
-      this.makeButton(x, y, officer.name, () => this.confirmAppointment(role, officer), this.overlayLayer, 168, 40)
+      this.makeButton(x, y, officer.name, () => this.confirmAppointment(role, officer, city), this.overlayLayer, 168, 40)
       this.overlayLayer.add(this.add.text(x, y + 34, `统${officer.command} 武${officer.war} 智${officer.intel} 政${officer.gov}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '14px',
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(640, 548, '取消', () => this.showHeroManagement(), this.overlayLayer, 130, 38)
+    this.makeButton(440, 548, '重选职位', () => this.showAppointmentRoleSelection(city), this.overlayLayer, 150, 38)
+    this.makeButton(610, 548, '重选发起城', () => this.showAppointmentActorSelection(role), this.overlayLayer, 150, 38)
+    this.makeButton(780, 548, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
   }
 
-  private confirmAppointment(role: keyof typeof this.appointments, officer: StrategyOfficer) {
-    const city = this.selectedCity
-    if (!city) return
+  private confirmAppointment(role: keyof typeof this.appointments, officer: StrategyOfficer, actorCity: StrategyCity) {
+    const city = actorCity
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
     this.showCommandConfirm({
       category: '内政',
       command: '任命',
@@ -3043,12 +3120,15 @@ class KingdomsScene extends Phaser.Scene {
       scope: `${city.name}武将任命`,
       effect: this.appointmentEffectText(role, officer),
       hint: '确认后调整本城职任',
-      onConfirm: () => this.executeAppointment(role, officer),
-      onCancel: () => this.showAppointmentSelection(role),
+      onConfirm: () => this.executeAppointment(role, officer, city),
+      onCancel: () => this.showAppointmentSelection(role, city),
     })
   }
 
-  private executeAppointment(role: keyof typeof this.appointments, officer: StrategyOfficer) {
+  private executeAppointment(role: keyof typeof this.appointments, officer: StrategyOfficer, actorCity: StrategyCity) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
     const unitId = unitIdForOfficerId(officer.id)
     if (!unitId) {
       this.showHeroMessage('该武将暂不能映射到战斗单位。')
