@@ -1640,7 +1640,7 @@ class KingdomsScene extends Phaser.Scene {
   private showDomesticCommand() {
     this.showCommandPanel('内政', [
       ['开发', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '兴修水利，田亩渐丰，城池存粮增加。', '金 -130｜粮 +260｜民心 +2', { treasury: -130, farms: 1, publicOrder: 2, food: 260 })],
-      ['调动', () => this.moveCurrentCityOfficer()],
+      ['调动', () => this.showMoveActorSelection()],
       ['情报', () => this.showBriefing()],
       ['福利', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜民心 +6｜士气 +2', { treasury: -120, publicOrder: 6, morale: 2 })],
       ['任命', () => this.showHeroManagement()],
@@ -1886,7 +1886,7 @@ class KingdomsScene extends Phaser.Scene {
       ['搜索', () => this.showTalentSearch()],
       ['登用', () => this.showTalentSearch()],
       ['赏赐', () => this.showHeroManagement()],
-      ['移动', () => this.moveCurrentCityOfficer()],
+      ['移动', () => this.showMoveActorSelection()],
       ['俘虏', () => this.showCampaignMessage('俘虏处置将在战后系统中开放。')],
     ])
   }
@@ -2639,7 +2639,7 @@ class KingdomsScene extends Phaser.Scene {
     }))
     const commands: [string, string, () => void][] = [
       ['开发', '金 -120，粮 +300', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '开发田地，粮仓渐实。', '金 -120｜粮 +300', { treasury: -120, food: 300 })],
-      ['调动', '移驻一名武将到邻城', () => this.moveCurrentCityOfficer()],
+      ['调动', '移驻一名武将到邻城', () => this.showMoveActorSelection()],
       ['情报', '查看本城与邻城军情', () => this.showCityIntel()],
       ['福利', '金 -100，民心 +10，士气 +2', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
       ['任命', '任命太守、先锋、军师', () => this.showHeroManagement()],
@@ -2805,7 +2805,7 @@ class KingdomsScene extends Phaser.Scene {
     this.drawHeroCards()
     this.drawAppointmentPanel()
     this.makeButton(540, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
-    this.makeButton(740, 636, '移动武将', () => this.moveCurrentCityOfficer(), this.overlayLayer, 180, 44)
+    this.makeButton(740, 636, '移动武将', () => this.showMoveActorSelection(), this.overlayLayer, 180, 44)
   }
 
   private drawHeroCards() {
@@ -2949,34 +2949,66 @@ class KingdomsScene extends Phaser.Scene {
     }
   }
 
-  private moveCurrentCityOfficer() {
-    const officers = this.currentCityOfficers().filter((officer) => officer.role !== '君主')
-    const destinations = this.controlledNeighborCities()
-    if (officers.length === 0) {
-      this.showHeroMessage('本城没有可移动武将。')
-      return
-    }
-    if (destinations.length === 0) {
-      this.showHeroMessage('本城没有相邻己方城池，暂不能移动武将。')
-      return
-    }
+  private showMoveActorSelection() {
+    const cities = this.controlledCities().filter((city) => this.movableOfficersInCity(city.id).length > 0 && this.controlledNeighborCitiesFrom(city).length > 0)
     if (this.councilState.actions <= 0) {
       this.showHeroMessage('本月政令已用尽，不能调动武将。')
       return
     }
-    this.showMoveOfficerSelection(officers[0].id, destinations[0].id)
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, '内政｜调动：选择发起城', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '调动命令先确定发起城，再选择相邻己方目的城和要移动的武将。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    if (cities.length === 0) {
+      this.overlayLayer.add(this.add.text(640, 414, '当前没有同时具备可调武将和相邻己方城的城池。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+    }
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      const officers = this.movableOfficersInCity(city.id)
+      const destinations = this.controlledNeighborCitiesFrom(city)
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        this.showMoveOfficerSelection(city, officers[0].id, destinations[0].id)
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `可调${officers.length}｜邻城${destinations.length}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
   }
 
-  private showMoveOfficerSelection(officerId: string, destinationId: CityId) {
-    const officers = this.currentCityOfficers().filter((officer) => officer.role !== '君主')
-    const destinations = this.controlledNeighborCities()
+  private showMoveOfficerSelection(actorCity: StrategyCity, officerId: string, destinationId: CityId) {
+    const officers = this.movableOfficersInCity(actorCity.id)
+    const destinations = this.controlledNeighborCitiesFrom(actorCity)
     const officer = officers.find((item) => item.id === officerId) ?? officers[0]
     const destination = destinations.find((item) => item.id === destinationId) ?? destinations[0]
     if (!officer || !destination) {
       this.showHeroMessage('当前没有可调动的武将或目的城。')
       return
     }
-    this.showHeroManagement()
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
+    this.showCampaign()
     this.overlayLayer.add(this.add.rectangle(640, 402, 820, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
     this.overlayLayer.add(this.add.text(640, 276, '调动武将', {
       fontFamily: 'Georgia, "Times New Roman", serif',
@@ -2989,7 +3021,7 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8df9d',
     }))
     officers.forEach((item, index) => {
-      this.makeButton(354, 362 + index * 48, item.id === officer.id ? `${item.name}✓` : item.name, () => this.showMoveOfficerSelection(item.id, destination.id), this.overlayLayer, 154, 36)
+      this.makeButton(354, 362 + index * 48, item.id === officer.id ? `${item.name}✓` : item.name, () => this.showMoveOfficerSelection(actorCity, item.id, destination.id), this.overlayLayer, 154, 36)
     })
     this.overlayLayer.add(this.add.text(710, 318, '目的城', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -2997,20 +3029,24 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8df9d',
     }))
     destinations.forEach((item, index) => {
-      this.makeButton(770, 362 + index * 48, item.id === destination.id ? `${item.name}✓` : item.name, () => this.showMoveOfficerSelection(officer.id, item.id), this.overlayLayer, 154, 36)
+      this.makeButton(770, 362 + index * 48, item.id === destination.id ? `${item.name}✓` : item.name, () => this.showMoveOfficerSelection(actorCity, officer.id, item.id), this.overlayLayer, 154, 36)
     })
     this.overlayLayer.add(this.add.text(640, 540, `${officer.name}：${cityName(officer.location)} → ${destination.name}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '20px',
       color: '#f7ecd5',
     }).setOrigin(0.5))
-    this.makeButton(540, 594, '取消', () => this.showHeroManagement(), this.overlayLayer, 130, 38)
-    this.makeButton(740, 594, '确认', () => this.confirmMoveOfficer(officer, destination), this.overlayLayer, 130, 38)
+    this.makeButton(440, 594, '重选发起城', () => this.showMoveActorSelection(), this.overlayLayer, 150, 38)
+    this.makeButton(610, 594, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeButton(780, 594, '确认', () => this.confirmMoveOfficer(actorCity, officer, destination), this.overlayLayer, 130, 38)
   }
 
-  private confirmMoveOfficer(officer: StrategyOfficer, destination: StrategyCity) {
-    const city = this.selectedCity
-    if (!city) return
+  private confirmMoveOfficer(actorCity: StrategyCity, officer: StrategyOfficer, destination: StrategyCity) {
+    const city = actorCity
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
     this.showCommandConfirm({
       category: '内政',
       command: '调动',
@@ -3019,12 +3055,15 @@ class KingdomsScene extends Phaser.Scene {
       scope: `${city.name} → ${destination.name}`,
       effect: `移动${officer.name}至${destination.name}｜政令 -1`,
       hint: '确认后调动武将',
-      onConfirm: () => this.executeMoveOfficer(officer, destination),
-      onCancel: () => this.showMoveOfficerSelection(officer.id, destination.id),
+      onConfirm: () => this.executeMoveOfficer(city, officer, destination),
+      onCancel: () => this.showMoveOfficerSelection(city, officer.id, destination.id),
     })
   }
 
-  private executeMoveOfficer(officer: StrategyOfficer, destination: StrategyCity) {
+  private executeMoveOfficer(actorCity: StrategyCity, officer: StrategyOfficer, destination: StrategyCity) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
     officer.location = destination.id
     this.councilState.actions -= 1
     this.recordMonthlyAction(`${officer.name}移驻${destination.name}`)
@@ -3916,6 +3955,10 @@ class KingdomsScene extends Phaser.Scene {
     return this.campaignOfficers.filter((officer) => officer.faction === 'liu' && officer.location === cityId)
   }
 
+  private movableOfficersInCity(cityId: CityId) {
+    return this.officersInCity(cityId).filter((officer) => officer.role !== '君主')
+  }
+
   private currentCityUnits() {
     const localUnitIds = new Set(this.currentCityOfficers().map((officer) => unitIdForOfficerId(officer.id)).filter((id): id is string => id !== undefined))
     return baseUnits.filter((unit) => unit.faction === 'player' && localUnitIds.has(unit.id))
@@ -3978,12 +4021,6 @@ class KingdomsScene extends Phaser.Scene {
   private officerForUnit(unitId: string) {
     const officerId = officerIdForUnitId(unitId)
     return this.campaignOfficers.find((officer) => officer.id === officerId)
-  }
-
-  private controlledNeighborCities() {
-    const city = this.selectedCity
-    if (!city) return []
-    return this.controlledNeighborCitiesFrom(city)
   }
 
   private controlledNeighborCitiesFrom(city: StrategyCity) {
