@@ -1411,14 +1411,14 @@ class KingdomsScene extends Phaser.Scene {
 
   private showDomesticCommand() {
     this.showCommandPanel('内政', [
-      ['开发', () => this.applyCityPolicy('兴修水利，田亩渐丰。', { treasury: -130, farms: 1, publicOrder: 2, supplies: 5 })],
+      ['开发', () => this.applyCityPolicy('兴修水利，田亩渐丰，城池存粮增加。', { treasury: -130, farms: 1, publicOrder: 2, food: 260 })],
       ['调动', () => this.moveCurrentCityOfficer()],
       ['情报', () => this.showBriefing()],
       ['福利', () => this.applyCityPolicy('赈济百姓，民心上升。', { treasury: -120, publicOrder: 6, morale: 2 })],
       ['任命', () => this.showHeroManagement()],
       ['税率', () => this.applyCityPolicy('调整税率，府库增加但民心微降。', { treasury: 180, publicOrder: -3 })],
       ['教育', () => this.applyCityPolicy('设学讲武，政略与情报上升。', { treasury: -100, intel: 4, morale: 2 })],
-      ['运输', () => this.applyCityPolicy('转运粮草，军需更充足。', { treasury: -80, supplies: 8 })],
+      ['运输', () => this.transportSupplies()],
     ])
   }
 
@@ -1982,7 +1982,7 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f5d487',
     }))
     const commands: [string, string, () => void][] = [
-      ['开发', '金 -120，粮 +300', () => this.applyCityPolicy('开发田地，粮仓渐实。', { treasury: -120, supplies: 300 })],
+      ['开发', '金 -120，粮 +300', () => this.applyCityPolicy('开发田地，粮仓渐实。', { treasury: -120, food: 300 })],
       ['调动', '移驻一名武将到邻城', () => this.moveCurrentCityOfficer()],
       ['情报', '查看本城与邻城军情', () => this.showCityIntel()],
       ['福利', '金 -100，民心 +10，士气 +2', () => this.applyCityPolicy('开仓赈济，民心渐定。', { treasury: -100, publicOrder: 10, morale: 2 })],
@@ -2062,7 +2062,7 @@ class KingdomsScene extends Phaser.Scene {
     }))
   }
 
-  private applyCityPolicy(message: string, delta: { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; supplies?: number; morale?: number; intel?: number }) {
+  private applyCityPolicy(message: string, delta: { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; food?: number; supplies?: number; morale?: number; intel?: number }) {
     const city = this.selectedCity
     if (!city) return
     if (this.councilState.actions <= 0) {
@@ -2074,7 +2074,8 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     city.gold = Phaser.Math.Clamp(city.gold + (delta.treasury ?? 0), 0, 3000)
-    city.food = Phaser.Math.Clamp(city.food + (delta.supplies ?? 0), 0, 5000)
+    city.food = Phaser.Math.Clamp(city.food + (delta.food ?? 0), 0, 5000)
+    this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + (delta.supplies ?? 0), 0, 150)
     city.troops = Phaser.Math.Clamp(city.troops + (delta.recruits ?? 0), 0, 30000)
     city.defense = Phaser.Math.Clamp(city.defense + (delta.walls ?? 0), 0, 100)
     this.cityState.publicOrder = Phaser.Math.Clamp(this.cityState.publicOrder + (delta.publicOrder ?? 0), 0, 100)
@@ -2303,17 +2304,19 @@ class KingdomsScene extends Phaser.Scene {
       `守军        ${target?.troops ?? 0}`,
       `先锋        ${vanguard?.name ?? '-'}`,
       `军师        ${strategist?.name ?? '-'}`,
+      `本城存粮    ${source?.food ?? 0}`,
       `士气        ${this.councilState.morale}`,
       `情报        ${this.councilState.intel}`,
-      `粮草        ${this.councilState.supplies}/${supplyNeed}`,
+      `行军粮草    ${this.councilState.supplies}/${supplyNeed}`,
       `敌势        ${this.campaignClock.enemyThreat}（${risk}）`,
       `预计消耗    粮草 ${supplyNeed}`,
+      `补给来源    内政「运输」转入`,
     ]
     this.overlayLayer.add(this.add.text(122, 230, lines.join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '21px',
+      fontSize: '18px',
       color: '#f8ecd0',
-      lineSpacing: 12,
+      lineSpacing: 7,
     }))
   }
 
