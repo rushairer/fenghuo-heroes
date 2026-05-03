@@ -935,6 +935,23 @@ class KingdomsScene extends Phaser.Scene {
     }
     const from = this.marchArmy.position.cityId ?? this.marchArmy.sourceCityId
     const target = this.marchArmy.targetCityId
+    this.showCommandConfirm({
+      category: '行军',
+      command: '移动',
+      actor: `${cityName(this.marchArmy.sourceCityId)}远征军`,
+      target: cityName(target),
+      scope: `${cityName(from)} → ${cityName(target)}`,
+      effect: '移动 -1｜随军粮 -4｜状态改为行军',
+      hint: '确认后执行远征军命令',
+      onConfirm: () => this.executeMarchMove(),
+      onCancel: () => this.showCampaign(),
+    })
+  }
+
+  private executeMarchMove() {
+    if (!this.marchArmy?.targetCityId) return
+    const from = this.marchArmy.position.cityId ?? this.marchArmy.sourceCityId
+    const target = this.marchArmy.targetCityId
     this.marchArmy.position = { kind: 'route', route: [from, target], progress: 1 }
     this.marchArmy.movePoints -= 1
     this.marchArmy.food = Math.max(0, this.marchArmy.food - 4)
@@ -953,7 +970,18 @@ class KingdomsScene extends Phaser.Scene {
       this.showCampaignMessage('远征军尚未移动到敌城，请先执行「移动」。')
       return
     }
-    this.beginSiege()
+    const target = this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '目标城'
+    this.showCommandConfirm({
+      category: '行军',
+      command: '攻击',
+      actor: `${cityName(this.marchArmy.sourceCityId)}远征军`,
+      target,
+      scope: '敌城城下',
+      effect: '进入攻城层，选择强攻、围城、火计、挑战或会战',
+      hint: '确认后展开攻城',
+      onConfirm: () => this.beginSiege(),
+      onCancel: () => this.showCampaign(),
+    })
   }
 
   private retreatMarchArmy() {
@@ -1060,12 +1088,12 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f5d487',
     }))
     const actions: [string, string, () => void][] = [
-      ['强攻', '高兵损，快速削城防与守军', () => this.resolveSiegeAction('assault')],
-      ['围城', '耗粮，低兵损削士气与守军', () => this.resolveSiegeAction('surround')],
-      ['火计', '耗情报，烧粮并降城防', () => this.resolveSiegeAction('fire')],
-      ['挑战', '武将出阵单挑，胜负影响军心', () => this.beginDuelChallenge()],
-      ['会战', '进入当前会战分支', () => this.startMarchArmy()],
-      ['撤退', '撤回远征军，损士气', () => this.resolveSiegeAction('retreat')],
+      ['强攻', '高兵损，快速削城防与守军', () => this.confirmSiegeAction('assault')],
+      ['围城', '耗粮，低兵损削士气与守军', () => this.confirmSiegeAction('surround')],
+      ['火计', '耗情报，烧粮并降城防', () => this.confirmSiegeAction('fire')],
+      ['挑战', '武将出阵单挑，胜负影响军心', () => this.confirmSiegeAction('challenge')],
+      ['会战', '进入当前会战分支', () => this.confirmSiegeAction('fieldBattle')],
+      ['撤退', '撤回远征军，损士气', () => this.confirmSiegeAction('retreat')],
     ]
     actions.forEach(([label, desc, callback], index) => {
       const col = index % 2
@@ -1091,6 +1119,34 @@ class KingdomsScene extends Phaser.Scene {
       }).setOrigin(0.5))
     }
     this.makeButton(640, 660, '返回行军', () => this.showCampaign(), this.overlayLayer, 180, 42)
+  }
+
+  private confirmSiegeAction(action: SiegeState['lastAction']) {
+    if (!this.marchArmy || !this.siegeState || !action) return
+    const city = this.campaignCities.find((item) => item.id === this.siegeState?.defenderCityId)
+    if (!city) return
+    const config = {
+      assault: { command: '强攻', target: `${city.name}城门与守军`, scope: '攻城正面', effect: '城防下降｜敌我均有兵损｜随军粮 -5' },
+      surround: { command: '围城', target: `${city.name}守城军粮道`, scope: '城外包围', effect: '守军损耗｜我军粮 -7｜士气 -1' },
+      fire: { command: '火计', target: `${city.name}城内粮仓`, scope: '敌城营寨', effect: '消耗情报，成功则烧粮并降城防' },
+      challenge: { command: '挑战', target: `${city.name}守城主将`, scope: '阵前单挑', effect: '进入单挑，胜负回写攻城士气和兵力' },
+      fieldBattle: { command: '会战', target: `${city.name}守城军`, scope: '城外战场', effect: '进入会战分支，结果回写攻城态势' },
+      retreat: { command: '撤退', target: cityName(this.marchArmy.sourceCityId), scope: '撤回本城', effect: '远征军撤回，士气下降' },
+    }[action]
+    this.showCommandConfirm({
+      category: '攻城',
+      command: config.command,
+      actor: `${cityName(this.marchArmy.sourceCityId)}远征军`,
+      target: config.target,
+      scope: config.scope,
+      effect: config.effect,
+      hint: '确认后执行攻城命令',
+      onConfirm: () => {
+        if (action === 'challenge') this.beginDuelChallenge()
+        else this.resolveSiegeAction(action)
+      },
+      onCancel: () => this.showSiege(),
+    })
   }
 
   private resolveSiegeAction(action: SiegeState['lastAction']) {
@@ -1497,6 +1553,7 @@ class KingdomsScene extends Phaser.Scene {
     effect: string
     onConfirm: () => void
     onCancel?: () => void
+    hint?: string
   }) {
     const panel = this.add.rectangle(640, 448, 680, 318, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9)
     const heading = this.add.text(342, 316, `${config.category}｜${config.command}`, {
@@ -1515,7 +1572,7 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8ecd0',
       lineSpacing: 12,
     })
-    const hint = this.add.text(640, 566, '确认后消耗政令并执行命令', {
+    const hint = this.add.text(640, 566, config.hint ?? '确认后消耗政令并执行命令', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#d8c092',
@@ -2472,6 +2529,31 @@ class KingdomsScene extends Phaser.Scene {
       this.showDeploymentMessage('本城没有可出战武将，请先移动武将。')
       return
     }
+    const supplyNeed = this.deploymentSupplyNeed()
+    if (this.councilState.supplies < supplyNeed) {
+      this.showDeploymentMessage('粮草不足，无法出征。请先治理城池或运输军粮。')
+      return
+    }
+    const source = this.selectedCity
+    const target = this.selectedTargetCity
+    const cityTroops = source?.troops ?? 0
+    const troops = Math.max(800, Math.min(5200, Math.floor(cityTroops * 0.38)))
+    this.showCommandConfirm({
+      category: '军事',
+      command: '出征',
+      actor: `${source?.name ?? '本城'}太守府`,
+      target: target.name,
+      scope: `${source?.name ?? '本城'} → ${target.name}`,
+      effect: `编成远征军 兵${troops}｜行军粮 -${supplyNeed}｜下月行军`,
+      hint: '确认后编成远征军',
+      onConfirm: () => this.executeDeployment(),
+      onCancel: () => this.showDeployment(),
+    })
+  }
+
+  private executeDeployment() {
+    this.ensureDeploymentTarget()
+    if (!this.selectedTargetCity) return
     const supplyNeed = this.deploymentSupplyNeed()
     if (this.councilState.supplies < supplyNeed) {
       this.showDeploymentMessage('粮草不足，无法出征。请先治理城池或运输军粮。')
