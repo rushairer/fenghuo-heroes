@@ -119,10 +119,25 @@ type StrategyOfficer = {
   loyalty: number
 }
 
-type PendingExpedition = {
+type MarchArmy = {
+  id: string
+  factionId: FactionId
   sourceCityId: CityId
-  targetCityId: CityId
-  supplyNeed: number
+  targetCityId?: CityId
+  leaderOfficerId: string
+  officerIds: string[]
+  troops: number
+  food: number
+  morale: number
+  position: {
+    kind: 'city' | 'route'
+    cityId?: CityId
+    route?: [CityId, CityId]
+    progress?: number
+  }
+  routePlan: CityId[]
+  movePoints: number
+  status: 'ready' | 'marching' | 'besieging' | 'retreating' | 'routed'
 }
 
 const TILE = 64
@@ -328,7 +343,7 @@ class KingdomsScene extends Phaser.Scene {
   private alliedFactionIds = new Set<FactionId>()
   private sabotagedFactionIds = new Set<FactionId>()
   private monthlyActionLog: string[] = []
-  private pendingExpedition?: PendingExpedition
+  private marchArmy?: MarchArmy
   private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
   private selectedDifficulty: Difficulty = 'normal'
   private campaignClock = {
@@ -618,7 +633,7 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '18px',
       color: '#f8df9d',
     }))
-    this.overlayLayer.add(this.add.text(740, 600, this.pendingExpedition ? '出征令已下达：下月进入行军面' : '视察情况：内政、外交、军事；结束后进入行军月', {
+    this.overlayLayer.add(this.add.text(740, 600, this.marchArmy ? '出征令已下达：下月进入行军面' : '视察情况：内政、外交、军事；结束后进入行军月', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '16px',
       color: '#f4dfb3',
@@ -663,7 +678,7 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '18px',
       color: '#f8df9d',
     }))
-    this.overlayLayer.add(this.add.text(740, 600, this.pendingExpedition ? '行军面：先移动整队，再攻击目标城' : '本月暂无远征军，可直接进入月令', {
+    this.overlayLayer.add(this.add.text(740, 600, this.marchArmy ? '行军面：先移动整队，再攻击目标城' : '本月暂无远征军，可直接进入月令', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '16px',
       color: '#f4dfb3',
@@ -845,27 +860,30 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private resolveStageAdvance() {
-    if (this.campaignClock.mode === 'march' && this.pendingExpedition) {
-      this.startPendingExpedition()
+    if (this.campaignClock.mode === 'march' && this.marchArmy) {
+      this.startMarchArmy()
       return
     }
     this.advanceCampaignMonth()
   }
 
   private marchArmySummary() {
-    if (!this.pendingExpedition) return '无远征军'
-    return `${cityName(this.pendingExpedition.sourceCityId)}军 → ${cityName(this.pendingExpedition.targetCityId)}  粮${this.pendingExpedition.supplyNeed}`
+    if (!this.marchArmy) return '无远征军'
+    const target = this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '未定'
+    return `${cityName(this.marchArmy.sourceCityId)}军 → ${target}  兵${this.marchArmy.troops} 粮${this.marchArmy.food}`
   }
 
   private showMarchArmyStatus() {
-    if (!this.pendingExpedition) {
+    if (!this.marchArmy) {
       this.showCampaignMessage('本月暂无远征军。请在视察情况月由军事命令编成出征。')
       return
     }
-    this.selectedCityId = this.pendingExpedition.sourceCityId
-    this.selectedTargetCityId = this.pendingExpedition.targetCityId
+    this.selectedCityId = this.marchArmy.sourceCityId
+    if (this.marchArmy.targetCityId) this.selectedTargetCityId = this.marchArmy.targetCityId
     this.syncSelectedCityState()
     this.showCampaign()
+    const target = this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '未定'
+    const position = this.describeMarchPosition(this.marchArmy)
     this.overlayLayer.add(this.add.rectangle(640, 408, 650, 210, 0x101722, 0.97).setStrokeStyle(2, 0xd4af37, 0.9))
     this.overlayLayer.add(this.add.text(640, 338, '远征军', {
       fontFamily: 'Georgia, "Times New Roman", serif',
@@ -873,12 +891,13 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8df9d',
     }).setOrigin(0.5))
     const copy = [
-      `出发城    ${cityName(this.pendingExpedition.sourceCityId)}`,
-      `目标城    ${cityName(this.pendingExpedition.targetCityId)}`,
-      `随军粮    ${this.pendingExpedition.supplyNeed}`,
-      `先锋      ${this.officerForUnit(this.appointments.vanguard)?.name ?? '-'}`,
-      `军师      ${this.officerForUnit(this.appointments.strategist)?.name ?? '-'}`,
-      '状态      待命，可移动后攻击目标城',
+      `出发城    ${cityName(this.marchArmy.sourceCityId)}`,
+      `目标城    ${target}`,
+      `位置      ${position}`,
+      `兵粮      兵${this.marchArmy.troops}  粮${this.marchArmy.food}  士气${this.marchArmy.morale}`,
+      `主将      ${this.officerName(this.marchArmy.leaderOfficerId)}`,
+      `随军      ${this.marchArmy.officerIds.map((id) => this.officerName(id)).join('、')}`,
+      `状态      ${marchStatusName(this.marchArmy.status)}  移动${this.marchArmy.movePoints}`,
     ].join('\n')
     this.overlayLayer.add(this.add.text(398, 382, copy, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -889,35 +908,63 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private resolveMarchMove() {
-    if (!this.pendingExpedition) {
+    if (!this.marchArmy) {
       this.showCampaignMessage('没有可移动的远征军。')
       return
     }
-    this.selectedCityId = this.pendingExpedition.sourceCityId
-    this.focusedCityId = this.pendingExpedition.targetCityId
-    this.selectedTargetCityId = this.pendingExpedition.targetCityId
-    this.syncSelectedCityState()
-    this.showCampaignMessage(`${cityName(this.pendingExpedition.sourceCityId)}军沿道路向${cityName(this.pendingExpedition.targetCityId)}推进，粮道已展开。`)
+    if (this.marchArmy.movePoints <= 0) {
+      this.showCampaignMessage('本月移动已尽，远征军只能待机或攻击邻近目标。')
+      return
+    }
+    if (!this.marchArmy.targetCityId) {
+      this.showCampaignMessage('远征军尚未指定目标城。')
+      return
+    }
+    const from = this.marchArmy.position.cityId ?? this.marchArmy.sourceCityId
+    const target = this.marchArmy.targetCityId
+    this.marchArmy.position = { kind: 'route', route: [from, target], progress: 1 }
+    this.marchArmy.movePoints -= 1
+    this.marchArmy.food = Math.max(0, this.marchArmy.food - 4)
+    this.marchArmy.status = 'marching'
+    this.focusedCityId = target
+    this.selectedTargetCityId = target
+    this.showCampaignMessage(`${cityName(from)}军沿道路向${cityName(target)}推进，粮道已展开。`)
   }
 
   private resolveMarchAttack() {
-    if (!this.pendingExpedition) {
+    if (!this.marchArmy) {
       this.showCampaignMessage('没有远征军可发起攻击。')
       return
     }
-    this.startPendingExpedition()
+    if (this.marchArmy.status === 'ready') {
+      this.showCampaignMessage('远征军尚未移动到敌城，请先执行「移动」。')
+      return
+    }
+    this.startMarchArmy()
   }
 
   private retreatMarchArmy() {
-    if (!this.pendingExpedition) {
+    if (!this.marchArmy) {
       this.showCampaignMessage('当前没有远征军需要撤退。')
       return
     }
-    const message = `${cityName(this.pendingExpedition.sourceCityId)}军撤回本城，士气略降。`
-    this.pendingExpedition = undefined
+    const message = `${cityName(this.marchArmy.sourceCityId)}军撤回本城，士气略降。`
+    this.marchArmy = undefined
     this.councilState.morale = Math.max(0, this.councilState.morale - 4)
     this.recordMonthlyAction(message)
     this.showCampaignMessage(message)
+  }
+
+  private describeMarchPosition(army: MarchArmy) {
+    if (army.position.kind === 'city' && army.position.cityId) return cityName(army.position.cityId)
+    if (army.position.kind === 'route' && army.position.route) {
+      return `${cityName(army.position.route[0])} → ${cityName(army.position.route[1])}`
+    }
+    return '行军途中'
+  }
+
+  private officerName(officerId: string) {
+    return this.campaignOfficers.find((officer) => officer.id === officerId)?.name ?? officerId
   }
 
   private showDomesticCommand() {
@@ -1285,8 +1332,8 @@ class KingdomsScene extends Phaser.Scene {
     if (!city) return '政略方针：请选择己方城池，再下达本月命令。'
     const targets = this.availableDeploymentTargets()
     const nearest = targets.toSorted((a, b) => a.troops - b.troops)[0]
-    if (this.pendingExpedition) {
-      return `政略方针：${cityName(this.pendingExpedition.sourceCityId)}已下达出征${cityName(this.pendingExpedition.targetCityId)}之令，行军月可移动并攻击。`
+    if (this.marchArmy) {
+      return `政略方针：${cityName(this.marchArmy.sourceCityId)}远征军已编成，行军月可移动并攻击${this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '目标城'}。`
     }
     if (this.councilState.actions <= 0) {
       return '政略方针：本月政令已尽，可确认出征或推进月令查看诸势力动向。'
@@ -1384,7 +1431,7 @@ class KingdomsScene extends Phaser.Scene {
       `政令    ${this.councilState.actions}`,
       `民心    ${this.cityState.publicOrder}`,
       `敌势    ${this.campaignClock.enemyThreat}`,
-      `军行    ${this.pendingExpedition ? `${cityName(this.pendingExpedition.targetCityId)}待发` : '无'}`,
+      `军行    ${this.marchArmy ? `${this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '目标'}${marchStatusName(this.marchArmy.status)}` : '无'}`,
     ]
     this.overlayLayer.add(this.add.text(884, 216, lines.join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -1907,10 +1954,23 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     this.councilState.supplies -= supplyNeed
-    this.pendingExpedition = {
+    const officerIds = this.currentCityOfficers().map((officer) => officer.id)
+    const leaderOfficerId = this.officerForUnit(this.appointments.vanguard)?.id ?? officerIds[0] ?? 'liu_bei'
+    const cityTroops = this.selectedCity?.troops ?? 0
+    this.marchArmy = {
+      id: `army-${this.campaignClock.year}-${this.campaignClock.month}-${this.selectedCityId}`,
+      factionId: 'liu',
       sourceCityId: this.selectedCityId,
       targetCityId: this.selectedTargetCity.id,
-      supplyNeed,
+      leaderOfficerId,
+      officerIds: officerIds.slice(0, 4),
+      troops: Math.max(800, Math.min(5200, Math.floor(cityTroops * 0.38))),
+      food: supplyNeed,
+      morale: this.councilState.morale,
+      position: { kind: 'city', cityId: this.selectedCityId },
+      routePlan: [this.selectedCityId, this.selectedTargetCity.id],
+      movePoints: 1,
+      status: 'ready',
     }
     this.recordMonthlyAction(`${this.selectedCity?.name ?? '本城'}下令出征${this.selectedTargetCity.name}`)
     this.showCampaignMessage(`出征令已下达：${this.selectedCity?.name ?? '本城'} → ${this.selectedTargetCity.name}。结束视察后将在行军月移动与攻击。`)
@@ -2216,14 +2276,18 @@ class KingdomsScene extends Phaser.Scene {
     }).setOrigin(0.5))
   }
 
-  private startPendingExpedition() {
-    if (!this.pendingExpedition) {
+  private startMarchArmy() {
+    if (!this.marchArmy) {
       this.showCampaignMessage('当前没有待执行的出征令。')
       return
     }
-    this.selectedCityId = this.pendingExpedition.sourceCityId
-    this.focusedCityId = this.pendingExpedition.targetCityId
-    this.selectedTargetCityId = this.pendingExpedition.targetCityId
+    if (!this.marchArmy.targetCityId) {
+      this.showCampaignMessage('远征军没有目标城，无法攻击。')
+      return
+    }
+    this.selectedCityId = this.marchArmy.sourceCityId
+    this.focusedCityId = this.marchArmy.targetCityId
+    this.selectedTargetCityId = this.marchArmy.targetCityId
     this.syncSelectedCityState()
     this.ensureDiplomacyTarget()
     this.ensureLocalAppointments()
@@ -2461,7 +2525,7 @@ class KingdomsScene extends Phaser.Scene {
     this.alliedFactionIds = new Set<FactionId>()
     this.sabotagedFactionIds = new Set<FactionId>()
     this.monthlyActionLog = []
-    this.pendingExpedition = undefined
+    this.marchArmy = undefined
     const scenario = this.scenarioConfig()
     const difficulty = this.difficultyConfig()
     this.cityState = {
@@ -2991,7 +3055,7 @@ class KingdomsScene extends Phaser.Scene {
   private retreatBattle() {
     this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale - 8, 0, 100)
     this.councilState.supplies = Math.max(0, this.councilState.supplies - 8)
-    this.pendingExpedition = undefined
+    this.marchArmy = undefined
     this.campaignClock.mode = 'inspection'
     this.recordMonthlyAction(`${this.selectedCity?.name ?? '我军'}撤退`)
     this.showResult(false, '我军鸣金收兵，士气 -8，补给 -8。')
@@ -3127,12 +3191,12 @@ class KingdomsScene extends Phaser.Scene {
     }).setOrigin(0.5))
     this.makeButton(460, 500, '再战', () => this.startBattle(), this.overlayLayer, 150, 42)
     this.makeButton(640, 500, '返回版图', () => {
-      this.pendingExpedition = undefined
+      this.marchArmy = undefined
       this.campaignClock.mode = 'inspection'
       this.showCampaign()
     }, this.overlayLayer, 170, 42)
     this.makeButton(830, 500, '月令', () => {
-      this.pendingExpedition = undefined
+      this.marchArmy = undefined
       this.campaignClock.mode = 'inspection'
       this.advanceCampaignMonth()
     }, this.overlayLayer, 150, 42)
@@ -3388,6 +3452,16 @@ function campaignModeName(mode: CampaignMode) {
     inspection: '视察情况',
     march: '行军',
   }[mode]
+}
+
+function marchStatusName(status: MarchArmy['status']) {
+  return {
+    ready: '待命',
+    marching: '行军',
+    besieging: '攻城',
+    retreating: '撤退',
+    routed: '溃散',
+  }[status]
 }
 
 function diplomacyName(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
