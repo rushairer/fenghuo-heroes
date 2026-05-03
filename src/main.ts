@@ -1652,19 +1652,68 @@ class KingdomsScene extends Phaser.Scene {
 
   private showMilitaryCommand() {
     this.showCommandPanel('军事', [
-      ['征兵', () => this.showMilitaryOfficerSelection('recruit')],
-      ['武器', () => this.showMilitaryOfficerSelection('weapon')],
+      ['征兵', () => this.showMilitaryActorSelection('recruit')],
+      ['武器', () => this.showMilitaryActorSelection('weapon')],
       ['人材', () => this.showTalentSearch()],
       ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8', { treasury: -140, walls: 8 })],
-      ['训练', () => this.showMilitaryOfficerSelection('training')],
+      ['训练', () => this.showMilitaryActorSelection('training')],
       ['出征', () => this.showDeployment()],
     ])
   }
 
-  private showMilitaryOfficerSelection(kind: MilitaryAllocationKind) {
-    const city = this.selectedCity
-    const officers = this.currentCityOfficers()
+  private showMilitaryActorSelection(kind: MilitaryAllocationKind) {
+    const meta = militaryAllocationMeta(kind)
+    const cities = this.controlledCities().filter((city) => this.officersInCity(city.id).length > 0)
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, `军事｜${meta.command}：选择发起城`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '军事命令先确定军府所在城，再选择本城武将或全军作为目标。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    if (cities.length === 0) {
+      this.overlayLayer.add(this.add.text(640, 414, '当前没有可执行军令的己方城。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+    }
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      const officers = this.officersInCity(city.id)
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        this.showMilitaryOfficerSelection(kind, city)
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `武将${officers.length}｜金${city.gold} 兵${city.troops}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => {
+      this.showCampaign()
+      this.showMilitaryCommand()
+    }, this.overlayLayer, 130, 38)
+  }
+
+  private showMilitaryOfficerSelection(kind: MilitaryAllocationKind, actorCity = this.selectedCity) {
+    const city = actorCity
     if (!city) return
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    const officers = this.officersInCity(city.id)
     if (officers.length === 0) {
       this.showCampaignMessage('本城没有可分配军令的武将。')
       return
@@ -1688,7 +1737,7 @@ class KingdomsScene extends Phaser.Scene {
         const config = recruitScaleConfig(scale)
         this.makeButton(456 + index * 184, 348, this.recruitScale === scale ? `${config.label}✓` : config.label, () => {
           this.recruitScale = scale
-          this.showMilitaryOfficerSelection(kind)
+          this.showMilitaryOfficerSelection(kind, city)
         }, this.overlayLayer, 142, 34)
       })
     } else if (kind === 'training') {
@@ -1696,17 +1745,18 @@ class KingdomsScene extends Phaser.Scene {
       modes.forEach(([mode, label], index) => {
         this.makeButton(548 + index * 184, 348, this.trainingMode === mode ? `${label}✓` : label, () => {
           this.trainingMode = mode
-          this.showMilitaryOfficerSelection(kind)
+          this.showMilitaryOfficerSelection(kind, city)
         }, this.overlayLayer, 150, 34)
       })
       if (this.trainingMode === 'all') {
-        this.makeButton(640, 438, '确认全军操练', () => this.confirmTrainingAll(), this.overlayLayer, 190, 42)
+        this.makeButton(640, 438, '确认全军操练', () => this.confirmTrainingAll(city), this.overlayLayer, 190, 42)
         this.overlayLayer.add(this.add.text(640, 486, '目标：本城所有可战武将｜金 -180｜全员训练 +6｜士气 +4', {
           fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
           fontSize: '18px',
           color: '#f7ecd5',
         }).setOrigin(0.5))
-        this.makeButton(640, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+        this.makeButton(540, 596, '重选发起城', () => this.showMilitaryActorSelection(kind), this.overlayLayer, 150, 38)
+        this.makeButton(740, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
         return
       }
     }
@@ -1715,19 +1765,23 @@ class KingdomsScene extends Phaser.Scene {
       const row = Math.floor(index / 3)
       const x = 410 + col * 230
       const y = (kind === 'recruit' ? 412 : 378) + row * 78
-      this.makeButton(x, y, officer.name, () => this.confirmMilitaryAllocation(kind, officer), this.overlayLayer, 168, 40)
+      this.makeButton(x, y, officer.name, () => this.confirmMilitaryAllocation(kind, officer, city), this.overlayLayer, 168, 40)
       this.overlayLayer.add(this.add.text(x, y + 35, `兵${officerTroops(officer)} 武${officerWeapons(officer)} 训${officerTraining(officer)}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '14px',
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(640, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeButton(540, 596, '重选发起城', () => this.showMilitaryActorSelection(kind), this.overlayLayer, 150, 38)
+    this.makeButton(740, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
   }
 
-  private confirmMilitaryAllocation(kind: MilitaryAllocationKind, officer: StrategyOfficer) {
-    const city = this.selectedCity
-    if (!city) return
+  private confirmMilitaryAllocation(kind: MilitaryAllocationKind, officer: StrategyOfficer, actorCity: StrategyCity) {
+    const city = actorCity
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
     const meta = militaryAllocationMeta(kind)
     this.showCommandConfirm({
       category: '军事',
@@ -1737,15 +1791,18 @@ class KingdomsScene extends Phaser.Scene {
       scope: `${city.name}本城武将`,
       effect: meta.effect(officer, kind === 'recruit' ? this.recruitScale : undefined),
       hint: '确认后执行军事分配',
-      onConfirm: () => this.executeMilitaryAllocation(kind, officer),
-      onCancel: () => this.showMilitaryOfficerSelection(kind),
+      onConfirm: () => this.executeMilitaryAllocation(kind, officer, city),
+      onCancel: () => this.showMilitaryOfficerSelection(kind, city),
     })
   }
 
-  private confirmTrainingAll() {
-    const city = this.selectedCity
-    if (!city) return
-    const officers = this.deployableCurrentCityOfficers()
+  private confirmTrainingAll(actorCity: StrategyCity) {
+    const city = actorCity
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    const officers = this.deployableOfficersInCity(city.id)
     if (officers.length === 0) {
       this.showCampaignMessage('本城没有可训练的武将。')
       return
@@ -1758,15 +1815,17 @@ class KingdomsScene extends Phaser.Scene {
       scope: `${city.name}可战武将`,
       effect: `金 -180｜${officers.map((officer) => officer.name).join('、')}训练 +6｜士气 +4`,
       hint: '确认后执行全军操练',
-      onConfirm: () => this.executeTrainingAll(),
-      onCancel: () => this.showMilitaryOfficerSelection('training'),
+      onConfirm: () => this.executeTrainingAll(city),
+      onCancel: () => this.showMilitaryOfficerSelection('training', city),
     })
   }
 
-  private executeTrainingAll() {
-    const city = this.selectedCity
-    if (!city) return
-    const officers = this.deployableCurrentCityOfficers()
+  private executeTrainingAll(actorCity: StrategyCity) {
+    const city = actorCity
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    const officers = this.deployableOfficersInCity(city.id)
     if (this.councilState.actions <= 0) {
       this.showCampaignMessage('本月政令已用尽，无法训练。')
       return
@@ -1786,9 +1845,11 @@ class KingdomsScene extends Phaser.Scene {
     this.showCampaignMessage(`${city.name}全军操练完成，诸将训练提升。`)
   }
 
-  private executeMilitaryAllocation(kind: MilitaryAllocationKind, officer: StrategyOfficer) {
-    const city = this.selectedCity
-    if (!city) return
+  private executeMilitaryAllocation(kind: MilitaryAllocationKind, officer: StrategyOfficer, actorCity: StrategyCity) {
+    const city = actorCity
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
     if (this.councilState.actions <= 0) {
       this.showCampaignMessage('本月政令已用尽，无法执行军事命令。')
       return
@@ -3802,7 +3863,11 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private currentCityOfficers() {
-    return this.campaignOfficers.filter((officer) => officer.faction === 'liu' && officer.location === this.selectedCityId)
+    return this.officersInCity(this.selectedCityId)
+  }
+
+  private officersInCity(cityId: CityId) {
+    return this.campaignOfficers.filter((officer) => officer.faction === 'liu' && officer.location === cityId)
   }
 
   private currentCityUnits() {
@@ -3811,7 +3876,11 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private deployableCurrentCityOfficers() {
-    return this.currentCityOfficers().filter((officer) => unitIdForOfficerId(officer.id))
+    return this.deployableOfficersInCity(this.selectedCityId)
+  }
+
+  private deployableOfficersInCity(cityId: CityId) {
+    return this.officersInCity(cityId).filter((officer) => unitIdForOfficerId(officer.id))
   }
 
   private ensureDeploymentSelection() {
