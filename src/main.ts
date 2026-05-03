@@ -143,6 +143,8 @@ type MarchArmy = {
   status: 'ready' | 'marching' | 'besieging' | 'retreating' | 'routed'
 }
 
+const MARCH_ROUTE_STEPS = 2
+
 type SiegeState = {
   attackerArmyId: string
   defenderCityId: CityId
@@ -1016,13 +1018,17 @@ class KingdomsScene extends Phaser.Scene {
     }
     const from = this.marchArmy.position.cityId ?? this.marchArmy.sourceCityId
     const target = this.marchArmy.targetCityId
+    const nextProgress = this.nextMarchProgress()
+    const effect = nextProgress >= MARCH_ROUTE_STEPS
+      ? '移动 -1｜随军粮 -4｜抵达敌城城下'
+      : `移动 -1｜随军粮 -4｜路线进度 ${nextProgress}/${MARCH_ROUTE_STEPS}`
     this.showCommandConfirm({
       category: '行军',
       command: '移动',
       actor: `${cityName(this.marchArmy.sourceCityId)}远征军`,
       target: cityName(target),
       scope: `${cityName(from)} → ${cityName(target)}`,
-      effect: '移动 -1｜随军粮 -4｜状态改为行军',
+      effect,
       hint: '确认后执行远征军命令',
       onConfirm: () => this.executeMarchMove(),
       onCancel: () => this.showCampaign(),
@@ -1031,15 +1037,28 @@ class KingdomsScene extends Phaser.Scene {
 
   private executeMarchMove() {
     if (!this.marchArmy?.targetCityId) return
-    const from = this.marchArmy.position.cityId ?? this.marchArmy.sourceCityId
+    const from = this.marchArmy.position.route?.[0] ?? this.marchArmy.position.cityId ?? this.marchArmy.sourceCityId
     const target = this.marchArmy.targetCityId
-    this.marchArmy.position = { kind: 'route', route: [from, target], progress: 1 }
+    const nextProgress = this.nextMarchProgress()
+    if (nextProgress >= MARCH_ROUTE_STEPS) {
+      this.marchArmy.position = { kind: 'city', cityId: target, progress: MARCH_ROUTE_STEPS }
+      this.marchArmy.status = 'marching'
+    } else {
+      this.marchArmy.position = { kind: 'route', route: [from, target], progress: nextProgress }
+      this.marchArmy.status = 'marching'
+    }
     this.marchArmy.movePoints -= 1
     this.marchArmy.food = Math.max(0, this.marchArmy.food - 4)
-    this.marchArmy.status = 'marching'
     this.focusedCityId = target
     this.selectedTargetCityId = target
-    this.showCampaignMessage(`${cityName(from)}军沿道路向${cityName(target)}推进，粮道已展开。`)
+    this.showCampaignMessage(nextProgress >= MARCH_ROUTE_STEPS
+      ? `${cityName(from)}军抵达${cityName(target)}城下，可发起攻城。`
+      : `${cityName(from)}军沿道路向${cityName(target)}推进，路线进度 ${nextProgress}/${MARCH_ROUTE_STEPS}。`)
+  }
+
+  private nextMarchProgress() {
+    if (!this.marchArmy) return 1
+    return Math.min(MARCH_ROUTE_STEPS, (this.marchArmy.position.progress ?? 0) + 1)
   }
 
   private resolveMarchAttack() {
@@ -1049,6 +1068,10 @@ class KingdomsScene extends Phaser.Scene {
     }
     if (this.marchArmy.status === 'ready') {
       this.showCampaignMessage('远征军尚未移动到敌城，请先执行「移动」。')
+      return
+    }
+    if (!this.isMarchArmyAtTarget()) {
+      this.showCampaignMessage('远征军尚未抵达目标城，不能攻城。请继续执行「移动」。')
       return
     }
     const target = this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '目标城'
@@ -1063,6 +1086,10 @@ class KingdomsScene extends Phaser.Scene {
       onConfirm: () => this.beginSiege(),
       onCancel: () => this.showCampaign(),
     })
+  }
+
+  private isMarchArmyAtTarget() {
+    return Boolean(this.marchArmy?.targetCityId && this.marchArmy.position.kind === 'city' && this.marchArmy.position.cityId === this.marchArmy.targetCityId)
   }
 
   private confirmMarchForage() {
@@ -1142,7 +1169,7 @@ class KingdomsScene extends Phaser.Scene {
   private describeMarchPosition(army: MarchArmy) {
     if (army.position.kind === 'city' && army.position.cityId) return cityName(army.position.cityId)
     if (army.position.kind === 'route' && army.position.route) {
-      return `${cityName(army.position.route[0])} → ${cityName(army.position.route[1])}`
+      return `${cityName(army.position.route[0])} → ${cityName(army.position.route[1])} ${army.position.progress ?? 0}/${MARCH_ROUTE_STEPS}`
     }
     return '行军途中'
   }
