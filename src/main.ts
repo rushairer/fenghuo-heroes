@@ -117,6 +117,9 @@ type StrategyOfficer = {
   charm: number
   command: number
   loyalty: number
+  troops?: number
+  weapons?: number
+  training?: number
 }
 
 type MarchArmy = {
@@ -1480,13 +1483,98 @@ class KingdomsScene extends Phaser.Scene {
 
   private showMilitaryCommand() {
     this.showCommandPanel('军事', [
-      ['征兵', () => this.confirmCityPolicy('军事', '征兵', '本城兵营', '征募乡勇入营，兵力增加。', '金 -160｜兵 +900｜士气 +3｜民心 -2', { treasury: -160, recruits: 900, morale: 3, publicOrder: -2 })],
-      ['武器', () => this.confirmCityPolicy('军事', '武器', '本城军械库', '打造军械甲胄，出征士气上升。', '金 -180｜士气 +5', { treasury: -180, morale: 5 })],
+      ['征兵', () => this.showMilitaryOfficerSelection('recruit')],
+      ['武器', () => this.showMilitaryOfficerSelection('weapon')],
       ['人材', () => this.showTalentSearch()],
       ['防卫', () => this.confirmCityPolicy('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8', { treasury: -140, walls: 8 })],
-      ['训练', () => this.confirmCityPolicy('军事', '训练', '本城军士', '校场练兵，士气与情报上升。', '金 -90｜士气 +7｜情报 +3', { treasury: -90, morale: 7, intel: 3 })],
+      ['训练', () => this.showMilitaryOfficerSelection('training')],
       ['出征', () => this.showDeployment()],
     ])
+  }
+
+  private showMilitaryOfficerSelection(kind: 'recruit' | 'weapon' | 'training') {
+    const city = this.selectedCity
+    const officers = this.currentCityOfficers()
+    if (!city) return
+    if (officers.length === 0) {
+      this.showCampaignMessage('本城没有可分配军令的武将。')
+      return
+    }
+    this.showCampaign()
+    const meta = militaryAllocationMeta(kind)
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(640, 276, `${meta.command}对象`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(640, 318, `${city.name}${meta.actor}发起，选择本城武将作为目标`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }).setOrigin(0.5))
+    officers.forEach((officer, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 378 + row * 78
+      this.makeButton(x, y, officer.name, () => this.confirmMilitaryAllocation(kind, officer), this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `兵${officerTroops(officer)} 武${officerWeapons(officer)} 训${officerTraining(officer)}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+  }
+
+  private confirmMilitaryAllocation(kind: 'recruit' | 'weapon' | 'training', officer: StrategyOfficer) {
+    const city = this.selectedCity
+    if (!city) return
+    const meta = militaryAllocationMeta(kind)
+    this.showCommandConfirm({
+      category: '军事',
+      command: meta.command,
+      actor: `${city.name}${meta.actor}`,
+      target: officer.name,
+      scope: `${city.name}本城武将`,
+      effect: meta.effect(officer),
+      hint: '确认后执行军事分配',
+      onConfirm: () => this.executeMilitaryAllocation(kind, officer),
+      onCancel: () => this.showMilitaryOfficerSelection(kind),
+    })
+  }
+
+  private executeMilitaryAllocation(kind: 'recruit' | 'weapon' | 'training', officer: StrategyOfficer) {
+    const city = this.selectedCity
+    if (!city) return
+    if (this.councilState.actions <= 0) {
+      this.showCampaignMessage('本月政令已用尽，无法执行军事命令。')
+      return
+    }
+    const meta = militaryAllocationMeta(kind)
+    if (city.gold < meta.goldCost) {
+      this.showCampaignMessage('府库不足，无法执行军事命令。')
+      return
+    }
+    city.gold = Math.max(0, city.gold - meta.goldCost)
+    if (kind === 'recruit') {
+      officer.troops = Math.min(6000, officerTroops(officer) + 900)
+      city.troops = Math.min(30000, city.troops + 900)
+      this.cityState.publicOrder = Math.max(0, this.cityState.publicOrder - 2)
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 3, 0, 100)
+    } else if (kind === 'weapon') {
+      officer.weapons = Math.min(5, officerWeapons(officer) + 1)
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 2, 0, 100)
+    } else {
+      officer.training = Math.min(100, officerTraining(officer) + 12)
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 3, 0, 100)
+      this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 2, 0, 100)
+    }
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${city.name}${meta.command}${officer.name}`)
+    this.syncSelectedCityState()
+    this.showCampaignMessage(`${officer.name}${meta.resultText(officer)}。`)
   }
 
   private showPersonnelCommand() {
@@ -2301,8 +2389,8 @@ class KingdomsScene extends Phaser.Scene {
       }))
       const lines = [
         `统 ${officer.command}  武 ${officer.war}`,
-        `智 ${officer.intel}  政 ${officer.gov}`,
-        `忠诚 ${officer.loyalty}`,
+        `兵 ${officerTroops(officer)}  武装 ${officerWeapons(officer)}`,
+        `训练 ${officerTraining(officer)}  忠 ${officer.loyalty}`,
       ]
       this.overlayLayer.add(this.add.text(x + 112, y + 84, lines.join('\n'), {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -2562,6 +2650,7 @@ class KingdomsScene extends Phaser.Scene {
     }))
     const units = this.currentCityUnits()
     units.forEach((unit, index) => {
+      const officer = this.officerForUnit(unit.id)
       const x = 590 + (index % 2) * 294
       const y = 238 + Math.floor(index / 2) * 138
       this.overlayLayer.add(this.add.rectangle(x, y, 250, 104, 0x21160f, 0.92).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
@@ -2575,7 +2664,7 @@ class KingdomsScene extends Phaser.Scene {
         fontSize: '20px',
         color: '#f8df9d',
       }))
-      this.overlayLayer.add(this.add.text(x + 92, y + 50, `兵力 ${heroTroops(unit, this.appointments)}  攻 ${unit.stats.atk}  谋 ${unit.stats.mag}`, {
+      this.overlayLayer.add(this.add.text(x + 92, y + 50, `兵 ${officer ? officerTroops(officer) : heroTroops(unit, this.appointments)}  武装 ${officer ? officerWeapons(officer) : 0}  训 ${officer ? officerTraining(officer) : 0}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '17px',
         color: '#f8ecd0',
@@ -2638,8 +2727,7 @@ class KingdomsScene extends Phaser.Scene {
     }
     const source = this.selectedCity
     const target = this.selectedTargetCity
-    const cityTroops = source?.troops ?? 0
-    const troops = Math.max(800, Math.min(5200, Math.floor(cityTroops * 0.38)))
+    const troops = this.currentCityDeploymentTroops()
     this.showCommandConfirm({
       category: '军事',
       command: '出征',
@@ -2664,7 +2752,7 @@ class KingdomsScene extends Phaser.Scene {
     this.councilState.supplies -= supplyNeed
     const officerIds = this.currentCityOfficers().map((officer) => officer.id)
     const leaderOfficerId = this.officerForUnit(this.appointments.vanguard)?.id ?? officerIds[0] ?? 'liu_bei'
-    const cityTroops = this.selectedCity?.troops ?? 0
+    const armyTroops = this.currentCityDeploymentTroops()
     this.marchArmy = {
       id: `army-${this.campaignClock.year}-${this.campaignClock.month}-${this.selectedCityId}`,
       factionId: 'liu',
@@ -2672,7 +2760,7 @@ class KingdomsScene extends Phaser.Scene {
       targetCityId: this.selectedTargetCity.id,
       leaderOfficerId,
       officerIds: officerIds.slice(0, 4),
-      troops: Math.max(800, Math.min(5200, Math.floor(cityTroops * 0.38))),
+      troops: armyTroops,
       food: supplyNeed,
       morale: this.councilState.morale,
       position: { kind: 'city', cityId: this.selectedCityId },
@@ -3044,7 +3132,20 @@ class KingdomsScene extends Phaser.Scene {
     const playerUnitIds = new Set(this.currentCityUnits().map((unit) => unit.id))
     const playerUnits = baseUnits
       .filter((unit) => unit.faction === 'player' && playerUnitIds.has(unit.id))
-      .map((unit) => ({ ...unit, stats: { ...unit.stats }, position: { ...unit.position } }))
+      .map((unit) => {
+        const officer = this.officerForUnit(unit.id)
+        const troopBonus = officer ? Math.floor(officerTroops(officer) / 550) : 0
+        const weaponBonus = officer ? officerWeapons(officer) : 0
+        const trainingBonus = officer ? Math.floor(officerTraining(officer) / 25) : 0
+        const stats = {
+          ...unit.stats,
+          maxHp: unit.stats.maxHp + troopBonus,
+          hp: unit.stats.maxHp + troopBonus,
+          atk: unit.stats.atk + weaponBonus,
+          def: unit.stats.def + trainingBonus,
+        }
+        return { ...unit, stats, position: { ...unit.position } }
+      })
     const target = this.selectedTargetCity
     const owner = target ? factionById(target.owner) : undefined
     const defenderName = owner?.ruler ?? '守将'
@@ -3240,7 +3341,12 @@ class KingdomsScene extends Phaser.Scene {
   private resetCampaignState() {
     this.resetCouncilState()
     this.campaignCities = strategyCities.map((city) => ({ ...city, routes: [...city.routes] }))
-    this.campaignOfficers = strategyOfficers.map((officer) => ({ ...officer }))
+    this.campaignOfficers = strategyOfficers.map((officer) => ({
+      ...officer,
+      troops: initialOfficerTroops(officer),
+      weapons: initialOfficerWeapons(officer),
+      training: initialOfficerTraining(officer),
+    }))
     this.selectedCityId = 'chengdu'
     this.focusedCityId = 'chengdu'
     this.selectedTargetCityId = 'hanzhong'
@@ -3298,6 +3404,14 @@ class KingdomsScene extends Phaser.Scene {
   private currentCityUnits() {
     const localUnitIds = new Set(this.currentCityOfficers().map((officer) => unitIdForOfficerId(officer.id)).filter((id): id is string => id !== undefined))
     return baseUnits.filter((unit) => unit.faction === 'player' && localUnitIds.has(unit.id))
+  }
+
+  private currentCityDeploymentTroops() {
+    const total = this.currentCityOfficers()
+      .filter((officer) => unitIdForOfficerId(officer.id))
+      .slice(0, 4)
+      .reduce((sum, officer) => sum + officerTroops(officer), 0)
+    return Phaser.Math.Clamp(total, 800, 9000)
   }
 
   private officerForUnit(unitId: string) {
@@ -4123,6 +4237,65 @@ function officerPortraitKey(officerId: string) {
     zhuge_liang: 'portrait-xuan',
     zhang_fei: 'portrait-qing',
   }[officerId] ?? 'portrait-yun'
+}
+
+function officerTroops(officer: StrategyOfficer) {
+  return officer.troops ?? initialOfficerTroops(officer)
+}
+
+function officerWeapons(officer: StrategyOfficer) {
+  return officer.weapons ?? initialOfficerWeapons(officer)
+}
+
+function officerTraining(officer: StrategyOfficer) {
+  return officer.training ?? initialOfficerTraining(officer)
+}
+
+function initialOfficerTroops(officer: StrategyOfficer) {
+  if (officer.faction !== 'liu') return Math.max(600, Math.floor(officer.command * 28))
+  return {
+    liu_bei: 1400,
+    guan_yu: 1800,
+    zhang_fei: 1700,
+    zhuge_liang: 900,
+  }[officer.id] ?? Math.max(700, Math.floor(officer.command * 22))
+}
+
+function initialOfficerWeapons(officer: StrategyOfficer) {
+  if (officer.war >= 95) return 3
+  if (officer.war >= 80) return 2
+  if (officer.war >= 55) return 1
+  return 0
+}
+
+function initialOfficerTraining(officer: StrategyOfficer) {
+  return Phaser.Math.Clamp(Math.floor((officer.command + officer.war) / 3), 12, 70)
+}
+
+function militaryAllocationMeta(kind: 'recruit' | 'weapon' | 'training') {
+  return {
+    recruit: {
+      command: '征兵',
+      actor: '兵营',
+      goldCost: 160,
+      effect: (officer: StrategyOfficer) => `金 -160｜${officer.name}兵 +900｜民心 -2｜士气 +3`,
+      resultText: (officer: StrategyOfficer) => `新募士卒入营，现统兵${officerTroops(officer)}`,
+    },
+    weapon: {
+      command: '武器',
+      actor: '军械库',
+      goldCost: 180,
+      effect: (officer: StrategyOfficer) => `金 -180｜${officer.name}武装 +1｜士气 +2`,
+      resultText: (officer: StrategyOfficer) => `军械配发完毕，武装${officerWeapons(officer)}`,
+    },
+    training: {
+      command: '训练',
+      actor: '校场',
+      goldCost: 90,
+      effect: (officer: StrategyOfficer) => `金 -90｜${officer.name}训练 +12｜士气 +3｜情报 +2`,
+      resultText: (officer: StrategyOfficer) => `部曲操练有成，训练${officerTraining(officer)}`,
+    },
+  }[kind]
 }
 
 function heroTroops(unit: Unit, appointments: { governor: string; vanguard: string; strategist: string }) {
