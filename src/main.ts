@@ -172,6 +172,7 @@ type DiplomacyCommandKind = 'alliance' | 'scout' | 'borrow' | 'repay' | 'sabotag
 type RecruitScale = 'small' | 'medium' | 'large'
 type TrainingMode = 'single' | 'all'
 type TransportTarget = 'expedition' | CityId
+type TaxRate = 'light' | 'normal' | 'heavy'
 type DiplomacyDebt = {
   factionId: FactionId
   principal: number
@@ -384,6 +385,7 @@ class KingdomsScene extends Phaser.Scene {
   private alliedFactionIds = new Set<FactionId>()
   private allianceTerms = new Map<FactionId, number>()
   private diplomacyDebts = new Map<FactionId, DiplomacyDebt>()
+  private cityTaxRates = new Map<CityId, TaxRate>()
   private sabotagedFactionIds = new Set<FactionId>()
   private monthlyActionLog: string[] = []
   private marchArmy?: MarchArmy
@@ -778,8 +780,9 @@ class KingdomsScene extends Phaser.Scene {
     let liuGoldGain = 0
     const enemyBefore = this.strongestEnemySummary()
     for (const city of this.campaignCities) {
+      const taxConfig = taxRateConfig(this.cityTaxRates.get(city.id) ?? 'normal')
       const foodGain = Math.max(60, Math.floor(city.food * 0.08))
-      const goldGain = Math.max(40, Math.floor(city.gold * 0.08))
+      const goldGain = Math.max(40, Math.floor(city.gold * 0.08 * taxConfig.goldMultiplier))
       const enemyGrowth = city.owner === 'liu' ? 1 : this.difficultyConfig().enemyGrowth
       const troopGain = Math.max(120, Math.floor(city.troops * 0.035 * enemyGrowth))
       city.food = Math.min(5000, city.food + foodGain)
@@ -788,6 +791,7 @@ class KingdomsScene extends Phaser.Scene {
       if (city.owner === 'liu') {
         liuFoodGain += foodGain
         liuGoldGain += goldGain
+        this.cityState.publicOrder = Phaser.Math.Clamp(this.cityState.publicOrder + taxConfig.publicOrderDelta, 0, 100)
       }
     }
     const aiReports = this.runEnemyFactionTurns()
@@ -1698,7 +1702,7 @@ class KingdomsScene extends Phaser.Scene {
       ['情报', () => this.showIntelActorSelection('内政')],
       ['福利', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜民心 +6｜士气 +2', { treasury: -120, publicOrder: 6, morale: 2 })],
       ['任命', () => this.showAppointmentActorSelection()],
-      ['税率', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '调整税率，府库增加但民心微降。', '金 +180｜民心 -3', { treasury: 180, publicOrder: -3 })],
+      ['税率', () => this.showTaxActorSelection()],
       ['教育', () => this.showEducationActorSelection()],
       ['运输', () => this.showTransportActorSelection()],
     ])
@@ -2074,6 +2078,99 @@ class KingdomsScene extends Phaser.Scene {
       if (category === '军事') this.showMilitaryCommand()
       else this.showDomesticCommand()
     }, this.overlayLayer, 130, 38)
+  }
+
+  private showTaxActorSelection() {
+    const cities = this.controlledCities()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, '内政｜税率：选择发起城', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '税率是持续政令，会在月令收入中生效；确认前必须明确执行城。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    cities.forEach((city, index) => {
+      const current = taxRateConfig(this.cityTaxRates.get(city.id) ?? 'normal')
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      this.makeButton(x, y, city.name, () => this.showTaxRateSelection(city), this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `${current.label}｜金${city.gold} 民心${this.cityState.publicOrder}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => this.showDomesticCommand(), this.overlayLayer, 130, 38)
+  }
+
+  private showTaxRateSelection(city: StrategyCity) {
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 760, 310, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(300, 286, `内政｜税率：${city.name}`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(326, 340, '选择下月起执行的税制档位。重税收入高，但月令会持续损伤民心。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    ;(['light', 'normal', 'heavy'] as TaxRate[]).forEach((rate, index) => {
+      const config = taxRateConfig(rate)
+      const selected = (this.cityTaxRates.get(city.id) ?? 'normal') === rate
+      const x = 456 + index * 184
+      this.makeButton(x, 430, selected ? `${config.label}✓` : config.label, () => this.confirmTaxRate(city, rate), this.overlayLayer, 142, 40)
+      this.overlayLayer.add(this.add.text(x, 468, `收入x${config.goldMultiplier.toFixed(1)}｜民心${config.publicOrderDelta >= 0 ? '+' : ''}${config.publicOrderDelta}/月`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(540, 566, '重选发起城', () => this.showTaxActorSelection(), this.overlayLayer, 150, 38)
+    this.makeButton(740, 566, '取消', () => this.showDomesticCommand(), this.overlayLayer, 130, 38)
+  }
+
+  private confirmTaxRate(city: StrategyCity, rate: TaxRate) {
+    const config = taxRateConfig(rate)
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.showCommandConfirm({
+      category: '内政',
+      command: '税率',
+      actor: `${city.name}太守府`,
+      target: `${city.name}税制`,
+      scope: `${config.label}，月令持续结算`,
+      effect: `府库收入x${config.goldMultiplier.toFixed(1)}｜民心 ${config.publicOrderDelta >= 0 ? '+' : ''}${config.publicOrderDelta}/月`,
+      hint: '确认后消耗政令并设定税制',
+      onConfirm: () => this.applyTaxRate(city, rate),
+      onCancel: () => this.showTaxRateSelection(city),
+    })
+  }
+
+  private applyTaxRate(city: StrategyCity, rate: TaxRate) {
+    if (this.councilState.actions <= 0) {
+      this.showCityMessage('本月政令已用尽，无法调整税率。')
+      return
+    }
+    const config = taxRateConfig(rate)
+    this.cityTaxRates.set(city.id, rate)
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${city.name}定${config.label}`)
+    this.syncSelectedCityState()
+    this.showCityMessage(`${city.name}改行${config.label}，下次月令按新税制结算。`)
   }
 
   private confirmCityPolicy(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta, actorCity = this.selectedCity, onCancel?: () => void) {
@@ -2944,6 +3041,7 @@ class KingdomsScene extends Phaser.Scene {
       `情报    ${this.councilState.intel}`,
       `政令    ${this.councilState.actions}`,
       `民心    ${this.cityState.publicOrder}`,
+      `税率    ${taxRateConfig(this.cityTaxRates.get(this.selectedCityId) ?? 'normal').label}`,
       `敌势    ${this.campaignClock.enemyThreat}`,
       `军行    ${this.marchArmy ? `${this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '目标'}${marchStatusName(this.marchArmy.status)}` : '无'}`,
     ]
@@ -3054,7 +3152,7 @@ class KingdomsScene extends Phaser.Scene {
       ['情报', '查看本城与邻城军情', () => this.showIntelActorSelection('内政')],
       ['福利', '金 -100，民心 +10，士气 +2', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
       ['任命', '任命太守、先锋、军师', () => this.showAppointmentActorSelection()],
-      ['税率', '金 +220，民心 -6', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '本月税率加重，府库充盈，民心略降。', '金 +220｜民心 -6', { treasury: 220, publicOrder: -6 })],
+      ['税率', '轻/常/重税，月令结算', () => this.showTaxActorSelection()],
       ['教育', '教育武将或本城吏士', () => this.showEducationActorSelection()],
       ['运输', '粮 -240，随军粮 +18', () => this.showTransportActorSelection()],
     ]
@@ -4657,6 +4755,7 @@ class KingdomsScene extends Phaser.Scene {
     this.alliedFactionIds = new Set<FactionId>()
     this.allianceTerms = new Map<FactionId, number>()
     this.diplomacyDebts = new Map<FactionId, DiplomacyDebt>()
+    this.cityTaxRates = new Map<CityId, TaxRate>()
     this.sabotagedFactionIds = new Set<FactionId>()
     this.monthlyActionLog = []
     this.marchArmy = undefined
@@ -5674,6 +5773,14 @@ function recruitScaleConfig(scale: RecruitScale) {
     medium: { label: '中募', troops: 900, goldCost: 160, publicOrderCost: 2, moraleGain: 3 },
     large: { label: '大募', troops: 1500, goldCost: 260, publicOrderCost: 5, moraleGain: 4 },
   }[scale]
+}
+
+function taxRateConfig(rate: TaxRate) {
+  return {
+    light: { label: '轻税', goldMultiplier: 0.72, publicOrderDelta: 3 },
+    normal: { label: '常税', goldMultiplier: 1, publicOrderDelta: 0 },
+    heavy: { label: '重税', goldMultiplier: 1.42, publicOrderDelta: -5 },
+  }[rate]
 }
 
 function militaryAllocationMeta(kind: MilitaryAllocationKind) {
