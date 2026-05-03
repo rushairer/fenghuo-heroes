@@ -1646,7 +1646,7 @@ class KingdomsScene extends Phaser.Scene {
       ['福利', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜民心 +6｜士气 +2', { treasury: -120, publicOrder: 6, morale: 2 })],
       ['任命', () => this.showAppointmentActorSelection()],
       ['税率', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '调整税率，府库增加但民心微降。', '金 +180｜民心 -3', { treasury: 180, publicOrder: -3 })],
-      ['教育', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '设学讲武，政略与情报上升。', '金 -100｜情报 +4｜士气 +2', { treasury: -100, intel: 4, morale: 2 })],
+      ['教育', () => this.showEducationActorSelection()],
       ['运输', () => this.showTransportActorSelection()],
     ])
   }
@@ -2200,6 +2200,135 @@ class KingdomsScene extends Phaser.Scene {
       lineSpacing: 8,
     }))
     this.makeButton(640, 590, '返回', () => category === '军事' ? this.showMilitaryCommand() : this.showDomesticCommand(), this.overlayLayer, 130, 38)
+  }
+
+  private showEducationActorSelection() {
+    const cities = this.controlledCities()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, '内政｜教育：选择发起城', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '教育命令先确定讲堂所在城，再选择本城武将或本城吏士。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      const officers = this.officersInCity(city.id)
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        this.showEducationTargetSelection(city)
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `武将${officers.length}｜金${city.gold} 情报${this.councilState.intel}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => {
+      this.showCampaign()
+      this.showDomesticCommand()
+    }, this.overlayLayer, 130, 38)
+  }
+
+  private showEducationTargetSelection(actorCity: StrategyCity) {
+    const officers = this.officersInCity(actorCity.id)
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, '内政｜教育：选择目标', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, `${actorCity.name}讲堂发起教育`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    this.makeButton(410, 398, '本城吏士', () => this.confirmEducation(actorCity), this.overlayLayer, 168, 40)
+    this.overlayLayer.add(this.add.text(410, 433, '情报 +4｜士气 +2', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '14px',
+      color: '#ead7b3',
+    }).setOrigin(0.5))
+    officers.forEach((officer, index) => {
+      const adjusted = index + 1
+      const col = adjusted % 3
+      const row = Math.floor(adjusted / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      this.makeButton(x, y, officer.name, () => this.confirmEducation(actorCity, officer), this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `智${officer.intel} 政${officer.gov} 忠${officer.loyalty}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(540, 606, '重选发起城', () => this.showEducationActorSelection(), this.overlayLayer, 150, 38)
+    this.makeButton(740, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+  }
+
+  private confirmEducation(actorCity: StrategyCity, officer?: StrategyOfficer) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.showCommandConfirm({
+      category: '内政',
+      command: '教育',
+      actor: `${actorCity.name}讲堂`,
+      target: officer?.name ?? '本城吏士',
+      scope: `${actorCity.name}本城教育`,
+      effect: officer ? `金 -100｜${officer.name}智略 +1｜政务 +1｜忠诚 +2` : '金 -100｜情报 +4｜士气 +2',
+      hint: '确认后执行教育命令',
+      onConfirm: () => this.executeEducation(actorCity, officer),
+      onCancel: () => this.showEducationTargetSelection(actorCity),
+    })
+  }
+
+  private executeEducation(actorCity: StrategyCity, officer?: StrategyOfficer) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
+    if (this.councilState.actions <= 0) {
+      this.showCityMessage('本月政令已用尽，无法教育。')
+      return
+    }
+    if (actorCity.gold < 100) {
+      this.showCityMessage('府库不足，无法开设讲堂。')
+      return
+    }
+    actorCity.gold = Math.max(0, actorCity.gold - 100)
+    if (officer) {
+      officer.intel = Math.min(100, officer.intel + 1)
+      officer.gov = Math.min(100, officer.gov + 1)
+      officer.loyalty = Math.min(100, officer.loyalty + 2)
+      this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 2, 0, 100)
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 1, 0, 100)
+      this.recordMonthlyAction(`${actorCity.name}教育${officer.name}`)
+      this.councilState.actions -= 1
+      this.syncSelectedCityState()
+      this.showCityMessage(`${officer.name}入讲堂受教，智略与政务略有精进。`)
+      return
+    }
+    this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 4, 0, 100)
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 2, 0, 100)
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${actorCity.name}教育吏士`)
+    this.syncSelectedCityState()
+    this.showCityMessage(`${actorCity.name}讲堂开课，吏士见闻增长。`)
   }
 
   private showTransportActorSelection() {
@@ -2806,7 +2935,7 @@ class KingdomsScene extends Phaser.Scene {
       ['福利', '金 -100，民心 +10，士气 +2', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
       ['任命', '任命太守、先锋、军师', () => this.showAppointmentActorSelection()],
       ['税率', '金 +220，民心 -6', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '本月税率加重，府库充盈，民心略降。', '金 +220｜民心 -6', { treasury: 220, publicOrder: -6 })],
-      ['教育', '金 -80，情报 +8，士气 +2', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '开设讲武讲堂，吏士见闻增长。', '金 -80｜情报 +8｜士气 +2', { treasury: -80, intel: 8, morale: 2 })],
+      ['教育', '教育武将或本城吏士', () => this.showEducationActorSelection()],
       ['运输', '粮 -240，随军粮 +18', () => this.showTransportActorSelection()],
     ]
     commands.forEach(([label, desc, callback], index) => {
