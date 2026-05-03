@@ -172,6 +172,7 @@ type DiplomacyCommandKind = 'alliance' | 'scout' | 'borrow' | 'repay' | 'sabotag
 type RecruitScale = 'small' | 'medium' | 'large'
 type TrainingMode = 'single' | 'all'
 type TransportTarget = 'expedition' | CityId
+type CityPolicyDelta = { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; food?: number; supplies?: number; morale?: number; intel?: number }
 
 const TILE = 64
 const MAP_W = 12
@@ -1638,12 +1639,12 @@ class KingdomsScene extends Phaser.Scene {
 
   private showDomesticCommand() {
     this.showCommandPanel('内政', [
-      ['开发', () => this.confirmCityPolicy('内政', '开发', '本城', '兴修水利，田亩渐丰，城池存粮增加。', '金 -130｜粮 +260｜民心 +2', { treasury: -130, farms: 1, publicOrder: 2, food: 260 })],
+      ['开发', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '兴修水利，田亩渐丰，城池存粮增加。', '金 -130｜粮 +260｜民心 +2', { treasury: -130, farms: 1, publicOrder: 2, food: 260 })],
       ['调动', () => this.moveCurrentCityOfficer()],
       ['情报', () => this.showBriefing()],
-      ['福利', () => this.confirmCityPolicy('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜民心 +6｜士气 +2', { treasury: -120, publicOrder: 6, morale: 2 })],
+      ['福利', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜民心 +6｜士气 +2', { treasury: -120, publicOrder: 6, morale: 2 })],
       ['任命', () => this.showHeroManagement()],
-      ['税率', () => this.confirmCityPolicy('内政', '税率', '本城府库', '调整税率，府库增加但民心微降。', '金 +180｜民心 -3', { treasury: 180, publicOrder: -3 })],
+      ['税率', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '调整税率，府库增加但民心微降。', '金 +180｜民心 -3', { treasury: 180, publicOrder: -3 })],
       ['教育', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '设学讲武，政略与情报上升。', '金 -100｜情报 +4｜士气 +2', { treasury: -100, intel: 4, morale: 2 })],
       ['运输', () => this.confirmTransportSupplies()],
     ])
@@ -1654,7 +1655,7 @@ class KingdomsScene extends Phaser.Scene {
       ['征兵', () => this.showMilitaryOfficerSelection('recruit')],
       ['武器', () => this.showMilitaryOfficerSelection('weapon')],
       ['人材', () => this.showTalentSearch()],
-      ['防卫', () => this.confirmCityPolicy('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8', { treasury: -140, walls: 8 })],
+      ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8', { treasury: -140, walls: 8 })],
       ['训练', () => this.showMilitaryOfficerSelection('training')],
       ['出征', () => this.showDeployment()],
     ])
@@ -1921,17 +1922,60 @@ class KingdomsScene extends Phaser.Scene {
     this.overlayLayer.add(nodes)
   }
 
-  private confirmCityPolicy(category: string, command: string, target: string, message: string, effect: string, delta: { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; food?: number; supplies?: number; morale?: number; intel?: number }) {
-    const city = this.selectedCity
+  private showCityPolicyActorSelection(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta) {
+    const cities = this.controlledCities()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, `${category}｜${command}：选择发起城`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '此命令以城池为发起方和目标，确认前必须明确是哪一座城执行。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        this.confirmCityPolicy(category, command, target, message, effect, delta, city, () => this.showCityPolicyActorSelection(category, command, target, message, effect, delta))
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `金${city.gold} 粮${city.food} 兵${city.troops} 防${city.defense}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => {
+      this.showCampaign()
+      if (category === '军事') this.showMilitaryCommand()
+      else this.showDomesticCommand()
+    }, this.overlayLayer, 130, 38)
+  }
+
+  private confirmCityPolicy(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta, actorCity = this.selectedCity, onCancel?: () => void) {
+    const city = actorCity
     if (!city) return
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
     this.showCommandConfirm({
       category,
       command,
-      actor: `${city.name}太守府`,
+      actor: `${city.name}${category === '军事' ? '军府' : '太守府'}`,
       target,
       scope: `${city.name}城`,
       effect,
       onConfirm: () => this.applyCityPolicy(message, delta),
+      onCancel,
     })
   }
 
@@ -2489,12 +2533,12 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f5d487',
     }))
     const commands: [string, string, () => void][] = [
-      ['开发', '金 -120，粮 +300', () => this.confirmCityPolicy('内政', '开发', '本城', '开发田地，粮仓渐实。', '金 -120｜粮 +300', { treasury: -120, food: 300 })],
+      ['开发', '金 -120，粮 +300', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '开发田地，粮仓渐实。', '金 -120｜粮 +300', { treasury: -120, food: 300 })],
       ['调动', '移驻一名武将到邻城', () => this.moveCurrentCityOfficer()],
       ['情报', '查看本城与邻城军情', () => this.showCityIntel()],
-      ['福利', '金 -100，民心 +10，士气 +2', () => this.confirmCityPolicy('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
+      ['福利', '金 -100，民心 +10，士气 +2', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
       ['任命', '任命太守、先锋、军师', () => this.showHeroManagement()],
-      ['税率', '金 +220，民心 -6', () => this.confirmCityPolicy('内政', '税率', '本城府库', '本月税率加重，府库充盈，民心略降。', '金 +220｜民心 -6', { treasury: 220, publicOrder: -6 })],
+      ['税率', '金 +220，民心 -6', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '本月税率加重，府库充盈，民心略降。', '金 +220｜民心 -6', { treasury: 220, publicOrder: -6 })],
       ['教育', '金 -80，情报 +8，士气 +2', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '开设讲武讲堂，吏士见闻增长。', '金 -80｜情报 +8｜士气 +2', { treasury: -80, intel: 8, morale: 2 })],
       ['运输', '粮 -240，随军粮 +18', () => this.confirmTransportSupplies()],
     ]
@@ -2576,7 +2620,7 @@ class KingdomsScene extends Phaser.Scene {
     }))
   }
 
-  private applyCityPolicy(message: string, delta: { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; food?: number; supplies?: number; morale?: number; intel?: number }) {
+  private applyCityPolicy(message: string, delta: CityPolicyDelta) {
     const city = this.selectedCity
     if (!city) return
     if (this.councilState.actions <= 0) {
