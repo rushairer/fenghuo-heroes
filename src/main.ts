@@ -150,6 +150,18 @@ type SiegeState = {
   lastAction?: 'assault' | 'surround' | 'fire' | 'challenge' | 'fieldBattle' | 'retreat'
 }
 
+type DuelState = {
+  attackerOfficerId: string
+  defenderOfficerId: string
+  attackerHp: number
+  defenderHp: number
+  attackerStamina: number
+  defenderStamina: number
+  round: number
+  log: string[]
+  outcome?: 'attackerWin' | 'defenderWin' | 'draw'
+}
+
 const TILE = 64
 const MAP_W = 12
 const MAP_H = 8
@@ -355,6 +367,7 @@ class KingdomsScene extends Phaser.Scene {
   private monthlyActionLog: string[] = []
   private marchArmy?: MarchArmy
   private siegeState?: SiegeState
+  private duelState?: DuelState
   private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
   private selectedDifficulty: Difficulty = 'normal'
   private campaignClock = {
@@ -626,25 +639,18 @@ class KingdomsScene extends Phaser.Scene {
       this.drawMarchCommandMenu()
       return
     }
-    const stageCommand: [string, () => void] = ['结束视察', () => this.advanceCampaignMonth()]
     const coreCommands: [string, () => void][] = [
       ['内政', () => this.showDomesticCommand()],
       ['外交', () => this.showDiplomacy()],
       ['军事', () => this.showMilitaryCommand()],
     ]
-    const auxCommands: [string, () => void][] = [
-      ['视察', () => this.showInspection()],
-      ['人事', () => this.showPersonnelCommand()],
-      ['机能', () => this.showSystemCommand()],
-      stageCommand,
-    ]
     this.overlayLayer.add(this.add.rectangle(70, 584, 1140, 122, 0x21160f, 0.97).setOrigin(0).setStrokeStyle(2, 0xd4af37, 0.82))
-    this.overlayLayer.add(this.add.text(102, 598, `君主命令    ${this.selectedCity?.name ?? '未选'}城    ${this.campaignClock.year}年${this.campaignClock.month}月    政令 ${this.councilState.actions}`, {
+    this.overlayLayer.add(this.add.text(102, 598, `视察情况    ${this.selectedCity?.name ?? '未选'}城    ${this.campaignClock.year}年${this.campaignClock.month}月    政令 ${this.councilState.actions}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#f8df9d',
     }))
-    this.overlayLayer.add(this.add.text(740, 600, this.marchArmy ? '出征令已下达：下月进入行军面' : '视察情况：内政、外交、军事；结束后进入行军月', {
+    this.overlayLayer.add(this.add.text(720, 600, this.marchArmy ? '出征令已下达：下月进入行军面' : '本月只从内政、外交、军事下达城池命令', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '16px',
       color: '#f4dfb3',
@@ -658,17 +664,9 @@ class KingdomsScene extends Phaser.Scene {
       }).setOrigin(0.5))
       this.makeButton(x, 664, label, callback, this.overlayLayer, 150, 50)
     })
-    auxCommands.forEach(([label, callback], index) => {
-      const x = 790 + index * 104
-      const key = index + 4
-      const displayKey = label === stageCommand[0] ? 7 : key
-      this.overlayLayer.add(this.add.text(x - 42, 632, `${displayKey}.`, {
-        fontFamily: 'Georgia, "Times New Roman", serif',
-        fontSize: '16px',
-        color: '#d4af37',
-      }).setOrigin(0.5))
-      this.makeButton(x, 664, label, callback, this.overlayLayer, 88, 38)
-    })
+    this.makeButton(826, 664, '月令', () => this.advanceCampaignMonth(), this.overlayLayer, 132, 42)
+    this.makeButton(986, 664, '势力', () => this.showFactionOverview(), this.overlayLayer, 132, 42)
+    this.makeButton(1124, 664, '机能', () => this.showSystemCommand(), this.overlayLayer, 106, 38)
   }
 
   private drawMarchCommandMenu() {
@@ -1065,7 +1063,7 @@ class KingdomsScene extends Phaser.Scene {
       ['强攻', '高兵损，快速削城防与守军', () => this.resolveSiegeAction('assault')],
       ['围城', '耗粮，低兵损削士气与守军', () => this.resolveSiegeAction('surround')],
       ['火计', '耗情报，烧粮并降城防', () => this.resolveSiegeAction('fire')],
-      ['挑战', '单挑雏形，胜则震慑守军', () => this.resolveSiegeAction('challenge')],
+      ['挑战', '武将出阵单挑，胜负影响军心', () => this.beginDuelChallenge()],
       ['会战', '进入当前会战分支', () => this.startMarchArmy()],
       ['撤退', '撤回远征军，损士气', () => this.resolveSiegeAction('retreat')],
     ]
@@ -1139,12 +1137,6 @@ class KingdomsScene extends Phaser.Scene {
         this.marchArmy.food = Math.max(0, this.marchArmy.food - 4)
         message = `火计焚营，城防 -${wallDamage}，敌粮 -${foodLoss}。`
       }
-    } else if (action === 'challenge') {
-      const duelSwing = Math.max(120, this.officerForUnit(this.appointments.vanguard)?.war ?? 70)
-      const defenderLoss = 260 + duelSwing * 3
-      this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
-      this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 4, 0, 100)
-      message = `${this.officerName(this.marchArmy.leaderOfficerId)}阵前挑战得势，守军 -${defenderLoss}，士气上升。`
     }
     this.siegeState.turns += 1
     if (this.siegeState.wallHp <= 0 || this.siegeState.defenderTroops <= Math.max(500, Math.floor(city.troops * 0.18))) {
@@ -1153,6 +1145,232 @@ class KingdomsScene extends Phaser.Scene {
     }
     if (this.marchArmy.food <= 0 || this.siegeState.attackerTroops <= 500) {
       this.completeSiegeFailure('粮尽兵疲，攻城失败。')
+      return
+    }
+    this.showSiege(message)
+  }
+
+  private beginDuelChallenge() {
+    if (!this.marchArmy || !this.siegeState) return
+    const defender = this.defenderForDuel(this.siegeState.defenderCityId)
+    const attacker = this.campaignOfficers.find((officer) => officer.id === this.marchArmy?.leaderOfficerId)
+    if (!attacker || !defender) {
+      this.showSiege('敌我主将未列阵，挑战未成。')
+      return
+    }
+    this.siegeState.lastAction = 'challenge'
+    this.duelState = {
+      attackerOfficerId: attacker.id,
+      defenderOfficerId: defender.id,
+      attackerHp: 100,
+      defenderHp: 100,
+      attackerStamina: 72,
+      defenderStamina: 72,
+      round: 1,
+      log: [`${attacker.name}拍马出阵，${defender.name}应声迎战。`],
+    }
+    this.showDuel()
+  }
+
+  private defenderForDuel(cityId: CityId) {
+    const city = this.campaignCities.find((item) => item.id === cityId)
+    if (!city) return undefined
+    return this.campaignOfficers
+      .filter((officer) => officer.location === cityId && officer.faction === city.owner)
+      .sort((a, b) => b.war - a.war || b.command - a.command)[0]
+      ?? this.campaignOfficers.filter((officer) => officer.faction === city.owner).sort((a, b) => b.war - a.war)[0]
+  }
+
+  private showDuel() {
+    if (!this.duelState || !this.marchArmy || !this.siegeState) {
+      this.showSiege('单挑已经结束。')
+      return
+    }
+    const attacker = this.campaignOfficers.find((officer) => officer.id === this.duelState?.attackerOfficerId)
+    const defender = this.campaignOfficers.find((officer) => officer.id === this.duelState?.defenderOfficerId)
+    if (!attacker || !defender) return
+    this.phase = 'marchMonth'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(38, 30, 1204, 696, 0x090d12, 0.94).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(640, 62, '阵前单挑', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '46px',
+      color: '#f8df9d',
+      stroke: '#26120b',
+      strokeThickness: 5,
+    }).setOrigin(0.5))
+    this.drawDuelantPanel(112, 130, attacker, this.duelState.attackerHp, this.duelState.attackerStamina, '攻方')
+    this.drawDuelantPanel(748, 130, defender, this.duelState.defenderHp, this.duelState.defenderStamina, '守方')
+    this.overlayLayer.add(this.add.text(640, 224, '对', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '56px',
+      color: '#c94b3b',
+      stroke: '#120909',
+      strokeThickness: 4,
+    }).setOrigin(0.5))
+
+    const recentLog = this.duelState.log.slice(-5).join('\n')
+    this.overlayLayer.add(this.add.rectangle(230, 454, 820, 144, 0x151b22, 0.92).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.8))
+    this.overlayLayer.add(this.add.text(258, 480, recentLog, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f7ecd5',
+      lineSpacing: 10,
+      wordWrap: { width: 770 },
+    }))
+
+    if (this.duelState.outcome) {
+      const result = this.duelOutcomeText()
+      this.overlayLayer.add(this.add.text(640, 622, result, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '22px',
+        color: '#fff4cf',
+        backgroundColor: '#3c2417',
+        padding: { x: 20, y: 10 },
+      }).setOrigin(0.5))
+      this.makeButton(640, 674, '返回攻城', () => this.finishDuelChallenge(), this.overlayLayer, 180, 42)
+      return
+    }
+
+    this.overlayLayer.add(this.add.text(640, 622, `第${this.duelState.round}合：选择单挑命令`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.makeButton(438, 674, '攻击', () => this.resolveDuelRound('attack'), this.overlayLayer, 150, 42)
+    this.makeButton(640, 674, '防守', () => this.resolveDuelRound('guard'), this.overlayLayer, 150, 42)
+    this.makeButton(842, 674, '蓄势', () => this.resolveDuelRound('focus'), this.overlayLayer, 150, 42)
+  }
+
+  private drawDuelantPanel(x: number, y: number, officer: StrategyOfficer, hp: number, stamina: number, camp: string) {
+    this.overlayLayer.add(this.add.rectangle(x, y, 420, 260, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(x + 30, y + 28, camp, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#c9b07a',
+    }))
+    this.overlayLayer.add(this.add.text(x + 30, y + 64, officer.name, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '40px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(x + 30, y + 120, `${officer.role}  武${officer.war}  统${officer.command}  忠${officer.loyalty}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f8ecd0',
+    }))
+    this.drawMeter(x + 30, y + 168, 330, 18, hp, 100, 0xc94b3b, '体力')
+    this.drawMeter(x + 30, y + 210, 330, 18, stamina, 100, 0xd4af37, '气力')
+  }
+
+  private drawMeter(x: number, y: number, width: number, height: number, value: number, max: number, color: number, label: string) {
+    this.overlayLayer.add(this.add.text(x, y - 24, `${label} ${Math.max(0, Math.floor(value))}/${max}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '16px',
+      color: '#ead7b3',
+    }))
+    this.overlayLayer.add(this.add.rectangle(x, y, width, height, 0x35241a, 0.95).setOrigin(0).setStrokeStyle(1, 0x9f7e3a, 0.65))
+    this.overlayLayer.add(this.add.rectangle(x + 2, y + 2, Math.max(0, width - 4) * Phaser.Math.Clamp(value / max, 0, 1), height - 4, color, 0.9).setOrigin(0))
+  }
+
+  private resolveDuelRound(action: 'attack' | 'guard' | 'focus') {
+    if (!this.duelState) return
+    const attacker = this.campaignOfficers.find((officer) => officer.id === this.duelState?.attackerOfficerId)
+    const defender = this.campaignOfficers.find((officer) => officer.id === this.duelState?.defenderOfficerId)
+    if (!attacker || !defender) return
+    const defenderAction = this.defenderDuelAction(defender)
+    const attackPower = this.duelPower(attacker, action, this.duelState.attackerStamina)
+    const defensePower = this.duelPower(defender, defenderAction, this.duelState.defenderStamina)
+    let attackerDamage = Math.max(3, defensePower - Math.floor(attacker.command / 10))
+    let defenderDamage = Math.max(3, attackPower - Math.floor(defender.command / 10))
+
+    if (action === 'guard') attackerDamage = Math.floor(attackerDamage * 0.45)
+    if (defenderAction === 'guard') defenderDamage = Math.floor(defenderDamage * 0.45)
+    if (action === 'focus') defenderDamage = Math.floor(defenderDamage * 0.35)
+    if (defenderAction === 'focus') attackerDamage = Math.floor(attackerDamage * 0.35)
+
+    this.duelState.attackerHp = Math.max(0, this.duelState.attackerHp - attackerDamage)
+    this.duelState.defenderHp = Math.max(0, this.duelState.defenderHp - defenderDamage)
+    this.duelState.attackerStamina = Phaser.Math.Clamp(this.duelState.attackerStamina + (action === 'focus' ? 22 : action === 'guard' ? 8 : -14), 0, 100)
+    this.duelState.defenderStamina = Phaser.Math.Clamp(this.duelState.defenderStamina + (defenderAction === 'focus' ? 22 : defenderAction === 'guard' ? 8 : -14), 0, 100)
+    this.duelState.log.push(`${duelActionName(action)}对${duelActionName(defenderAction)}：${attacker.name}受${attackerDamage}，${defender.name}受${defenderDamage}。`)
+
+    if (this.duelState.defenderHp <= 0 && this.duelState.attackerHp <= 0) {
+      this.duelState.outcome = 'draw'
+      this.applyDuelOutcome()
+    } else if (this.duelState.defenderHp <= 0) {
+      this.duelState.outcome = 'attackerWin'
+      this.applyDuelOutcome()
+    } else if (this.duelState.attackerHp <= 0) {
+      this.duelState.outcome = 'defenderWin'
+      this.applyDuelOutcome()
+    } else if (this.duelState.round >= 5) {
+      this.duelState.outcome = this.duelState.attackerHp === this.duelState.defenderHp ? 'draw' : this.duelState.attackerHp > this.duelState.defenderHp ? 'attackerWin' : 'defenderWin'
+      this.applyDuelOutcome()
+    } else {
+      this.duelState.round += 1
+    }
+    this.showDuel()
+  }
+
+  private defenderDuelAction(officer: StrategyOfficer): 'attack' | 'guard' | 'focus' {
+    if (!this.duelState) return 'attack'
+    if (this.duelState.defenderHp < 34) return 'guard'
+    if (this.duelState.defenderStamina < 30) return 'focus'
+    return officer.war >= 86 || this.duelState.attackerHp < 42 ? 'attack' : 'guard'
+  }
+
+  private duelPower(officer: StrategyOfficer, action: 'attack' | 'guard' | 'focus', stamina: number) {
+    if (action === 'focus') return Math.max(4, Math.floor(officer.war / 8))
+    const base = action === 'attack' ? 12 : 7
+    return base + Math.floor(officer.war / 7) + Math.floor(officer.command / 16) + Math.floor(stamina / 18)
+  }
+
+  private applyDuelOutcome() {
+    if (!this.duelState || !this.marchArmy || !this.siegeState) return
+    const attacker = this.campaignOfficers.find((officer) => officer.id === this.duelState?.attackerOfficerId)
+    const defender = this.campaignOfficers.find((officer) => officer.id === this.duelState?.defenderOfficerId)
+    if (!attacker || !defender) return
+    if (this.duelState.outcome === 'attackerWin') {
+      const defenderLoss = 420 + attacker.war * 8
+      this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
+      this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 8, 0, 100)
+      this.duelState.log.push(`${defender.name}败退，守军震动，损兵${defenderLoss}。`)
+    } else if (this.duelState.outcome === 'defenderWin') {
+      const attackerLoss = 320 + defender.war * 6
+      this.siegeState.attackerTroops = Math.max(0, this.siegeState.attackerTroops - attackerLoss)
+      this.marchArmy.troops = this.siegeState.attackerTroops
+      this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 10, 0, 100)
+      this.duelState.log.push(`${attacker.name}失利退阵，我军损兵${attackerLoss}。`)
+    } else {
+      this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 2, 0, 100)
+      this.duelState.log.push('两将难分胜负，各自收兵。')
+    }
+    this.siegeState.turns += 1
+  }
+
+  private duelOutcomeText() {
+    if (!this.duelState) return '单挑结束。'
+    if (this.duelState.outcome === 'attackerWin') return '我将得胜，敌军军心动摇。'
+    if (this.duelState.outcome === 'defenderWin') return '守将得势，我军士气受挫。'
+    return '两军鸣金，单挑不分胜负。'
+  }
+
+  private finishDuelChallenge() {
+    const message = this.duelOutcomeText()
+    this.duelState = undefined
+    if (!this.marchArmy || !this.siegeState) {
+      this.showCampaign()
+      return
+    }
+    const city = this.campaignCities.find((item) => item.id === this.siegeState?.defenderCityId)
+    if (city && (this.siegeState.wallHp <= 0 || this.siegeState.defenderTroops <= Math.max(500, Math.floor(city.troops * 0.18)))) {
+      this.completeSiegeVictory()
+      return
+    }
+    if (this.marchArmy.food <= 0 || this.siegeState.attackerTroops <= 500) {
+      this.completeSiegeFailure('单挑失利，军势难支，攻城失败。')
       return
     }
     this.showSiege(message)
@@ -1192,17 +1410,26 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private showDomesticCommand() {
-    this.showCityGovernance()
+    this.showCommandPanel('内政', [
+      ['开发', () => this.applyCityPolicy('兴修水利，田亩渐丰。', { treasury: -130, farms: 1, publicOrder: 2, supplies: 5 })],
+      ['调动', () => this.moveCurrentCityOfficer()],
+      ['情报', () => this.showBriefing()],
+      ['福利', () => this.applyCityPolicy('赈济百姓，民心上升。', { treasury: -120, publicOrder: 6, morale: 2 })],
+      ['任命', () => this.showHeroManagement()],
+      ['税率', () => this.applyCityPolicy('调整税率，府库增加但民心微降。', { treasury: 180, publicOrder: -3 })],
+      ['教育', () => this.applyCityPolicy('设学讲武，政略与情报上升。', { treasury: -100, intel: 4, morale: 2 })],
+      ['运输', () => this.applyCityPolicy('转运粮草，军需更充足。', { treasury: -80, supplies: 8 })],
+    ])
   }
 
   private showMilitaryCommand() {
     this.showCommandPanel('军事', [
       ['征兵', () => this.applyCityPolicy('征募乡勇入营，兵力增加。', { treasury: -160, recruits: 900, morale: 3, publicOrder: -2 })],
       ['武器', () => this.applyCityPolicy('打造军械甲胄，出征士气上升。', { treasury: -180, morale: 5 })],
-      ['情报', () => this.showBriefing()],
       ['人材', () => this.showTalentSearch()],
       ['防卫', () => this.applyCityPolicy('修缮城垣箭楼，城防上升。', { treasury: -140, walls: 8 })],
       ['训练', () => this.applyCityPolicy('校场练兵，士气与情报上升。', { treasury: -90, morale: 7, intel: 3 })],
+      ['出征', () => this.showDeployment()],
     ])
   }
 
@@ -1283,7 +1510,7 @@ class KingdomsScene extends Phaser.Scene {
     this.drawInspectionThreat()
     this.makeButton(438, 636, '势力一览', () => this.showFactionOverview(), this.overlayLayer, 180, 44)
     this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
-    this.makeButton(842, 636, '行军出征', () => this.showDeployment(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '军事命令', () => this.showMilitaryCommand(), this.overlayLayer, 180, 44)
   }
 
   private drawInspectionCity() {
@@ -1612,10 +1839,6 @@ class KingdomsScene extends Phaser.Scene {
       this.ensureDeploymentTarget()
       this.ensureDiplomacyTarget()
       this.ensureLocalAppointments()
-      if (this.campaignClock.mode === 'inspection') {
-        this.showCityGovernance()
-        return
-      }
       this.showCampaign()
       return
     } else {
@@ -2197,7 +2420,7 @@ class KingdomsScene extends Phaser.Scene {
       status: 'ready',
     }
     this.recordMonthlyAction(`${this.selectedCity?.name ?? '本城'}下令出征${this.selectedTargetCity.name}`)
-    this.showCampaignMessage(`出征令已下达：${this.selectedCity?.name ?? '本城'} → ${this.selectedTargetCity.name}。结束视察后将在行军月移动与攻击。`)
+    this.showCampaignMessage(`出征令已下达：${this.selectedCity?.name ?? '本城'} → ${this.selectedTargetCity.name}。月令后将在行军月移动与攻击。`)
   }
 
   private deploymentSupplyNeed() {
@@ -3070,7 +3293,10 @@ class KingdomsScene extends Phaser.Scene {
     this.uiLayer.add(this.add.rectangle(24, 612, 1190, 114, 0x111820, 0.92).setOrigin(0).setStrokeStyle(2, 0x9f7e3a, 0.8))
     this.uiLayer.add([this.statusText, this.infoText, this.logText])
     this.makeButton(1110, 24, '退却', () => this.retreatBattle(), this.uiLayer, 132, 38)
-    this.makeButton(960, 24, '版图', () => this.showCampaign(), this.uiLayer, 132, 38)
+    this.makeButton(960, 24, this.siegeState ? '攻城' : '版图', () => {
+      if (this.siegeState) this.showSiege('会战暂停，攻城态势未结算。')
+      else this.showCampaign()
+    }, this.uiLayer, 132, 38)
     this.updateHud()
   }
 
@@ -3712,6 +3938,14 @@ function marchStatusName(status: MarchArmy['status']) {
     retreating: '撤退',
     routed: '溃散',
   }[status]
+}
+
+function duelActionName(action: 'attack' | 'guard' | 'focus') {
+  return {
+    attack: '攻击',
+    guard: '防守',
+    focus: '蓄势',
+  }[action]
 }
 
 function diplomacyName(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
