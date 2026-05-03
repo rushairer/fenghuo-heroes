@@ -683,6 +683,7 @@ class KingdomsScene extends Phaser.Scene {
   private drawMarchCommandMenu() {
     const coreCommands: [string, () => void][] = [
       ['部队', () => this.showMarchArmyStatus()],
+      ['路线', () => this.showMarchRoute()],
       ['移动', () => this.resolveMarchMove()],
       ['攻击', () => this.resolveMarchAttack()],
     ]
@@ -704,22 +705,22 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f4dfb3',
     }))
     coreCommands.forEach(([label, callback], index) => {
-      const x = 210 + index * 190
-      this.overlayLayer.add(this.add.text(x - 58, 634, `${index + 1}.`, {
+      const x = 168 + index * 144
+      this.overlayLayer.add(this.add.text(x - 52, 634, `${index + 1}.`, {
         fontFamily: 'Georgia, "Times New Roman", serif',
         fontSize: '19px',
         color: '#d4af37',
       }).setOrigin(0.5))
-      this.makeButton(x, 664, label, callback, this.overlayLayer, 150, 50)
+      this.makeButton(x, 664, label, callback, this.overlayLayer, 122, 50)
     })
     auxCommands.forEach(([label, callback], index) => {
-      const x = 790 + index * 104
+      const x = 750 + index * 116
       this.overlayLayer.add(this.add.text(x - 42, 632, `${index + 4}.`, {
         fontFamily: 'Georgia, "Times New Roman", serif',
         fontSize: '16px',
         color: '#d4af37',
       }).setOrigin(0.5))
-      this.makeButton(x, 664, label, callback, this.overlayLayer, 88, 38)
+      this.makeButton(x, 664, label, callback, this.overlayLayer, 96, 38)
     })
   }
 
@@ -934,6 +935,68 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8ecd0',
       lineSpacing: 10,
     }))
+  }
+
+  private showMarchRoute() {
+    if (!this.marchArmy) {
+      this.showCampaignMessage('本月暂无远征军，无法设定路线。')
+      return
+    }
+    this.selectedCityId = this.marchArmy.sourceCityId
+    if (this.marchArmy.targetCityId) this.selectedTargetCityId = this.marchArmy.targetCityId
+    this.syncSelectedCityState()
+    this.showCampaign()
+    const source = this.campaignCities.find((city) => city.id === this.marchArmy?.sourceCityId)
+    const targets = source
+      ? source.routes
+        .map((id) => this.campaignCities.find((city) => city.id === id))
+        .filter((city): city is StrategyCity => city !== undefined && city.owner !== 'liu')
+      : []
+    this.overlayLayer.add(this.add.rectangle(640, 408, 710, 230, 0x101722, 0.97).setStrokeStyle(2, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(640, 330, '行军路线', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '38px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    const route = this.marchArmy.targetCityId ? `${cityName(this.marchArmy.sourceCityId)} → ${cityName(this.marchArmy.targetCityId)}` : `${cityName(this.marchArmy.sourceCityId)} → 未定`
+    this.overlayLayer.add(this.add.text(330, 378, [
+      `当前路线    ${route}`,
+      `当前位置      ${this.describeMarchPosition(this.marchArmy)}`,
+      `状态          ${marchStatusName(this.marchArmy.status)}`,
+      this.marchArmy.status === 'ready' ? '未移动前可改目标。' : '远征军已出发，本月不能改线。',
+    ].join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 10,
+    }))
+    if (this.marchArmy.status === 'ready') {
+      targets.forEach((city, index) => {
+        const x = 420 + index * 148
+        this.makeButton(x, 526, city.id === this.marchArmy?.targetCityId ? `${city.name}✓` : city.name, () => this.confirmMarchRoute(city), this.overlayLayer, 126, 36)
+      })
+    }
+  }
+
+  private confirmMarchRoute(target: StrategyCity) {
+    if (!this.marchArmy) return
+    this.showCommandConfirm({
+      category: '行军',
+      command: '路线',
+      actor: `${cityName(this.marchArmy.sourceCityId)}远征军`,
+      target: target.name,
+      scope: `${cityName(this.marchArmy.sourceCityId)} → ${target.name}`,
+      effect: '改定远征目标，移动前可再次调整',
+      hint: '确认后更新行军路线',
+      onConfirm: () => {
+        if (!this.marchArmy) return
+        this.marchArmy.targetCityId = target.id
+        this.marchArmy.routePlan = [this.marchArmy.sourceCityId, target.id]
+        this.selectedTargetCityId = target.id
+        this.showMarchRoute()
+      },
+      onCancel: () => this.showMarchRoute(),
+    })
   }
 
   private resolveMarchMove() {
