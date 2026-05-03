@@ -3957,7 +3957,7 @@ class KingdomsScene extends Phaser.Scene {
     const meta = diplomacyCommandMeta(kind)
     const actors = this.controlledCities().filter((city) => this.diplomacyTargetsFrom(city).length > 0)
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 392, 820, 330, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 392, 820, 330)
     this.overlayLayer.add(this.add.text(272, 258, `外交｜${meta.command}：选择发起方`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -4000,7 +4000,7 @@ class KingdomsScene extends Phaser.Scene {
     const meta = diplomacyCommandMeta(kind)
     const targets = this.diplomacyTargetsFrom(actor)
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 392, 850, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 392, 850, 350)
     this.overlayLayer.add(this.add.text(260, 248, `外交｜${meta.command}：选择目标`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -4092,7 +4092,7 @@ class KingdomsScene extends Phaser.Scene {
     this.selectedDiplomacyFactionId = targetCity.owner
     this.syncSelectedCityState()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, `外交｜${meta.command}：选择武将`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
