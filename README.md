@@ -35,6 +35,7 @@ npm run build
 - `DEVELOPMENT_PLAN.md`：开发计划和复刻边界。
 - `ORIGINAL_GAME_STUDY.md`：原版系统复盘、已查证事实和待验证清单。
 - `REPLICATION_BLUEPRINT.md`：状态机、菜单矩阵、行军/攻城/单挑的复刻实施蓝图。
+- `MENU_SWEEP_PLAN.md`：按原版菜单逐项对齐的扫尾验收计划。
 - `DESIGN_DATA.md`：势力、城池、武将等数据设计。
 - `ASSET_PROMPTS.md`：原创素材生成提示词记录。
 
