@@ -32,8 +32,6 @@ type Skill = {
   range: number
 }
 
-type MilitaryEdict = 'steady' | 'raid' | 'fire'
-type Formation = 'vanguard' | 'goose' | 'circle'
 type CampaignMode = 'inspection' | 'march'
 type Difficulty = 'easy' | 'normal' | 'hard'
 type FactionId = 'cao' | 'liu' | 'sun' | 'yuan' | 'dong' | 'neutral'
@@ -309,12 +307,9 @@ class KingdomsScene extends Phaser.Scene {
     actions: 3,
     trained: false,
     scouted: false,
-    edict: 'steady' as MilitaryEdict,
-    formation: 'circle' as Formation,
     persuaded: false,
     alliance: 0,
     sabotage: false,
-    firstTurnRaid: false,
   }
   private cityState = {
     name: '成都',
@@ -815,13 +810,13 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private playCommandSignal(message: string) {
-    const label = message.includes('斥候') || message.includes('情报')
+    const label = message.includes('情报')
       ? '使'
-      : message.includes('军令') || message.includes('阵型') || message.includes('出征')
+      : message.includes('出征') || message.includes('行军')
         ? '令'
-        : message.includes('整军') || message.includes('士卒')
+        : message.includes('征兵') || message.includes('训练') || message.includes('士卒')
           ? '兵'
-          : message.includes('开发') || message.includes('征粮') || message.includes('粮')
+          : message.includes('开发') || message.includes('运输') || message.includes('粮')
             ? '政'
             : '命'
     const token = this.add.container(640, 520)
@@ -931,13 +926,12 @@ class KingdomsScene extends Phaser.Scene {
 
   private showMilitaryCommand() {
     this.showCommandPanel('军事', [
-      ['出征', () => this.showDeployment()],
+      ['征兵', () => this.applyCityPolicy('征募乡勇入营，兵力增加。', { treasury: -160, recruits: 900, morale: 3, publicOrder: -2 })],
+      ['武器', () => this.applyCityPolicy('打造军械甲胄，出征士气上升。', { treasury: -180, morale: 5 })],
       ['情报', () => this.showBriefing()],
-      ['军令', () => this.cycleEdict()],
-      ['阵型', () => this.cycleFormation()],
-      ['整军', () => this.trainTroops()],
-      ['斥候', () => this.scoutEnemy()],
-      ['撤退', () => this.showCampaignMessage('当前无远征军需要撤退。')],
+      ['人材', () => this.showTalentSearch()],
+      ['防卫', () => this.applyCityPolicy('修缮城垣箭楼，城防上升。', { treasury: -140, walls: 8 })],
+      ['训练', () => this.applyCityPolicy('校场练兵，士气与情报上升。', { treasury: -90, morale: 7, intel: 3 })],
     ])
   }
 
@@ -1298,16 +1292,16 @@ class KingdomsScene extends Phaser.Scene {
       return '政略方针：本月政令已尽，可确认出征或推进月令查看诸势力动向。'
     }
     if (city.food < 900) {
-      return `政略方针：${city.name}存粮偏低，宜先以内政「开发」或「征粮」稳住军需。`
+      return `政略方针：${city.name}存粮偏低，宜先以内政「开发」或「运输」稳住军需。`
     }
     if (this.cityState.publicOrder < 55) {
-      return `政略方针：${city.name}民心不稳，宜先行「治安」，否则月令士气会受损。`
+      return `政略方针：${city.name}民心不稳，宜先行「福利」，否则月令士气会受损。`
     }
     if (nearest && nearest.troops > city.troops * 0.75) {
       return `政略方针：邻城${nearest.name}守军不弱，宜先「侦察」或「离间」，再发兵。`
     }
     if (nearest) {
-      return `政略方针：${city.name}可整军攻取${nearest.name}，或先征兵训练扩大胜算。`
+      return `政略方针：${city.name}可攻取${nearest.name}，宜先以军事「征兵」或「训练」扩大胜算。`
     }
     return `政略方针：${city.name}周边暂无敌城，宜治理城池、移动武将、等待月令。`
   }
@@ -1399,7 +1393,7 @@ class KingdomsScene extends Phaser.Scene {
       lineSpacing: 7,
     }))
     this.overlayLayer.add(this.add.rectangle(880, 476, 264, 62, 0x21160f, 0.94).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
-    this.overlayLayer.add(this.add.text(900, 490, `军令 ${edictName(this.councilState.edict)}｜阵型 ${formationName(this.councilState.formation)}\n邻接：${this.selectedCity?.routes.map((id) => cityName(id)).join('、') ?? '-'}`, {
+    this.overlayLayer.add(this.add.text(900, 490, `行军粮 ${this.councilState.supplies}｜士气 ${this.councilState.morale}\n邻接：${this.selectedCity?.routes.map((id) => cityName(id)).join('、') ?? '-'}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '17px',
       color: '#f4dfb3',
@@ -1452,7 +1446,7 @@ class KingdomsScene extends Phaser.Scene {
     this.drawCitySelector()
     this.makeButton(438, 636, '切换城池', () => this.cycleControlledCity(), this.overlayLayer, 180, 44)
     this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
-    this.makeButton(842, 636, '军事命令', () => this.showDeployment(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '任命武将', () => this.showHeroManagement(), this.overlayLayer, 180, 44)
   }
 
   private drawCityStatsPanel() {
@@ -1495,21 +1489,74 @@ class KingdomsScene extends Phaser.Scene {
     }))
     const commands: [string, string, () => void][] = [
       ['开发', '金 -120，粮 +300', () => this.applyCityPolicy('开发田地，粮仓渐实。', { treasury: -120, supplies: 300 })],
-      ['征兵', '金 -160，兵 +900，士气 +3', () => this.applyCityPolicy('征募乡勇入营，兵力增加。', { treasury: -160, recruits: 900, morale: 3 })],
-      ['训练', '金 -90，士气 +7，情报 +3', () => this.applyCityPolicy('校场练兵，士气上升。', { treasury: -90, morale: 7, intel: 3 })],
-      ['治安', '金 -100，民心 +10，士气 +2', () => this.applyCityPolicy('巡查里坊，民心渐定。', { treasury: -100, publicOrder: 10, morale: 2 })],
-      ['征粮', '粮 +480，民心 -4', () => this.applyCityPolicy('征调军粮入仓，民心略降。', { supplies: 480, publicOrder: -4 })],
+      ['调动', '移驻一名武将到邻城', () => this.moveCurrentCityOfficer()],
+      ['情报', '查看本城与邻城军情', () => this.showCityIntel()],
+      ['福利', '金 -100，民心 +10，士气 +2', () => this.applyCityPolicy('开仓赈济，民心渐定。', { treasury: -100, publicOrder: 10, morale: 2 })],
+      ['任命', '任命太守、先锋、军师', () => this.showHeroManagement()],
+      ['税率', '金 +220，民心 -6', () => this.applyTaxPolicy()],
+      ['教育', '金 -80，情报 +8，士气 +2', () => this.applyCityPolicy('开设讲武讲堂，吏士见闻增长。', { treasury: -80, intel: 8, morale: 2 })],
+      ['运输', '粮 -240，随军粮 +18', () => this.transportSupplies()],
     ]
     commands.forEach(([label, desc, callback], index) => {
-      const y = 232 + index * 62
-      this.makeButton(722, y, label, callback, this.overlayLayer, 150, 38)
-      this.overlayLayer.add(this.add.text(824, y - 13, desc, {
+      const col = index % 2
+      const row = Math.floor(index / 2)
+      const x = 704 + col * 252
+      const y = 230 + row * 82
+      this.makeButton(x, y, label, callback, this.overlayLayer, 136, 38)
+      this.overlayLayer.add(this.add.text(x - 66, y + 28, desc, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '18px',
+        fontSize: '15px',
         color: '#ead7b3',
-        wordWrap: { width: 300 },
+        wordWrap: { width: 200 },
       }))
     })
+  }
+
+  private showCityIntel() {
+    const city = this.selectedCity
+    if (!city) return
+    const neighbors = city.routes.map((id) => this.campaignCities.find((item) => item.id === id)).filter((item): item is StrategyCity => Boolean(item))
+    const copy = [
+      `${city.name}：兵${city.troops} 城防${city.defense} 金${city.gold} 粮${city.food}`,
+      ...neighbors.map((neighbor) => `${neighbor.name}：${factionById(neighbor.owner)?.name ?? '-'} 兵${neighbor.troops} 防${neighbor.defense}`),
+    ].join('\n')
+    this.showCityGovernance()
+    this.overlayLayer.add(this.add.rectangle(640, 406, 650, 250, 0x101722, 0.98).setStrokeStyle(2, 0xd4af37))
+    this.overlayLayer.add(this.add.text(640, 318, '城池情报', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '36px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(360, 360, copy, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f8ecd0',
+      lineSpacing: 10,
+    }))
+    this.makeButton(640, 512, '收起', () => this.showCityGovernance(), this.overlayLayer, 140, 38)
+  }
+
+  private applyTaxPolicy() {
+    this.applyCityPolicy('本月税率加重，府库充盈，民心略降。', { treasury: 220, publicOrder: -6 })
+  }
+
+  private transportSupplies() {
+    const city = this.selectedCity
+    if (!city) return
+    if (this.councilState.actions <= 0) {
+      this.showCityMessage('本月政令已用尽，无法转运军粮。')
+      return
+    }
+    if (city.food < 240) {
+      this.showCityMessage('存粮不足，无法转运军粮。')
+      return
+    }
+    city.food = Math.max(0, city.food - 240)
+    this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + 18, 0, 150)
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${city.name}转运军粮`)
+    this.syncSelectedCityState()
+    this.showCityMessage('转运军粮入远征仓，行军粮草增加。')
   }
 
   private drawCitySelector() {
@@ -1762,8 +1809,8 @@ class KingdomsScene extends Phaser.Scene {
       `守军        ${target?.troops ?? 0}`,
       `先锋        ${vanguard?.name ?? '-'}`,
       `军师        ${strategist?.name ?? '-'}`,
-      `军令        ${edictName(this.councilState.edict)}`,
-      `阵型        ${formationName(this.councilState.formation)}`,
+      `士气        ${this.councilState.morale}`,
+      `情报        ${this.councilState.intel}`,
       `粮草        ${this.councilState.supplies}/${supplyNeed}`,
       `敌势        ${this.campaignClock.enemyThreat}（${risk}）`,
       `预计消耗    粮草 ${supplyNeed}`,
@@ -1856,7 +1903,7 @@ class KingdomsScene extends Phaser.Scene {
     }
     const supplyNeed = this.deploymentSupplyNeed()
     if (this.councilState.supplies < supplyNeed) {
-      this.showDeploymentMessage('粮草不足，无法出征。请先治理城池或征粮。')
+      this.showDeploymentMessage('粮草不足，无法出征。请先治理城池或运输军粮。')
       return
     }
     this.councilState.supplies -= supplyNeed
@@ -1908,7 +1955,7 @@ class KingdomsScene extends Phaser.Scene {
     this.drawDiplomacyStatus()
     this.drawDiplomacyActions()
     this.makeButton(540, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
-    this.makeButton(740, 636, '军事命令', () => this.showDeployment(), this.overlayLayer, 180, 44)
+    this.makeButton(740, 636, '敌城情报', () => this.showBriefing(), this.overlayLayer, 180, 44)
   }
 
   private drawDiplomacyStatus() {
@@ -1948,20 +1995,110 @@ class KingdomsScene extends Phaser.Scene {
     this.drawDiplomacyTargets()
     const actions: [string, string, () => void][] = [
       ['同盟', `成功率 ${this.diplomacyChance('alliance')}%，暂缓该势力攻刘`, () => this.resolveDiplomacy('alliance')],
-      ['侦察', `成功率 ${this.diplomacyChance('scout')}%，探明邻城守军`, () => this.resolveDiplomacy('scout')],
-      ['离间', `成功率 ${this.diplomacyChance('sabotage')}%，削弱目标城兵力`, () => this.resolveDiplomacy('sabotage')],
-      ['劝降', `成功率 ${this.diplomacyChance('persuade')}%，动摇目标城守军`, () => this.resolveDiplomacy('persuade')],
+      ['计策', `离间为主，成功率 ${this.diplomacyChance('sabotage')}%`, () => this.showDiplomacyPlotMenu()],
+      ['情报', `成功率 ${this.diplomacyChance('scout')}%，探明邻城守军`, () => this.resolveDiplomacy('scout')],
+      ['借款', '金 +260，士气 -2，欠下人情', () => this.borrowFunds()],
+      ['还款', '金 -180，士气 +3，邦交缓和', () => this.repayFunds()],
     ]
     actions.forEach(([label, desc, callback], index) => {
-      const y = 306 + index * 58
-      this.makeButton(670, y, label, callback, this.overlayLayer, 150, 40)
-      this.overlayLayer.add(this.add.text(772, y - 14, desc, {
+      const col = index % 2
+      const row = Math.floor(index / 2)
+      const x = 670 + col * 250
+      const y = 314 + row * 76
+      this.makeButton(x, y, label, callback, this.overlayLayer, 136, 40)
+      this.overlayLayer.add(this.add.text(x - 66, y + 30, desc, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '18px',
+        fontSize: '15px',
         color: '#ead7b3',
-        wordWrap: { width: 330 },
+        wordWrap: { width: 210 },
       }))
     })
+  }
+
+  private showDiplomacyPlotMenu() {
+    this.showCommandPanel('计策', [
+      ['离间', () => this.resolveDiplomacy('sabotage')],
+      ['暗杀', () => this.resolveAssassination()],
+      ['火计', () => this.resolveDiplomacyFire()],
+      ['劝降', () => this.resolveDiplomacy('persuade')],
+    ])
+  }
+
+  private borrowFunds() {
+    if (this.councilState.actions <= 0) {
+      this.showDiplomacyMessage('政令已用尽，无法遣使借款。')
+      return
+    }
+    const city = this.selectedCity
+    if (!city) return
+    city.gold = Phaser.Math.Clamp(city.gold + 260, 0, 3000)
+    this.councilState.morale = Math.max(0, this.councilState.morale - 2)
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${city.name}向邻国借款`)
+    this.syncSelectedCityState()
+    this.showDiplomacyMessage('使者借得军资，府库增加，士气略降。')
+  }
+
+  private repayFunds() {
+    if (this.councilState.actions <= 0) {
+      this.showDiplomacyMessage('政令已用尽，无法遣使还款。')
+      return
+    }
+    const city = this.selectedCity
+    if (!city) return
+    if (city.gold < 180) {
+      this.showDiplomacyMessage('府库不足，无法还款。')
+      return
+    }
+    city.gold -= 180
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 3, 0, 100)
+    this.campaignClock.enemyThreat = Math.max(0, this.campaignClock.enemyThreat - 3)
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${city.name}遣使还款`)
+    this.syncSelectedCityState()
+    this.showDiplomacyMessage('债契已清，邦交缓和，敌势略降。')
+  }
+
+  private resolveAssassination() {
+    if (this.councilState.actions <= 0) {
+      this.showDiplomacyMessage('政令已用尽，无法施行暗杀。')
+      return
+    }
+    this.councilState.actions -= 1
+    const target = this.selectedTargetCity
+    const success = Phaser.Math.Between(1, 100) <= Math.max(18, Math.min(72, 28 + Math.floor(this.councilState.intel / 2)))
+    if (success && target) {
+      target.troops = Math.max(600, Math.floor(target.troops * 0.88))
+      this.recordMonthlyAction(`暗杀扰乱${target.name}`)
+      this.showDiplomacyMessage(`刺客扰乱${target.name}守备，敌军兵力动摇。`)
+    } else {
+      this.councilState.morale = Math.max(0, this.councilState.morale - 5)
+      this.campaignClock.enemyThreat = Math.min(100, this.campaignClock.enemyThreat + 4)
+      this.showDiplomacyMessage('暗杀失败，敌方戒备上升，我军士气受挫。')
+    }
+  }
+
+  private resolveDiplomacyFire() {
+    if (this.councilState.actions <= 0) {
+      this.showDiplomacyMessage('政令已用尽，无法施行火计。')
+      return
+    }
+    const target = this.selectedTargetCity
+    if (!target) {
+      this.showDiplomacyMessage('没有可施火计的目标城。')
+      return
+    }
+    this.councilState.actions -= 1
+    const success = Phaser.Math.Between(1, 100) <= Math.max(25, Math.min(82, 36 + Math.floor(this.councilState.intel / 2)))
+    if (success) {
+      target.food = Math.max(200, Math.floor(target.food * 0.78))
+      target.defense = Math.max(15, target.defense - 6)
+      this.recordMonthlyAction(`火计烧${target.name}`)
+      this.showDiplomacyMessage(`火计袭扰${target.name}，敌粮与城防下降。`)
+    } else {
+      this.councilState.intel = Math.max(0, this.councilState.intel - 6)
+      this.showDiplomacyMessage('火计未成，密探折返，情报下降。')
+    }
   }
 
   private drawDiplomacyTargets() {
@@ -2031,7 +2168,7 @@ class KingdomsScene extends Phaser.Scene {
       this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 32, 0, 100)
       if (targetCity) this.selectedTargetCityId = targetCity.id
       this.recordMonthlyAction(`侦察${targetCity?.name ?? faction.ruler}`)
-      this.showDiplomacyMessage(`斥候探得${targetCity?.name ?? faction.ruler}虚实，情报 +32。`)
+      this.showDiplomacyMessage(`密探探得${targetCity?.name ?? faction.ruler}虚实，情报 +32。`)
       return
     }
     if (kind === 'sabotage') {
@@ -2107,10 +2244,10 @@ class KingdomsScene extends Phaser.Scene {
     this.applyCouncilBonuses()
     this.logLines = [
       `战斗开始：${source?.name ?? '我城'}军向${target?.name ?? '敌境'}进发，遭遇守军拦截。`,
-      `战前态势：补给 ${this.councilState.supplies}，士气 ${this.councilState.morale}，情报 ${this.councilState.intel}，敌势 ${this.campaignClock.enemyThreat}，军令 ${edictName(this.councilState.edict)}。`,
-      '军事行动：选择武将后以下达移动、攻击、计略、待机、委任、撤退等战斗命令。',
+      `战前态势：补给 ${this.councilState.supplies}，士气 ${this.councilState.morale}，情报 ${this.councilState.intel}，敌势 ${this.campaignClock.enemyThreat}。`,
+      '会战分支：选择武将后以下达移动、攻击、计略、待机、委任、撤退等战斗命令。',
     ]
-    if (this.councilState.intel >= 40) this.logLines.push(`斥候回报：${target?.name ?? '目标城'}守军布防已明，计略与夹击更有效。`)
+    if (this.councilState.intel >= 40) this.logLines.push(`密探回报：${target?.name ?? '目标城'}守军布防已明，计略与夹击更有效。`)
     if (this.campaignClock.enemyThreat >= 55) this.logLines.push('敌势已盛，敌军攻击提高。')
     this.overlayLayer.removeAll(true)
     this.renderBattle()
@@ -2260,55 +2397,6 @@ class KingdomsScene extends Phaser.Scene {
     }))
   }
 
-  private applyMilitaryPrepAction(message: string, delta: { supplies?: number; morale?: number; intel?: number }) {
-    if (this.councilState.actions <= 0) return
-    this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + (delta.supplies ?? 0), 0, 150)
-    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + (delta.morale ?? 0), 0, 100)
-    this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + (delta.intel ?? 0), 0, 100)
-    this.councilState.actions -= 1
-    this.showCampaignMessage(message)
-  }
-
-  private cycleEdict() {
-    const order: MilitaryEdict[] = ['steady', 'raid', 'fire']
-    const next = order[(order.indexOf(this.councilState.edict) + 1) % order.length]
-    this.councilState.edict = next
-    this.showCampaignMessage(`军令改为「${edictName(next)}」。${edictDescription(next)}`)
-  }
-
-  private cycleFormation() {
-    const order: Formation[] = ['circle', 'vanguard', 'goose']
-    const next = order[(order.indexOf(this.councilState.formation) + 1) % order.length]
-    this.councilState.formation = next
-    this.showCampaignMessage(`阵型改为「${formationName(next)}」。${formationDescription(next)}`)
-  }
-
-  private trainTroops() {
-    if (this.councilState.actions <= 0) {
-      this.showCampaignMessage('政令已用尽，请直接出征。')
-      return
-    }
-    if (this.councilState.trained) {
-      this.showCampaignMessage('今日已经整军，士卒需要休息。')
-      return
-    }
-    this.councilState.trained = true
-    this.applyMilitaryPrepAction('整军已毕，先锋与弓手状态更稳。', { supplies: -8, morale: 6 })
-  }
-
-  private scoutEnemy() {
-    if (this.councilState.actions <= 0) {
-      this.showCampaignMessage('政令已用尽，请直接出征。')
-      return
-    }
-    if (this.councilState.scouted) {
-      this.showCampaignMessage('斥候已经归营，情报足够出征。')
-      return
-    }
-    this.councilState.scouted = true
-    this.applyMilitaryPrepAction('斥候探明敌城布防，守将位置已确认。', { supplies: -6, intel: 45 })
-  }
-
   private applyCouncilBonuses() {
     if (this.councilState.trained) {
       this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
@@ -2320,21 +2408,6 @@ class KingdomsScene extends Phaser.Scene {
       this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
         unit.stats.atk += 1
       })
-    }
-    if (this.councilState.edict === 'steady') {
-      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
-        unit.stats.def += 1
-      })
-    }
-    if (this.councilState.edict === 'raid' && this.councilState.morale >= 60) {
-      this.councilState.firstTurnRaid = true
-      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
-        unit.stats.move += 1
-      })
-    }
-    window.__FENGHUO_FIRE_EDICT__ = this.councilState.edict === 'fire' && this.councilState.intel >= 30
-    if (this.councilState.edict === 'fire' && this.councilState.intel >= 30) {
-      this.councilState.intel -= 30
     }
     const enemyCommander = this.units.find((unit) => unit.faction === 'enemy' && unit.classId === 'commander')
     if (this.councilState.intel >= 60) {
@@ -2349,17 +2422,6 @@ class KingdomsScene extends Phaser.Scene {
         soldier.stats.hp = Math.ceil(soldier.stats.hp / 2)
         soldier.stats.atk -= 1
       }
-    }
-    if (this.councilState.formation === 'vanguard') {
-      const yun = this.units.find((unit) => unit.id === 'yun')
-      if (yun) yun.stats.move += 1
-      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
-        unit.stats.def -= 1
-      })
-    }
-    if (this.councilState.formation === 'goose') {
-      const lan = this.units.find((unit) => unit.id === 'lan')
-      if (lan) lan.stats.atk += 1
     }
     if (this.campaignClock.enemyThreat >= 55) {
       this.units.filter((unit) => unit.faction === 'enemy').forEach((unit) => {
@@ -2382,12 +2444,9 @@ class KingdomsScene extends Phaser.Scene {
       actions: 3,
       trained: false,
       scouted: false,
-      edict: 'steady',
-      formation: 'circle',
       persuaded: false,
       alliance: 0,
       sabotage: false,
-      firstTurnRaid: false,
     }
   }
 
@@ -2570,7 +2629,7 @@ class KingdomsScene extends Phaser.Scene {
     const target = neighbors.find((city) => city.owner !== faction.id)
     if (!target) {
       strongest.troops = Math.min(30000, strongest.troops + 420)
-      reports.push(`${faction.name}在${strongest.name}整军。`)
+      reports.push(`${faction.name}在${strongest.name}练兵。`)
       continue
     }
       if (target.owner === 'liu' && this.alliedFactionIds.has(faction.id)) {
@@ -2990,7 +3049,7 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private endRound() {
-    this.councilState.supplies = Math.max(0, this.councilState.supplies - (this.councilState.edict === 'steady' ? 7 : 10))
+    this.councilState.supplies = Math.max(0, this.councilState.supplies - 8)
     if (this.councilState.supplies === 0) {
       this.living('player').forEach((unit) => {
         unit.stats.hp = Math.max(1, unit.stats.hp - 1)
@@ -3010,13 +3069,6 @@ class KingdomsScene extends Phaser.Scene {
       }
     }
     this.turn += 1
-    if (this.councilState.firstTurnRaid && this.turn === 2) {
-      this.councilState.firstTurnRaid = false
-      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
-        unit.stats.move -= 1
-      })
-      this.addLog('奇袭军令效果结束，我军移动恢复。')
-    }
     this.currentFaction = 'player'
     this.phase = 'playerSelect'
     this.addLog(`第 ${this.turn} 阵开始，${this.battlePosture()}。`)
@@ -3289,8 +3341,7 @@ function computeDamage(attacker: Unit, defender: Unit, skill?: Skill) {
   const attackerTile = terrain[mapRows[attacker.position.y][attacker.position.x]]
   const defenderTile = terrain[mapRows[defender.position.y][defender.position.x]]
   if (skill?.type === 'damage' && skill.damageType === 'magic') {
-    const fireBonus = skill.id === 'fire' && window.__FENGHUO_FIRE_EDICT__ ? 2 : 0
-    return Math.max(1, attacker.stats.mag + skill.power + fireBonus - defender.stats.res)
+    return Math.max(1, attacker.stats.mag + skill.power - defender.stats.res)
   }
   const power = skill?.type === 'damage' ? skill.power : 0
   return Math.max(1, attacker.stats.atk + power + attackerTile.attackBonus - defender.stats.def - defenderTile.defenseBonus)
@@ -3332,38 +3383,6 @@ function terrainName(type: TerrainType) {
   }[type]
 }
 
-function edictName(edict: MilitaryEdict) {
-  return {
-    steady: '稳扎',
-    raid: '奇袭',
-    fire: '火攻',
-  }[edict]
-}
-
-function edictDescription(edict: MilitaryEdict) {
-  return {
-    steady: '全军防御 +1，补给消耗较少。',
-    raid: '士气 60 以上时，第 1 回合移动 +1。',
-    fire: '诸葛亮火计伤害 +2，但需要以情报支持。',
-  }[edict]
-}
-
-function formationName(formation: Formation) {
-  return {
-    vanguard: '先锋阵',
-    goose: '雁行阵',
-    circle: '方圆阵',
-  }[formation]
-}
-
-function formationDescription(formation: Formation) {
-  return {
-    vanguard: '刘备移动 +1，全军防御 -1。',
-    goose: '关羽攻击 +1，适合正面压制。',
-    circle: '稳守默认阵型，无额外风险。',
-  }[formation]
-}
-
 function campaignModeName(mode: CampaignMode) {
   return {
     inspection: '视察情况',
@@ -3378,12 +3397,6 @@ function diplomacyName(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
     sabotage: '离间',
     persuade: '劝降',
   }[kind]
-}
-
-declare global {
-  interface Window {
-    __FENGHUO_FIRE_EDICT__?: boolean
-  }
 }
 
 const config: Phaser.Types.Core.GameConfig = {
