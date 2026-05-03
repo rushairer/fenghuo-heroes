@@ -371,6 +371,8 @@ class KingdomsScene extends Phaser.Scene {
   private marchArmy?: MarchArmy
   private siegeState?: SiegeState
   private duelState?: DuelState
+  private deploymentOfficerIds = new Set<string>()
+  private deploymentFood?: number
   private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
   private selectedDifficulty: Difficulty = 'normal'
   private campaignClock = {
@@ -2585,6 +2587,7 @@ class KingdomsScene extends Phaser.Scene {
   private showDeployment() {
     this.phase = 'deploy'
     this.ensureDeploymentTarget()
+    this.ensureDeploymentSelection()
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
     this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
@@ -2610,6 +2613,7 @@ class KingdomsScene extends Phaser.Scene {
     const vanguard = heroById(this.appointments.vanguard)
     const strategist = heroById(this.appointments.strategist)
     const supplyNeed = this.deploymentSupplyNeed()
+    const selectedFood = this.selectedDeploymentFood()
     const risk = this.campaignClock.enemyThreat >= 75 ? '极高' : this.campaignClock.enemyThreat >= 55 ? '偏高' : '可控'
     const source = this.selectedCity
     const target = this.selectedTargetCity
@@ -2628,9 +2632,9 @@ class KingdomsScene extends Phaser.Scene {
       `本城存粮    ${source?.food ?? 0}`,
       `士气        ${this.councilState.morale}`,
       `情报        ${this.councilState.intel}`,
-      `行军粮草    ${this.councilState.supplies}/${supplyNeed}`,
+      `行军粮草    ${this.councilState.supplies}/${selectedFood}`,
       `敌势        ${this.campaignClock.enemyThreat}（${risk}）`,
-      `预计消耗    粮草 ${supplyNeed}`,
+      `最低军粮    ${supplyNeed}`,
       `补给来源    内政「运输」转入`,
     ]
     this.overlayLayer.add(this.add.text(122, 230, lines.join('\n'), {
@@ -2639,6 +2643,18 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8ecd0',
       lineSpacing: 7,
     }))
+    const foodOptions: [string, number][] = [
+      ['最低', supplyNeed],
+      ['标准', supplyNeed + 10],
+      ['充足', supplyNeed + 20],
+    ]
+    foodOptions.forEach(([label, amount], index) => {
+      const capped = Math.min(this.councilState.supplies, amount)
+      this.makeButton(160 + index * 112, 526, `${label}${capped}`, () => {
+        this.deploymentFood = capped
+        this.showDeployment()
+      }, this.overlayLayer, 96, 34)
+    })
   }
 
   private drawDeploymentRoster() {
@@ -2648,9 +2664,11 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '32px',
       color: '#f5d487',
     }))
-    const units = this.currentCityUnits()
-    units.forEach((unit, index) => {
-      const officer = this.officerForUnit(unit.id)
+    const officers = this.deployableCurrentCityOfficers()
+    officers.forEach((officer, index) => {
+      const unitId = unitIdForOfficerId(officer.id)
+      const unit = unitId ? heroById(unitId) : undefined
+      if (!unit || !unitId) return
       const x = 590 + (index % 2) * 294
       const y = 238 + Math.floor(index / 2) * 138
       this.overlayLayer.add(this.add.rectangle(x, y, 250, 104, 0x21160f, 0.92).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
@@ -2659,18 +2677,20 @@ class KingdomsScene extends Phaser.Scene {
         this.overlayLayer.add(this.add.image(x + 46, y + 52, key).setDisplaySize(64, 78))
       }
       const roles = roleLabels(unit.id, this.appointments)
+      const selected = this.deploymentOfficerIds.has(officer.id)
+      this.makeButton(x + 190, y + 22, selected ? '随军✓' : '留守', () => this.toggleDeploymentOfficer(officer.id), this.overlayLayer, 86, 30)
       this.overlayLayer.add(this.add.text(x + 92, y + 18, `${unit.name} ${roles}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '20px',
         color: '#f8df9d',
       }))
-      this.overlayLayer.add(this.add.text(x + 92, y + 50, `兵 ${officer ? officerTroops(officer) : heroTroops(unit, this.appointments)}  武装 ${officer ? officerWeapons(officer) : 0}  训 ${officer ? officerTraining(officer) : 0}`, {
+      this.overlayLayer.add(this.add.text(x + 92, y + 50, `兵 ${officerTroops(officer)}  武装 ${officerWeapons(officer)}  训 ${officerTraining(officer)}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '17px',
         color: '#f8ecd0',
       }))
     })
-    if (units.length === 0) {
+    if (officers.length === 0) {
       this.overlayLayer.add(this.add.text(872, 322, '本城暂无可出战武将。', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '22px',
@@ -2712,29 +2732,32 @@ class KingdomsScene extends Phaser.Scene {
 
   private confirmDeployment() {
     this.ensureDeploymentTarget()
+    this.ensureDeploymentSelection()
     if (!this.selectedTargetCity) {
       this.showDeploymentMessage('没有邻接敌城，无法出征。请先切换城池。')
       return
     }
-    if (this.currentCityUnits().length === 0) {
+    if (this.selectedDeploymentOfficers().length === 0) {
       this.showDeploymentMessage('本城没有可出战武将，请先移动武将。')
       return
     }
     const supplyNeed = this.deploymentSupplyNeed()
-    if (this.councilState.supplies < supplyNeed) {
+    const selectedFood = this.selectedDeploymentFood()
+    if (this.councilState.supplies < selectedFood || selectedFood < supplyNeed) {
       this.showDeploymentMessage('粮草不足，无法出征。请先治理城池或运输军粮。')
       return
     }
     const source = this.selectedCity
     const target = this.selectedTargetCity
     const troops = this.currentCityDeploymentTroops()
+    const officers = this.selectedDeploymentOfficers().map((officer) => officer.name).join('、')
     this.showCommandConfirm({
       category: '军事',
       command: '出征',
       actor: `${source?.name ?? '本城'}太守府`,
       target: target.name,
       scope: `${source?.name ?? '本城'} → ${target.name}`,
-      effect: `编成远征军 兵${troops}｜行军粮 -${supplyNeed}｜下月行军`,
+      effect: `随军 ${officers}｜兵${troops}｜行军粮 -${selectedFood}`,
       hint: '确认后编成远征军',
       onConfirm: () => this.executeDeployment(),
       onCancel: () => this.showDeployment(),
@@ -2743,14 +2766,16 @@ class KingdomsScene extends Phaser.Scene {
 
   private executeDeployment() {
     this.ensureDeploymentTarget()
+    this.ensureDeploymentSelection()
     if (!this.selectedTargetCity) return
     const supplyNeed = this.deploymentSupplyNeed()
-    if (this.councilState.supplies < supplyNeed) {
+    const selectedFood = this.selectedDeploymentFood()
+    if (this.councilState.supplies < selectedFood || selectedFood < supplyNeed) {
       this.showDeploymentMessage('粮草不足，无法出征。请先治理城池或运输军粮。')
       return
     }
-    this.councilState.supplies -= supplyNeed
-    const officerIds = this.currentCityOfficers().map((officer) => officer.id)
+    this.councilState.supplies -= selectedFood
+    const officerIds = this.selectedDeploymentOfficers().map((officer) => officer.id)
     const leaderOfficerId = this.officerForUnit(this.appointments.vanguard)?.id ?? officerIds[0] ?? 'liu_bei'
     const armyTroops = this.currentCityDeploymentTroops()
     this.marchArmy = {
@@ -2761,7 +2786,7 @@ class KingdomsScene extends Phaser.Scene {
       leaderOfficerId,
       officerIds: officerIds.slice(0, 4),
       troops: armyTroops,
-      food: supplyNeed,
+      food: selectedFood,
       morale: this.councilState.morale,
       position: { kind: 'city', cityId: this.selectedCityId },
       routePlan: [this.selectedCityId, this.selectedTargetCity.id],
@@ -3355,6 +3380,8 @@ class KingdomsScene extends Phaser.Scene {
     this.sabotagedFactionIds = new Set<FactionId>()
     this.monthlyActionLog = []
     this.marchArmy = undefined
+    this.deploymentOfficerIds = new Set<string>()
+    this.deploymentFood = undefined
     const scenario = this.scenarioConfig()
     const difficulty = this.difficultyConfig()
     this.cityState = {
@@ -3406,10 +3433,52 @@ class KingdomsScene extends Phaser.Scene {
     return baseUnits.filter((unit) => unit.faction === 'player' && localUnitIds.has(unit.id))
   }
 
+  private deployableCurrentCityOfficers() {
+    return this.currentCityOfficers().filter((officer) => unitIdForOfficerId(officer.id))
+  }
+
+  private ensureDeploymentSelection() {
+    const deployable = this.deployableCurrentCityOfficers()
+    const deployableIds = new Set(deployable.map((officer) => officer.id))
+    this.deploymentOfficerIds = new Set([...this.deploymentOfficerIds].filter((id) => deployableIds.has(id)))
+    if (this.deploymentOfficerIds.size === 0) {
+      deployable.slice(0, 4).forEach((officer) => this.deploymentOfficerIds.add(officer.id))
+    }
+    const minimum = this.deploymentSupplyNeed()
+    if (this.deploymentFood === undefined || this.deploymentFood < minimum || this.deploymentFood > this.councilState.supplies) {
+      this.deploymentFood = Math.min(this.councilState.supplies, minimum + 10)
+    }
+  }
+
+  private selectedDeploymentOfficers() {
+    const selected = this.deployableCurrentCityOfficers().filter((officer) => this.deploymentOfficerIds.has(officer.id))
+    return selected.length > 0 ? selected.slice(0, 4) : this.deployableCurrentCityOfficers().slice(0, 4)
+  }
+
+  private selectedDeploymentFood() {
+    const minimum = this.deploymentSupplyNeed()
+    return Phaser.Math.Clamp(this.deploymentFood ?? minimum, minimum, Math.max(minimum, this.councilState.supplies))
+  }
+
+  private toggleDeploymentOfficer(officerId: string) {
+    if (this.deploymentOfficerIds.has(officerId)) {
+      if (this.deploymentOfficerIds.size <= 1) {
+        this.showDeploymentMessage('至少需要一名随军武将。')
+        return
+      }
+      this.deploymentOfficerIds.delete(officerId)
+    } else {
+      if (this.deploymentOfficerIds.size >= 4) {
+        this.showDeploymentMessage('当前版本最多选择四名随军武将。')
+        return
+      }
+      this.deploymentOfficerIds.add(officerId)
+    }
+    this.showDeployment()
+  }
+
   private currentCityDeploymentTroops() {
-    const total = this.currentCityOfficers()
-      .filter((officer) => unitIdForOfficerId(officer.id))
-      .slice(0, 4)
+    const total = this.selectedDeploymentOfficers()
       .reduce((sum, officer) => sum + officerTroops(officer), 0)
     return Phaser.Math.Clamp(total, 800, 9000)
   }
@@ -4296,12 +4365,6 @@ function militaryAllocationMeta(kind: 'recruit' | 'weapon' | 'training') {
       resultText: (officer: StrategyOfficer) => `部曲操练有成，训练${officerTraining(officer)}`,
     },
   }[kind]
-}
-
-function heroTroops(unit: Unit, appointments: { governor: string; vanguard: string; strategist: string }) {
-  const base = unit.stats.maxHp * 10
-  const roleBonus = (appointments.vanguard === unit.id ? 80 : 0) + (appointments.governor === unit.id ? 40 : 0) + (appointments.strategist === unit.id ? 30 : 0)
-  return base + roleBonus
 }
 
 function roleLabels(unitId: string, appointments: { governor: string; vanguard: string; strategist: string }) {
