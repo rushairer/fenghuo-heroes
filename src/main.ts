@@ -173,6 +173,7 @@ type RecruitScale = 'small' | 'medium' | 'large'
 type TrainingMode = 'single' | 'all'
 type TransportTarget = 'expedition' | CityId
 type CityPolicyDelta = { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; food?: number; supplies?: number; morale?: number; intel?: number }
+type IntelCommandCategory = '内政' | '军事'
 
 const TILE = 64
 const MAP_W = 12
@@ -1641,7 +1642,7 @@ class KingdomsScene extends Phaser.Scene {
     this.showCommandPanel('内政', [
       ['开发', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '兴修水利，田亩渐丰，城池存粮增加。', '金 -130｜粮 +260｜民心 +2', { treasury: -130, farms: 1, publicOrder: 2, food: 260 })],
       ['调动', () => this.showMoveActorSelection()],
-      ['情报', () => this.showBriefing()],
+      ['情报', () => this.showIntelActorSelection('内政')],
       ['福利', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜民心 +6｜士气 +2', { treasury: -120, publicOrder: 6, morale: 2 })],
       ['任命', () => this.showHeroManagement()],
       ['税率', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '调整税率，府库增加但民心微降。', '金 +180｜民心 -3', { treasury: 180, publicOrder: -3 })],
@@ -1654,6 +1655,7 @@ class KingdomsScene extends Phaser.Scene {
     this.showCommandPanel('军事', [
       ['征兵', () => this.showMilitaryActorSelection('recruit')],
       ['武器', () => this.showMilitaryActorSelection('weapon')],
+      ['情报', () => this.showIntelActorSelection('军事')],
       ['人材', () => this.showTalentSearch()],
       ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8', { treasury: -140, walls: 8 })],
       ['训练', () => this.showMilitaryActorSelection('training')],
@@ -2038,6 +2040,166 @@ class KingdomsScene extends Phaser.Scene {
       onConfirm: () => this.applyCityPolicy(message, delta),
       onCancel,
     })
+  }
+
+  private showIntelActorSelection(category: IntelCommandCategory) {
+    const cities = this.controlledCities().filter((city) => this.intelTargetsFrom(city, category).length > 0)
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, `${category}｜情报：选择发起城`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, category === '军事'
+      ? '军事情报先确定斥候出发城，再选择邻接敌城。'
+      : '内政情报先确定发起城，再选择本城或邻接城池查看。',
+    {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    if (cities.length === 0) {
+      this.overlayLayer.add(this.add.text(640, 414, '当前没有可侦察目标。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+    }
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      const targets = this.intelTargetsFrom(city, category)
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        this.showIntelTargetSelection(category, city)
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `目标${targets.length}｜情报${this.councilState.intel}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => {
+      this.showCampaign()
+      if (category === '军事') this.showMilitaryCommand()
+      else this.showDomesticCommand()
+    }, this.overlayLayer, 130, 38)
+  }
+
+  private showIntelTargetSelection(category: IntelCommandCategory, actorCity: StrategyCity) {
+    const targets = this.intelTargetsFrom(actorCity, category)
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, `${category}｜情报：选择目标`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, `发起方：${actorCity.name}${category === '军事' ? '斥候' : '军师府'}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    targets.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      const owner = factionById(city.owner)
+      this.makeButton(x, y, city.id === actorCity.id ? `${city.name}本城` : city.name, () => this.confirmIntelCommand(category, actorCity, city), this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `${owner?.name ?? '-'}｜兵${city.troops} 防${city.defense}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(540, 606, '重选发起城', () => this.showIntelActorSelection(category), this.overlayLayer, 150, 38)
+    this.makeButton(740, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+  }
+
+  private intelTargetsFrom(actorCity: StrategyCity, category: IntelCommandCategory) {
+    if (category === '军事') return this.diplomacyTargetsFrom(actorCity)
+    const targets = [
+      actorCity,
+      ...actorCity.routes
+        .map((routeId) => this.campaignCities.find((item) => item.id === routeId))
+        .filter((item): item is StrategyCity => item !== undefined),
+    ]
+    return targets
+  }
+
+  private confirmIntelCommand(category: IntelCommandCategory, actorCity: StrategyCity, targetCity: StrategyCity) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = targetCity.id
+    this.selectedTargetCityId = targetCity.owner !== 'liu' ? targetCity.id : this.selectedTargetCityId
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.showCommandConfirm({
+      category,
+      command: '情报',
+      actor: `${actorCity.name}${category === '军事' ? '斥候' : '军师府'}`,
+      target: targetCity.name,
+      scope: targetCity.id === actorCity.id ? `${actorCity.name}本城` : `${actorCity.name} → ${targetCity.name}`,
+      effect: category === '军事' ? '政令 -1｜情报 +6｜显示敌城守军、城防、守将' : '政令 -1｜情报 +4｜显示城池和邻接军情',
+      hint: '确认后执行情报命令',
+      onConfirm: () => this.executeIntelCommand(category, actorCity, targetCity),
+      onCancel: () => this.showIntelTargetSelection(category, actorCity),
+    })
+  }
+
+  private executeIntelCommand(category: IntelCommandCategory, actorCity: StrategyCity, targetCity: StrategyCity) {
+    if (this.councilState.actions <= 0) {
+      this.showCampaignMessage('本月政令已用尽，无法侦察。')
+      return
+    }
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = targetCity.id
+    if (targetCity.owner !== 'liu') this.selectedTargetCityId = targetCity.id
+    this.councilState.actions -= 1
+    this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + (category === '军事' ? 6 : 4), 0, 100)
+    this.recordMonthlyAction(`${actorCity.name}${category}情报${targetCity.name}`)
+    this.syncSelectedCityState()
+    this.showIntelReport(category, actorCity, targetCity)
+  }
+
+  private showIntelReport(category: IntelCommandCategory, actorCity: StrategyCity, targetCity: StrategyCity) {
+    this.showCampaign()
+    const owner = factionById(targetCity.owner)
+    const officers = this.campaignOfficers.filter((officer) => officer.location === targetCity.id && officer.faction === targetCity.owner)
+    const neighbors = targetCity.routes.map((id) => this.campaignCities.find((item) => item.id === id)).filter((item): item is StrategyCity => Boolean(item))
+    const lines = [
+      `发起      ${actorCity.name}`,
+      `目标      ${targetCity.name}（${targetCity.region}）`,
+      `归属      ${owner?.name ?? '-'}`,
+      `守军      ${targetCity.troops}`,
+      `城防      ${targetCity.defense}`,
+      `粮草      ${targetCity.food}`,
+      `府库      ${targetCity.gold}`,
+      `守将      ${officers.map((officer) => officer.name).join('、') || owner?.ruler || '郡中守将'}`,
+      `邻接      ${neighbors.map((city) => city.name).join('、') || '-'}`,
+      `情报      ${this.councilState.intel}`,
+    ]
+    this.overlayLayer.add(this.add.rectangle(640, 404, 720, 330, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(640, 270, `${category}情报`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '36px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(350, 326, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f8ecd0',
+      lineSpacing: 8,
+    }))
+    this.makeButton(640, 590, '返回', () => category === '军事' ? this.showMilitaryCommand() : this.showDomesticCommand(), this.overlayLayer, 130, 38)
   }
 
   private showTransportActorSelection() {
@@ -2640,7 +2802,7 @@ class KingdomsScene extends Phaser.Scene {
     const commands: [string, string, () => void][] = [
       ['开发', '金 -120，粮 +300', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '开发田地，粮仓渐实。', '金 -120｜粮 +300', { treasury: -120, food: 300 })],
       ['调动', '移驻一名武将到邻城', () => this.showMoveActorSelection()],
-      ['情报', '查看本城与邻城军情', () => this.showCityIntel()],
+      ['情报', '查看本城与邻城军情', () => this.showIntelActorSelection('内政')],
       ['福利', '金 -100，民心 +10，士气 +2', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
       ['任命', '任命太守、先锋、军师', () => this.showHeroManagement()],
       ['税率', '金 +220，民心 -6', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '本月税率加重，府库充盈，民心略降。', '金 +220｜民心 -6', { treasury: 220, publicOrder: -6 })],
@@ -2660,30 +2822,6 @@ class KingdomsScene extends Phaser.Scene {
         wordWrap: { width: 200 },
       }))
     })
-  }
-
-  private showCityIntel() {
-    const city = this.selectedCity
-    if (!city) return
-    const neighbors = city.routes.map((id) => this.campaignCities.find((item) => item.id === id)).filter((item): item is StrategyCity => Boolean(item))
-    const copy = [
-      `${city.name}：兵${city.troops} 城防${city.defense} 金${city.gold} 粮${city.food}`,
-      ...neighbors.map((neighbor) => `${neighbor.name}：${factionById(neighbor.owner)?.name ?? '-'} 兵${neighbor.troops} 防${neighbor.defense}`),
-    ].join('\n')
-    this.showCityGovernance()
-    this.overlayLayer.add(this.add.rectangle(640, 406, 650, 250, 0x101722, 0.98).setStrokeStyle(2, 0xd4af37))
-    this.overlayLayer.add(this.add.text(640, 318, '城池情报', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '36px',
-      color: '#f8df9d',
-    }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.text(360, 360, copy, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f8ecd0',
-      lineSpacing: 10,
-    }))
-    this.makeButton(640, 512, '收起', () => this.showCityGovernance(), this.overlayLayer, 140, 38)
   }
 
   private transportSupplies(target: TransportTarget, actorCity: StrategyCity) {
