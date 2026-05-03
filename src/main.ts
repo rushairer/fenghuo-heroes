@@ -1960,34 +1960,45 @@ class KingdomsScene extends Phaser.Scene {
     ])
   }
 
+  private addLayeredPanel(x: number, y: number, width: number, height: number, layer = this.overlayLayer) {
+    const veil = this.add.rectangle(640, 380, 1280, 760, 0x05070a, 0.18)
+    const shadow = this.add.rectangle(x + 10, y + 12, width, height, 0x000000, 0.34)
+    const panel = this.add.rectangle(x, y, width, height, 0x101722, 0.975).setStrokeStyle(3, 0xd4af37, 0.9)
+    const topShade = this.add.rectangle(x, y - height / 2 + 22, width - 18, 38, 0x2a1b12, 0.34)
+    layer.add([veil, shadow, panel, topShade])
+    return { veil, shadow, panel, topShade }
+  }
+
   private showCommandPanel(title: string, items: [string, () => void][]) {
-    const panelWidth = 700
-    const panelHeight = items.length > 6 ? 340 : 260
-    const panel = this.add.rectangle(640, 456, panelWidth, panelHeight, 0x101722, 0.98).setStrokeStyle(2, 0xd4af37, 0.9)
-    const heading = this.add.text(640 - panelWidth / 2 + 34, 342, `${title}命令  ｜  ${this.selectedCity?.name ?? '未选'}城`, {
+    const panelWidth = 720
+    const rows = Math.ceil(items.length / 3)
+    const panelHeight = Phaser.Math.Clamp(156 + rows * 76, 260, 392)
+    const panelY = Phaser.Math.Clamp(402 + rows * 18, 392, 444)
+    const layered = this.addLayeredPanel(640, panelY, panelWidth, panelHeight)
+    const top = panelY - panelHeight / 2
+    const heading = this.add.text(640 - panelWidth / 2 + 34, top + 30, `${title}命令  ｜  ${this.selectedCity?.name ?? '未选'}城`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '30px',
       color: '#f8df9d',
     })
-    this.overlayLayer.add([panel, heading])
+    this.overlayLayer.add(heading)
     const buttons: Phaser.GameObjects.Text[] = []
     items.forEach(([label, callback], index) => {
       const col = index % 3
       const row = Math.floor(index / 3)
       const x = 428 + col * 212
-      const y = 414 + row * 72
-      const button = this.makeButton(x, 466, label, () => {
-        panel.destroy()
+      const y = top + 108 + row * 72
+      const button = this.makeButton(x, y, label, () => {
+        Object.values(layered).forEach((node) => node.destroy())
         heading.destroy()
         buttons.forEach((item) => item.destroy())
         callback()
       }, this.overlayLayer, 158, 46)
-      button.setPosition(x, y)
       buttons.push(button)
     })
-    const closeY = items.length > 6 ? 646 : 574
+    const closeY = top + panelHeight - 42
     const close = this.makeButton(640, closeY, '取消', () => {
-      panel.destroy()
+      Object.values(layered).forEach((node) => node.destroy())
       heading.destroy()
       buttons.forEach((item) => item.destroy())
       this.showCampaign()
@@ -2006,8 +2017,8 @@ class KingdomsScene extends Phaser.Scene {
     onCancel?: () => void
     hint?: string
   }) {
-    const panel = this.add.rectangle(640, 448, 680, 318, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9)
-    const heading = this.add.text(342, 316, `${config.category}｜${config.command}`, {
+    const layered = this.addLayeredPanel(640, 438, 700, 318)
+    const heading = this.add.text(326, 310, `${config.category}｜${config.command}`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
       color: '#f8df9d',
@@ -2028,7 +2039,7 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '18px',
       color: '#d8c092',
     }).setOrigin(0.5)
-    const nodes: Phaser.GameObjects.GameObject[] = [panel, heading, body, hint]
+    const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), heading, body, hint]
     const close = () => nodes.forEach((node) => node.destroy())
     const cancel = this.makeButton(540, 626, '取消', () => {
       close()
