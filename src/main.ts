@@ -167,6 +167,7 @@ type DuelState = {
 
 type MilitaryAllocationKind = 'recruit' | 'weapon' | 'training'
 type RecruitScale = 'small' | 'medium' | 'large'
+type TrainingMode = 'single' | 'all'
 
 const TILE = 64
 const MAP_W = 12
@@ -377,6 +378,7 @@ class KingdomsScene extends Phaser.Scene {
   private deploymentOfficerIds = new Set<string>()
   private deploymentFood?: number
   private recruitScale: RecruitScale = 'medium'
+  private trainingMode: TrainingMode = 'single'
   private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
   private selectedDifficulty: Difficulty = 'normal'
   private campaignClock = {
@@ -1528,6 +1530,24 @@ class KingdomsScene extends Phaser.Scene {
           this.showMilitaryOfficerSelection(kind)
         }, this.overlayLayer, 142, 34)
       })
+    } else if (kind === 'training') {
+      const modes: [TrainingMode, string][] = [['single', '单将训练'], ['all', '全军操练']]
+      modes.forEach(([mode, label], index) => {
+        this.makeButton(548 + index * 184, 348, this.trainingMode === mode ? `${label}✓` : label, () => {
+          this.trainingMode = mode
+          this.showMilitaryOfficerSelection(kind)
+        }, this.overlayLayer, 150, 34)
+      })
+      if (this.trainingMode === 'all') {
+        this.makeButton(640, 438, '确认全军操练', () => this.confirmTrainingAll(), this.overlayLayer, 190, 42)
+        this.overlayLayer.add(this.add.text(640, 486, '目标：本城所有可战武将｜金 -180｜全员训练 +6｜士气 +4', {
+          fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+          fontSize: '18px',
+          color: '#f7ecd5',
+        }).setOrigin(0.5))
+        this.makeButton(640, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+        return
+      }
     }
     officers.forEach((officer, index) => {
       const col = index % 3
@@ -1559,6 +1579,50 @@ class KingdomsScene extends Phaser.Scene {
       onConfirm: () => this.executeMilitaryAllocation(kind, officer),
       onCancel: () => this.showMilitaryOfficerSelection(kind),
     })
+  }
+
+  private confirmTrainingAll() {
+    const city = this.selectedCity
+    if (!city) return
+    const officers = this.deployableCurrentCityOfficers()
+    if (officers.length === 0) {
+      this.showCampaignMessage('本城没有可训练的武将。')
+      return
+    }
+    this.showCommandConfirm({
+      category: '军事',
+      command: '训练',
+      actor: `${city.name}校场`,
+      target: '本城全军',
+      scope: `${city.name}可战武将`,
+      effect: `金 -180｜${officers.map((officer) => officer.name).join('、')}训练 +6｜士气 +4`,
+      hint: '确认后执行全军操练',
+      onConfirm: () => this.executeTrainingAll(),
+      onCancel: () => this.showMilitaryOfficerSelection('training'),
+    })
+  }
+
+  private executeTrainingAll() {
+    const city = this.selectedCity
+    if (!city) return
+    const officers = this.deployableCurrentCityOfficers()
+    if (this.councilState.actions <= 0) {
+      this.showCampaignMessage('本月政令已用尽，无法训练。')
+      return
+    }
+    if (city.gold < 180) {
+      this.showCampaignMessage('府库不足，无法全军操练。')
+      return
+    }
+    city.gold = Math.max(0, city.gold - 180)
+    officers.forEach((officer) => {
+      officer.training = Math.min(100, officerTraining(officer) + 6)
+    })
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 4, 0, 100)
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${city.name}全军操练`)
+    this.syncSelectedCityState()
+    this.showCampaignMessage(`${city.name}全军操练完成，诸将训练提升。`)
   }
 
   private executeMilitaryAllocation(kind: MilitaryAllocationKind, officer: StrategyOfficer) {
