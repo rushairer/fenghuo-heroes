@@ -2113,14 +2113,14 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f5d487',
     }))
     const commands: [string, string, () => void][] = [
-      ['开发', '金 -120，粮 +300', () => this.applyCityPolicy('开发田地，粮仓渐实。', { treasury: -120, food: 300 })],
+      ['开发', '金 -120，粮 +300', () => this.confirmCityPolicy('内政', '开发', '本城', '开发田地，粮仓渐实。', '金 -120｜粮 +300', { treasury: -120, food: 300 })],
       ['调动', '移驻一名武将到邻城', () => this.moveCurrentCityOfficer()],
       ['情报', '查看本城与邻城军情', () => this.showCityIntel()],
-      ['福利', '金 -100，民心 +10，士气 +2', () => this.applyCityPolicy('开仓赈济，民心渐定。', { treasury: -100, publicOrder: 10, morale: 2 })],
+      ['福利', '金 -100，民心 +10，士气 +2', () => this.confirmCityPolicy('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
       ['任命', '任命太守、先锋、军师', () => this.showHeroManagement()],
-      ['税率', '金 +220，民心 -6', () => this.applyTaxPolicy()],
-      ['教育', '金 -80，情报 +8，士气 +2', () => this.applyCityPolicy('开设讲武讲堂，吏士见闻增长。', { treasury: -80, intel: 8, morale: 2 })],
-      ['运输', '粮 -240，随军粮 +18', () => this.transportSupplies()],
+      ['税率', '金 +220，民心 -6', () => this.confirmCityPolicy('内政', '税率', '本城府库', '本月税率加重，府库充盈，民心略降。', '金 +220｜民心 -6', { treasury: 220, publicOrder: -6 })],
+      ['教育', '金 -80，情报 +8，士气 +2', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '开设讲武讲堂，吏士见闻增长。', '金 -80｜情报 +8｜士气 +2', { treasury: -80, intel: 8, morale: 2 })],
+      ['运输', '粮 -240，随军粮 +18', () => this.confirmTransportSupplies()],
     ]
     commands.forEach(([label, desc, callback], index) => {
       const col = index % 2
@@ -2159,10 +2159,6 @@ class KingdomsScene extends Phaser.Scene {
       lineSpacing: 10,
     }))
     this.makeButton(640, 512, '收起', () => this.showCityGovernance(), this.overlayLayer, 140, 38)
-  }
-
-  private applyTaxPolicy() {
-    this.applyCityPolicy('本月税率加重，府库充盈，民心略降。', { treasury: 220, publicOrder: -6 })
   }
 
   private transportSupplies() {
@@ -2327,23 +2323,70 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '22px',
       color: '#f8df9d',
     }))
-    this.makeButton(720, 552, '轮换太守', () => this.cycleAppointment('governor'), this.overlayLayer, 132, 36)
-    this.makeButton(858, 552, '轮换先锋', () => this.cycleAppointment('vanguard'), this.overlayLayer, 132, 36)
-    this.makeButton(996, 552, '轮换军师', () => this.cycleAppointment('strategist'), this.overlayLayer, 132, 36)
+    this.makeButton(720, 552, '任太守', () => this.showAppointmentSelection('governor'), this.overlayLayer, 132, 36)
+    this.makeButton(858, 552, '任先锋', () => this.showAppointmentSelection('vanguard'), this.overlayLayer, 132, 36)
+    this.makeButton(996, 552, '任军师', () => this.showAppointmentSelection('strategist'), this.overlayLayer, 132, 36)
   }
 
-  private cycleAppointment(role: keyof typeof this.appointments) {
-    const heroes = this.currentCityUnits()
-    if (heroes.length === 0) {
+  private showAppointmentSelection(role: keyof typeof this.appointments) {
+    const officers = this.currentCityOfficers()
+    if (officers.length === 0) {
       this.showHeroMessage('本城没有可任命武将。')
       return
     }
-    const current = this.appointments[role]
-    const currentIndex = heroes.findIndex((unit) => unit.id === current)
-    const next = heroes[(currentIndex + 1 + heroes.length) % heroes.length]
-    this.appointments[role] = next.id
-    this.applyAppointmentEffects()
     this.showHeroManagement()
+    this.overlayLayer.add(this.add.rectangle(640, 394, 760, 330, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(640, 276, `选择${appointmentRoleName(role)}`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    officers.forEach((officer, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 346 + row * 74
+      this.makeButton(x, y, officer.name, () => this.confirmAppointment(role, officer), this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 34, `统${officer.command} 武${officer.war} 智${officer.intel} 政${officer.gov}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 548, '取消', () => this.showHeroManagement(), this.overlayLayer, 130, 38)
+  }
+
+  private confirmAppointment(role: keyof typeof this.appointments, officer: StrategyOfficer) {
+    const city = this.selectedCity
+    if (!city) return
+    this.showCommandConfirm({
+      category: '内政',
+      command: '任命',
+      actor: `${city.name}太守府`,
+      target: `${officer.name}任${appointmentRoleName(role)}`,
+      scope: `${city.name}武将任命`,
+      effect: this.appointmentEffectText(role, officer),
+      hint: '确认后调整本城职任',
+      onConfirm: () => this.executeAppointment(role, officer),
+      onCancel: () => this.showAppointmentSelection(role),
+    })
+  }
+
+  private executeAppointment(role: keyof typeof this.appointments, officer: StrategyOfficer) {
+    const unitId = unitIdForOfficerId(officer.id)
+    if (!unitId) {
+      this.showHeroMessage('该武将暂不能映射到战斗单位。')
+      return
+    }
+    this.appointments[role] = unitId
+    this.applyAppointmentEffects()
+    this.showHeroMessage(`${officer.name}已任${appointmentRoleName(role)}。`)
+  }
+
+  private appointmentEffectText(role: keyof typeof this.appointments, officer: StrategyOfficer) {
+    if (role === 'governor') return `民心按${officer.name}政务与守备重算`
+    if (role === 'vanguard') return `出征主将改为${officer.name}，影响远征主帅`
+    return `情报按${officer.name}智略重算`
   }
 
   private showHeroMessage(message: string) {
@@ -2383,8 +2426,67 @@ class KingdomsScene extends Phaser.Scene {
       this.showHeroMessage('本月政令已用尽，不能调动武将。')
       return
     }
-    const officer = officers[0]
-    const destination = destinations[0]
+    this.showMoveOfficerSelection(officers[0].id, destinations[0].id)
+  }
+
+  private showMoveOfficerSelection(officerId: string, destinationId: CityId) {
+    const officers = this.currentCityOfficers().filter((officer) => officer.role !== '君主')
+    const destinations = this.controlledNeighborCities()
+    const officer = officers.find((item) => item.id === officerId) ?? officers[0]
+    const destination = destinations.find((item) => item.id === destinationId) ?? destinations[0]
+    if (!officer || !destination) {
+      this.showHeroMessage('当前没有可调动的武将或目的城。')
+      return
+    }
+    this.showHeroManagement()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(640, 276, '调动武将', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(282, 318, '选择武将', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#f8df9d',
+    }))
+    officers.forEach((item, index) => {
+      this.makeButton(354, 362 + index * 48, item.id === officer.id ? `${item.name}✓` : item.name, () => this.showMoveOfficerSelection(item.id, destination.id), this.overlayLayer, 154, 36)
+    })
+    this.overlayLayer.add(this.add.text(710, 318, '目的城', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#f8df9d',
+    }))
+    destinations.forEach((item, index) => {
+      this.makeButton(770, 362 + index * 48, item.id === destination.id ? `${item.name}✓` : item.name, () => this.showMoveOfficerSelection(officer.id, item.id), this.overlayLayer, 154, 36)
+    })
+    this.overlayLayer.add(this.add.text(640, 540, `${officer.name}：${cityName(officer.location)} → ${destination.name}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f7ecd5',
+    }).setOrigin(0.5))
+    this.makeButton(540, 594, '取消', () => this.showHeroManagement(), this.overlayLayer, 130, 38)
+    this.makeButton(740, 594, '确认', () => this.confirmMoveOfficer(officer, destination), this.overlayLayer, 130, 38)
+  }
+
+  private confirmMoveOfficer(officer: StrategyOfficer, destination: StrategyCity) {
+    const city = this.selectedCity
+    if (!city) return
+    this.showCommandConfirm({
+      category: '内政',
+      command: '调动',
+      actor: `${city.name}太守府`,
+      target: officer.name,
+      scope: `${city.name} → ${destination.name}`,
+      effect: `移动${officer.name}至${destination.name}｜政令 -1`,
+      hint: '确认后调动武将',
+      onConfirm: () => this.executeMoveOfficer(officer, destination),
+      onCancel: () => this.showMoveOfficerSelection(officer.id, destination.id),
+    })
+  }
+
+  private executeMoveOfficer(officer: StrategyOfficer, destination: StrategyCity) {
     officer.location = destination.id
     this.councilState.actions -= 1
     this.recordMonthlyAction(`${officer.name}移驻${destination.name}`)
@@ -4112,6 +4214,14 @@ function marchStatusName(status: MarchArmy['status']) {
     retreating: '撤退',
     routed: '溃散',
   }[status]
+}
+
+function appointmentRoleName(role: 'governor' | 'vanguard' | 'strategist') {
+  return {
+    governor: '太守',
+    vanguard: '先锋',
+    strategist: '军师',
+  }[role]
 }
 
 function duelActionName(action: 'attack' | 'guard' | 'focus') {
