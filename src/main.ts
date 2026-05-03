@@ -4307,7 +4307,7 @@ class KingdomsScene extends Phaser.Scene {
       this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 32, 0, 100)
       if (targetCity) this.selectedTargetCityId = targetCity.id
       this.recordMonthlyAction(`侦察${targetCity?.name ?? faction.ruler}`)
-      this.showDiplomacyMessage(`密探探得${targetCity?.name ?? faction.ruler}虚实，情报 +32。`)
+      this.showDiplomacyScoutReport(faction, targetCity)
       return
     }
     if (kind === 'sabotage') {
@@ -4327,6 +4327,41 @@ class KingdomsScene extends Phaser.Scene {
     this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 10, 0, 100)
     this.recordMonthlyAction(`劝降${targetCity?.name ?? faction.ruler}`)
     this.showDiplomacyMessage(`劝降书送入${targetCity?.name ?? '敌营'}，守军动摇，情报 +10。`)
+  }
+
+  private showDiplomacyScoutReport(faction: StrategyFaction, targetCity?: StrategyCity) {
+    this.showDiplomacy()
+    const cities = this.campaignCities.filter((city) => city.owner === faction.id)
+    const officers = targetCity
+      ? this.campaignOfficers.filter((officer) => officer.location === targetCity.id && officer.faction === targetCity.owner)
+      : this.campaignOfficers.filter((officer) => officer.faction === faction.id)
+    const debt = this.diplomacyDebts.get(faction.id)
+    const treaty = this.allianceTerms.get(faction.id)
+    const report = [
+      `目标势力  ${faction.name}（${faction.ruler}）`,
+      `邻接城池  ${targetCity?.name ?? (cities.map((city) => city.name).join('、') || '-')}`,
+      `城防兵粮  ${targetCity ? `兵${targetCity.troops} 防${targetCity.defense} 粮${targetCity.food}` : `总兵${this.sumCityField(faction.id, 'troops')}`}`,
+      `府库      ${targetCity ? targetCity.gold : this.sumCityField(faction.id, 'gold')}`,
+      `武将      ${officers.map((officer) => `${officer.name} 忠${officer.loyalty}`).join('、') || '未探明'}`,
+      `邦交      ${treaty ? `盟约余${treaty}月` : debt ? `债契${debt.principal}` : '无特殊约束'}`,
+      `情报      +32，现为${this.councilState.intel}`,
+    ]
+    this.overlayLayer.add(this.add.rectangle(640, 414, 760, 330, 0x101722, 0.98).setStrokeStyle(3, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(640, 286, '外交情报', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '38px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 3,
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(326, 342, report.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 11,
+      wordWrap: { width: 620 },
+    }))
+    this.makeButton(640, 568, '返回外交', () => this.showDiplomacy(), this.overlayLayer, 170, 42)
   }
 
   private diplomacyChance(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
