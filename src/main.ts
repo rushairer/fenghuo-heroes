@@ -168,6 +168,7 @@ type DuelState = {
 }
 
 type MilitaryAllocationKind = 'recruit' | 'weapon' | 'training'
+type DiplomacyCommandKind = 'alliance' | 'scout' | 'borrow' | 'repay' | 'sabotage' | 'assassination' | 'fire' | 'persuade'
 type RecruitScale = 'small' | 'medium' | 'large'
 type TrainingMode = 'single' | 'all'
 type TransportTarget = 'expedition' | CityId
@@ -3112,41 +3113,169 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private showDiplomacy() {
-    this.ensureDiplomacyTarget()
     this.phase = 'diplomacy'
     this.showCampaign()
-    this.drawDiplomacyContext()
     this.showCommandPanel('外交', [
-      ['同盟', () => this.confirmDiplomacyAction('同盟', this.selectedDiplomacyFaction()?.name ?? '邻接势力', `成功率 ${this.diplomacyChance('alliance')}%｜士气 +10｜敌势 -8`, () => this.resolveDiplomacy('alliance'))],
+      ['同盟', () => this.showDiplomacyActorSelection('alliance')],
       ['计策', () => this.showDiplomacyPlotMenu()],
-      ['情报', () => this.confirmDiplomacyAction('情报', this.selectedTargetCity?.name ?? '邻境', `成功率 ${this.diplomacyChance('scout')}%｜情报 +32`, () => this.resolveDiplomacy('scout'))],
-      ['借款', () => this.confirmDiplomacyAction('借款', this.selectedDiplomacyFaction()?.name ?? '邻接势力', '府库 +260｜士气 -2', () => this.borrowFunds())],
-      ['还款', () => this.confirmDiplomacyAction('还款', this.selectedDiplomacyFaction()?.name ?? '邻接势力', '府库 -180｜士气 +3｜敌势 -3', () => this.repayFunds())],
+      ['情报', () => this.showDiplomacyActorSelection('scout')],
+      ['借款', () => this.showDiplomacyActorSelection('borrow')],
+      ['还款', () => this.showDiplomacyActorSelection('repay')],
     ])
   }
 
   private showDiplomacyPlotMenu() {
     this.showCommandPanel('计策', [
-      ['离间', () => this.confirmDiplomacyAction('离间', this.selectedTargetCity?.name ?? '敌营', `成功率 ${this.diplomacyChance('sabotage')}%｜敌兵动摇｜敌势下降`, () => this.resolveDiplomacy('sabotage'))],
-      ['暗杀', () => this.confirmDiplomacyAction('暗杀', this.selectedTargetCity?.name ?? '敌营', '扰乱守备，失败则敌势上升', () => this.resolveAssassination())],
-      ['火计', () => this.confirmDiplomacyAction('火计', this.selectedTargetCity?.name ?? '敌城', '烧敌粮并削城防，失败则情报下降', () => this.resolveDiplomacyFire())],
-      ['劝降', () => this.confirmDiplomacyAction('劝降', this.selectedTargetCity?.name ?? '敌营', `成功率 ${this.diplomacyChance('persuade')}%｜守军动摇｜情报 +10`, () => this.resolveDiplomacy('persuade'))],
+      ['离间', () => this.showDiplomacyActorSelection('sabotage')],
+      ['暗杀', () => this.showDiplomacyActorSelection('assassination')],
+      ['火计', () => this.showDiplomacyActorSelection('fire')],
+      ['劝降', () => this.showDiplomacyActorSelection('persuade')],
     ])
   }
 
-  private confirmDiplomacyAction(command: string, target: string, effect: string, onConfirm: () => void) {
-    const city = this.selectedCity
-    if (!city) return
+  private showDiplomacyActorSelection(kind: DiplomacyCommandKind) {
+    const meta = diplomacyCommandMeta(kind)
+    const actors = this.controlledCities().filter((city) => this.diplomacyTargetsFrom(city).length > 0)
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 392, 820, 330, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(272, 258, `外交｜${meta.command}：选择发起方`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 310, '外交命令先确定出使城，再选择邻接势力或敌城，最后确认执行。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    if (actors.length === 0) {
+      this.overlayLayer.add(this.add.text(640, 414, '当前没有邻接外交目标的己方城。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+    }
+    actors.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 392 + row * 78
+      const targets = this.diplomacyTargetsFrom(city)
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        this.showDiplomacyTargetSelection(kind, city)
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 34, `邻接目标 ${targets.length}｜金${city.gold} 粮${city.food}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 586, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+  }
+
+  private showDiplomacyTargetSelection(kind: DiplomacyCommandKind, actor: StrategyCity) {
+    const meta = diplomacyCommandMeta(kind)
+    const targets = this.diplomacyTargetsFrom(actor)
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 392, 850, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(260, 248, `外交｜${meta.command}：选择目标`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 302, `发起方：${actor.name}使者    目标类型：${meta.targetKind === 'faction' ? '邻接势力' : '邻接敌城'}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#f8ecd0',
+    }))
+    if (meta.targetKind === 'faction') {
+      this.diplomacyFactionTargetsFrom(actor).forEach((faction, index) => {
+        const cityNames = targets.filter((city) => city.owner === faction.id).map((city) => city.name).join('、')
+        const col = index % 3
+        const row = Math.floor(index / 3)
+        const x = 410 + col * 230
+        const y = 390 + row * 82
+        this.makeButton(x, y, faction.ruler, () => this.confirmDiplomacyAction(kind, actor, faction), this.overlayLayer, 168, 40)
+        this.overlayLayer.add(this.add.text(x, y + 35, `${faction.name}｜邻城 ${cityNames}`, {
+          fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+          fontSize: '14px',
+          color: '#ead7b3',
+        }).setOrigin(0.5))
+      })
+    } else {
+      targets.forEach((city, index) => {
+        const faction = factionById(city.owner)
+        const col = index % 3
+        const row = Math.floor(index / 3)
+        const x = 410 + col * 230
+        const y = 390 + row * 82
+        this.makeButton(x, y, city.name, () => this.confirmDiplomacyAction(kind, actor, city), this.overlayLayer, 168, 40)
+        this.overlayLayer.add(this.add.text(x, y + 35, `${faction?.ruler ?? '敌将'}｜兵${city.troops} 防${city.defense}`, {
+          fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+          fontSize: '14px',
+          color: '#ead7b3',
+        }).setOrigin(0.5))
+      })
+    }
+    this.makeButton(540, 606, '重选发起方', () => this.showDiplomacyActorSelection(kind), this.overlayLayer, 150, 38)
+    this.makeButton(740, 606, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+  }
+
+  private confirmDiplomacyAction(kind: DiplomacyCommandKind, actor: StrategyCity, target: StrategyCity | StrategyFaction) {
+    const meta = diplomacyCommandMeta(kind)
+    const targetCity = 'region' in target ? target : this.diplomacyTargetsFrom(actor).find((city) => city.owner === target.id)
+    const faction = 'region' in target ? factionById(target.owner) : target
+    this.selectedCityId = actor.id
+    this.focusedCityId = actor.id
+    this.selectedTargetCityId = targetCity?.id
+    this.selectedDiplomacyFactionId = faction?.id
+    this.syncSelectedCityState()
     this.showCommandConfirm({
       category: '外交',
-      command,
-      actor: `${city.name}使者`,
-      target,
-      scope: `${city.name}邻接外交`,
-      effect,
-      onConfirm,
-      onCancel: () => this.showDiplomacy(),
+      command: meta.command,
+      actor: `${actor.name}使者`,
+      target: 'region' in target ? `${target.name}（${faction?.ruler ?? '敌势力'}）` : `${target.name}（${target.ruler}）`,
+      scope: `${actor.name}邻接外交`,
+      effect: this.diplomacyCommandEffect(kind),
+      onConfirm: () => this.executeDiplomacyCommand(kind),
+      onCancel: () => this.showDiplomacyTargetSelection(kind, actor),
     })
+  }
+
+  private diplomacyCommandEffect(kind: DiplomacyCommandKind) {
+    return {
+      alliance: `成功率 ${this.diplomacyChance('alliance')}%｜士气 +10｜敌势 -8`,
+      scout: `成功率 ${this.diplomacyChance('scout')}%｜情报 +32`,
+      borrow: '府库 +260｜士气 -2',
+      repay: '府库 -180｜士气 +3｜敌势 -3',
+      sabotage: `成功率 ${this.diplomacyChance('sabotage')}%｜敌兵动摇｜敌势下降`,
+      assassination: '扰乱守备，失败则敌势上升',
+      fire: '烧敌粮并削城防，失败则情报下降',
+      persuade: `成功率 ${this.diplomacyChance('persuade')}%｜守军动摇｜情报 +10`,
+    }[kind]
+  }
+
+  private executeDiplomacyCommand(kind: DiplomacyCommandKind) {
+    if (kind === 'borrow') {
+      this.borrowFunds()
+      return
+    }
+    if (kind === 'repay') {
+      this.repayFunds()
+      return
+    }
+    if (kind === 'assassination') {
+      this.resolveAssassination()
+      return
+    }
+    if (kind === 'fire') {
+      this.resolveDiplomacyFire()
+      return
+    }
+    this.resolveDiplomacy(kind)
   }
 
   private borrowFunds() {
@@ -3226,39 +3355,6 @@ class KingdomsScene extends Phaser.Scene {
     }
   }
 
-  private drawDiplomacyContext() {
-    const factions = this.availableDiplomacyFactions()
-    this.overlayLayer.add(this.add.rectangle(286, 142, 708, 154, 0x101722, 0.97).setOrigin(0).setStrokeStyle(2, 0xd4af37, 0.8))
-    this.overlayLayer.add(this.add.text(320, 166, `外交对象  ｜  出使城 ${this.selectedCity?.name ?? '-'}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(320, 198, `情报 ${this.councilState.intel}    士气 ${this.councilState.morale}    敌势 ${this.campaignClock.enemyThreat}    盟约 ${this.councilState.alliance}${this.alliedFactionIds.size > 0 ? '方' : ''}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '17px',
-      color: '#ead7b3',
-    }))
-    if (factions.length === 0) {
-      this.overlayLayer.add(this.add.text(640, 250, '当前城池周边暂无可交涉势力。', {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '18px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-      return
-    }
-    factions.forEach((faction, index) => {
-      const x = 386 + index * 132
-      const selected = faction.id === this.selectedDiplomacyFactionId
-      this.makeButton(x, 252, selected ? `${faction.ruler}✓` : faction.ruler, () => {
-        this.selectedDiplomacyFactionId = faction.id
-        const target = this.availableDeploymentTargets().find((city) => city.owner === faction.id)
-        if (target) this.selectedTargetCityId = target.id
-        this.showDiplomacy()
-      }, this.overlayLayer, 116, 34)
-    })
-  }
-
   private resolveDiplomacy(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
     this.ensureDiplomacyTarget()
     if (!this.selectedDiplomacyFaction()) {
@@ -3283,7 +3379,9 @@ class KingdomsScene extends Phaser.Scene {
 
   private applyDiplomacySuccess(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
     const faction = this.selectedDiplomacyFaction()
-    const targetCity = this.availableDeploymentTargets().find((city) => city.owner === faction?.id) ?? this.selectedTargetCity
+    const targetCity = this.selectedTargetCity?.owner === faction?.id
+      ? this.selectedTargetCity
+      : this.availableDeploymentTargets().find((city) => city.owner === faction?.id)
     if (!faction) return
     if (kind === 'alliance') {
       this.councilState.alliance += 1
@@ -3745,9 +3843,22 @@ class KingdomsScene extends Phaser.Scene {
   private availableDeploymentTargets() {
     const city = this.selectedCity
     if (!city) return []
+    return this.diplomacyTargetsFrom(city)
+  }
+
+  private controlledCities() {
+    return this.campaignCities.filter((city) => city.owner === 'liu')
+  }
+
+  private diplomacyTargetsFrom(city: StrategyCity) {
     return city.routes
       .map((routeId) => this.campaignCities.find((item) => item.id === routeId))
       .filter((item): item is StrategyCity => item !== undefined && item.owner !== 'liu')
+  }
+
+  private diplomacyFactionTargetsFrom(city: StrategyCity) {
+    const ids = new Set(this.diplomacyTargetsFrom(city).map((target) => target.owner))
+    return strategyFactions.filter((faction) => ids.has(faction.id))
   }
 
   private availableDiplomacyFactions() {
@@ -3779,7 +3890,11 @@ class KingdomsScene extends Phaser.Scene {
     if (!factions.some((faction) => faction.id === this.selectedDiplomacyFactionId)) {
       this.selectedDiplomacyFactionId = factions[0].id
     }
-    const target = this.availableDeploymentTargets().find((city) => city.owner === this.selectedDiplomacyFactionId)
+    const targets = this.availableDeploymentTargets()
+    if (targets.some((city) => city.id === this.selectedTargetCityId && city.owner === this.selectedDiplomacyFactionId)) {
+      return
+    }
+    const target = targets.find((city) => city.owner === this.selectedDiplomacyFactionId)
     if (target) this.selectedTargetCityId = target.id
   }
 
@@ -4611,6 +4726,19 @@ function militaryAllocationMeta(kind: MilitaryAllocationKind) {
       resultText: (officer: StrategyOfficer) => `部曲操练有成，训练${officerTraining(officer)}`,
     },
   }[kind]
+}
+
+function diplomacyCommandMeta(kind: DiplomacyCommandKind) {
+  return {
+    alliance: { command: '同盟', targetKind: 'faction' },
+    scout: { command: '情报', targetKind: 'city' },
+    borrow: { command: '借款', targetKind: 'faction' },
+    repay: { command: '还款', targetKind: 'faction' },
+    sabotage: { command: '离间', targetKind: 'city' },
+    assassination: { command: '暗杀', targetKind: 'city' },
+    fire: { command: '火计', targetKind: 'city' },
+    persuade: { command: '劝降', targetKind: 'city' },
+  }[kind] as { command: string; targetKind: 'faction' | 'city' }
 }
 
 function roleLabels(unitId: string, appointments: { governor: string; vanguard: string; strategist: string }) {
