@@ -172,6 +172,12 @@ type DiplomacyCommandKind = 'alliance' | 'scout' | 'borrow' | 'repay' | 'sabotag
 type RecruitScale = 'small' | 'medium' | 'large'
 type TrainingMode = 'single' | 'all'
 type TransportTarget = 'expedition' | CityId
+type DiplomacyDebt = {
+  factionId: FactionId
+  principal: number
+  dueYear: number
+  dueMonth: number
+}
 type CityPolicyDelta = { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; food?: number; supplies?: number; morale?: number; intel?: number }
 type IntelCommandCategory = '内政' | '军事'
 
@@ -376,6 +382,8 @@ class KingdomsScene extends Phaser.Scene {
   private selectedTargetCityId?: CityId = 'hanzhong'
   private selectedDiplomacyFactionId?: FactionId = 'neutral'
   private alliedFactionIds = new Set<FactionId>()
+  private allianceTerms = new Map<FactionId, number>()
+  private diplomacyDebts = new Map<FactionId, DiplomacyDebt>()
   private sabotagedFactionIds = new Set<FactionId>()
   private monthlyActionLog: string[] = []
   private marchArmy?: MarchArmy
@@ -783,6 +791,7 @@ class KingdomsScene extends Phaser.Scene {
       }
     }
     const aiReports = this.runEnemyFactionTurns()
+    const diplomacyReports = this.resolveDiplomacyTimers()
     const enemyAfter = this.strongestEnemySummary()
     this.syncSelectedCityState()
     this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + (this.cityState.publicOrder >= 70 ? 2 : -1), 0, 100)
@@ -802,6 +811,7 @@ class KingdomsScene extends Phaser.Scene {
     this.showMonthReport([
       ...commandLines,
       `刘备军收入：粮 +${liuFoodGain}，金 +${liuGoldGain}。`,
+      ...(diplomacyReports.length > 0 ? diplomacyReports : ['外交：盟约与债契暂无变化。']),
       `${enemyAfter.name}整备最盛：总兵 ${enemyBefore.troops} → ${enemyAfter.troops}。`,
       ...(aiReports.length > 0 ? aiReports.slice(0, 4) : ['诸势力暂未有大规模行动。']),
       eventText,
@@ -811,6 +821,49 @@ class KingdomsScene extends Phaser.Scene {
 
   private syncCampaignModeToMonth() {
     this.campaignClock.mode = this.campaignClock.month % 2 === 1 ? 'inspection' : 'march'
+  }
+
+  private resolveDiplomacyTimers() {
+    const reports: string[] = []
+    for (const [factionId, turns] of Array.from(this.allianceTerms.entries())) {
+      const nextTurns = turns - 1
+      const faction = factionById(factionId)
+      if (nextTurns <= 0) {
+        this.allianceTerms.delete(factionId)
+        this.alliedFactionIds.delete(factionId)
+        reports.push(`外交：与${faction?.ruler ?? factionId}的盟约期满。`)
+      } else {
+        this.allianceTerms.set(factionId, nextTurns)
+        reports.push(`外交：与${faction?.ruler ?? factionId}盟约尚余${nextTurns}月。`)
+      }
+    }
+    this.councilState.alliance = this.allianceTerms.size
+
+    for (const [factionId, debt] of Array.from(this.diplomacyDebts.entries())) {
+      const faction = factionById(factionId)
+      if (!this.isDebtDue(debt)) {
+        reports.push(`债契：尚欠${faction?.ruler ?? factionId}${debt.principal}，限${debt.dueYear}年${debt.dueMonth}月。`)
+        continue
+      }
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale - 5, 0, 100)
+      this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 6, 0, 100)
+      reports.push(`债契：拖欠${faction?.ruler ?? factionId}${debt.principal}到期未清，士气 -5，敌势 +6。`)
+    }
+    return reports.slice(0, 4)
+  }
+
+  private addCampaignMonths(months: number) {
+    const absolute = this.campaignClock.year * 12 + (this.campaignClock.month - 1) + months
+    return {
+      year: Math.floor(absolute / 12),
+      month: (absolute % 12) + 1,
+    }
+  }
+
+  private isDebtDue(debt: DiplomacyDebt) {
+    const now = this.campaignClock.year * 12 + this.campaignClock.month
+    const due = debt.dueYear * 12 + debt.dueMonth
+    return now >= due
   }
 
   private showMonthReport(lines: string[]) {
@@ -3850,14 +3903,26 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8ecd0',
     }))
     if (meta.targetKind === 'faction') {
-      this.diplomacyFactionTargetsFrom(actor).forEach((faction, index) => {
+      const factionTargets = this.diplomacyFactionTargetsForCommand(kind, actor)
+      if (factionTargets.length === 0) {
+        const emptyText = kind === 'repay'
+          ? '当前邻接势力中没有可还债对象。'
+          : '当前没有可交涉的邻接势力。'
+        this.overlayLayer.add(this.add.text(640, 426, emptyText, {
+          fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+          fontSize: '20px',
+          color: '#f8ecd0',
+        }).setOrigin(0.5))
+      }
+      factionTargets.forEach((faction, index) => {
         const cityNames = targets.filter((city) => city.owner === faction.id).map((city) => city.name).join('、')
+        const status = this.diplomacyFactionStatus(kind, faction.id)
         const col = index % 3
         const row = Math.floor(index / 3)
         const x = 410 + col * 230
         const y = 390 + row * 82
         this.makeButton(x, y, faction.ruler, () => this.confirmDiplomacyAction(kind, actor, faction), this.overlayLayer, 168, 40)
-        this.overlayLayer.add(this.add.text(x, y + 35, `${faction.name}｜邻城 ${cityNames}`, {
+        this.overlayLayer.add(this.add.text(x, y + 35, `${faction.name}｜${status || `邻城 ${cityNames}`}`, {
           fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
           fontSize: '14px',
           color: '#ead7b3',
@@ -4057,10 +4122,10 @@ class KingdomsScene extends Phaser.Scene {
 
   private diplomacyCommandEffect(kind: DiplomacyCommandKind) {
     return {
-      alliance: `成功率 ${this.diplomacyChance('alliance')}%｜士气 +10｜敌势 -8`,
+      alliance: `成功率 ${this.diplomacyChance('alliance')}%｜4月盟约｜士气 +10｜敌势 -8`,
       scout: `成功率 ${this.diplomacyChance('scout')}%｜情报 +32`,
-      borrow: '府库 +260｜士气 -2',
-      repay: '府库 -180｜士气 +3｜敌势 -3',
+      borrow: '府库 +260｜生成6月债契｜士气 -2',
+      repay: '偿还债契｜士气 +3｜敌势 -3',
       sabotage: `成功率 ${this.diplomacyChance('sabotage')}%｜选敌城武将｜降忠诚扰军心`,
       assassination: '选敌城武将｜扰乱部曲，失败则敌势上升',
       fire: '烧敌粮并削城防，失败则情报下降',
@@ -4094,13 +4159,29 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     const city = this.selectedCity
+    const faction = this.selectedDiplomacyFaction()
     if (!city) return
+    if (!faction) {
+      this.showDiplomacyMessage('没有明确债主，无法借款。')
+      return
+    }
+    if (this.diplomacyDebts.has(faction.id)) {
+      this.showDiplomacyMessage(`尚欠${faction.ruler}军债契未清，不能再借。`)
+      return
+    }
+    const due = this.addCampaignMonths(6)
     city.gold = Phaser.Math.Clamp(city.gold + 260, 0, 3000)
+    this.diplomacyDebts.set(faction.id, {
+      factionId: faction.id,
+      principal: 260,
+      dueYear: due.year,
+      dueMonth: due.month,
+    })
     this.councilState.morale = Math.max(0, this.councilState.morale - 2)
     this.councilState.actions -= 1
-    this.recordMonthlyAction(`${city.name}向邻国借款`)
+    this.recordMonthlyAction(`${city.name}向${faction.ruler}借款`)
     this.syncSelectedCityState()
-    this.showDiplomacyMessage('使者借得军资，府库增加，士气略降。')
+    this.showDiplomacyMessage(`使者向${faction.ruler}借得军资，债期至${due.year}年${due.month}月。`)
   }
 
   private repayFunds() {
@@ -4109,18 +4190,35 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     const city = this.selectedCity
+    const faction = this.selectedDiplomacyFaction()
     if (!city) return
-    if (city.gold < 180) {
+    if (!faction) {
+      this.showDiplomacyMessage('没有明确债权势力，无法还款。')
+      return
+    }
+    const debt = this.diplomacyDebts.get(faction.id)
+    if (!debt) {
+      this.showDiplomacyMessage(`未欠${faction.ruler}军债契，无需还款。`)
+      return
+    }
+    const payment = Math.min(180, debt.principal)
+    if (city.gold < payment) {
       this.showDiplomacyMessage('府库不足，无法还款。')
       return
     }
-    city.gold -= 180
+    city.gold -= payment
+    debt.principal -= payment
+    if (debt.principal <= 0) {
+      this.diplomacyDebts.delete(faction.id)
+    } else {
+      this.diplomacyDebts.set(faction.id, debt)
+    }
     this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 3, 0, 100)
     this.campaignClock.enemyThreat = Math.max(0, this.campaignClock.enemyThreat - 3)
     this.councilState.actions -= 1
-    this.recordMonthlyAction(`${city.name}遣使还款`)
+    this.recordMonthlyAction(`${city.name}还${faction.ruler}债`)
     this.syncSelectedCityState()
-    this.showDiplomacyMessage('债契已清，邦交缓和，敌势略降。')
+    this.showDiplomacyMessage(debt.principal <= 0 ? '债契已清，邦交缓和，敌势略降。' : `已还${payment}，尚欠${debt.principal}。`)
   }
 
   private resolveAssassination() {
@@ -4194,12 +4292,14 @@ class KingdomsScene extends Phaser.Scene {
       : this.availableDeploymentTargets().find((city) => city.owner === faction?.id)
     if (!faction) return
     if (kind === 'alliance') {
-      this.councilState.alliance += 1
+      const months = 4
       this.alliedFactionIds.add(faction.id)
+      this.allianceTerms.set(faction.id, months)
+      this.councilState.alliance = this.allianceTerms.size
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 10, 0, 100)
       this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat - 8, 0, 100)
       this.recordMonthlyAction(`与${faction.ruler}同盟`)
-      this.showDiplomacyMessage(`与${faction.ruler}暂结盟约，士气 +10，敌势 -8。`)
+      this.showDiplomacyMessage(`与${faction.ruler}暂结${months}月盟约，士气 +10，敌势 -8。`)
       return
     }
     if (kind === 'scout') {
@@ -4520,6 +4620,8 @@ class KingdomsScene extends Phaser.Scene {
     this.selectedTargetCityId = 'hanzhong'
     this.selectedDiplomacyFactionId = 'neutral'
     this.alliedFactionIds = new Set<FactionId>()
+    this.allianceTerms = new Map<FactionId, number>()
+    this.diplomacyDebts = new Map<FactionId, DiplomacyDebt>()
     this.sabotagedFactionIds = new Set<FactionId>()
     this.monthlyActionLog = []
     this.marchArmy = undefined
@@ -4679,6 +4781,26 @@ class KingdomsScene extends Phaser.Scene {
   private diplomacyFactionTargetsFrom(city: StrategyCity) {
     const ids = new Set(this.diplomacyTargetsFrom(city).map((target) => target.owner))
     return strategyFactions.filter((faction) => ids.has(faction.id))
+  }
+
+  private diplomacyFactionTargetsForCommand(kind: DiplomacyCommandKind, city: StrategyCity) {
+    const factions = this.diplomacyFactionTargetsFrom(city)
+    if (kind === 'repay') {
+      return factions.filter((faction) => this.diplomacyDebts.has(faction.id))
+    }
+    return factions
+  }
+
+  private diplomacyFactionStatus(kind: DiplomacyCommandKind, factionId: FactionId) {
+    if (kind === 'alliance') {
+      const turns = this.allianceTerms.get(factionId)
+      return turns ? `盟期 ${turns}月` : ''
+    }
+    const debt = this.diplomacyDebts.get(factionId)
+    if ((kind === 'borrow' || kind === 'repay') && debt) {
+      return `欠${debt.principal} 至${debt.dueYear}年${debt.dueMonth}月`
+    }
+    return ''
   }
 
   private availableDiplomacyFactions() {
