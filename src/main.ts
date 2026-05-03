@@ -1,0 +1,3072 @@
+import Phaser from 'phaser'
+import './style.css'
+
+type Faction = 'player' | 'enemy'
+type TerrainType = 'plain' | 'forest' | 'hill' | 'water' | 'fort'
+type UnitClass = 'vanguard' | 'archer' | 'strategist' | 'medic' | 'soldier' | 'commander'
+type Phase = 'title' | 'scenarioSetup' | 'rulerSelect' | 'campaign' | 'inspect' | 'factions' | 'talent' | 'city' | 'heroes' | 'diplomacy' | 'deploy' | 'briefing' | 'council' | 'monthReport' | 'playerSelect' | 'moveTarget' | 'actionTarget' | 'enemyTurn' | 'result'
+
+type GridPosition = {
+  x: number
+  y: number
+}
+
+type UnitStats = {
+  maxHp: number
+  hp: number
+  atk: number
+  def: number
+  mag: number
+  res: number
+  move: number
+  range: number
+  speed: number
+}
+
+type Skill = {
+  id: string
+  name: string
+  type: 'damage' | 'heal'
+  damageType?: 'physical' | 'magic'
+  power: number
+  range: number
+}
+
+type MilitaryEdict = 'steady' | 'raid' | 'fire'
+type Formation = 'vanguard' | 'goose' | 'circle'
+type CampaignMode = 'inspection' | 'march'
+type Difficulty = 'easy' | 'normal' | 'hard'
+type FactionId = 'cao' | 'liu' | 'sun' | 'yuan' | 'dong' | 'neutral'
+type CityId =
+  | 'xuchang'
+  | 'luoyang'
+  | 'ye'
+  | 'puyang'
+  | 'xiapi'
+  | 'shouchun'
+  | 'chengdu'
+  | 'jiangzhou'
+  | 'hanzhong'
+  | 'jianye'
+  | 'wujun'
+  | 'jiangxia'
+  | 'xiangyang'
+  | 'changsha'
+  | 'chang_an'
+
+type Unit = {
+  id: string
+  name: string
+  title: string
+  faction: Faction
+  classId: UnitClass
+  level: number
+  exp: number
+  stats: UnitStats
+  skills: string[]
+  position: GridPosition
+  hasMoved: boolean
+  hasActed: boolean
+  alive: boolean
+  palette: {
+    primary: number
+    secondary: number
+    portrait: number
+  }
+}
+
+type TerrainTile = {
+  type: TerrainType
+  walkable: boolean
+  moveCost: number
+  defenseBonus: number
+  attackBonus: number
+  healPerTurn: number
+}
+
+type StrategyFaction = {
+  id: FactionId
+  name: string
+  ruler: string
+  color: number
+  capital: CityId
+  trait: string
+}
+
+type StrategyCity = {
+  id: CityId
+  name: string
+  region: string
+  owner: FactionId
+  x: number
+  y: number
+  gold: number
+  food: number
+  troops: number
+  defense: number
+  routes: CityId[]
+}
+
+type StrategyOfficer = {
+  id: string
+  name: string
+  faction: FactionId
+  location: CityId
+  role: string
+  war: number
+  intel: number
+  gov: number
+  charm: number
+  command: number
+  loyalty: number
+}
+
+const TILE = 64
+const MAP_W = 12
+const MAP_H = 8
+const BOARD_X = 36
+const BOARD_Y = 92
+const UI_X = BOARD_X + MAP_W * TILE + 24
+
+const terrain: Record<TerrainType, TerrainTile> = {
+  plain: { type: 'plain', walkable: true, moveCost: 1, defenseBonus: 0, attackBonus: 0, healPerTurn: 0 },
+  forest: { type: 'forest', walkable: true, moveCost: 1, defenseBonus: 1, attackBonus: 0, healPerTurn: 0 },
+  hill: { type: 'hill', walkable: true, moveCost: 2, defenseBonus: 0, attackBonus: 1, healPerTurn: 0 },
+  water: { type: 'water', walkable: false, moveCost: 99, defenseBonus: 0, attackBonus: 0, healPerTurn: 0 },
+  fort: { type: 'fort', walkable: true, moveCost: 1, defenseBonus: 2, attackBonus: 0, healPerTurn: 2 },
+}
+
+const mapRows: TerrainType[][] = [
+  ['plain', 'plain', 'plain', 'forest', 'forest', 'plain', 'plain', 'hill', 'hill', 'hill', 'plain', 'plain'],
+  ['plain', 'plain', 'forest', 'forest', 'plain', 'plain', 'plain', 'plain', 'hill', 'hill', 'hill', 'plain'],
+  ['plain', 'plain', 'forest', 'plain', 'plain', 'water', 'water', 'plain', 'plain', 'hill', 'plain', 'plain'],
+  ['plain', 'plain', 'plain', 'plain', 'forest', 'water', 'plain', 'plain', 'plain', 'plain', 'plain', 'plain'],
+  ['plain', 'plain', 'plain', 'forest', 'forest', 'plain', 'plain', 'fort', 'plain', 'plain', 'plain', 'plain'],
+  ['plain', 'plain', 'plain', 'plain', 'plain', 'plain', 'forest', 'forest', 'plain', 'plain', 'plain', 'plain'],
+  ['plain', 'plain', 'plain', 'plain', 'water', 'water', 'plain', 'plain', 'plain', 'forest', 'forest', 'plain'],
+  ['plain', 'plain', 'plain', 'plain', 'plain', 'plain', 'plain', 'plain', 'forest', 'forest', 'plain', 'plain'],
+]
+
+const skills: Record<string, Skill> = {
+  strike: { id: 'strike', name: '猛击', type: 'damage', damageType: 'physical', power: 3, range: 1 },
+  volley: { id: 'volley', name: '连射', type: 'damage', damageType: 'physical', power: 2, range: 2 },
+  fire: { id: 'fire', name: '火计', type: 'damage', damageType: 'magic', power: 4, range: 2 },
+  mend: { id: 'mend', name: '包扎', type: 'heal', power: 7, range: 1 },
+}
+
+const strategyFactions: StrategyFaction[] = [
+  { id: 'cao', name: '曹操军', ruler: '曹操', color: 0x3b5ba9, capital: 'xuchang', trait: '屯田强军' },
+  { id: 'liu', name: '刘备军', ruler: '刘备', color: 0x4e9f50, capital: 'chengdu', trait: '仁德聚众' },
+  { id: 'sun', name: '孙权军', ruler: '孙权', color: 0xd9a441, capital: 'jianye', trait: '江东水师' },
+  { id: 'yuan', name: '袁绍军', ruler: '袁绍', color: 0x8b5fbf, capital: 'ye', trait: '河北名门' },
+  { id: 'dong', name: '董卓军', ruler: '董卓', color: 0x7a2f2f, capital: 'chang_an', trait: '强权威压' },
+  { id: 'neutral', name: '群雄割据', ruler: '诸郡豪强', color: 0x8a8f98, capital: 'luoyang', trait: '待势而动' },
+]
+
+const strategyCities: StrategyCity[] = [
+  { id: 'xuchang', name: '许昌', region: '中原', owner: 'cao', x: 378, y: 178, gold: 900, food: 1300, troops: 9000, defense: 68, routes: ['luoyang', 'puyang', 'shouchun'] },
+  { id: 'luoyang', name: '洛阳', region: '司隶', owner: 'neutral', x: 282, y: 178, gold: 500, food: 700, troops: 3500, defense: 55, routes: ['xuchang', 'chang_an', 'ye'] },
+  { id: 'ye', name: '邺城', region: '河北', owner: 'yuan', x: 386, y: 92, gold: 1000, food: 1500, troops: 11000, defense: 70, routes: ['luoyang', 'puyang'] },
+  { id: 'puyang', name: '濮阳', region: '兖州', owner: 'cao', x: 468, y: 208, gold: 420, food: 760, troops: 4200, defense: 48, routes: ['xuchang', 'ye', 'xiapi'] },
+  { id: 'xiapi', name: '下邳', region: '徐州', owner: 'neutral', x: 558, y: 268, gold: 520, food: 850, troops: 4800, defense: 52, routes: ['puyang', 'shouchun', 'jiangxia'] },
+  { id: 'shouchun', name: '寿春', region: '淮南', owner: 'neutral', x: 488, y: 326, gold: 580, food: 920, troops: 5200, defense: 56, routes: ['xuchang', 'xiapi', 'jianye'] },
+  { id: 'chengdu', name: '成都', region: '益州', owner: 'liu', x: 118, y: 342, gold: 850, food: 1600, troops: 7600, defense: 72, routes: ['jiangzhou', 'hanzhong'] },
+  { id: 'jiangzhou', name: '江州', region: '巴郡', owner: 'liu', x: 230, y: 374, gold: 390, food: 880, troops: 3600, defense: 50, routes: ['chengdu', 'jiangxia'] },
+  { id: 'hanzhong', name: '汉中', region: '汉中', owner: 'neutral', x: 172, y: 244, gold: 360, food: 780, troops: 3800, defense: 62, routes: ['chengdu', 'chang_an'] },
+  { id: 'jianye', name: '建业', region: '江东', owner: 'sun', x: 614, y: 384, gold: 950, food: 1200, troops: 7800, defense: 66, routes: ['wujun', 'shouchun', 'jiangxia'] },
+  { id: 'wujun', name: '吴郡', region: '江东', owner: 'sun', x: 642, y: 454, gold: 650, food: 980, troops: 4600, defense: 48, routes: ['jianye', 'changsha'] },
+  { id: 'jiangxia', name: '江夏', region: '荆州', owner: 'neutral', x: 376, y: 402, gold: 500, food: 860, troops: 4300, defense: 54, routes: ['jianye', 'xiangyang', 'jiangzhou', 'xiapi'] },
+  { id: 'xiangyang', name: '襄阳', region: '荆州', owner: 'neutral', x: 318, y: 312, gold: 780, food: 1250, troops: 6500, defense: 74, routes: ['jiangxia', 'changsha', 'luoyang'] },
+  { id: 'changsha', name: '长沙', region: '荆南', owner: 'neutral', x: 406, y: 486, gold: 460, food: 900, troops: 3900, defense: 46, routes: ['xiangyang', 'wujun'] },
+  { id: 'chang_an', name: '长安', region: '关中', owner: 'dong', x: 190, y: 168, gold: 900, food: 1100, troops: 12000, defense: 78, routes: ['luoyang', 'hanzhong'] },
+]
+
+const strategyOfficers: StrategyOfficer[] = [
+  { id: 'cao_cao', name: '曹操', faction: 'cao', location: 'xuchang', role: '君主', war: 72, intel: 92, gov: 88, charm: 86, command: 94, loyalty: 100 },
+  { id: 'xiahou_dun', name: '夏侯惇', faction: 'cao', location: 'puyang', role: '武将', war: 86, intel: 58, gov: 55, charm: 70, command: 82, loyalty: 92 },
+  { id: 'guo_jia', name: '郭嘉', faction: 'cao', location: 'xuchang', role: '军师', war: 32, intel: 96, gov: 74, charm: 78, command: 70, loyalty: 88 },
+  { id: 'liu_bei', name: '刘备', faction: 'liu', location: 'chengdu', role: '君主', war: 68, intel: 76, gov: 80, charm: 96, command: 78, loyalty: 100 },
+  { id: 'guan_yu', name: '关羽', faction: 'liu', location: 'chengdu', role: '武将', war: 97, intel: 72, gov: 60, charm: 88, command: 90, loyalty: 100 },
+  { id: 'zhang_fei', name: '张飞', faction: 'liu', location: 'jiangzhou', role: '武将', war: 96, intel: 45, gov: 35, charm: 65, command: 84, loyalty: 98 },
+  { id: 'zhuge_liang', name: '诸葛亮', faction: 'liu', location: 'chengdu', role: '军师', war: 38, intel: 99, gov: 96, charm: 90, command: 88, loyalty: 95 },
+  { id: 'sun_quan', name: '孙权', faction: 'sun', location: 'jianye', role: '君主', war: 62, intel: 80, gov: 84, charm: 86, command: 76, loyalty: 100 },
+  { id: 'zhou_yu', name: '周瑜', faction: 'sun', location: 'jianye', role: '都督', war: 74, intel: 95, gov: 78, charm: 88, command: 94, loyalty: 92 },
+  { id: 'lu_su', name: '鲁肃', faction: 'sun', location: 'wujun', role: '外交', war: 42, intel: 88, gov: 86, charm: 84, command: 66, loyalty: 90 },
+  { id: 'yuan_shao', name: '袁绍', faction: 'yuan', location: 'ye', role: '君主', war: 66, intel: 70, gov: 72, charm: 82, command: 80, loyalty: 100 },
+  { id: 'yan_liang', name: '颜良', faction: 'yuan', location: 'ye', role: '武将', war: 91, intel: 40, gov: 30, charm: 62, command: 78, loyalty: 84 },
+  { id: 'dong_zhuo', name: '董卓', faction: 'dong', location: 'chang_an', role: '君主', war: 82, intel: 58, gov: 42, charm: 38, command: 84, loyalty: 100 },
+  { id: 'lv_bu', name: '吕布', faction: 'dong', location: 'chang_an', role: '武将', war: 100, intel: 38, gov: 22, charm: 74, command: 86, loyalty: 62 },
+  { id: 'diao_chan', name: '貂蝉', faction: 'neutral', location: 'luoyang', role: '游士', war: 18, intel: 82, gov: 50, charm: 98, command: 20, loyalty: 70 },
+]
+
+const scenarioOptions = [
+  { id: 'heroes_190', year: 190, name: '群雄割据', desc: '天下初乱，诸侯并起。适合从城池经营和邻境攻防开始。', locked: false },
+  { id: 'guandu_200', year: 200, name: '官渡前夜', desc: '北方强权对峙，粮道与联盟更重要。', locked: true },
+  { id: 'chibi_208', year: 208, name: '赤壁风云', desc: '江河争锋，外交、火计与水陆进军并重。', locked: true },
+] as const
+
+const difficultyOptions: { id: Difficulty; name: string; desc: string; threat: number; enemyGrowth: number }[] = [
+  { id: 'easy', name: '初级', desc: '敌势较缓，适合熟悉内政、外交、军事循环。', threat: 18, enemyGrowth: 0.82 },
+  { id: 'normal', name: '中级', desc: '按标准节奏推进，每月有明确扩张压力。', threat: 28, enemyGrowth: 1 },
+  { id: 'hard', name: '上级', desc: '敌军整备更快，需要谨慎用兵。', threat: 42, enemyGrowth: 1.22 },
+]
+
+const baseUnits: Unit[] = [
+  createUnit('yun', '刘备', '仁德君主', 'player', 'vanguard', { x: 1, y: 3 }, {
+    maxHp: 30, hp: 30, atk: 10, def: 5, mag: 2, res: 3, move: 3, range: 1, speed: 6,
+  }, ['strike'], { primary: 0xd34d2f, secondary: 0xffd166, portrait: 0xb73928 }),
+  createUnit('lan', '关羽', '青龙上将', 'player', 'archer', { x: 1, y: 4 }, {
+    maxHp: 22, hp: 22, atk: 8, def: 3, mag: 3, res: 4, move: 3, range: 2, speed: 8,
+  }, ['volley'], { primary: 0x2f80ed, secondary: 0xe2c16f, portrait: 0x275eaa }),
+  createUnit('xuan', '诸葛亮', '卧龙军师', 'player', 'strategist', { x: 0, y: 3 }, {
+    maxHp: 20, hp: 20, atk: 4, def: 2, mag: 10, res: 7, move: 3, range: 2, speed: 5,
+  }, ['fire'], { primary: 0x7a4cc2, secondary: 0xf6d365, portrait: 0x5b3b9e }),
+  createUnit('qing', '张飞', '燕人猛将', 'player', 'medic', { x: 0, y: 4 }, {
+    maxHp: 21, hp: 21, atk: 4, def: 3, mag: 8, res: 8, move: 3, range: 1, speed: 5,
+  }, ['mend'], { primary: 0x19966f, secondary: 0xf2d492, portrait: 0x147756 }),
+  createUnit('banditA', '黑旗卒甲', '伏兵步卒', 'enemy', 'soldier', { x: 7, y: 3 }, {
+    maxHp: 20, hp: 20, atk: 7, def: 3, mag: 1, res: 2, move: 2, range: 1, speed: 4,
+  }, ['strike'], { primary: 0x495057, secondary: 0xe76f51, portrait: 0x343a40 }),
+  createUnit('banditB', '黑旗卒乙', '伏兵步卒', 'enemy', 'soldier', { x: 8, y: 5 }, {
+    maxHp: 20, hp: 20, atk: 7, def: 3, mag: 1, res: 2, move: 2, range: 1, speed: 4,
+  }, ['strike'], { primary: 0x495057, secondary: 0xe76f51, portrait: 0x343a40 }),
+  createUnit('raider', '乌羽射手', '山道弓兵', 'enemy', 'archer', { x: 9, y: 1 }, {
+    maxHp: 18, hp: 18, atk: 7, def: 2, mag: 2, res: 3, move: 2, range: 2, speed: 6,
+  }, ['volley'], { primary: 0x5d3a1a, secondary: 0xd98b2b, portrait: 0x6f4518 }),
+  createUnit('boss', '高顺', '陷阵前锋', 'enemy', 'commander', { x: 10, y: 4 }, {
+    maxHp: 34, hp: 34, atk: 10, def: 5, mag: 3, res: 4, move: 2, range: 1, speed: 5,
+  }, ['strike'], { primary: 0x8d1b3d, secondary: 0xffb703, portrait: 0x7a1830 }),
+]
+
+class ProceduralMusic {
+  private context?: AudioContext
+  private gain?: GainNode
+  private timer?: number
+  private step = 0
+
+  start() {
+    if (this.context) return
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    this.context = new AudioContextClass()
+    this.gain = this.context.createGain()
+    this.gain.gain.value = 0.035
+    this.gain.connect(this.context.destination)
+    const melody = [196, 247, 294, 330, 294, 247, 220, 196]
+    const bass = [98, 98, 123, 123, 147, 147, 110, 110]
+    this.timer = window.setInterval(() => {
+      if (!this.context || !this.gain) return
+      this.playTone(melody[this.step % melody.length], 0.16, 'triangle')
+      if (this.step % 2 === 0) this.playTone(bass[this.step % bass.length], 0.22, 'sine', 0.55)
+      this.step += 1
+    }, 270)
+  }
+
+  stop() {
+    if (this.timer) window.clearInterval(this.timer)
+    this.timer = undefined
+    this.context?.close()
+    this.context = undefined
+  }
+
+  private playTone(frequency: number, duration: number, type: OscillatorType, volume = 1) {
+    if (!this.context || !this.gain) return
+    const oscillator = this.context.createOscillator()
+    const noteGain = this.context.createGain()
+    oscillator.type = type
+    oscillator.frequency.value = frequency
+    noteGain.gain.setValueAtTime(0.0001, this.context.currentTime)
+    noteGain.gain.exponentialRampToValueAtTime(0.35 * volume, this.context.currentTime + 0.015)
+    noteGain.gain.exponentialRampToValueAtTime(0.0001, this.context.currentTime + duration)
+    oscillator.connect(noteGain)
+    noteGain.connect(this.gain)
+    oscillator.start()
+    oscillator.stop(this.context.currentTime + duration + 0.02)
+  }
+}
+
+class KingdomsScene extends Phaser.Scene {
+  private phase: Phase = 'title'
+  private units: Unit[] = []
+  private selectedUnitId?: string
+  private selectedSkillId?: string
+  private currentFaction: Faction = 'player'
+  private turn = 1
+  private roundKills = 0
+  private highlighted: GridPosition[] = []
+  private actionButtons: Phaser.GameObjects.Text[] = []
+  private logLines: string[] = []
+  private music = new ProceduralMusic()
+  private councilState = {
+    supplies: 80,
+    morale: 55,
+    intel: 20,
+    actions: 3,
+    trained: false,
+    scouted: false,
+    edict: 'steady' as MilitaryEdict,
+    formation: 'circle' as Formation,
+    persuaded: false,
+    alliance: 0,
+    sabotage: false,
+    firstTurnRaid: false,
+  }
+  private cityState = {
+    name: '成都',
+    publicOrder: 62,
+    treasury: 120,
+    recruits: 48,
+    farms: 1,
+    walls: 1,
+  }
+  private campaignCities: StrategyCity[] = []
+  private campaignOfficers: StrategyOfficer[] = []
+  private selectedCityId: CityId = 'chengdu'
+  private selectedTargetCityId?: CityId = 'hanzhong'
+  private selectedDiplomacyFactionId?: FactionId = 'neutral'
+  private alliedFactionIds = new Set<FactionId>()
+  private sabotagedFactionIds = new Set<FactionId>()
+  private monthlyActionLog: string[] = []
+  private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
+  private selectedDifficulty: Difficulty = 'normal'
+  private campaignClock = {
+    year: 190,
+    month: 1,
+    mode: 'inspection' as CampaignMode,
+    enemyThreat: 28,
+  }
+  private appointments = {
+    governor: 'yun',
+    vanguard: 'yun',
+    strategist: 'xuan',
+  }
+  private recruitedNeutralIds = new Set<string>()
+
+  private boardLayer!: Phaser.GameObjects.Container
+  private unitLayer!: Phaser.GameObjects.Container
+  private highlightLayer!: Phaser.GameObjects.Container
+  private uiLayer!: Phaser.GameObjects.Container
+  private overlayLayer!: Phaser.GameObjects.Container
+  private statusText!: Phaser.GameObjects.Text
+  private infoText!: Phaser.GameObjects.Text
+  private logText!: Phaser.GameObjects.Text
+
+  constructor() {
+    super('kingdoms')
+  }
+
+  preload() {
+    this.load.image('title-bg', '/assets/images/backgrounds/title.png')
+    this.load.image('battlefield-bg', '/assets/images/backgrounds/battlefield.png')
+    for (const unitId of ['yun', 'lan', 'xuan', 'qing', 'banditA', 'banditB', 'raider', 'boss']) {
+      this.load.image(`portrait-${unitId}`, `/assets/images/portraits/${unitId}.png`)
+    }
+  }
+
+  create() {
+    this.cameras.main.setBackgroundColor('#1b1f26')
+    this.boardLayer = this.add.container(0, 0)
+    this.highlightLayer = this.add.container(0, 0)
+    this.unitLayer = this.add.container(0, 0)
+    this.uiLayer = this.add.container(0, 0)
+    this.overlayLayer = this.add.container(0, 0)
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handlePointer(pointer))
+    this.showTitle()
+  }
+
+  private showTitle() {
+    this.phase = 'title'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.addTitleText('三国志列传：群英新篇', '机制怀旧重制 · 表达全面原创')
+    this.makeButton(520, 492, '开始游戏', () => {
+      this.music.start()
+      this.showScenarioSetup()
+    }, this.overlayLayer)
+    this.makeButton(520, 552, '继续游戏', () => this.showContinueStub(), this.overlayLayer)
+    this.makeButton(520, 612, '环境设定', () => this.showSettingsOverlay(), this.overlayLayer)
+    this.makeButton(760, 612, '开发计划', () => this.showPlanOverlay(), this.overlayLayer, 180, 48)
+  }
+
+  private showScenarioSetup() {
+    this.phase = 'scenarioSetup'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '初始设定', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1010, 72, '剧本 / 年代 / 难度 / 玩家数', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+
+    this.overlayLayer.add(this.add.rectangle(86, 140, 710, 392, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(120, 168, '选择年代', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    scenarioOptions.forEach((scenario, index) => {
+      const y = 232 + index * 92
+      const active = this.selectedScenarioId === scenario.id
+      this.overlayLayer.add(this.add.rectangle(122, y - 32, 614, 72, active ? 0x342415 : 0x21160f, 0.94).setOrigin(0).setStrokeStyle(2, active ? 0xf8df9d : 0xd4af37, active ? 0.95 : 0.5))
+      this.overlayLayer.add(this.add.text(150, y - 18, `${scenario.year}年  ${scenario.name}${scenario.locked ? '（后续开放）' : ''}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '22px',
+        color: active ? '#fff0bd' : '#f8df9d',
+      }))
+      this.overlayLayer.add(this.add.text(150, y + 12, scenario.desc, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '17px',
+        color: '#ead7b3',
+      }))
+      this.makeButton(658, y + 4, active ? '已定' : scenario.locked ? '未开' : '选择', () => {
+        if (scenario.locked) {
+          this.showTitleNotice('剧本未开放', '当前先以190年群雄割据打磨完整复刻流程。')
+          return
+        }
+        this.selectedScenarioId = scenario.id
+        this.showScenarioSetup()
+      }, this.overlayLayer, 104, 36)
+    })
+
+    this.overlayLayer.add(this.add.rectangle(838, 140, 350, 392, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(870, 168, '选择难度', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    difficultyOptions.forEach((difficulty, index) => {
+      const y = 232 + index * 82
+      const active = this.selectedDifficulty === difficulty.id
+      this.overlayLayer.add(this.add.rectangle(872, y - 30, 274, 64, active ? 0x342415 : 0x21160f, 0.94).setOrigin(0).setStrokeStyle(2, active ? 0xf8df9d : 0xd4af37, active ? 0.95 : 0.45))
+      this.overlayLayer.add(this.add.text(898, y - 16, difficulty.name, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '22px',
+        color: active ? '#fff0bd' : '#f8df9d',
+      }))
+      this.overlayLayer.add(this.add.text(898, y + 12, difficulty.desc, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '15px',
+        color: '#ead7b3',
+        wordWrap: { width: 180 },
+      }))
+      this.makeButton(1086, y + 4, active ? '已定' : '选择', () => {
+        this.selectedDifficulty = difficulty.id
+        this.showScenarioSetup()
+      }, this.overlayLayer, 86, 34)
+    })
+    this.overlayLayer.add(this.add.text(872, 478, '玩家数：一人\n胜利目标：统一核心州郡\n操作顺序：选城 → 命令 → 月令', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#f4dfb3',
+      lineSpacing: 8,
+    }))
+
+    this.makeButton(438, 636, '返回标题', () => this.showTitle(), this.overlayLayer, 180, 44)
+    this.makeButton(640, 636, '决定', () => this.showRulerSelect(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '环境设定', () => this.showSettingsOverlay(), this.overlayLayer, 180, 44)
+  }
+
+  private showRulerSelect() {
+    this.phase = 'rulerSelect'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '选择君主', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1000, 72, `当前剧本：${this.selectedScenarioLabel()}｜${this.selectedDifficultyLabel()}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    strategyFactions.filter((faction) => faction.id !== 'neutral').forEach((faction, index) => {
+      const x = 116 + (index % 3) * 360
+      const y = 160 + Math.floor(index / 3) * 190
+      this.overlayLayer.add(this.add.rectangle(x, y, 308, 146, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, faction.color, 0.9))
+      this.overlayLayer.add(this.add.text(x + 28, y + 22, faction.name, {
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        fontSize: '29px',
+        color: '#f8df9d',
+      }))
+      this.overlayLayer.add(this.add.text(x + 30, y + 66, `君主：${faction.ruler}\n主城：${cityName(faction.capital)}\n特性：${faction.trait}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '18px',
+        color: '#f8ecd0',
+        lineSpacing: 7,
+      }))
+      const available = faction.id === 'liu'
+      this.makeButton(x + 224, y + 108, available ? '开始' : '未开放', () => {
+        if (available) {
+          this.resetCampaignState()
+          this.showCampaign()
+        } else {
+          this.showTitleNotice('势力未开放', '当前版本先以刘备军完成机制复刻，其他势力将在多剧本阶段开放。')
+        }
+      }, this.overlayLayer, 112, 36)
+    })
+    this.makeButton(640, 636, '返回标题', () => this.showTitle(), this.overlayLayer, 180, 44)
+  }
+
+  private showCampaign() {
+    this.phase = 'campaign'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.9).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '战役总览', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1018, 72, `${this.campaignClock.year}年${this.campaignClock.month}月   ${campaignModeName(this.campaignClock.mode)}｜${this.selectedDifficultyLabel()}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.drawCampaignMap()
+    this.drawCampaignSidePanel()
+    this.drawMainCommandMenu()
+  }
+
+  private drawMainCommandMenu() {
+    const commands: [string, () => void][] = [
+      ['视察', () => this.showInspection()],
+      ['内政', () => this.showDomesticCommand()],
+      ['外交', () => this.showDiplomacy()],
+      ['军事', () => this.showMilitaryCommand()],
+      ['人事', () => this.showPersonnelCommand()],
+      ['机能', () => this.showSystemCommand()],
+      ['月令', () => this.advanceCampaignMonth()],
+    ]
+    this.overlayLayer.add(this.add.rectangle(70, 600, 1140, 92, 0x21160f, 0.96).setOrigin(0).setStrokeStyle(2, 0xd4af37, 0.8))
+    this.overlayLayer.add(this.add.text(102, 614, `当前城池：${this.selectedCity?.name ?? '未选'}    顺序：选城 → 下令 → 月令`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '17px',
+      color: '#f4dfb3',
+    }))
+    commands.forEach(([label, callback], index) => {
+      this.makeButton(150 + index * 160, 658, label, callback, this.overlayLayer, 132, 46)
+    })
+  }
+
+  private showBriefing() {
+    this.phase = 'briefing'
+    this.ensureDeploymentTarget()
+    const source = this.selectedCity
+    const target = this.selectedTargetCity
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.addTitleText(`${target?.name ?? '邻境'}攻略`, `${source?.name ?? '本城'}整备兵粮，准备进军${target?.region ?? '邻境'}。`)
+    const panel = this.add.rectangle(520, 392, 780, 260, 0x101722, 0.88).setStrokeStyle(2, 0xd4af37, 0.8)
+    this.overlayLayer.add(panel)
+    const copy = [
+      `出发城池：${source?.name ?? '-'}`,
+      `目标城池：${target?.name ?? '未定'}  守军 ${target?.troops ?? 0}`,
+      `所属势力：${target ? factionById(target.owner)?.name ?? '群雄割据' : '-'}`,
+      '胜利条件：击败目标城守军前锋',
+      '失败条件：我方全灭',
+      '核心操作：点击我方单位，选择移动/攻击/技能/待机',
+      '地形：树林加防御，山丘加攻击，据点每回合回复生命。',
+    ].join('\n')
+    this.overlayLayer.add(this.add.text(180, 292, copy, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '24px',
+      lineSpacing: 14,
+      color: '#f7ead0',
+    }))
+    this.makeButton(520, 568, '进入议事厅', () => this.showCouncil(), this.overlayLayer)
+  }
+
+  private advanceCampaignMonth() {
+    let liuFoodGain = 0
+    let liuGoldGain = 0
+    const enemyBefore = this.strongestEnemySummary()
+    for (const city of this.campaignCities) {
+      const foodGain = Math.max(60, Math.floor(city.food * 0.08))
+      const goldGain = Math.max(40, Math.floor(city.gold * 0.08))
+      const enemyGrowth = city.owner === 'liu' ? 1 : this.difficultyConfig().enemyGrowth
+      const troopGain = Math.max(120, Math.floor(city.troops * 0.035 * enemyGrowth))
+      city.food = Math.min(5000, city.food + foodGain)
+      city.gold = Math.min(3000, city.gold + goldGain)
+      city.troops = Math.min(30000, city.troops + troopGain)
+      if (city.owner === 'liu') {
+        liuFoodGain += foodGain
+        liuGoldGain += goldGain
+      }
+    }
+    const aiReports = this.runEnemyFactionTurns()
+    const enemyAfter = this.strongestEnemySummary()
+    this.syncSelectedCityState()
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + (this.cityState.publicOrder >= 70 ? 2 : -1), 0, 100)
+    this.councilState.actions = 3
+    this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 6 - this.cityState.walls, 0, 100)
+    this.campaignClock.month += 1
+    if (this.campaignClock.month > 12) {
+      this.campaignClock.month = 1
+      this.campaignClock.year += 1
+    }
+    this.campaignClock.mode = this.campaignClock.mode === 'inspection' ? 'march' : 'inspection'
+    const eventText = this.resolveMonthlyEvent()
+    const commandLines = this.monthlyActionLog.length > 0
+      ? [`本月命令：${this.monthlyActionLog.join('；')}。`]
+      : ['本月命令：未执行城池命令。']
+    this.monthlyActionLog = []
+    this.showMonthReport([
+      ...commandLines,
+      `刘备军收入：粮 +${liuFoodGain}，金 +${liuGoldGain}。`,
+      `${enemyAfter.name}整备最盛：总兵 ${enemyBefore.troops} → ${enemyAfter.troops}。`,
+      ...(aiReports.length > 0 ? aiReports.slice(0, 4) : ['诸势力暂未有大规模行动。']),
+      eventText,
+      `新月份：政令恢复为 ${this.councilState.actions}，当前城池 ${this.selectedCity?.name ?? '-'}。`,
+    ])
+  }
+
+  private showMonthReport(lines: string[]) {
+    this.phase = 'monthReport'
+    this.showCampaign()
+    this.phase = 'monthReport'
+    this.overlayLayer.add(this.add.rectangle(640, 382, 760, 390, 0x101722, 0.98).setStrokeStyle(3, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(640, 226, '月令报告', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '44px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(640, 286, `${this.campaignClock.year}年${this.campaignClock.month}月`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(316, 330, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 12,
+      wordWrap: { width: 650 },
+    }))
+    this.makeButton(640, 536, '回到版图', () => this.showCampaign(), this.overlayLayer, 180, 44)
+  }
+
+  private showCampaignMessage(message: string) {
+    this.showCampaign()
+    this.overlayLayer.add(this.add.text(640, 584, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#fff4cf',
+      backgroundColor: '#3c2417',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5))
+  }
+
+  private recordMonthlyAction(message: string) {
+    this.monthlyActionLog.push(message)
+    if (this.monthlyActionLog.length > 6) this.monthlyActionLog.shift()
+  }
+
+  private showDomesticCommand() {
+    this.showCommandPanel('内政', [
+      ['开发', () => this.applyCityPolicy(`${this.selectedCity?.name ?? '城中'}开发田地，粮仓渐实。`, { treasury: -120, supplies: 300 })],
+      ['征兵', () => this.applyCityPolicy(`${this.selectedCity?.name ?? '城中'}征募乡勇，兵力增加。`, { treasury: -160, recruits: 900, morale: 3 })],
+      ['训练', () => this.applyCityPolicy(`${this.selectedCity?.name ?? '城中'}校场练兵，士气上升。`, { treasury: -90, morale: 7, intel: 3 })],
+      ['治安', () => this.applyCityPolicy(`${this.selectedCity?.name ?? '城中'}巡查里坊，民心安定。`, { treasury: -100, publicOrder: 10, morale: 2 })],
+      ['征粮', () => this.applyCityPolicy(`${this.selectedCity?.name ?? '城中'}征调军粮，民心略降。`, { supplies: 480, publicOrder: -4 })],
+    ])
+  }
+
+  private showMilitaryCommand() {
+    this.showCommandPanel('军事', [
+      ['出征', () => this.showDeployment()],
+      ['编队', () => this.showHeroManagement()],
+      ['任命', () => this.showHeroManagement()],
+      ['情报', () => this.showBriefing()],
+      ['撤退', () => this.showCampaignMessage('当前无远征军需要撤退。')],
+    ])
+  }
+
+  private showPersonnelCommand() {
+    this.showCommandPanel('人事', [
+      ['搜索', () => this.showTalentSearch()],
+      ['登用', () => this.showTalentSearch()],
+      ['赏赐', () => this.showHeroManagement()],
+      ['移动', () => this.moveCurrentCityOfficer()],
+      ['俘虏', () => this.showCampaignMessage('俘虏处置将在战后系统中开放。')],
+    ])
+  }
+
+  private showSystemCommand() {
+    this.showCommandPanel('机能', [
+      ['势力', () => this.showFactionOverview()],
+      ['设定', () => this.showSettingsOverlay()],
+      ['计划', () => this.showPlanOverlay()],
+      ['标题', () => this.showTitle()],
+    ])
+  }
+
+  private showCommandPanel(title: string, items: [string, () => void][]) {
+    const panel = this.add.rectangle(640, 458, 760, 190, 0x101722, 0.98).setStrokeStyle(2, 0xd4af37, 0.9)
+    const heading = this.add.text(300, 384, `${title}命令  ｜  ${this.selectedCity?.name ?? '未选'}城`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '30px',
+      color: '#f8df9d',
+    })
+    this.overlayLayer.add([panel, heading])
+    const buttons: Phaser.GameObjects.Text[] = []
+    items.forEach(([label, callback], index) => {
+      const x = 330 + index * 122
+      const button = this.makeButton(x, 466, label, () => {
+        panel.destroy()
+        heading.destroy()
+        buttons.forEach((item) => item.destroy())
+        callback()
+      }, this.overlayLayer, 104, 42)
+      buttons.push(button)
+    })
+    const close = this.makeButton(930, 532, '取消', () => {
+      panel.destroy()
+      heading.destroy()
+      buttons.forEach((item) => item.destroy())
+      this.showCampaign()
+    }, this.overlayLayer, 110, 38)
+    buttons.push(close)
+  }
+
+  private showInspection() {
+    this.phase = 'inspect'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '视察情况', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1010, 72, `${this.campaignClock.year}年${this.campaignClock.month}月   ${campaignModeName(this.campaignClock.mode)}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.drawInspectionCity()
+    this.drawInspectionHeroes()
+    this.drawInspectionThreat()
+    this.makeButton(438, 636, '势力一览', () => this.showFactionOverview(), this.overlayLayer, 180, 44)
+    this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '行军出征', () => this.showDeployment(), this.overlayLayer, 180, 44)
+  }
+
+  private drawInspectionCity() {
+    this.overlayLayer.add(this.add.rectangle(82, 140, 330, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(112, 170, '城池', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const lines = [
+      `势力    刘备军`,
+      `主城    成都`,
+      `城池    ${this.countCities('liu')}`,
+      `武将    ${this.countOfficers('liu')}`,
+      `总兵    ${this.sumCityField('liu', 'troops')}`,
+      `总粮    ${this.sumCityField('liu', 'food')}`,
+      `府库    ${this.cityState.treasury}`,
+      `民心    ${this.cityState.publicOrder}`,
+      `邻敌    ${this.neighborEnemyCities('liu').join('、') || '无'}`,
+    ]
+    this.overlayLayer.add(this.add.text(118, 230, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#f8ecd0',
+      lineSpacing: 13,
+    }))
+  }
+
+  private drawInspectionHeroes() {
+    this.overlayLayer.add(this.add.rectangle(450, 140, 380, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(480, 170, '武将', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    this.campaignOfficers.filter((officer) => officer.faction === 'liu').forEach((officer, index) => {
+      const y = 218 + index * 64
+      const key = officerPortraitKey(officer.id)
+      this.overlayLayer.add(this.add.rectangle(480, y - 22, 310, 58, 0x21160f, 0.9).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.45))
+      if (this.textures.exists(key)) {
+        this.overlayLayer.add(this.add.image(510, y + 6, key).setDisplaySize(42, 50))
+      }
+      this.overlayLayer.add(this.add.text(542, y - 12, `${officer.name}｜${officer.role}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '19px',
+        color: '#f8df9d',
+      }))
+      this.overlayLayer.add(this.add.text(542, y + 16, `武 ${officer.war}  智 ${officer.intel}  政 ${officer.gov}  忠 ${officer.loyalty}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '16px',
+        color: '#f8ecd0',
+      }))
+    })
+  }
+
+  private drawInspectionThreat() {
+    this.overlayLayer.add(this.add.rectangle(868, 140, 326, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(898, 170, '敌情', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const supplyNeed = this.deploymentSupplyNeed()
+    const threatLabel = this.campaignClock.enemyThreat >= 75 ? '强盛' : this.campaignClock.enemyThreat >= 55 ? '警戒' : '可战'
+    const lines = [
+      `敌势    ${this.campaignClock.enemyThreat}（${threatLabel}）`,
+      `情报    ${this.councilState.intel}`,
+      `盟约    ${this.councilState.alliance}`,
+      `离间    ${this.councilState.sabotage ? '已成' : '未行'}`,
+      `劝降    ${this.councilState.persuaded ? '已送' : '未送'}`,
+      `出征粮  ${supplyNeed}`,
+      `政令    ${this.councilState.actions}`,
+      `建议    ${this.campaignClock.enemyThreat > 60 ? '先外交削敌' : '可准备出征'}`,
+    ]
+    this.overlayLayer.add(this.add.text(904, 230, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 13,
+    }))
+  }
+
+  private showFactionOverview() {
+    this.phase = 'factions'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '势力一览', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1000, 72, '观天下强弱，择交战时机', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.rectangle(94, 142, 1092, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(124, 170, '势力        君主        城池    武将    总兵       总粮       特性', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f5d487',
+    }))
+    strategyFactions.filter((faction) => faction.id !== 'neutral').forEach((faction, index) => {
+      const y = 220 + index * 60
+      this.overlayLayer.add(this.add.rectangle(120, y - 12, 1010, 44, 0x21160f, index % 2 === 0 ? 0.88 : 0.72).setOrigin(0).setStrokeStyle(1, faction.color, 0.7))
+      const line = `${faction.name.padEnd(6, '　')}  ${faction.ruler.padEnd(4, '　')}    ${String(this.countCities(faction.id)).padStart(2, ' ')}      ${String(this.countOfficers(faction.id)).padStart(2, ' ')}    ${String(this.sumCityField(faction.id, 'troops')).padStart(5, ' ')}    ${String(this.sumCityField(faction.id, 'food')).padStart(5, ' ')}    ${faction.trait}`
+      this.overlayLayer.add(this.add.text(134, y, line, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }))
+    })
+    this.makeButton(540, 636, '返回视察', () => this.showInspection(), this.overlayLayer, 180, 44)
+    this.makeButton(740, 636, '外交交涉', () => this.showDiplomacy(), this.overlayLayer, 180, 44)
+  }
+
+  private showTalentSearch() {
+    this.phase = 'talent'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '访贤登用', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1010, 72, '搜索在野、举荐名士、补强阵营', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.rectangle(92, 140, 470, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.rectangle(604, 140, 590, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(124, 170, '传闻', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    this.overlayLayer.add(this.add.text(636, 170, '在野人才', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    this.overlayLayer.add(this.add.text(124, 230, [
+      `政令：${this.councilState.actions}`,
+      `府库：${this.cityState.treasury}`,
+      `民心：${this.cityState.publicOrder}`,
+      `刘备魅力影响登用成功率。`,
+      `高情报会发现更多人才。`,
+      '',
+      this.recruitedNeutralIds.size > 0 ? '已有名士投效，声望渐起。' : '洛阳传来名士流落消息。',
+    ].join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 13,
+      wordWrap: { width: 390 },
+    }))
+    const candidates = this.campaignOfficers.filter((officer) => officer.faction === 'neutral')
+    candidates.forEach((officer, index) => {
+      const y = 244 + index * 96
+      const recruited = this.recruitedNeutralIds.has(officer.id)
+      this.overlayLayer.add(this.add.rectangle(636, y - 26, 500, 76, 0x21160f, 0.9).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.55))
+      this.overlayLayer.add(this.add.text(660, y - 10, `${officer.name}｜${officer.role}｜${officer.location}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8df9d',
+      }))
+      this.overlayLayer.add(this.add.text(660, y + 18, `智 ${officer.intel}  政 ${officer.gov}  魅 ${officer.charm}  成功率 ${this.recruitChance(officer)}%`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '17px',
+        color: '#f8ecd0',
+      }))
+      this.makeButton(1038, y + 10, recruited ? '已登用' : '登用', () => this.tryRecruitOfficer(officer.id), this.overlayLayer, 108, 36)
+    })
+    this.makeButton(540, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(740, 636, '推进月份', () => this.advanceCampaignMonth(), this.overlayLayer, 180, 44)
+  }
+
+  private tryRecruitOfficer(officerId: string) {
+    const officer = this.campaignOfficers.find((item) => item.id === officerId)
+    if (!officer) return
+    if (this.recruitedNeutralIds.has(officer.id)) {
+      this.showTalentMessage(`${officer.name}已经投效。`)
+      return
+    }
+    if (this.councilState.actions <= 0) {
+      this.showTalentMessage('政令已用尽，需等下月再访。')
+      return
+    }
+    if (this.cityState.treasury < 20) {
+      this.showTalentMessage('府库不足，无法备礼访贤。')
+      return
+    }
+    this.councilState.actions -= 1
+    this.cityState.treasury -= 20
+    if (Phaser.Math.Between(1, 100) <= this.recruitChance(officer)) {
+      this.recruitedNeutralIds.add(officer.id)
+      officer.faction = 'liu'
+      officer.location = this.selectedCityId
+      officer.role = '客将'
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 6, 0, 100)
+      this.showTalentMessage(`${officer.name}愿赴${this.selectedCity?.name ?? '本城'}效力，士气 +6。`)
+    } else {
+      this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 6, 0, 100)
+      this.showTalentMessage(`${officer.name}暂未应允，但留下线索，情报 +6。`)
+    }
+  }
+
+  private recruitChance(officer: StrategyOfficer) {
+    const liuBei = this.campaignOfficers.find((item) => item.id === 'liu_bei')
+    const charm = liuBei?.charm ?? 80
+    return Phaser.Math.Clamp(28 + Math.floor(charm / 4) + Math.floor(this.councilState.intel / 10) + Math.floor(this.cityState.publicOrder / 20) - Math.floor(officer.loyalty / 10), 12, 88)
+  }
+
+  private showTalentMessage(message: string) {
+    this.showTalentSearch()
+    this.overlayLayer.add(this.add.text(640, 590, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#fff4cf',
+      backgroundColor: '#3c2417',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5))
+  }
+
+  private drawCampaignMap() {
+    const map = this.add.container(86, 140)
+    map.add(this.add.rectangle(0, 0, 720, 430, 0x101722, 0.95).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    map.add(this.add.text(28, 24, '天下形势', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '30px',
+      color: '#f5d487',
+    }))
+    const route = this.add.graphics()
+    route.lineStyle(2, 0xc9a45a, 0.38)
+    for (const city of this.campaignCities) {
+      for (const routeId of city.routes) {
+        const target = this.campaignCities.find((item) => item.id === routeId)
+        if (!target || city.id > target.id) continue
+        route.beginPath()
+        route.moveTo(city.x, city.y)
+        route.lineTo(target.x, target.y)
+        route.strokePath()
+      }
+    }
+    map.add(route)
+    for (const city of this.campaignCities) {
+      const faction = factionById(city.owner)
+      this.drawCityNode(map, city, faction?.name.replace('军', '') ?? '群雄', faction?.color ?? 0x8a8f98)
+    }
+    map.add(this.add.text(36, 372, '操作：点击己方城池选中，再执行内政、外交、军事命令。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#f4dfb3',
+    }))
+    this.overlayLayer.add(map)
+  }
+
+  private drawCityNode(layer: Phaser.GameObjects.Container, city: StrategyCity, status: string, color: number) {
+    const selected = city.id === this.selectedCityId
+    const ownCity = city.owner === 'liu'
+    const ringColor = selected ? 0xffffff : ownCity ? 0xf8df9d : 0x7f6a48
+    const circle = this.add.circle(city.x, city.y, selected ? 25 : 20, color, ownCity ? 0.96 : 0.84).setStrokeStyle(selected ? 4 : 2, ringColor, selected ? 1 : 0.85)
+    if (ownCity) {
+      circle.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+        this.selectedCityId = city.id
+        this.syncSelectedCityState()
+        this.ensureDeploymentTarget()
+        this.ensureDiplomacyTarget()
+        this.ensureLocalAppointments()
+        this.showCampaign()
+      })
+    }
+    layer.add(circle)
+    if (selected) {
+      layer.add(this.add.circle(city.x, city.y, 32, 0xf8df9d, 0).setStrokeStyle(2, 0xf8df9d, 0.7))
+    }
+    layer.add(this.add.text(city.x, city.y - 8, city.name, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '13px',
+      color: '#fff6d8',
+    }).setOrigin(0.5))
+    layer.add(this.add.text(city.x, city.y + 26, status, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '12px',
+      color: '#e8d4a9',
+    }).setOrigin(0.5))
+  }
+
+  private drawCampaignSidePanel() {
+    this.overlayLayer.add(this.add.rectangle(846, 140, 332, 430, 0x101722, 0.95).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(878, 166, '城池与军情', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '30px',
+      color: '#f5d487',
+    }))
+    const lines = [
+      `城池    ${this.selectedCity?.name ?? '未选'}`,
+      `区域    ${this.selectedCity?.region ?? '-'}`,
+      `兵力    ${this.selectedCity?.troops ?? 0}`,
+      `城防    ${this.selectedCity?.defense ?? 0}`,
+      `府库    ${this.selectedCity?.gold ?? 0}`,
+      `存粮    ${this.selectedCity?.food ?? 0}`,
+      '',
+      `粮草    ${this.councilState.supplies}`,
+      `士气    ${this.councilState.morale}`,
+      `情报    ${this.councilState.intel}`,
+      `政令    ${this.councilState.actions}`,
+      `民心    ${this.cityState.publicOrder}`,
+      `敌势    ${this.campaignClock.enemyThreat}`,
+    ]
+    this.overlayLayer.add(this.add.text(884, 226, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#f8ecd0',
+      lineSpacing: 8,
+    }))
+    this.overlayLayer.add(this.add.rectangle(880, 476, 264, 62, 0x21160f, 0.94).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
+    this.overlayLayer.add(this.add.text(900, 490, `军令 ${edictName(this.councilState.edict)}｜阵型 ${formationName(this.councilState.formation)}\n邻接：${this.selectedCity?.routes.map((id) => cityName(id)).join('、') ?? '-'}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '17px',
+      color: '#f4dfb3',
+      wordWrap: { width: 224 },
+      lineSpacing: 5,
+    }))
+    this.overlayLayer.add(this.add.text(884, 548, `本月：${this.monthlyActionLog.slice(-2).join('；') || '尚未下令'}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '15px',
+      color: '#ead7b3',
+      wordWrap: { width: 282 },
+    }))
+    this.drawFactionSummary()
+  }
+
+  private drawFactionSummary() {
+    const counts = strategyFactions.filter((faction) => faction.id !== 'neutral').map((faction) => {
+      const cities = this.countCities(faction.id)
+      const officers = this.countOfficers(faction.id)
+      return `${faction.name}  城${cities} 将${officers}`
+    })
+    this.overlayLayer.add(this.add.rectangle(86, 520, 720, 50, 0x21160f, 0.9).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.55))
+    this.overlayLayer.add(this.add.text(112, 535, counts.join('    '), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '16px',
+      color: '#f8ecd0',
+    }))
+  }
+
+  private showCityGovernance() {
+    this.phase = 'city'
+    this.syncSelectedCityState()
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.91).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, `${this.cityState.name} 政厅`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1030, 72, '内政结果会转化为粮草、士气和出征兵源', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.drawCityStatsPanel()
+    this.drawCityCommandPanel()
+    this.drawCitySelector()
+    this.makeButton(438, 636, '切换城池', () => this.cycleControlledCity(), this.overlayLayer, 180, 44)
+    this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '军府议事', () => this.showCouncil(), this.overlayLayer, 180, 44)
+  }
+
+  private drawCityStatsPanel() {
+    this.overlayLayer.add(this.add.rectangle(84, 144, 472, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(116, 174, '城池状态', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const stats = [
+      ['府库', this.cityState.treasury, 3000],
+      ['粮草', this.selectedCity?.food ?? 0, 5000],
+      ['兵力', this.selectedCity?.troops ?? 0, 30000],
+      ['城防', this.cityState.walls, 100],
+      ['民心', this.cityState.publicOrder, 100],
+    ] as const
+    stats.forEach(([label, value, max], index) => {
+      const y = 242 + index * 54
+      this.overlayLayer.add(this.add.text(120, y, label, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '21px',
+        color: '#f8ecd0',
+      }))
+      this.overlayLayer.add(this.add.rectangle(204, y + 13, 250, 16, 0x2a2016, 0.95).setOrigin(0, 0.5))
+      this.overlayLayer.add(this.add.rectangle(204, y + 13, 250 * Math.min(1, value / max), 16, 0xd4af37, 0.92).setOrigin(0, 0.5))
+      this.overlayLayer.add(this.add.text(472, y, `${value}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8df9d',
+      }))
+    })
+  }
+
+  private drawCityCommandPanel() {
+    this.overlayLayer.add(this.add.rectangle(604, 144, 590, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(636, 174, '内政命令', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const commands: [string, string, () => void][] = [
+      ['开发', '金 -120，粮 +300', () => this.applyCityPolicy('开发田地，粮仓渐实。', { treasury: -120, supplies: 300 })],
+      ['征兵', '金 -160，兵 +900，士气 +3', () => this.applyCityPolicy('征募乡勇入营，兵力增加。', { treasury: -160, recruits: 900, morale: 3 })],
+      ['训练', '金 -90，士气 +7，情报 +3', () => this.applyCityPolicy('校场练兵，士气上升。', { treasury: -90, morale: 7, intel: 3 })],
+      ['治安', '金 -100，民心 +10，士气 +2', () => this.applyCityPolicy('巡查里坊，民心渐定。', { treasury: -100, publicOrder: 10, morale: 2 })],
+      ['征粮', '粮 +480，民心 -4', () => this.applyCityPolicy('征调军粮入仓，民心略降。', { supplies: 480, publicOrder: -4 })],
+    ]
+    commands.forEach(([label, desc, callback], index) => {
+      const y = 232 + index * 62
+      this.makeButton(722, y, label, callback, this.overlayLayer, 150, 38)
+      this.overlayLayer.add(this.add.text(824, y - 13, desc, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '18px',
+        color: '#ead7b3',
+        wordWrap: { width: 300 },
+      }))
+    })
+  }
+
+  private drawCitySelector() {
+    const controlled = this.campaignCities.filter((city) => city.owner === 'liu')
+    this.overlayLayer.add(this.add.text(116, 540, `刘备军城池：${controlled.map((city) => city.name).join('、')}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#f4dfb3',
+    }))
+  }
+
+  private applyCityPolicy(message: string, delta: { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; supplies?: number; morale?: number; intel?: number }) {
+    const city = this.selectedCity
+    if (!city) return
+    if (this.councilState.actions <= 0) {
+      this.showCityMessage('本月政令已用尽，请出征或推进月令。')
+      return
+    }
+    if ((delta.treasury ?? 0) < 0 && city.gold + (delta.treasury ?? 0) < 0) {
+      this.showCityMessage('府库不足，无法施行政令。')
+      return
+    }
+    city.gold = Phaser.Math.Clamp(city.gold + (delta.treasury ?? 0), 0, 3000)
+    city.food = Phaser.Math.Clamp(city.food + (delta.supplies ?? 0), 0, 5000)
+    city.troops = Phaser.Math.Clamp(city.troops + (delta.recruits ?? 0), 0, 30000)
+    city.defense = Phaser.Math.Clamp(city.defense + (delta.walls ?? 0), 0, 100)
+    this.cityState.publicOrder = Phaser.Math.Clamp(this.cityState.publicOrder + (delta.publicOrder ?? 0), 0, 100)
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + (delta.morale ?? 0), 0, 100)
+    this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + (delta.intel ?? 0), 0, 100)
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(message.startsWith(city.name) ? message : `${city.name}${message}`)
+    this.syncSelectedCityState()
+    this.showCityMessage(message)
+  }
+
+  private showCityMessage(message: string) {
+    this.showCityGovernance()
+    this.overlayLayer.add(this.add.text(640, 596, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#fff4cf',
+      backgroundColor: '#3c2417',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5))
+  }
+
+  private cycleControlledCity() {
+    const controlled = this.campaignCities.filter((city) => city.owner === 'liu')
+    const index = controlled.findIndex((city) => city.id === this.selectedCityId)
+    const next = controlled[(index + 1 + controlled.length) % controlled.length]
+    if (next) this.selectedCityId = next.id
+    this.ensureDeploymentTarget()
+    this.ensureDiplomacyTarget()
+    this.ensureLocalAppointments()
+    this.showCityGovernance()
+  }
+
+  private syncSelectedCityState() {
+    const city = this.selectedCity
+    if (!city) return
+    this.cityState.name = city.name
+    this.cityState.treasury = city.gold
+    this.cityState.recruits = city.troops
+    this.cityState.walls = city.defense
+  }
+
+  private showHeroManagement() {
+    this.phase = 'heroes'
+    this.ensureLocalAppointments()
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.91).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '武将任命', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1018, 72, '太守影响内政，先锋影响出征，军师影响情报', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.drawHeroCards()
+    this.drawAppointmentPanel()
+    this.makeButton(540, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(740, 636, '移动武将', () => this.moveCurrentCityOfficer(), this.overlayLayer, 180, 44)
+  }
+
+  private drawHeroCards() {
+    const heroes = this.currentCityOfficers()
+    if (heroes.length === 0) {
+      this.overlayLayer.add(this.add.rectangle(92, 150, 1096, 340, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+      this.overlayLayer.add(this.add.text(640, 300, `${this.selectedCity?.name ?? '当前城'}暂无本军武将，请从人事移动或访贤登用补充。`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '24px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+      return
+    }
+    heroes.forEach((officer, index) => {
+      const x = 92 + (index % 4) * 278
+      const y = 150 + Math.floor(index / 4) * 172
+      this.overlayLayer.add(this.add.rectangle(x, y, 244, 160, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+      const key = officerPortraitKey(officer.id)
+      if (this.textures.exists(key)) {
+        this.overlayLayer.add(this.add.image(x + 54, y + 70, key).setDisplaySize(72, 86))
+      }
+      this.overlayLayer.add(this.add.text(x + 112, y + 24, `${officer.name}`, {
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        fontSize: '25px',
+        color: '#f8df9d',
+      }))
+      this.overlayLayer.add(this.add.text(x + 112, y + 54, `${officer.role}｜${cityName(officer.location)}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '17px',
+        color: '#ead7b3',
+      }))
+      const lines = [
+        `统 ${officer.command}  武 ${officer.war}`,
+        `智 ${officer.intel}  政 ${officer.gov}`,
+        `忠诚 ${officer.loyalty}`,
+      ]
+      this.overlayLayer.add(this.add.text(x + 112, y + 84, lines.join('\n'), {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '17px',
+        color: '#f8ecd0',
+        lineSpacing: 6,
+      }))
+    })
+  }
+
+  private drawAppointmentPanel() {
+    this.overlayLayer.add(this.add.rectangle(182, 510, 916, 84, 0x21160f, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    const governor = this.officerForUnit(this.appointments.governor)
+    const vanguard = this.officerForUnit(this.appointments.vanguard)
+    const strategist = this.officerForUnit(this.appointments.strategist)
+    this.overlayLayer.add(this.add.text(210, 532, `太守：${governor?.name ?? '-'}    先锋：${vanguard?.name ?? '-'}    军师：${strategist?.name ?? '-'}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#f8df9d',
+    }))
+    this.makeButton(720, 552, '轮换太守', () => this.cycleAppointment('governor'), this.overlayLayer, 132, 36)
+    this.makeButton(858, 552, '轮换先锋', () => this.cycleAppointment('vanguard'), this.overlayLayer, 132, 36)
+    this.makeButton(996, 552, '轮换军师', () => this.cycleAppointment('strategist'), this.overlayLayer, 132, 36)
+  }
+
+  private cycleAppointment(role: keyof typeof this.appointments) {
+    const heroes = this.currentCityUnits()
+    if (heroes.length === 0) {
+      this.showHeroMessage('本城没有可任命武将。')
+      return
+    }
+    const current = this.appointments[role]
+    const currentIndex = heroes.findIndex((unit) => unit.id === current)
+    const next = heroes[(currentIndex + 1 + heroes.length) % heroes.length]
+    this.appointments[role] = next.id
+    this.applyAppointmentEffects()
+    this.showHeroManagement()
+  }
+
+  private showHeroMessage(message: string) {
+    this.showHeroManagement()
+    this.overlayLayer.add(this.add.text(640, 602, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#fff4cf',
+      backgroundColor: '#3c2417',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5))
+  }
+
+  private applyAppointmentEffects() {
+    const governor = heroById(this.appointments.governor)
+    const strategist = heroById(this.appointments.strategist)
+    if (governor) {
+      this.cityState.publicOrder = Phaser.Math.Clamp(58 + Math.floor((governor.stats.def + governor.stats.res) / 2), 0, 100)
+    }
+    if (strategist) {
+      this.councilState.intel = Phaser.Math.Clamp(16 + strategist.stats.mag + strategist.stats.res, 0, 100)
+    }
+  }
+
+  private moveCurrentCityOfficer() {
+    const officers = this.currentCityOfficers().filter((officer) => officer.role !== '君主')
+    const destinations = this.controlledNeighborCities()
+    if (officers.length === 0) {
+      this.showHeroMessage('本城没有可移动武将。')
+      return
+    }
+    if (destinations.length === 0) {
+      this.showHeroMessage('本城没有相邻己方城池，暂不能移动武将。')
+      return
+    }
+    if (this.councilState.actions <= 0) {
+      this.showHeroMessage('本月政令已用尽，不能调动武将。')
+      return
+    }
+    const officer = officers[0]
+    const destination = destinations[0]
+    officer.location = destination.id
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${officer.name}移驻${destination.name}`)
+    this.ensureLocalAppointments()
+    this.showHeroMessage(`${officer.name}已移往${destination.name}。`)
+  }
+
+  private showDeployment() {
+    this.phase = 'deploy'
+    this.ensureDeploymentTarget()
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '行军出征', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1000, 72, '确认兵粮、任命与敌情后发兵', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.drawDeploymentSummary()
+    this.drawDeploymentRoster()
+    this.makeButton(520, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(740, 636, '确认出征', () => this.confirmDeployment(), this.overlayLayer, 180, 44)
+  }
+
+  private drawDeploymentSummary() {
+    const vanguard = heroById(this.appointments.vanguard)
+    const strategist = heroById(this.appointments.strategist)
+    const supplyNeed = this.deploymentSupplyNeed()
+    const risk = this.campaignClock.enemyThreat >= 75 ? '极高' : this.campaignClock.enemyThreat >= 55 ? '偏高' : '可控'
+    const source = this.selectedCity
+    const target = this.selectedTargetCity
+    this.overlayLayer.add(this.add.rectangle(86, 140, 420, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(118, 170, '军情确认', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const lines = [
+      `出发        ${source?.name ?? '-'}`,
+      `目标        ${target?.name ?? '未定'}`,
+      `守军        ${target?.troops ?? 0}`,
+      `先锋        ${vanguard?.name ?? '-'}`,
+      `军师        ${strategist?.name ?? '-'}`,
+      `军令        ${edictName(this.councilState.edict)}`,
+      `阵型        ${formationName(this.councilState.formation)}`,
+      `粮草        ${this.councilState.supplies}/${supplyNeed}`,
+      `敌势        ${this.campaignClock.enemyThreat}（${risk}）`,
+      `预计消耗    粮草 ${supplyNeed}`,
+    ]
+    this.overlayLayer.add(this.add.text(122, 230, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 12,
+    }))
+  }
+
+  private drawDeploymentRoster() {
+    this.overlayLayer.add(this.add.rectangle(548, 140, 646, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(580, 170, '出战武将', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const units = this.currentCityUnits()
+    units.forEach((unit, index) => {
+      const x = 590 + (index % 2) * 294
+      const y = 238 + Math.floor(index / 2) * 138
+      this.overlayLayer.add(this.add.rectangle(x, y, 250, 104, 0x21160f, 0.92).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
+      const key = `portrait-${unit.id}`
+      if (this.textures.exists(key)) {
+        this.overlayLayer.add(this.add.image(x + 46, y + 52, key).setDisplaySize(64, 78))
+      }
+      const roles = roleLabels(unit.id, this.appointments)
+      this.overlayLayer.add(this.add.text(x + 92, y + 18, `${unit.name} ${roles}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8df9d',
+      }))
+      this.overlayLayer.add(this.add.text(x + 92, y + 50, `兵力 ${heroTroops(unit, this.appointments)}  攻 ${unit.stats.atk}  谋 ${unit.stats.mag}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '17px',
+        color: '#f8ecd0',
+      }))
+    })
+    if (units.length === 0) {
+      this.overlayLayer.add(this.add.text(872, 322, '本城暂无可出战武将。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '22px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+    }
+    this.drawDeploymentTargets()
+  }
+
+  private drawDeploymentTargets() {
+    const targets = this.availableDeploymentTargets()
+    this.overlayLayer.add(this.add.text(580, 468, '邻接目标', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '28px',
+      color: '#f5d487',
+    }))
+    if (targets.length === 0) {
+      this.overlayLayer.add(this.add.text(704, 476, '当前城池周边暂无可攻目标。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '18px',
+        color: '#ead7b3',
+      }))
+      return
+    }
+    targets.forEach((city, index) => {
+      const x = 690 + index * 156
+      const selected = city.id === this.selectedTargetCityId
+      this.makeButton(x, 502, selected ? `${city.name}✓` : city.name, () => {
+        this.selectedTargetCityId = city.id
+        this.showDeployment()
+      }, this.overlayLayer, 136, 36)
+      this.overlayLayer.add(this.add.text(x, 534, `${factionById(city.owner)?.name ?? '群雄'} 兵${city.troops}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+  }
+
+  private confirmDeployment() {
+    this.ensureDeploymentTarget()
+    if (!this.selectedTargetCity) {
+      this.showDeploymentMessage('没有邻接敌城，无法出征。请先切换城池。')
+      return
+    }
+    if (this.currentCityUnits().length === 0) {
+      this.showDeploymentMessage('本城没有可出战武将，请先移动武将。')
+      return
+    }
+    const supplyNeed = this.deploymentSupplyNeed()
+    if (this.councilState.supplies < supplyNeed) {
+      this.showDeploymentMessage('粮草不足，无法出征。请先治理城池或征粮。')
+      return
+    }
+    this.councilState.supplies -= supplyNeed
+    this.recordMonthlyAction(`${this.selectedCity?.name ?? '本城'}出征${this.selectedTargetCity?.name ?? '邻境'}`)
+    this.startBattle()
+  }
+
+  private deploymentSupplyNeed() {
+    const target = this.selectedTargetCity
+    const distanceCost = this.selectedCity?.routes.includes(target?.id ?? 'chengdu') ? 0 : 8
+    const garrisonCost = target ? Math.floor(target.troops / 2200) : 0
+    return 18 + distanceCost + garrisonCost + Math.floor(this.campaignClock.enemyThreat / 12)
+  }
+
+  private showDeploymentMessage(message: string) {
+    this.showDeployment()
+    this.overlayLayer.add(this.add.text(640, 590, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#fff4cf',
+      backgroundColor: '#3c2417',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5))
+  }
+
+  private showDiplomacy() {
+    this.phase = 'diplomacy'
+    this.ensureDiplomacyTarget()
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, '外交交涉', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1010, 72, '同盟、侦察、离间、劝降会改变出征难度', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.drawDiplomacyStatus()
+    this.drawDiplomacyActions()
+    this.makeButton(540, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(740, 636, '军府议事', () => this.showCouncil(), this.overlayLayer, 180, 44)
+  }
+
+  private drawDiplomacyStatus() {
+    this.overlayLayer.add(this.add.rectangle(86, 140, 420, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(118, 170, '外交态势', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const lines = [
+      `出使城      ${this.selectedCity?.name ?? '-'}`,
+      `对象        ${this.selectedDiplomacyFaction()?.name ?? '未定'}`,
+      `政令        ${this.councilState.actions}`,
+      `粮草        ${this.councilState.supplies}`,
+      `士气        ${this.councilState.morale}`,
+      `情报        ${this.councilState.intel}`,
+      `敌势        ${this.campaignClock.enemyThreat}`,
+      `盟约        ${this.councilState.alliance}${this.alliedFactionIds.size > 0 ? '方' : ''}`,
+      `离间        ${this.sabotagedFactionIds.size > 0 ? '已成' : '未行'}`,
+      `劝降        ${this.councilState.persuaded ? '已送' : '未送'}`,
+    ]
+    this.overlayLayer.add(this.add.text(122, 230, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 12,
+    }))
+  }
+
+  private drawDiplomacyActions() {
+    this.overlayLayer.add(this.add.rectangle(548, 140, 646, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(580, 170, '交涉命令', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    this.drawDiplomacyTargets()
+    const actions: [string, string, () => void][] = [
+      ['同盟', `成功率 ${this.diplomacyChance('alliance')}%，暂缓该势力攻刘`, () => this.resolveDiplomacy('alliance')],
+      ['侦察', `成功率 ${this.diplomacyChance('scout')}%，探明邻城守军`, () => this.resolveDiplomacy('scout')],
+      ['离间', `成功率 ${this.diplomacyChance('sabotage')}%，削弱目标城兵力`, () => this.resolveDiplomacy('sabotage')],
+      ['劝降', `成功率 ${this.diplomacyChance('persuade')}%，动摇目标城守军`, () => this.resolveDiplomacy('persuade')],
+    ]
+    actions.forEach(([label, desc, callback], index) => {
+      const y = 306 + index * 58
+      this.makeButton(670, y, label, callback, this.overlayLayer, 150, 40)
+      this.overlayLayer.add(this.add.text(772, y - 14, desc, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '18px',
+        color: '#ead7b3',
+        wordWrap: { width: 330 },
+      }))
+    })
+  }
+
+  private drawDiplomacyTargets() {
+    const factions = this.availableDiplomacyFactions()
+    this.overlayLayer.add(this.add.text(580, 214, '交涉对象', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f8df9d',
+    }))
+    if (factions.length === 0) {
+      this.overlayLayer.add(this.add.text(696, 214, '当前城池周边暂无可交涉势力。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '18px',
+        color: '#ead7b3',
+      }))
+      return
+    }
+    factions.forEach((faction, index) => {
+      const x = 666 + index * 132
+      const selected = faction.id === this.selectedDiplomacyFactionId
+      this.makeButton(x, 256, selected ? `${faction.ruler}✓` : faction.ruler, () => {
+        this.selectedDiplomacyFactionId = faction.id
+        const target = this.availableDeploymentTargets().find((city) => city.owner === faction.id)
+        if (target) this.selectedTargetCityId = target.id
+        this.showDiplomacy()
+      }, this.overlayLayer, 116, 34)
+    })
+  }
+
+  private resolveDiplomacy(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
+    this.ensureDiplomacyTarget()
+    if (!this.selectedDiplomacyFaction()) {
+      this.showDiplomacyMessage('没有可交涉对象，请先切换到邻接敌城的己方城池。')
+      return
+    }
+    if (this.councilState.actions <= 0) {
+      this.showDiplomacyMessage('政令已用尽，请推进月份或出征。')
+      return
+    }
+    const chance = this.diplomacyChance(kind)
+    const roll = Phaser.Math.Between(1, 100)
+    this.councilState.actions -= 1
+    this.councilState.supplies = Math.max(0, this.councilState.supplies - 5)
+    if (roll <= chance) {
+      this.applyDiplomacySuccess(kind)
+    } else {
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale - 3, 0, 100)
+      this.showDiplomacyMessage(`对${this.selectedDiplomacyFaction()?.ruler ?? '对方'}${diplomacyName(kind)}失败，士气 -3。`)
+    }
+  }
+
+  private applyDiplomacySuccess(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
+    const faction = this.selectedDiplomacyFaction()
+    const targetCity = this.availableDeploymentTargets().find((city) => city.owner === faction?.id) ?? this.selectedTargetCity
+    if (!faction) return
+    if (kind === 'alliance') {
+      this.councilState.alliance += 1
+      this.alliedFactionIds.add(faction.id)
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 10, 0, 100)
+      this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat - 8, 0, 100)
+      this.recordMonthlyAction(`与${faction.ruler}同盟`)
+      this.showDiplomacyMessage(`与${faction.ruler}暂结盟约，士气 +10，敌势 -8。`)
+      return
+    }
+    if (kind === 'scout') {
+      this.councilState.scouted = true
+      this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 32, 0, 100)
+      if (targetCity) this.selectedTargetCityId = targetCity.id
+      this.recordMonthlyAction(`侦察${targetCity?.name ?? faction.ruler}`)
+      this.showDiplomacyMessage(`斥候探得${targetCity?.name ?? faction.ruler}虚实，情报 +32。`)
+      return
+    }
+    if (kind === 'sabotage') {
+      this.councilState.sabotage = true
+      this.sabotagedFactionIds.add(faction.id)
+      if (targetCity) targetCity.troops = Math.max(800, Math.floor(targetCity.troops * 0.86))
+      this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat - 14, 0, 100)
+      this.recordMonthlyAction(`离间${faction.ruler}军`)
+      this.showDiplomacyMessage(`离间${faction.ruler}军奏效，${targetCity?.name ?? '目标城'}兵力动摇，敌势 -14。`)
+      return
+    }
+    this.councilState.persuaded = true
+    if (targetCity) {
+      targetCity.troops = Math.max(600, Math.floor(targetCity.troops * 0.9))
+      targetCity.defense = Math.max(20, targetCity.defense - 5)
+    }
+    this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 10, 0, 100)
+    this.recordMonthlyAction(`劝降${targetCity?.name ?? faction.ruler}`)
+    this.showDiplomacyMessage(`劝降书送入${targetCity?.name ?? '敌营'}，守军动摇，情报 +10。`)
+  }
+
+  private diplomacyChance(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
+    const base = {
+      alliance: 48,
+      scout: 68,
+      sabotage: 42,
+      persuade: 38,
+    }[kind]
+    const intelBonus = kind === 'scout' ? 0 : Math.floor(this.councilState.intel / 8)
+    const moraleBonus = Math.floor((this.councilState.morale - 50) / 5)
+    const threatPenalty = Math.floor(this.campaignClock.enemyThreat / 12)
+    const targetCity = this.availableDeploymentTargets().find((city) => city.owner === this.selectedDiplomacyFactionId)
+    const garrisonPenalty = targetCity ? Math.floor(targetCity.troops / 5000) : 0
+    return Phaser.Math.Clamp(base + intelBonus + moraleBonus - threatPenalty - garrisonPenalty, 15, 92)
+  }
+
+  private showDiplomacyMessage(message: string) {
+    this.showDiplomacy()
+    this.overlayLayer.add(this.add.text(640, 590, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#fff4cf',
+      backgroundColor: '#3c2417',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5))
+  }
+
+  private showCouncil() {
+    this.phase = 'council'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.88).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.rectangle(58, 50, 1164, 74, 0x21160f, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(82, 70, '君主命令', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '36px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(970, 76, '建安五年  春  下邳攻略', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+    this.drawCouncilStats()
+    this.addCouncilColumn(260, '内政', [
+      ['征粮', '补给 +25，民心略降', () => this.applyCouncilAction('征粮得米二十五斛，军粮充足。', { supplies: 25, morale: -4 })],
+      ['整军', '全军生命 +2，仅一次', () => this.trainTroops()],
+    ])
+    this.addCouncilColumn(640, '外交', [
+      ['交涉', '打开外交行动', () => this.showDiplomacy()],
+      ['侦察', '探敌势与弱点', () => this.scoutEnemy()],
+    ])
+    this.addCouncilColumn(1020, '军事', [
+      ['军令', `当前：${edictName(this.councilState.edict)}`, () => this.cycleEdict()],
+      ['阵型', `当前：${formationName(this.councilState.formation)}`, () => this.cycleFormation()],
+    ])
+    this.makeButton(480, 584, '外交', () => this.showDiplomacy(), this.overlayLayer, 150, 38)
+    this.makeButton(640, 584, '点将', () => this.showRosterOverlay(), this.overlayLayer, 150, 38)
+    this.makeButton(800, 584, '出征', () => this.showDeployment(), this.overlayLayer, 150, 38)
+    this.drawCouncilHelp()
+  }
+
+  private startBattle() {
+    this.phase = 'playerSelect'
+    this.ensureDeploymentTarget()
+    const source = this.selectedCity
+    const target = this.selectedTargetCity
+    const playerUnitIds = new Set(this.currentCityUnits().map((unit) => unit.id))
+    this.units = baseUnits
+      .filter((unit) => unit.faction === 'enemy' || playerUnitIds.has(unit.id))
+      .map((unit) => ({ ...unit, stats: { ...unit.stats }, position: { ...unit.position } }))
+    this.turn = 1
+    this.currentFaction = 'player'
+    this.selectedUnitId = undefined
+    this.selectedSkillId = undefined
+    this.roundKills = 0
+    this.applyCouncilBonuses()
+    this.logLines = [
+      `战斗开始：${source?.name ?? '我城'}军向${target?.name ?? '敌境'}进发，遭遇守军拦截。`,
+      `战前态势：补给 ${this.councilState.supplies}，士气 ${this.councilState.morale}，情报 ${this.councilState.intel}，敌势 ${this.campaignClock.enemyThreat}，军令 ${edictName(this.councilState.edict)}。`,
+    ]
+    if (this.councilState.intel >= 40) this.logLines.push('斥候回报：敌将甲厚而步缓，法术与夹击更有效。')
+    if (this.campaignClock.enemyThreat >= 55) this.logLines.push('敌势已盛，敌军攻击提高。')
+    this.overlayLayer.removeAll(true)
+    this.renderBattle()
+  }
+
+  private renderBattle() {
+    this.boardLayer.removeAll(true)
+    this.highlightLayer.removeAll(true)
+    this.unitLayer.removeAll(true)
+    this.uiLayer.removeAll(true)
+    this.drawBattleBackground()
+    this.drawMap()
+    this.drawHighlights()
+    this.drawUnits()
+    this.drawHud()
+  }
+
+  private drawBackdrop() {
+    this.overlayLayer.add(this.add.rectangle(0, 0, 1280, 760, 0x151821).setOrigin(0))
+    if (this.textures.exists('title-bg')) {
+      this.overlayLayer.add(this.add.image(640, 380, 'title-bg').setDisplaySize(1280, 760).setAlpha(0.52))
+      this.overlayLayer.add(this.add.rectangle(0, 0, 1280, 760, 0x10141b, 0.38).setOrigin(0))
+    }
+    for (let i = 0; i < 36; i += 1) {
+      const x = Phaser.Math.Between(0, 1280)
+      const y = Phaser.Math.Between(0, 760)
+      const color = i % 3 === 0 ? 0xa93f2c : i % 3 === 1 ? 0xd4af37 : 0x3b6e5f
+      this.overlayLayer.add(this.add.circle(x, y, Phaser.Math.Between(2, 6), color, 0.22))
+    }
+    this.overlayLayer.add(this.add.rectangle(0, 565, 1280, 195, 0x10131a, 0.75).setOrigin(0))
+    this.overlayLayer.add(this.add.polygon(248, 578, [0, 100, 160, 20, 320, 110, 470, 45, 660, 115], 0x2f3b35, 0.8))
+    this.overlayLayer.add(this.add.polygon(762, 582, [0, 110, 140, 30, 290, 100, 450, 22, 650, 120], 0x3b302d, 0.8))
+  }
+
+  private addTitleText(title: string, subtitle: string) {
+    this.overlayLayer.add(this.add.text(640, 132, title, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '68px',
+      color: '#f8df9d',
+      stroke: '#4b1d18',
+      strokeThickness: 8,
+      align: 'center',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(640, 220, subtitle, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '26px',
+      color: '#e7d5b0',
+      align: 'center',
+    }).setOrigin(0.5))
+  }
+
+  private showPlanOverlay() {
+    const bg = this.add.rectangle(640, 390, 980, 450, 0x111821, 0.96).setStrokeStyle(2, 0xd4af37)
+    const text = this.add.text(190, 198, [
+      '开发计划',
+      '方向：以《乱世群英》式三国策略体验为机制母版，素材、代码、音乐和 UI 全面原创。',
+      '',
+      '已完成：标题 → 初始设定 → 君主选择 → 全国地图 → 选城命令 → 月令循环。',
+      '已完成：视察情况、内政治理、外交交涉、武将任命、行军出征、战斗闭环。',
+      '已完成：曹/刘/孙/袁/董多势力，15 城版图，势力一览，访贤登用。',
+      '已完成：刘备、关羽、张飞、诸葛亮原创头像，标题图与战斗背景。',
+      '',
+      '下一步：继续按原版顺序深化每个城池命令、军事行动与月末事件。',
+      '长期目标：机制同构 + 现代美术重制，做出可发布的怀旧增强版三国策略游戏。',
+    ].join('\n'), {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '21px',
+      lineSpacing: 9,
+      color: '#f8ecd0',
+      wordWrap: { width: 900 },
+    })
+    const close = this.makeButton(640, 586, '关闭', () => {
+      bg.destroy()
+      text.destroy()
+      close.destroy()
+    }, this.overlayLayer)
+    this.overlayLayer.add([bg, text])
+  }
+
+  private showContinueStub() {
+    this.showTitleNotice('继续游戏', '存档系统尚未开放。当前版本请从“开始游戏”进入。')
+  }
+
+  private showSettingsOverlay() {
+    this.showTitleNotice('环境设定', '当前可用设置：音乐随开始游戏自动播放。音量、文字速度和存档位将在机能菜单中继续补齐。')
+  }
+
+  private showTitleNotice(title: string, message: string) {
+    const bg = this.add.rectangle(640, 420, 660, 220, 0x111821, 0.97).setStrokeStyle(2, 0xd4af37)
+    const heading = this.add.text(640, 362, title, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5)
+    const body = this.add.text(640, 424, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      align: 'center',
+      wordWrap: { width: 560 },
+    }).setOrigin(0.5)
+    const close = this.makeButton(640, 506, '关闭', () => {
+      bg.destroy()
+      heading.destroy()
+      body.destroy()
+      close.destroy()
+    }, this.overlayLayer, 140, 40)
+    this.overlayLayer.add([bg, heading, body])
+  }
+
+  private drawBattleBackground() {
+    this.uiLayer.add(this.add.rectangle(0, 0, 1280, 760, 0x151a20).setOrigin(0))
+    if (this.textures.exists('battlefield-bg')) {
+      this.uiLayer.add(this.add.image(BOARD_X + MAP_W * TILE / 2, BOARD_Y + MAP_H * TILE / 2, 'battlefield-bg').setDisplaySize(MAP_W * TILE, MAP_H * TILE).setAlpha(0.48))
+    }
+    this.uiLayer.add(this.add.rectangle(0, 0, 1280, 72, 0x221712, 0.98).setOrigin(0))
+    this.uiLayer.add(this.add.text(36, 20, `群英新篇 · ${this.selectedTargetCity?.name ?? '邻境'}攻略`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '28px',
+      color: '#f8df9d',
+    }))
+  }
+
+  private drawCouncilStats() {
+    this.overlayLayer.add(this.add.rectangle(72, 144, 1136, 74, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    const lines = [
+      `政令 ${this.councilState.actions}`,
+      `粮草 ${this.councilState.supplies}`,
+      `士气 ${this.councilState.morale}`,
+      `情报 ${this.councilState.intel}`,
+      `军令 ${edictName(this.councilState.edict)}`,
+      `阵型 ${formationName(this.councilState.formation)}`,
+    ]
+    this.overlayLayer.add(this.add.text(96, 168, lines.join('    '), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8df9d',
+    }))
+  }
+
+  private addCouncilColumn(x: number, title: string, items: [string, string, () => void][]) {
+    this.overlayLayer.add(this.add.rectangle(x, 360, 270, 246, 0x101722, 0.95).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(x, 282, title, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f5d487',
+    }).setOrigin(0.5))
+    items.forEach(([label, desc, callback], index) => {
+      const y = 346 + index * 92
+      this.makeButton(x, y, label, callback, this.overlayLayer, 198, 44)
+      this.overlayLayer.add(this.add.text(x, y + 42, desc, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '16px',
+        color: '#ead7b3',
+        align: 'center',
+        wordWrap: { width: 260 },
+      }).setOrigin(0.5))
+    })
+  }
+
+  private drawCouncilHelp() {
+    this.overlayLayer.add(this.add.rectangle(72, 636, 1136, 64, 0x21160f, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(96, 654, '选择内政、外交、军事命令后再出征。政令有限，粮草会在战斗中逐回合消耗。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }))
+  }
+
+  private applyCouncilAction(message: string, delta: { supplies?: number; morale?: number; intel?: number }) {
+    if (this.councilState.actions <= 0) return
+    this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + (delta.supplies ?? 0), 0, 150)
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + (delta.morale ?? 0), 0, 100)
+    this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + (delta.intel ?? 0), 0, 100)
+    this.councilState.actions -= 1
+    this.showCouncilMessage(message)
+  }
+
+  private cycleEdict() {
+    const order: MilitaryEdict[] = ['steady', 'raid', 'fire']
+    const next = order[(order.indexOf(this.councilState.edict) + 1) % order.length]
+    this.councilState.edict = next
+    this.showCouncilMessage(`军令改为「${edictName(next)}」。${edictDescription(next)}`)
+  }
+
+  private cycleFormation() {
+    const order: Formation[] = ['circle', 'vanguard', 'goose']
+    const next = order[(order.indexOf(this.councilState.formation) + 1) % order.length]
+    this.councilState.formation = next
+    this.showCouncilMessage(`阵型改为「${formationName(next)}」。${formationDescription(next)}`)
+  }
+
+  private trainTroops() {
+    if (this.councilState.actions <= 0) {
+      this.showCouncilMessage('政令已用尽，请直接出征。')
+      return
+    }
+    if (this.councilState.trained) {
+      this.showCouncilMessage('今日已经整军，士卒需要休息。')
+      return
+    }
+    this.councilState.trained = true
+    this.applyCouncilAction('整军已毕，先锋与弓手状态更稳。', { supplies: -8, morale: 6 })
+  }
+
+  private scoutEnemy() {
+    if (this.councilState.actions <= 0) {
+      this.showCouncilMessage('政令已用尽，请直接出征。')
+      return
+    }
+    if (this.councilState.scouted) {
+      this.showCouncilMessage('斥候已经归营，情报足够出征。')
+      return
+    }
+    this.councilState.scouted = true
+    this.applyCouncilAction('斥候探明山道伏兵，敌将位置已确认。', { supplies: -6, intel: 45 })
+  }
+
+  private showCouncilMessage(message: string) {
+    this.overlayLayer.removeAll(true)
+    this.showCouncil()
+    const toast = this.add.text(640, 646, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#fff4cf',
+      backgroundColor: '#3c2417',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5)
+    this.overlayLayer.add(toast)
+  }
+
+  private showRosterOverlay() {
+    const roster = baseUnits.filter((unit) => unit.faction === 'player').map((unit) => {
+      return `${unit.name}｜${unit.title}  生命${unit.stats.maxHp} 攻${unit.stats.atk} 防${unit.stats.def} 谋${unit.stats.mag}`
+    }).join('\n')
+    const bg = this.add.rectangle(640, 468, 670, 230, 0x101722, 0.98).setStrokeStyle(2, 0xd4af37)
+    const text = this.add.text(640, 440, roster, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      align: 'center',
+      lineSpacing: 12,
+    }).setOrigin(0.5)
+    const close = this.makeButton(640, 566, '收起', () => {
+      bg.destroy()
+      text.destroy()
+      close.destroy()
+    }, this.overlayLayer, 150, 40)
+    this.overlayLayer.add([bg, text])
+  }
+
+  private applyCouncilBonuses() {
+    if (this.councilState.trained) {
+      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
+        unit.stats.maxHp += 2
+        unit.stats.hp += 2
+      })
+    }
+    if (this.councilState.morale >= 70) {
+      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
+        unit.stats.atk += 1
+      })
+    }
+    if (this.councilState.edict === 'steady') {
+      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
+        unit.stats.def += 1
+      })
+    }
+    if (this.councilState.edict === 'raid' && this.councilState.morale >= 60) {
+      this.councilState.firstTurnRaid = true
+      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
+        unit.stats.move += 1
+      })
+    }
+    window.__FENGHUO_FIRE_EDICT__ = this.councilState.edict === 'fire' && this.councilState.intel >= 30
+    if (this.councilState.edict === 'fire' && this.councilState.intel >= 30) {
+      this.councilState.intel -= 30
+    }
+    if (this.councilState.intel >= 60) {
+      const boss = this.units.find((unit) => unit.id === 'boss')
+      if (boss) boss.stats.hp -= 3
+    }
+    if (this.councilState.intel >= 90) {
+      const boss = this.units.find((unit) => unit.id === 'boss')
+      if (boss) boss.stats.def -= 1
+    }
+    if (this.councilState.persuaded && this.councilState.intel >= 50) {
+      const soldier = this.units.find((unit) => unit.id === 'banditA')
+      if (soldier) {
+        soldier.stats.hp = Math.ceil(soldier.stats.hp / 2)
+        soldier.stats.atk -= 1
+      }
+    }
+    if (this.councilState.formation === 'vanguard') {
+      const yun = this.units.find((unit) => unit.id === 'yun')
+      if (yun) yun.stats.move += 1
+      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
+        unit.stats.def -= 1
+      })
+    }
+    if (this.councilState.formation === 'goose') {
+      const lan = this.units.find((unit) => unit.id === 'lan')
+      if (lan) lan.stats.atk += 1
+    }
+    if (this.campaignClock.enemyThreat >= 55) {
+      this.units.filter((unit) => unit.faction === 'enemy').forEach((unit) => {
+        unit.stats.atk += 1
+      })
+    }
+    if (this.campaignClock.enemyThreat >= 75) {
+      const boss = this.units.find((unit) => unit.id === 'boss')
+      if (boss) {
+        boss.stats.maxHp += 5
+        boss.stats.hp += 5
+      }
+    }
+  }
+
+  private resetCouncilState() {
+    this.councilState = {
+      supplies: 80,
+      morale: 55,
+      intel: 20,
+      actions: 3,
+      trained: false,
+      scouted: false,
+      edict: 'steady',
+      formation: 'circle',
+      persuaded: false,
+      alliance: 0,
+      sabotage: false,
+      firstTurnRaid: false,
+    }
+  }
+
+  private resetCampaignState() {
+    this.resetCouncilState()
+    this.campaignCities = strategyCities.map((city) => ({ ...city, routes: [...city.routes] }))
+    this.campaignOfficers = strategyOfficers.map((officer) => ({ ...officer }))
+    this.selectedCityId = 'chengdu'
+    this.selectedTargetCityId = 'hanzhong'
+    this.selectedDiplomacyFactionId = 'neutral'
+    this.alliedFactionIds = new Set<FactionId>()
+    this.sabotagedFactionIds = new Set<FactionId>()
+    this.monthlyActionLog = []
+    const scenario = this.scenarioConfig()
+    const difficulty = this.difficultyConfig()
+    this.cityState = {
+      name: '成都',
+      publicOrder: 62,
+      treasury: 850,
+      recruits: 7600,
+      farms: 1,
+      walls: 72,
+    }
+    this.campaignClock = {
+      year: scenario.year,
+      month: 1,
+      mode: 'inspection',
+      enemyThreat: difficulty.threat,
+    }
+    this.appointments = {
+      governor: 'yun',
+      vanguard: 'yun',
+      strategist: 'xuan',
+    }
+    this.recruitedNeutralIds = new Set<string>()
+    this.syncSelectedCityState()
+    this.ensureLocalAppointments()
+  }
+
+  private get selectedCity() {
+    return this.campaignCities.find((city) => city.id === this.selectedCityId)
+  }
+
+  private get selectedTargetCity() {
+    return this.campaignCities.find((city) => city.id === this.selectedTargetCityId)
+  }
+
+  private countOfficers(faction: FactionId) {
+    return this.campaignOfficers.filter((officer) => officer.faction === faction).length
+  }
+
+  private currentCityOfficers() {
+    return this.campaignOfficers.filter((officer) => officer.faction === 'liu' && officer.location === this.selectedCityId)
+  }
+
+  private currentCityUnits() {
+    const localUnitIds = new Set(this.currentCityOfficers().map((officer) => unitIdForOfficerId(officer.id)).filter((id): id is string => id !== undefined))
+    return baseUnits.filter((unit) => unit.faction === 'player' && localUnitIds.has(unit.id))
+  }
+
+  private officerForUnit(unitId: string) {
+    const officerId = officerIdForUnitId(unitId)
+    return this.campaignOfficers.find((officer) => officer.id === officerId)
+  }
+
+  private controlledNeighborCities() {
+    const city = this.selectedCity
+    if (!city) return []
+    return city.routes
+      .map((routeId) => this.campaignCities.find((item) => item.id === routeId))
+      .filter((item): item is StrategyCity => item !== undefined && item.owner === 'liu')
+  }
+
+  private ensureLocalAppointments() {
+    const units = this.currentCityUnits()
+    if (units.length === 0) return
+    for (const role of Object.keys(this.appointments) as (keyof typeof this.appointments)[]) {
+      if (!units.some((unit) => unit.id === this.appointments[role])) {
+        this.appointments[role] = units[0].id
+      }
+    }
+    this.applyAppointmentEffects()
+  }
+
+  private availableDeploymentTargets() {
+    const city = this.selectedCity
+    if (!city) return []
+    return city.routes
+      .map((routeId) => this.campaignCities.find((item) => item.id === routeId))
+      .filter((item): item is StrategyCity => item !== undefined && item.owner !== 'liu')
+  }
+
+  private availableDiplomacyFactions() {
+    const ids = new Set(this.availableDeploymentTargets().map((city) => city.owner))
+    return strategyFactions.filter((faction) => ids.has(faction.id))
+  }
+
+  private selectedDiplomacyFaction() {
+    return strategyFactions.find((faction) => faction.id === this.selectedDiplomacyFactionId)
+  }
+
+  private ensureDeploymentTarget() {
+    const targets = this.availableDeploymentTargets()
+    if (targets.length === 0) {
+      this.selectedTargetCityId = undefined
+      return
+    }
+    if (!targets.some((city) => city.id === this.selectedTargetCityId)) {
+      this.selectedTargetCityId = targets[0].id
+    }
+  }
+
+  private ensureDiplomacyTarget() {
+    const factions = this.availableDiplomacyFactions()
+    if (factions.length === 0) {
+      this.selectedDiplomacyFactionId = undefined
+      return
+    }
+    if (!factions.some((faction) => faction.id === this.selectedDiplomacyFactionId)) {
+      this.selectedDiplomacyFactionId = factions[0].id
+    }
+    const target = this.availableDeploymentTargets().find((city) => city.owner === this.selectedDiplomacyFactionId)
+    if (target) this.selectedTargetCityId = target.id
+  }
+
+  private scenarioConfig() {
+    return scenarioOptions.find((scenario) => scenario.id === this.selectedScenarioId) ?? scenarioOptions[0]
+  }
+
+  private difficultyConfig() {
+    return difficultyOptions.find((difficulty) => difficulty.id === this.selectedDifficulty) ?? difficultyOptions[1]
+  }
+
+  private selectedScenarioLabel() {
+    const scenario = this.scenarioConfig()
+    return `${scenario.year}年 ${scenario.name}`
+  }
+
+  private selectedDifficultyLabel() {
+    return this.difficultyConfig().name
+  }
+
+  private countCities(faction: FactionId) {
+    return this.campaignCities.filter((city) => city.owner === faction).length
+  }
+
+  private sumCityField(faction: FactionId, field: 'gold' | 'food' | 'troops') {
+    return this.campaignCities
+      .filter((city) => city.owner === faction)
+      .reduce((sum, city) => sum + city[field], 0)
+  }
+
+  private neighborEnemyCities(faction: FactionId) {
+    const owned = this.campaignCities.filter((city) => city.owner === faction)
+    const names = new Set<string>()
+    for (const city of owned) {
+      for (const routeId of city.routes) {
+        const neighbor = this.campaignCities.find((item) => item.id === routeId)
+        if (neighbor && neighbor.owner !== faction) names.add(neighbor.name)
+      }
+    }
+    return Array.from(names).slice(0, 4)
+  }
+
+  private runEnemyFactionTurns() {
+    const reports: string[] = []
+    for (const faction of strategyFactions.filter((item) => item.id !== 'liu' && item.id !== 'neutral')) {
+      const cities = this.campaignCities.filter((city) => city.owner === faction.id)
+      if (cities.length === 0) continue
+      const strongest = cities.toSorted((a, b) => b.troops - a.troops)[0]
+      const neighbors = strongest.routes
+        .map((routeId) => this.campaignCities.find((city) => city.id === routeId))
+        .filter((city): city is StrategyCity => city !== undefined)
+    const target = neighbors.find((city) => city.owner !== faction.id)
+    if (!target) {
+      strongest.troops = Math.min(30000, strongest.troops + 420)
+      reports.push(`${faction.name}在${strongest.name}整军。`)
+      continue
+    }
+      if (target.owner === 'liu' && this.alliedFactionIds.has(faction.id)) {
+        strongest.troops = Math.min(30000, strongest.troops + 260)
+        reports.push(`${faction.name}顾及盟约，在${strongest.name}暂缓进犯。`)
+        continue
+      }
+      if (strongest.troops > target.troops * 1.45 && strongest.troops > 6500) {
+        const attackerLoss = Math.floor(strongest.troops * 0.22)
+        const defenderRemain = Math.floor(target.troops * 0.35)
+        strongest.troops -= attackerLoss
+        target.owner = faction.id
+        target.troops = Math.max(1200, defenderRemain)
+        reports.push(`${faction.name}攻取${target.name}。`)
+      } else {
+        strongest.troops = Math.min(30000, strongest.troops + 520)
+        strongest.food = Math.min(5000, strongest.food + 180)
+        reports.push(`${faction.name}屯兵${strongest.name}，窥伺${target.name}。`)
+      }
+    }
+    return reports
+  }
+
+  private resolveMonthlyEvent() {
+    const roll = Phaser.Math.Between(1, 100)
+    const city = this.selectedCity
+    if (roll <= 25 && city) {
+      const gain = 320
+      city.food = Math.min(5000, city.food + gain)
+      this.syncSelectedCityState()
+      return `${city.name}丰收，粮 +${gain}。`
+    }
+    if (roll <= 45 && city) {
+      const loss = Math.min(city.gold, 120)
+      city.gold -= loss
+      this.cityState.publicOrder = Phaser.Math.Clamp(this.cityState.publicOrder - 6, 0, 100)
+      this.syncSelectedCityState()
+      return `${city.name}盗贼滋扰，金 -${loss}，民心 -6。`
+    }
+    if (roll <= 68) {
+      this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 10, 0, 100)
+      return '门客带来名士传闻，情报 +10。'
+    }
+    this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 5, 0, 100)
+    return '边境告急，敌势 +5。'
+  }
+
+  private strongestEnemySummary() {
+    const summaries = strategyFactions
+      .filter((faction) => faction.id !== 'liu' && faction.id !== 'neutral')
+      .map((faction) => ({
+        name: faction.name,
+        troops: this.sumCityField(faction.id, 'troops'),
+      }))
+    return summaries.toSorted((a, b) => b.troops - a.troops)[0] ?? { name: '群雄', troops: 0 }
+  }
+
+  private drawMap() {
+    for (let y = 0; y < MAP_H; y += 1) {
+      for (let x = 0; x < MAP_W; x += 1) {
+        const tile = terrain[mapRows[y][x]]
+        const px = BOARD_X + x * TILE
+        const py = BOARD_Y + y * TILE
+        this.boardLayer.add(this.add.rectangle(px, py, TILE - 2, TILE - 2, this.terrainColor(tile.type), 0.74).setOrigin(0))
+        this.boardLayer.add(this.add.rectangle(px, py, TILE - 2, TILE - 2, 0x000000, 0).setOrigin(0).setStrokeStyle(1, 0xf4d48c, 0.22))
+        this.drawTerrainMark(tile.type, px, py)
+      }
+    }
+  }
+
+  private drawTerrainMark(type: TerrainType, px: number, py: number) {
+    if (type === 'forest') {
+      this.boardLayer.add(this.add.triangle(px + 32, py + 18, 0, 28, 18, 0, 36, 28, 0x2d6a4f, 0.8))
+      this.boardLayer.add(this.add.rectangle(px + 28, py + 40, 8, 14, 0x6d4c41, 0.9))
+    }
+    if (type === 'hill') {
+      this.boardLayer.add(this.add.triangle(px + 32, py + 42, 2, 28, 30, 0, 58, 28, 0x7b5f3a, 0.72))
+    }
+    if (type === 'water') {
+      this.boardLayer.add(this.add.ellipse(px + 32, py + 34, 42, 18, 0x8ecae6, 0.28))
+    }
+    if (type === 'fort') {
+      this.boardLayer.add(this.add.rectangle(px + 17, py + 22, 30, 26, 0x926f34, 0.95).setStrokeStyle(2, 0xf4d58d))
+      this.boardLayer.add(this.add.rectangle(px + 23, py + 15, 18, 10, 0x53331b, 0.95))
+    }
+  }
+
+  private drawHighlights() {
+    for (const pos of this.highlighted) {
+      const px = BOARD_X + pos.x * TILE
+      const py = BOARD_Y + pos.y * TILE
+      this.highlightLayer.add(this.add.rectangle(px + 2, py + 2, TILE - 6, TILE - 6, this.phase === 'moveTarget' ? 0x6cb6ff : 0xffd166, 0.28).setOrigin(0))
+      this.highlightLayer.add(this.add.rectangle(px + 2, py + 2, TILE - 6, TILE - 6, 0xffffff, 0).setOrigin(0).setStrokeStyle(2, 0xffffff, 0.45))
+    }
+  }
+
+  private drawUnits() {
+    for (const unit of this.units.filter((u) => u.alive)) {
+      const { x, y } = gridToWorld(unit.position)
+      const selected = unit.id === this.selectedUnitId
+      const base = this.add.container(x, y)
+      base.add(this.add.circle(0, 15, 23, unit.faction === 'player' ? 0x122945 : 0x3d1115, 0.82))
+      base.add(this.add.circle(0, 0, 20, unit.palette.primary, unit.hasActed ? 0.58 : 1).setStrokeStyle(selected ? 4 : 2, selected ? 0xfff0ad : unit.palette.secondary))
+      base.add(this.add.rectangle(0, -8, 22, 12, unit.palette.secondary, 0.95))
+      base.add(this.add.text(0, -3, unit.name.slice(0, 1), {
+        fontFamily: 'Georgia, serif',
+        fontSize: '22px',
+        color: '#fff8dd',
+        stroke: '#1b0d0b',
+        strokeThickness: 3,
+      }).setOrigin(0.5))
+      base.add(this.add.rectangle(-24, 30, 48, 6, 0x161616, 0.95).setOrigin(0))
+      base.add(this.add.rectangle(-24, 30, 48 * (unit.stats.hp / unit.stats.maxHp), 6, unit.faction === 'player' ? 0x45d483 : 0xf25f5c, 0.95).setOrigin(0))
+      base.add(this.add.text(0, 41, `${unit.stats.hp}/${unit.stats.maxHp}`, {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '11px',
+        color: '#f8f2de',
+      }).setOrigin(0.5))
+      this.unitLayer.add(base)
+    }
+  }
+
+  private drawHud() {
+    this.statusText = this.add.text(UI_X, 98, '', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '24px',
+      color: '#f8df9d',
+    })
+    this.infoText = this.add.text(UI_X, 142, '', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '17px',
+      color: '#f8ecd0',
+      lineSpacing: 8,
+      wordWrap: { width: 380 },
+    })
+    this.logText = this.add.text(36, 626, '', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '16px',
+      color: '#f3dec0',
+      lineSpacing: 5,
+      wordWrap: { width: 1120 },
+    })
+    this.uiLayer.add(this.add.rectangle(UI_X - 18, 86, 420, 498, 0x111820, 0.92).setOrigin(0).setStrokeStyle(2, 0x9f7e3a, 0.8))
+    this.uiLayer.add(this.add.rectangle(24, 612, 1190, 114, 0x111820, 0.92).setOrigin(0).setStrokeStyle(2, 0x9f7e3a, 0.8))
+    this.uiLayer.add([this.statusText, this.infoText, this.logText])
+    this.makeButton(1110, 24, '重开', () => this.startBattle(), this.uiLayer, 132, 38)
+    this.makeButton(960, 24, '标题', () => this.showTitle(), this.uiLayer, 132, 38)
+    this.updateHud()
+  }
+
+  private updateHud() {
+    this.actionButtons.forEach((button) => button.destroy())
+    this.actionButtons = []
+    const selected = this.selectedUnit
+    const factionLabel = this.currentFaction === 'player' ? '我方回合' : '敌方回合'
+    this.statusText.setText(`第 ${this.turn} 回合 · ${factionLabel}`)
+    if (selected) {
+      const tile = terrain[mapRows[selected.position.y][selected.position.x]]
+      this.infoText.setText([
+        `${selected.name}｜${selected.title}`,
+        `等级 ${selected.level}  经验 ${selected.exp}`,
+        `生命 ${selected.stats.hp}/${selected.stats.maxHp}`,
+        `攻 ${selected.stats.atk}  防 ${selected.stats.def}  谋 ${selected.stats.mag}  抗 ${selected.stats.res}`,
+        `移动 ${selected.stats.move}  射程 ${selected.stats.range}`,
+        `地形 ${terrainName(tile.type)}：防御 +${tile.defenseBonus} 攻击 +${tile.attackBonus}`,
+      ].join('\n'))
+      this.drawPortrait(selected)
+      if (this.currentFaction === 'player' && selected.faction === 'player' && !selected.hasActed && this.phase === 'playerSelect') {
+        this.addActionButton('移动', 458, () => this.enterMoveMode(selected))
+        this.addActionButton('攻击', 506, () => this.enterAttackMode(selected, undefined))
+        const skill = skills[selected.skills[0]]
+        this.addActionButton(skill.type === 'heal' ? skill.name : `${skill.name}`, 554, () => this.enterAttackMode(selected, skill.id))
+        this.addActionButton('待机', 602, () => this.finishUnit(selected))
+      }
+    } else {
+      this.infoText.setText('选择一名我方武将开始行动。\n\n目标：击败右侧吕布军前锋。\n点击高亮格移动或选择目标。')
+    }
+    this.logText.setText(this.logLines.slice(-4).join('\n'))
+  }
+
+  private drawPortrait(unit: Unit) {
+    const x = UI_X + 292
+    const y = 148
+    this.uiLayer.add(this.add.rectangle(x, y, 82, 98, 0x231613, 0.92).setStrokeStyle(2, unit.palette.secondary))
+    const key = `portrait-${unit.id}`
+    if (this.textures.exists(key)) {
+      this.uiLayer.add(this.add.image(x, y, key).setDisplaySize(74, 90))
+      return
+    }
+    this.uiLayer.add(this.add.circle(x, y - 10, 30, unit.palette.portrait, 1))
+    this.uiLayer.add(this.add.rectangle(x, y + 26, 54, 42, unit.palette.primary, 1))
+    this.uiLayer.add(this.add.text(x, y - 10, unit.name.slice(0, 1), {
+      fontFamily: 'Georgia, serif',
+      fontSize: '34px',
+      color: '#fff5d6',
+      stroke: '#1c1010',
+      strokeThickness: 4,
+    }).setOrigin(0.5))
+  }
+
+  private addActionButton(label: string, y: number, callback: () => void) {
+    const button = this.makeButton(UI_X + 190, y, label, callback, this.uiLayer, 180, 38)
+    this.actionButtons.push(button)
+  }
+
+  private makeButton(x: number, y: number, label: string, callback: () => void, layer: Phaser.GameObjects.Container, width = 220, height = 48) {
+    const button = this.add.text(x, y, label, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#21140f',
+      align: 'center',
+      backgroundColor: '#f5d487',
+      padding: { x: 18, y: 9 },
+      fixedWidth: width,
+      fixedHeight: height,
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    button.on('pointerover', () => button.setStyle({ backgroundColor: '#ffe7a6' }))
+    button.on('pointerout', () => button.setStyle({ backgroundColor: '#f5d487' }))
+    button.on('pointerdown', callback)
+    layer.add(button)
+    return button
+  }
+
+  private handlePointer(pointer: Phaser.Input.Pointer) {
+    if (this.phase === 'title' || this.phase === 'campaign' || this.phase === 'inspect' || this.phase === 'factions' || this.phase === 'talent' || this.phase === 'city' || this.phase === 'heroes' || this.phase === 'diplomacy' || this.phase === 'deploy' || this.phase === 'briefing' || this.phase === 'monthReport' || this.phase === 'enemyTurn' || this.phase === 'result') return
+    const pos = worldToGrid(pointer.x, pointer.y)
+    if (!pos || !isInside(pos)) return
+    if (this.phase === 'moveTarget') {
+      this.tryMove(pos)
+      return
+    }
+    if (this.phase === 'actionTarget') {
+      this.tryAction(pos)
+      return
+    }
+    const unit = this.unitAt(pos)
+    if (unit?.faction === 'player' && !unit.hasActed) {
+      this.selectedUnitId = unit.id
+      this.highlighted = []
+      this.renderBattle()
+    }
+  }
+
+  private enterMoveMode(unit: Unit) {
+    this.phase = 'moveTarget'
+    this.highlighted = reachableTiles(unit)
+    this.renderBattle()
+  }
+
+  private enterAttackMode(unit: Unit, skillId?: string) {
+    this.phase = 'actionTarget'
+    this.selectedSkillId = skillId
+    const range = skillId ? skills[skillId].range : unit.stats.range
+    this.highlighted = tilesInRange(unit.position, range).filter((pos) => isInside(pos))
+    this.renderBattle()
+  }
+
+  private tryMove(pos: GridPosition) {
+    const unit = this.selectedUnit
+    if (!unit || !this.highlighted.some((tile) => samePos(tile, pos))) return
+    if (this.unitAt(pos) && !samePos(unit.position, pos)) return
+    unit.position = pos
+    unit.hasMoved = true
+    this.phase = 'playerSelect'
+    this.highlighted = []
+    this.addLog(`${unit.name} 移动到 ${pos.x + 1},${pos.y + 1}。`)
+    this.renderBattle()
+  }
+
+  private tryAction(pos: GridPosition) {
+    const unit = this.selectedUnit
+    if (!unit || !this.highlighted.some((tile) => samePos(tile, pos))) return
+    const skill = this.selectedSkillId ? skills[this.selectedSkillId] : undefined
+    const target = this.unitAt(pos)
+    if (!target || !target.alive) return
+    if (skill?.type === 'heal') {
+      if (target.faction !== unit.faction) return
+      const amount = unit.stats.mag + skill.power
+      target.stats.hp = Math.min(target.stats.maxHp, target.stats.hp + amount)
+      this.addLog(`${unit.name} 使用 ${skill.name}，为 ${target.name} 回复 ${amount} 生命。`)
+    } else {
+      if (target.faction === unit.faction) return
+      const damage = computeDamage(unit, target, skill)
+      target.stats.hp = Math.max(0, target.stats.hp - damage)
+      const actionName = skill ? skill.name : '攻击'
+      this.addLog(`${unit.name} 对 ${target.name} 使用${actionName}，造成 ${damage} 伤害。`)
+      this.flashAt(target.position, 0xfff1a8)
+      if (target.stats.hp <= 0) this.defeatUnit(target, unit)
+    }
+    unit.hasActed = true
+    this.phase = 'playerSelect'
+    this.selectedSkillId = undefined
+    this.highlighted = []
+    if (!this.checkBattleEnd()) this.afterPlayerAction()
+  }
+
+  private finishUnit(unit: Unit) {
+    unit.hasActed = true
+    this.addLog(`${unit.name} 原地待机。`)
+    this.afterPlayerAction()
+  }
+
+  private afterPlayerAction() {
+    this.selectedUnitId = undefined
+    this.highlighted = []
+    if (this.living('player').every((unit) => unit.hasActed)) {
+      this.startEnemyTurn()
+    } else {
+      this.phase = 'playerSelect'
+      this.renderBattle()
+    }
+  }
+
+  private startEnemyTurn() {
+    this.currentFaction = 'enemy'
+    this.phase = 'enemyTurn'
+    this.renderBattle()
+    this.time.delayedCall(520, () => this.runEnemyUnit(0))
+  }
+
+  private runEnemyUnit(index: number) {
+    const enemies = this.living('enemy')
+    if (index >= enemies.length) {
+      this.endRound()
+      return
+    }
+    const enemy = enemies[index]
+    const target = nearestUnit(enemy, this.living('player'))
+    if (!target) {
+      this.checkBattleEnd()
+      return
+    }
+    if (distance(enemy.position, target.position) > enemy.stats.range) {
+      const next = bestStepToward(enemy, target.position, this.units)
+      if (next) {
+        enemy.position = next
+        this.addLog(`${enemy.name} 逼近 ${target.name}。`)
+      }
+    }
+    const newTarget = nearestAttackable(enemy, this.living('player'))
+    if (newTarget) {
+      const skill = skills[enemy.skills[0]]
+      const useSkill = distance(enemy.position, newTarget.position) <= skill.range
+      const damage = computeDamage(enemy, newTarget, useSkill ? newTarget.stats.hp > 5 ? skill : undefined : undefined)
+      newTarget.stats.hp = Math.max(0, newTarget.stats.hp - damage)
+      this.addLog(`${enemy.name} 攻击 ${newTarget.name}，造成 ${damage} 伤害。`)
+      this.flashAt(newTarget.position, 0xff6b6b)
+      if (newTarget.stats.hp <= 0) this.defeatUnit(newTarget, enemy)
+    }
+    this.renderBattle()
+    if (!this.checkBattleEnd()) this.time.delayedCall(580, () => this.runEnemyUnit(index + 1))
+  }
+
+  private endRound() {
+    this.councilState.supplies = Math.max(0, this.councilState.supplies - (this.councilState.edict === 'steady' ? 7 : 10))
+    if (this.councilState.supplies === 0) {
+      this.living('player').forEach((unit) => {
+        unit.stats.hp = Math.max(1, unit.stats.hp - 1)
+      })
+      this.addLog('补给断绝，我军疲惫，每名存活武将损失 1 点生命。')
+    } else {
+      this.addLog(`军粮消耗，剩余补给 ${this.councilState.supplies}。`)
+    }
+    for (const unit of this.units) {
+      unit.hasMoved = false
+      unit.hasActed = false
+      if (unit.alive) {
+        const tile = terrain[mapRows[unit.position.y][unit.position.x]]
+        if (tile.healPerTurn > 0) {
+          unit.stats.hp = Math.min(unit.stats.maxHp, unit.stats.hp + tile.healPerTurn)
+        }
+      }
+    }
+    this.turn += 1
+    if (this.councilState.firstTurnRaid && this.turn === 2) {
+      this.councilState.firstTurnRaid = false
+      this.units.filter((unit) => unit.faction === 'player').forEach((unit) => {
+        unit.stats.move -= 1
+      })
+      this.addLog('奇袭军令效果结束，我军移动恢复。')
+    }
+    this.currentFaction = 'player'
+    this.phase = 'playerSelect'
+    this.addLog(`第 ${this.turn} 回合开始。`)
+    this.renderBattle()
+  }
+
+  private defeatUnit(target: Unit, attacker: Unit) {
+    target.alive = false
+    target.stats.hp = 0
+    if (attacker.faction === 'player') {
+      attacker.exp += target.classId === 'commander' ? 60 : 30
+      this.roundKills += 1
+      if (attacker.exp >= 100) {
+        attacker.exp -= 100
+        attacker.level += 1
+        attacker.stats.maxHp += 3
+        attacker.stats.hp += 3
+        attacker.stats.atk += 1
+        attacker.stats.def += 1
+        this.addLog(`${attacker.name} 升到 ${attacker.level} 级！`)
+      }
+    }
+    this.addLog(`${target.name} 退场。`)
+  }
+
+  private checkBattleEnd() {
+    const boss = this.units.find((unit) => unit.id === 'boss')
+    const playerAlive = this.living('player').length > 0
+    if (!boss?.alive) {
+      this.showResult(true)
+      return true
+    } else if (!playerAlive) {
+      this.showResult(false)
+      return true
+    }
+    return false
+  }
+
+  private showResult(victory: boolean) {
+    this.phase = 'result'
+    this.overlayLayer.removeAll(true)
+    this.renderBattle()
+    const target = this.selectedTargetCity
+    if (victory && target) this.captureCity(target.id)
+    const title = victory ? '战役胜利' : '战役失败'
+    const copy = victory
+      ? `敌将已败，${target?.name ?? '目标城'}归入刘备军。\n回合数：${this.turn}  击破：${this.roundKills}`
+      : `我方部队全灭，粮道失守。\n回合数：${this.turn}`
+    this.overlayLayer.add(this.add.rectangle(640, 382, 620, 320, 0x101722, 0.96).setStrokeStyle(3, victory ? 0xf8df9d : 0xd65f5f))
+    this.overlayLayer.add(this.add.text(640, 306, title, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '48px',
+      color: victory ? '#f8df9d' : '#ffb3b3',
+      stroke: '#1b1010',
+      strokeThickness: 5,
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(640, 388, copy, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#f7ecd5',
+      align: 'center',
+      lineSpacing: 12,
+    }).setOrigin(0.5))
+    this.makeButton(460, 500, '再战', () => this.startBattle(), this.overlayLayer, 150, 42)
+    this.makeButton(640, 500, '返回版图', () => this.showCampaign(), this.overlayLayer, 170, 42)
+    this.makeButton(830, 500, '标题', () => this.showTitle(), this.overlayLayer, 150, 42)
+  }
+
+  private captureCity(cityId: CityId) {
+    const city = this.campaignCities.find((item) => item.id === cityId)
+    if (city && city.owner !== 'liu') {
+      city.owner = 'liu'
+      city.troops = Math.max(1800, Math.floor(city.troops * 0.45))
+      city.food = Math.max(500, Math.floor(city.food * 0.7))
+      city.gold = Math.max(250, Math.floor(city.gold * 0.7))
+    }
+  }
+
+  private flashAt(pos: GridPosition, color: number) {
+    const { x, y } = gridToWorld(pos)
+    const flash = this.add.circle(x, y, 34, color, 0.7)
+    this.unitLayer.add(flash)
+    this.tweens.add({
+      targets: flash,
+      scale: 1.8,
+      alpha: 0,
+      duration: 260,
+      onComplete: () => flash.destroy(),
+    })
+  }
+
+  private addLog(message: string) {
+    this.logLines.push(message)
+  }
+
+  private unitAt(pos: GridPosition) {
+    return this.units.find((unit) => unit.alive && samePos(unit.position, pos))
+  }
+
+  private living(faction: Faction) {
+    return this.units.filter((unit) => unit.faction === faction && unit.alive)
+  }
+
+  private get selectedUnit() {
+    return this.units.find((unit) => unit.id === this.selectedUnitId)
+  }
+
+  private terrainColor(type: TerrainType) {
+    return {
+      plain: 0x76885b,
+      forest: 0x315c3f,
+      hill: 0x8b6f47,
+      water: 0x2c6b8d,
+      fort: 0x9a7a3b,
+    }[type]
+  }
+}
+
+function createUnit(
+  id: string,
+  name: string,
+  title: string,
+  faction: Faction,
+  classId: UnitClass,
+  position: GridPosition,
+  stats: UnitStats,
+  unitSkills: string[],
+  palette: Unit['palette'],
+): Unit {
+  return {
+    id,
+    name,
+    title,
+    faction,
+    classId,
+    level: 1,
+    exp: 0,
+    stats,
+    skills: unitSkills,
+    position,
+    hasMoved: false,
+    hasActed: false,
+    alive: true,
+    palette,
+  }
+}
+
+function reachableTiles(unit: Unit) {
+  const results: GridPosition[] = []
+  for (let y = 0; y < MAP_H; y += 1) {
+    for (let x = 0; x < MAP_W; x += 1) {
+      const pos = { x, y }
+      const tile = terrain[mapRows[y][x]]
+      if (!tile.walkable) continue
+      if (distance(unit.position, pos) <= unit.stats.move + (tile.moveCost === 2 ? -1 : 0)) {
+        results.push(pos)
+      }
+    }
+  }
+  return results
+}
+
+function tilesInRange(origin: GridPosition, range: number) {
+  const results: GridPosition[] = []
+  for (let y = origin.y - range; y <= origin.y + range; y += 1) {
+    for (let x = origin.x - range; x <= origin.x + range; x += 1) {
+      const pos = { x, y }
+      if (distance(origin, pos) <= range && !samePos(origin, pos)) results.push(pos)
+    }
+  }
+  return results
+}
+
+function nearestUnit(unit: Unit, candidates: Unit[]) {
+  return candidates.toSorted((a, b) => distance(unit.position, a.position) - distance(unit.position, b.position))[0]
+}
+
+function heroById(id: string) {
+  return baseUnits.find((unit) => unit.id === id)
+}
+
+function unitIdForOfficerId(officerId: string) {
+  return {
+    liu_bei: 'yun',
+    guan_yu: 'lan',
+    zhuge_liang: 'xuan',
+    zhang_fei: 'qing',
+  }[officerId]
+}
+
+function officerIdForUnitId(unitId: string) {
+  return {
+    yun: 'liu_bei',
+    lan: 'guan_yu',
+    xuan: 'zhuge_liang',
+    qing: 'zhang_fei',
+  }[unitId]
+}
+
+function factionById(id: FactionId) {
+  return strategyFactions.find((faction) => faction.id === id)
+}
+
+function cityName(id: CityId) {
+  return strategyCities.find((city) => city.id === id)?.name ?? id
+}
+
+function officerPortraitKey(officerId: string) {
+  return {
+    liu_bei: 'portrait-yun',
+    guan_yu: 'portrait-lan',
+    zhuge_liang: 'portrait-xuan',
+    zhang_fei: 'portrait-qing',
+  }[officerId] ?? 'portrait-yun'
+}
+
+function heroTroops(unit: Unit, appointments: { governor: string; vanguard: string; strategist: string }) {
+  const base = unit.stats.maxHp * 10
+  const roleBonus = (appointments.vanguard === unit.id ? 80 : 0) + (appointments.governor === unit.id ? 40 : 0) + (appointments.strategist === unit.id ? 30 : 0)
+  return base + roleBonus
+}
+
+function roleLabels(unitId: string, appointments: { governor: string; vanguard: string; strategist: string }) {
+  const labels = []
+  if (appointments.governor === unitId) labels.push('太守')
+  if (appointments.vanguard === unitId) labels.push('先锋')
+  if (appointments.strategist === unitId) labels.push('军师')
+  return labels.length > 0 ? `｜${labels.join('/')}` : ''
+}
+
+function nearestAttackable(unit: Unit, candidates: Unit[]) {
+  return candidates
+    .filter((candidate) => distance(unit.position, candidate.position) <= unit.stats.range || unit.skills.some((id) => distance(unit.position, candidate.position) <= skills[id].range))
+    .toSorted((a, b) => a.stats.hp - b.stats.hp)[0]
+}
+
+function bestStepToward(unit: Unit, target: GridPosition, units: Unit[]) {
+  const candidates = tilesInRange(unit.position, 1)
+    .filter((pos) => isInside(pos))
+    .filter((pos) => terrain[mapRows[pos.y][pos.x]].walkable)
+    .filter((pos) => !units.some((other) => other.alive && other.id !== unit.id && samePos(other.position, pos)))
+  return candidates.toSorted((a, b) => distance(a, target) - distance(b, target))[0]
+}
+
+function computeDamage(attacker: Unit, defender: Unit, skill?: Skill) {
+  const attackerTile = terrain[mapRows[attacker.position.y][attacker.position.x]]
+  const defenderTile = terrain[mapRows[defender.position.y][defender.position.x]]
+  if (skill?.type === 'damage' && skill.damageType === 'magic') {
+    const fireBonus = skill.id === 'fire' && window.__FENGHUO_FIRE_EDICT__ ? 2 : 0
+    return Math.max(1, attacker.stats.mag + skill.power + fireBonus - defender.stats.res)
+  }
+  const power = skill?.type === 'damage' ? skill.power : 0
+  return Math.max(1, attacker.stats.atk + power + attackerTile.attackBonus - defender.stats.def - defenderTile.defenseBonus)
+}
+
+function gridToWorld(pos: GridPosition) {
+  return {
+    x: BOARD_X + pos.x * TILE + TILE / 2,
+    y: BOARD_Y + pos.y * TILE + TILE / 2,
+  }
+}
+
+function worldToGrid(x: number, y: number): GridPosition | undefined {
+  const gridX = Math.floor((x - BOARD_X) / TILE)
+  const gridY = Math.floor((y - BOARD_Y) / TILE)
+  const pos = { x: gridX, y: gridY }
+  return isInside(pos) ? pos : undefined
+}
+
+function isInside(pos: GridPosition) {
+  return pos.x >= 0 && pos.x < MAP_W && pos.y >= 0 && pos.y < MAP_H
+}
+
+function distance(a: GridPosition, b: GridPosition) {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
+}
+
+function samePos(a: GridPosition, b: GridPosition) {
+  return a.x === b.x && a.y === b.y
+}
+
+function terrainName(type: TerrainType) {
+  return {
+    plain: '平原',
+    forest: '树林',
+    hill: '山丘',
+    water: '河道',
+    fort: '据点',
+  }[type]
+}
+
+function edictName(edict: MilitaryEdict) {
+  return {
+    steady: '稳扎',
+    raid: '奇袭',
+    fire: '火攻',
+  }[edict]
+}
+
+function edictDescription(edict: MilitaryEdict) {
+  return {
+    steady: '全军防御 +1，补给消耗较少。',
+    raid: '士气 60 以上时，第 1 回合移动 +1。',
+    fire: '诸葛亮火计伤害 +2，但需要以情报支持。',
+  }[edict]
+}
+
+function formationName(formation: Formation) {
+  return {
+    vanguard: '先锋阵',
+    goose: '雁行阵',
+    circle: '方圆阵',
+  }[formation]
+}
+
+function formationDescription(formation: Formation) {
+  return {
+    vanguard: '刘备移动 +1，全军防御 -1。',
+    goose: '关羽攻击 +1，适合正面压制。',
+    circle: '稳守默认阵型，无额外风险。',
+  }[formation]
+}
+
+function campaignModeName(mode: CampaignMode) {
+  return {
+    inspection: '视察情况',
+    march: '行军准备',
+  }[mode]
+}
+
+function diplomacyName(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
+  return {
+    alliance: '同盟',
+    scout: '侦察',
+    sabotage: '离间',
+    persuade: '劝降',
+  }[kind]
+}
+
+declare global {
+  interface Window {
+    __FENGHUO_FIRE_EDICT__?: boolean
+  }
+}
+
+const config: Phaser.Types.Core.GameConfig = {
+  type: Phaser.AUTO,
+  parent: 'app',
+  width: 1280,
+  height: 760,
+  backgroundColor: '#151a20',
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
+  scene: [KingdomsScene],
+}
+
+new Phaser.Game(config)
