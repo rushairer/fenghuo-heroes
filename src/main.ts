@@ -140,6 +140,16 @@ type MarchArmy = {
   status: 'ready' | 'marching' | 'besieging' | 'retreating' | 'routed'
 }
 
+type SiegeState = {
+  attackerArmyId: string
+  defenderCityId: CityId
+  wallHp: number
+  defenderTroops: number
+  attackerTroops: number
+  turns: number
+  lastAction?: 'assault' | 'surround' | 'fire' | 'challenge' | 'fieldBattle' | 'retreat'
+}
+
 const TILE = 64
 const MAP_W = 12
 const MAP_H = 8
@@ -344,6 +354,7 @@ class KingdomsScene extends Phaser.Scene {
   private sabotagedFactionIds = new Set<FactionId>()
   private monthlyActionLog: string[] = []
   private marchArmy?: MarchArmy
+  private siegeState?: SiegeState
   private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
   private selectedDifficulty: Difficulty = 'normal'
   private campaignClock = {
@@ -861,7 +872,11 @@ class KingdomsScene extends Phaser.Scene {
 
   private resolveStageAdvance() {
     if (this.campaignClock.mode === 'march' && this.marchArmy) {
-      this.startMarchArmy()
+      if (this.marchArmy.status === 'ready') {
+        this.showCampaignMessage('远征军尚未移动，请先执行「移动」。')
+      } else {
+        this.beginSiege()
+      }
       return
     }
     this.advanceCampaignMonth()
@@ -940,7 +955,7 @@ class KingdomsScene extends Phaser.Scene {
       this.showCampaignMessage('远征军尚未移动到敌城，请先执行「移动」。')
       return
     }
-    this.startMarchArmy()
+    this.beginSiege()
   }
 
   private retreatMarchArmy() {
@@ -965,6 +980,215 @@ class KingdomsScene extends Phaser.Scene {
 
   private officerName(officerId: string) {
     return this.campaignOfficers.find((officer) => officer.id === officerId)?.name ?? officerId
+  }
+
+  private beginSiege() {
+    if (!this.marchArmy?.targetCityId) {
+      this.showCampaignMessage('远征军没有目标城，无法攻城。')
+      return
+    }
+    const target = this.campaignCities.find((city) => city.id === this.marchArmy?.targetCityId)
+    if (!target || target.owner === 'liu') {
+      this.showCampaignMessage('目标城已非敌城，无需攻城。')
+      return
+    }
+    this.marchArmy.status = 'besieging'
+    this.siegeState = {
+      attackerArmyId: this.marchArmy.id,
+      defenderCityId: target.id,
+      wallHp: target.defense,
+      defenderTroops: target.troops,
+      attackerTroops: this.marchArmy.troops,
+      turns: 1,
+    }
+    this.showSiege()
+  }
+
+  private showSiege(message?: string) {
+    if (!this.marchArmy || !this.siegeState) {
+      this.showCampaignMessage('当前没有攻城战。')
+      return
+    }
+    const city = this.campaignCities.find((item) => item.id === this.siegeState?.defenderCityId)
+    if (!city) return
+    this.phase = 'marchMonth'
+    this.overlayLayer.removeAll(true)
+    this.drawBackdrop()
+    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.93).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, `${city.name}攻城`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    this.overlayLayer.add(this.add.text(1010, 72, `${this.campaignClock.year}年${this.campaignClock.month}月  第${this.siegeState.turns}合`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f4dfb3',
+    }).setOrigin(0.5))
+
+    this.overlayLayer.add(this.add.rectangle(86, 142, 430, 416, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(118, 172, '攻城态势', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const lines = [
+      `攻方      ${cityName(this.marchArmy.sourceCityId)}军`,
+      `主将      ${this.officerName(this.marchArmy.leaderOfficerId)}`,
+      `兵力      ${this.siegeState.attackerTroops}`,
+      `粮草      ${this.marchArmy.food}`,
+      `士气      ${this.marchArmy.morale}`,
+      '',
+      `守城      ${city.name}`,
+      `归属      ${factionById(city.owner)?.name ?? '-'}`,
+      `城防      ${this.siegeState.wallHp}/${city.defense}`,
+      `守军      ${this.siegeState.defenderTroops}`,
+      `府库      ${city.gold}`,
+      `存粮      ${city.food}`,
+    ]
+    this.overlayLayer.add(this.add.text(122, 232, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 11,
+    }))
+
+    this.overlayLayer.add(this.add.rectangle(558, 142, 636, 416, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.overlayLayer.add(this.add.text(590, 172, '攻城命令', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f5d487',
+    }))
+    const actions: [string, string, () => void][] = [
+      ['强攻', '高兵损，快速削城防与守军', () => this.resolveSiegeAction('assault')],
+      ['围城', '耗粮，低兵损削士气与守军', () => this.resolveSiegeAction('surround')],
+      ['火计', '耗情报，烧粮并降城防', () => this.resolveSiegeAction('fire')],
+      ['挑战', '单挑雏形，胜则震慑守军', () => this.resolveSiegeAction('challenge')],
+      ['会战', '进入当前会战分支', () => this.startMarchArmy()],
+      ['撤退', '撤回远征军，损士气', () => this.resolveSiegeAction('retreat')],
+    ]
+    actions.forEach(([label, desc, callback], index) => {
+      const col = index % 2
+      const row = Math.floor(index / 2)
+      const x = 672 + col * 270
+      const y = 250 + row * 90
+      this.makeButton(x, y, label, callback, this.overlayLayer, 150, 42)
+      this.overlayLayer.add(this.add.text(x - 82, y + 32, desc, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '16px',
+        color: '#ead7b3',
+        wordWrap: { width: 230 },
+      }))
+    })
+
+    if (message) {
+      this.overlayLayer.add(this.add.text(640, 610, message, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '22px',
+        color: '#fff4cf',
+        backgroundColor: '#3c2417',
+        padding: { x: 20, y: 10 },
+      }).setOrigin(0.5))
+    }
+    this.makeButton(640, 660, '返回行军', () => this.showCampaign(), this.overlayLayer, 180, 42)
+  }
+
+  private resolveSiegeAction(action: SiegeState['lastAction']) {
+    if (!this.marchArmy || !this.siegeState || !action) return
+    if (action === 'retreat') {
+      this.siegeState.lastAction = 'retreat'
+      this.retreatMarchArmy()
+      return
+    }
+    if (action === 'fieldBattle') {
+      this.startMarchArmy()
+      return
+    }
+    const city = this.campaignCities.find((item) => item.id === this.siegeState?.defenderCityId)
+    if (!city) return
+    this.siegeState.lastAction = action
+    let message = ''
+    if (action === 'assault') {
+      const wallDamage = 10 + Math.floor(this.marchArmy.morale / 18)
+      const defenderLoss = 480 + Math.floor(this.marchArmy.troops / 18)
+      const attackerLoss = 300 + Math.floor(this.siegeState.defenderTroops / 38)
+      this.siegeState.wallHp = Math.max(0, this.siegeState.wallHp - wallDamage)
+      this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
+      this.siegeState.attackerTroops = Math.max(0, this.siegeState.attackerTroops - attackerLoss)
+      this.marchArmy.troops = this.siegeState.attackerTroops
+      this.marchArmy.food = Math.max(0, this.marchArmy.food - 5)
+      message = `强攻城门，城防 -${wallDamage}，守军 -${defenderLoss}，我军 -${attackerLoss}。`
+    } else if (action === 'surround') {
+      const defenderLoss = 260 + Math.floor(this.councilState.intel * 3)
+      this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
+      this.marchArmy.food = Math.max(0, this.marchArmy.food - 7)
+      this.marchArmy.morale = Math.max(0, this.marchArmy.morale - 1)
+      message = `围城断援，守军 -${defenderLoss}，我军粮草 -7。`
+    } else if (action === 'fire') {
+      if (this.councilState.intel < 18) {
+        this.marchArmy.food = Math.max(0, this.marchArmy.food - 3)
+        message = '情报不足，火计未成，仅耗粮草。'
+      } else {
+        const wallDamage = 7 + Math.floor(this.councilState.intel / 12)
+        const foodLoss = Math.floor(city.food * 0.18)
+        this.councilState.intel = Math.max(0, this.councilState.intel - 18)
+        this.siegeState.wallHp = Math.max(0, this.siegeState.wallHp - wallDamage)
+        city.food = Math.max(120, city.food - foodLoss)
+        this.marchArmy.food = Math.max(0, this.marchArmy.food - 4)
+        message = `火计焚营，城防 -${wallDamage}，敌粮 -${foodLoss}。`
+      }
+    } else if (action === 'challenge') {
+      const duelSwing = Math.max(120, this.officerForUnit(this.appointments.vanguard)?.war ?? 70)
+      const defenderLoss = 260 + duelSwing * 3
+      this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
+      this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 4, 0, 100)
+      message = `${this.officerName(this.marchArmy.leaderOfficerId)}阵前挑战得势，守军 -${defenderLoss}，士气上升。`
+    }
+    this.siegeState.turns += 1
+    if (this.siegeState.wallHp <= 0 || this.siegeState.defenderTroops <= Math.max(500, Math.floor(city.troops * 0.18))) {
+      this.completeSiegeVictory()
+      return
+    }
+    if (this.marchArmy.food <= 0 || this.siegeState.attackerTroops <= 500) {
+      this.completeSiegeFailure('粮尽兵疲，攻城失败。')
+      return
+    }
+    this.showSiege(message)
+  }
+
+  private completeSiegeVictory() {
+    if (!this.marchArmy || !this.siegeState) return
+    const city = this.campaignCities.find((item) => item.id === this.siegeState?.defenderCityId)
+    const source = this.campaignCities.find((item) => item.id === this.marchArmy?.sourceCityId)
+    if (!city || !source) return
+    const oldOwner = factionById(city.owner)?.name ?? '敌军'
+    const seizedGold = Math.floor(city.gold * 0.18)
+    const seizedFood = Math.floor(city.food * 0.18)
+    city.owner = 'liu'
+    city.troops = Math.max(600, Math.floor(this.siegeState.attackerTroops * 0.35))
+    city.defense = Math.max(18, Math.floor(this.siegeState.wallHp * 0.75))
+    city.gold = Math.max(120, city.gold - seizedGold)
+    city.food = Math.max(160, city.food - seizedFood)
+    source.gold = Math.min(3000, source.gold + seizedGold)
+    source.food = Math.min(5000, source.food + seizedFood)
+    this.recordMonthlyAction(`攻取${city.name}`)
+    this.marchArmy = undefined
+    this.siegeState = undefined
+    this.syncSelectedCityState()
+    this.showCampaignMessage(`${oldOwner}弃守，${city.name}归入刘备军。缴获金${seizedGold}粮${seizedFood}。`)
+  }
+
+  private completeSiegeFailure(message: string) {
+    if (!this.marchArmy || !this.siegeState) return
+    const source = this.campaignCities.find((item) => item.id === this.marchArmy?.sourceCityId)
+    if (source) source.troops = Math.max(500, source.troops - Math.floor(this.marchArmy.troops * 0.12))
+    this.recordMonthlyAction(`攻${cityName(this.siegeState.defenderCityId)}失利`)
+    this.marchArmy = undefined
+    this.siegeState = undefined
+    this.councilState.morale = Math.max(0, this.councilState.morale - 6)
+    this.showCampaignMessage(message)
   }
 
   private showDomesticCommand() {
@@ -3167,11 +3391,14 @@ class KingdomsScene extends Phaser.Scene {
     this.overlayLayer.removeAll(true)
     this.renderBattle()
     const target = this.selectedTargetCity
-    const battleReport = this.applyBattleOutcome(victory)
-    const title = victory ? '战役胜利' : '战役失败'
+    const inSiege = Boolean(this.siegeState)
+    const battleReport = inSiege ? this.applyFieldBattleToSiege(victory) : this.applyBattleOutcome(victory)
+    const title = victory ? (inSiege ? '会战胜利' : '战役胜利') : (inSiege ? '会战失利' : '战役失败')
     const playerForce = this.forceSummary('player')
     const enemyForce = this.forceSummary('enemy')
-    const copy = overrideCopy ?? (victory
+    const copy = overrideCopy ?? (inSiege
+      ? `会战结果已回写攻城态势。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}  击破：${this.roundKills}`
+      : victory
       ? `敌军主将已败，${target?.name ?? '目标城'}归入刘备军。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}  击破：${this.roundKills}`
       : `我方军势受挫，粮道失守。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}`)
     this.overlayLayer.add(this.add.rectangle(640, 382, 620, 320, 0x101722, 0.96).setStrokeStyle(3, victory ? 0xf8df9d : 0xd65f5f))
@@ -3189,17 +3416,40 @@ class KingdomsScene extends Phaser.Scene {
       align: 'center',
       lineSpacing: 12,
     }).setOrigin(0.5))
-    this.makeButton(460, 500, '再战', () => this.startBattle(), this.overlayLayer, 150, 42)
-    this.makeButton(640, 500, '返回版图', () => {
-      this.marchArmy = undefined
-      this.campaignClock.mode = 'inspection'
-      this.showCampaign()
-    }, this.overlayLayer, 170, 42)
-    this.makeButton(830, 500, '月令', () => {
-      this.marchArmy = undefined
-      this.campaignClock.mode = 'inspection'
-      this.advanceCampaignMonth()
-    }, this.overlayLayer, 150, 42)
+    if (inSiege) {
+      this.makeButton(540, 500, '返回攻城', () => this.showSiege(), this.overlayLayer, 170, 42)
+      this.makeButton(740, 500, '撤退', () => this.resolveSiegeAction('retreat'), this.overlayLayer, 150, 42)
+    } else {
+      this.makeButton(460, 500, '再战', () => this.startBattle(), this.overlayLayer, 150, 42)
+      this.makeButton(640, 500, '返回版图', () => {
+        this.marchArmy = undefined
+        this.campaignClock.mode = 'inspection'
+        this.showCampaign()
+      }, this.overlayLayer, 170, 42)
+      this.makeButton(830, 500, '月令', () => {
+        this.marchArmy = undefined
+        this.campaignClock.mode = 'inspection'
+        this.advanceCampaignMonth()
+      }, this.overlayLayer, 150, 42)
+    }
+  }
+
+  private applyFieldBattleToSiege(victory: boolean) {
+    if (!this.siegeState || !this.marchArmy) return '攻城态势未变化。'
+    const player = this.forceSummary('player')
+    const enemy = this.forceSummary('enemy')
+    const playerRemainRatio = Phaser.Math.Clamp(player.total / Math.max(1, player.max), 0, 1)
+    const enemyRemainRatio = Phaser.Math.Clamp(enemy.total / Math.max(1, enemy.max), 0, 1)
+    const attackerLoss = Math.floor(this.siegeState.attackerTroops * (victory ? 0.08 + (1 - playerRemainRatio) * 0.14 : 0.18 + (1 - playerRemainRatio) * 0.2))
+    const defenderLoss = Math.floor(this.siegeState.defenderTroops * (victory ? 0.18 + (1 - enemyRemainRatio) * 0.22 : 0.08 + (1 - enemyRemainRatio) * 0.12))
+    const wallLoss = victory ? Math.max(4, this.roundKills * 3) : Math.max(1, this.roundKills)
+    this.siegeState.attackerTroops = Math.max(400, this.siegeState.attackerTroops - attackerLoss)
+    this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
+    this.siegeState.wallHp = Math.max(0, this.siegeState.wallHp - wallLoss)
+    this.marchArmy.troops = this.siegeState.attackerTroops
+    this.marchArmy.food = Math.max(0, this.marchArmy.food - 5)
+    this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + (victory ? 4 : -6), 0, 100)
+    return `我军损兵 ${attackerLoss}｜守军损兵 ${defenderLoss}｜城防 -${wallLoss}`
   }
 
   private applyBattleOutcome(victory: boolean) {
