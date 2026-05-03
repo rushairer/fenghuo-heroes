@@ -761,7 +761,7 @@ class KingdomsScene extends Phaser.Scene {
       lineSpacing: 11,
       color: '#f7ead0',
     }))
-    this.makeButton(520, 568, '进入军事命令', () => this.showDeployment(), this.overlayLayer)
+    this.makeButton(520, 568, '进入军事命令', () => this.showMilitaryCommand(), this.overlayLayer)
   }
 
   private advanceCampaignMonth() {
@@ -1657,7 +1657,7 @@ class KingdomsScene extends Phaser.Scene {
       ['人材', () => this.showTalentSearch()],
       ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8', { treasury: -140, walls: 8 })],
       ['训练', () => this.showMilitaryActorSelection('training')],
-      ['出征', () => this.showDeployment()],
+      ['出征', () => this.showDeploymentActorSelection()],
     ])
   }
 
@@ -3092,8 +3092,59 @@ class KingdomsScene extends Phaser.Scene {
     }).setOrigin(0.5))
     this.drawDeploymentSummary()
     this.drawDeploymentRoster()
-    this.makeButton(520, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
-    this.makeButton(740, 636, '确认出征', () => this.confirmDeployment(), this.overlayLayer, 180, 44)
+    this.makeButton(438, 636, '重选发起城', () => this.showDeploymentActorSelection(), this.overlayLayer, 180, 44)
+    this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '确认出征', () => this.confirmDeployment(), this.overlayLayer, 180, 44)
+  }
+
+  private showDeploymentActorSelection() {
+    const cities = this.controlledCities().filter((city) => this.deployableOfficersInCity(city.id).length > 0 && this.diplomacyTargetsFrom(city).length > 0)
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, '军事｜出征：选择发起城', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '出征命令先确定发兵城，再选择随军武将、粮草和邻接目标城。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    if (cities.length === 0) {
+      this.overlayLayer.add(this.add.text(640, 414, '当前没有同时具备可出战武将和邻接敌城的己方城。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+    }
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      const officers = this.deployableOfficersInCity(city.id)
+      const targets = this.diplomacyTargetsFrom(city)
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.selectedTargetCityId = targets[0]?.id
+        this.deploymentOfficerIds.clear()
+        this.deploymentFood = undefined
+        this.syncSelectedCityState()
+        this.ensureDeploymentSelection()
+        this.showDeployment()
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `武将${officers.length}｜邻敌${targets.length}｜粮${city.food}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => {
+      this.showCampaign()
+      this.showMilitaryCommand()
+    }, this.overlayLayer, 130, 38)
   }
 
   private drawDeploymentSummary() {
@@ -3220,7 +3271,10 @@ class KingdomsScene extends Phaser.Scene {
   private confirmDeployment() {
     this.ensureDeploymentTarget()
     this.ensureDeploymentSelection()
-    if (!this.selectedTargetCity) {
+    const source = this.selectedCity
+    const target = this.selectedTargetCity
+    if (!source) return
+    if (!target) {
       this.showDeploymentMessage('没有邻接敌城，无法出征。请先切换城池。')
       return
     }
@@ -3234,27 +3288,27 @@ class KingdomsScene extends Phaser.Scene {
       this.showDeploymentMessage('粮草不足，无法出征。请先治理城池或运输军粮。')
       return
     }
-    const source = this.selectedCity
-    const target = this.selectedTargetCity
     const troops = this.currentCityDeploymentTroops()
     const officers = this.selectedDeploymentOfficers().map((officer) => officer.name).join('、')
     this.showCommandConfirm({
       category: '军事',
       command: '出征',
-      actor: `${source?.name ?? '本城'}太守府`,
+      actor: `${source.name}太守府`,
       target: target.name,
-      scope: `${source?.name ?? '本城'} → ${target.name}`,
+      scope: `${source.name} → ${target.name}`,
       effect: `随军 ${officers}｜兵${troops}｜行军粮 -${selectedFood}`,
       hint: '确认后编成远征军',
-      onConfirm: () => this.executeDeployment(),
+      onConfirm: () => this.executeDeployment(source, target),
       onCancel: () => this.showDeployment(),
     })
   }
 
-  private executeDeployment() {
-    this.ensureDeploymentTarget()
+  private executeDeployment(source: StrategyCity, target: StrategyCity) {
+    this.selectedCityId = source.id
+    this.focusedCityId = source.id
+    this.selectedTargetCityId = target.id
+    this.syncSelectedCityState()
     this.ensureDeploymentSelection()
-    if (!this.selectedTargetCity) return
     const supplyNeed = this.deploymentSupplyNeed()
     const selectedFood = this.selectedDeploymentFood()
     if (this.councilState.supplies < selectedFood || selectedFood < supplyNeed) {
@@ -3268,20 +3322,20 @@ class KingdomsScene extends Phaser.Scene {
     this.marchArmy = {
       id: `army-${this.campaignClock.year}-${this.campaignClock.month}-${this.selectedCityId}`,
       factionId: 'liu',
-      sourceCityId: this.selectedCityId,
-      targetCityId: this.selectedTargetCity.id,
+      sourceCityId: source.id,
+      targetCityId: target.id,
       leaderOfficerId,
       officerIds: officerIds.slice(0, 4),
       troops: armyTroops,
       food: selectedFood,
       morale: this.councilState.morale,
-      position: { kind: 'city', cityId: this.selectedCityId },
-      routePlan: [this.selectedCityId, this.selectedTargetCity.id],
+      position: { kind: 'city', cityId: source.id },
+      routePlan: [source.id, target.id],
       movePoints: 1,
       status: 'ready',
     }
-    this.recordMonthlyAction(`${this.selectedCity?.name ?? '本城'}下令出征${this.selectedTargetCity.name}`)
-    this.showCampaignMessage(`出征令已下达：${this.selectedCity?.name ?? '本城'} → ${this.selectedTargetCity.name}。月令后将在行军月移动与攻击。`)
+    this.recordMonthlyAction(`${source.name}下令出征${target.name}`)
+    this.showCampaignMessage(`出征令已下达：${source.name} → ${target.name}。月令后将在行军月移动与攻击。`)
   }
 
   private deploymentSupplyNeed() {
