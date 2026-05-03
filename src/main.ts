@@ -5568,10 +5568,40 @@ class KingdomsScene extends Phaser.Scene {
     this.siegeState.attackerTroops = Math.max(400, this.siegeState.attackerTroops - attackerLoss)
     this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
     this.siegeState.wallHp = Math.max(0, this.siegeState.wallHp - wallLoss)
+    const attackerOfficers = this.marchArmy.officerIds
+      .map((id) => this.campaignOfficers.find((officer) => officer.id === id))
+      .filter((officer): officer is StrategyOfficer => Boolean(officer))
+    const defenderCity = this.campaignCities.find((city) => city.id === this.siegeState?.defenderCityId)
+    const defenderOfficers = defenderCity
+      ? this.campaignOfficers.filter((officer) => officer.location === defenderCity.id && officer.faction === defenderCity.owner)
+      : []
+    const attackerOfficerLoss = this.distributeOfficerTroopLoss(attackerOfficers, attackerLoss)
+    const defenderOfficerLoss = this.distributeOfficerTroopLoss(defenderOfficers, defenderLoss)
     this.marchArmy.troops = this.siegeState.attackerTroops
     this.marchArmy.food = Math.max(0, this.marchArmy.food - 5)
     this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + (victory ? 4 : -6), 0, 100)
-    return `我军损兵 ${attackerLoss}｜守军损兵 ${defenderLoss}｜城防 -${wallLoss}`
+    return `我军损兵 ${attackerLoss}（诸将-${attackerOfficerLoss}）｜守军损兵 ${defenderLoss}（守将-${defenderOfficerLoss}）｜城防 -${wallLoss}`
+  }
+
+  private distributeOfficerTroopLoss(officers: StrategyOfficer[], totalLoss: number) {
+    const floor = 80
+    const active = officers.filter((officer) => officerTroops(officer) > floor)
+    if (totalLoss <= 0 || active.length === 0) return 0
+    const totalTroops = active.reduce((sum, officer) => sum + officerTroops(officer), 0)
+    let remainingLoss = totalLoss
+    let appliedLoss = 0
+    active.forEach((officer, index) => {
+      const current = officerTroops(officer)
+      const capacity = Math.max(0, current - floor)
+      const rawShare = index === active.length - 1
+        ? remainingLoss
+        : Math.max(1, Math.floor(totalLoss * (current / Math.max(1, totalTroops))))
+      const loss = Math.min(capacity, rawShare, remainingLoss)
+      officer.troops = current - loss
+      remainingLoss -= loss
+      appliedLoss += loss
+    })
+    return appliedLoss
   }
 
   private applyBattleOutcome(victory: boolean) {
