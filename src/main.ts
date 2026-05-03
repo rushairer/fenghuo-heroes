@@ -1724,7 +1724,7 @@ class KingdomsScene extends Phaser.Scene {
     const meta = militaryAllocationMeta(kind)
     const cities = this.controlledCities().filter((city) => this.officersInCity(city.id).length > 0)
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, `军事｜${meta.command}：选择发起城`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -1779,7 +1779,7 @@ class KingdomsScene extends Phaser.Scene {
     }
     this.showCampaign()
     const meta = militaryAllocationMeta(kind)
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 350)
     this.overlayLayer.add(this.add.text(640, 276, `${meta.command}对象`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '34px',
@@ -2056,7 +2056,7 @@ class KingdomsScene extends Phaser.Scene {
   private showCityPolicyActorSelection(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta) {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, `${category}｜${command}：选择发起城`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -2094,7 +2094,7 @@ class KingdomsScene extends Phaser.Scene {
   private showTaxActorSelection() {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, '内政｜税率：选择发起城', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -2126,7 +2126,7 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = city.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 760, 310, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 760, 310)
     this.overlayLayer.add(this.add.text(300, 286, `内政｜税率：${city.name}`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
