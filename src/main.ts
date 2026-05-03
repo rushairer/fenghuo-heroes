@@ -908,6 +908,10 @@ class KingdomsScene extends Phaser.Scene {
     this.showCampaign()
     const target = this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '未定'
     const position = this.describeMarchPosition(this.marchArmy)
+    const officerLines = this.marchArmy.officerIds
+      .map((id) => this.campaignOfficers.find((officer) => officer.id === id))
+      .filter((officer): officer is StrategyOfficer => Boolean(officer))
+      .map((officer) => `${officer.name} 兵${officerTroops(officer)} 武${officerWeapons(officer)} 训${officerTraining(officer)}`)
     this.overlayLayer.add(this.add.rectangle(640, 408, 650, 210, 0x101722, 0.97).setStrokeStyle(2, 0xd4af37, 0.9))
     this.overlayLayer.add(this.add.text(640, 338, '远征军', {
       fontFamily: 'Georgia, "Times New Roman", serif',
@@ -920,7 +924,8 @@ class KingdomsScene extends Phaser.Scene {
       `位置      ${position}`,
       `兵粮      兵${this.marchArmy.troops}  粮${this.marchArmy.food}  士气${this.marchArmy.morale}`,
       `主将      ${this.officerName(this.marchArmy.leaderOfficerId)}`,
-      `随军      ${this.marchArmy.officerIds.map((id) => this.officerName(id)).join('、')}`,
+      `随军      ${officerLines.length > 0 ? '' : this.marchArmy.officerIds.map((id) => this.officerName(id)).join('、')}`,
+      ...officerLines.map((line) => `          ${line}`),
       `状态      ${marchStatusName(this.marchArmy.status)}  移动${this.marchArmy.movePoints}`,
     ].join('\n')
     this.overlayLayer.add(this.add.text(398, 382, copy, {
