@@ -3870,7 +3870,13 @@ class KingdomsScene extends Phaser.Scene {
         const row = Math.floor(index / 3)
         const x = 410 + col * 230
         const y = 390 + row * 82
-        this.makeButton(x, y, city.name, () => this.confirmDiplomacyAction(kind, actor, city), this.overlayLayer, 168, 40)
+        this.makeButton(x, y, city.name, () => {
+          if (kind === 'sabotage' || kind === 'assassination') {
+            this.showDiplomacyOfficerTargetSelection(kind, actor, city)
+            return
+          }
+          this.confirmDiplomacyAction(kind, actor, city)
+        }, this.overlayLayer, 168, 40)
         this.overlayLayer.add(this.add.text(x, y + 35, `${faction?.ruler ?? '敌将'}｜兵${city.troops} 防${city.defense}`, {
           fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
           fontSize: '14px',
@@ -3903,14 +3909,160 @@ class KingdomsScene extends Phaser.Scene {
     })
   }
 
+  private showDiplomacyOfficerTargetSelection(kind: 'sabotage' | 'assassination', actor: StrategyCity, targetCity: StrategyCity) {
+    const meta = diplomacyCommandMeta(kind)
+    const officers = this.enemyOfficersInCity(targetCity)
+    this.selectedCityId = actor.id
+    this.focusedCityId = targetCity.id
+    this.selectedTargetCityId = targetCity.id
+    this.selectedDiplomacyFactionId = targetCity.owner
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, `外交｜${meta.command}：选择武将`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, `发起方：${actor.name}使者    目标城：${targetCity.name}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    if (officers.length === 0) {
+      this.overlayLayer.add(this.add.text(640, 414, `${targetCity.name}暂无可指定武将，只能改用火计或劝降。`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5))
+    }
+    officers.forEach((officer, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      this.makeButton(x, y, officer.name, () => this.confirmDiplomacyOfficerAction(kind, actor, targetCity, officer), this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `忠${officer.loyalty} 智${officer.intel} 兵${officerTroops(officer)}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(540, 606, '重选敌城', () => this.showDiplomacyTargetSelection(kind, actor), this.overlayLayer, 150, 38)
+    this.makeButton(740, 606, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+  }
+
+  private confirmDiplomacyOfficerAction(kind: 'sabotage' | 'assassination', actor: StrategyCity, targetCity: StrategyCity, officer: StrategyOfficer) {
+    const meta = diplomacyCommandMeta(kind)
+    const chance = kind === 'sabotage' ? this.diplomacyChance('sabotage') : this.assassinationChance(targetCity, officer)
+    this.selectedCityId = actor.id
+    this.focusedCityId = targetCity.id
+    this.selectedTargetCityId = targetCity.id
+    this.selectedDiplomacyFactionId = targetCity.owner
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.showCommandConfirm({
+      category: '外交',
+      command: meta.command,
+      actor: `${actor.name}使者`,
+      target: `${targetCity.name}｜${officer.name}`,
+      scope: `${actor.name} → ${targetCity.name}城内武将`,
+      effect: kind === 'sabotage'
+        ? `成功率 ${chance}%｜${officer.name}忠诚下降｜守军动摇`
+        : `成功率 ${chance}%｜扰乱${officer.name}部曲｜失败则敌势上升`,
+      hint: '确认后执行计策',
+      onConfirm: () => this.executeDiplomacyOfficerCommand(kind, actor, targetCity, officer),
+      onCancel: () => this.showDiplomacyOfficerTargetSelection(kind, actor, targetCity),
+    })
+  }
+
+  private executeDiplomacyOfficerCommand(kind: 'sabotage' | 'assassination', actor: StrategyCity, targetCity: StrategyCity, officer: StrategyOfficer) {
+    if (this.councilState.actions <= 0) {
+      this.showDiplomacyMessage('政令已用尽，无法施行计策。')
+      return
+    }
+    this.selectedCityId = actor.id
+    this.focusedCityId = targetCity.id
+    this.selectedTargetCityId = targetCity.id
+    this.selectedDiplomacyFactionId = targetCity.owner
+    if (kind === 'sabotage') {
+      this.resolveOfficerSabotage(targetCity, officer)
+      return
+    }
+    this.resolveOfficerAssassination(targetCity, officer)
+  }
+
+  private enemyOfficersInCity(city: StrategyCity) {
+    return strategyOfficers
+      .filter((officer) => officer.location === city.id && officer.faction === city.owner)
+      .toSorted((a, b) => {
+        if (a.role === '君主' && b.role !== '君主') return -1
+        if (a.role !== '君主' && b.role === '君主') return 1
+        return officerTroops(b) - officerTroops(a)
+      })
+  }
+
+  private resolveOfficerSabotage(targetCity: StrategyCity, officer: StrategyOfficer) {
+    this.councilState.actions -= 1
+    this.councilState.supplies = Math.max(0, this.councilState.supplies - 5)
+    const chance = this.diplomacyChance('sabotage')
+    const success = Phaser.Math.Between(1, 100) <= chance
+    if (success) {
+      const loyaltyLoss = Phaser.Math.Between(7, 14)
+      const troopLoss = Math.max(120, Math.floor(officerTroops(officer) * 0.1))
+      officer.loyalty = Phaser.Math.Clamp(officer.loyalty - loyaltyLoss, 0, 100)
+      officer.troops = Math.max(200, officerTroops(officer) - troopLoss)
+      targetCity.troops = Math.max(600, targetCity.troops - troopLoss)
+      this.councilState.sabotage = true
+      this.sabotagedFactionIds.add(targetCity.owner)
+      this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat - 10, 0, 100)
+      this.recordMonthlyAction(`离间${targetCity.name}${officer.name}`)
+      this.syncSelectedCityState()
+      this.showDiplomacyMessage(`${officer.name}军心动摇，忠诚 -${loyaltyLoss}，所部兵力受损。`)
+      return
+    }
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale - 3, 0, 100)
+    this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 3, 0, 100)
+    this.showDiplomacyMessage(`离间${officer.name}失败，敌城戒备上升，我军士气 -3。`)
+  }
+
+  private resolveOfficerAssassination(targetCity: StrategyCity, officer: StrategyOfficer) {
+    this.councilState.actions -= 1
+    this.councilState.supplies = Math.max(0, this.councilState.supplies - 8)
+    const chance = this.assassinationChance(targetCity, officer)
+    const success = Phaser.Math.Between(1, 100) <= chance
+    if (success) {
+      const troopLoss = Math.max(180, Math.floor(officerTroops(officer) * 0.18))
+      officer.troops = Math.max(120, officerTroops(officer) - troopLoss)
+      officer.loyalty = Phaser.Math.Clamp(officer.loyalty - 3, 0, 100)
+      targetCity.troops = Math.max(500, targetCity.troops - troopLoss)
+      targetCity.defense = Math.max(15, targetCity.defense - 2)
+      this.recordMonthlyAction(`暗袭${targetCity.name}${officer.name}`)
+      this.syncSelectedCityState()
+      this.showDiplomacyMessage(`${officer.name}营中大乱，所部折损，${targetCity.name}城防略降。`)
+      return
+    }
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale - 5, 0, 100)
+    this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 5, 0, 100)
+    this.showDiplomacyMessage(`暗袭${officer.name}失败，敌方严加搜捕，敌势 +5。`)
+  }
+
+  private assassinationChance(targetCity: StrategyCity, officer: StrategyOfficer) {
+    const intelBonus = Math.floor(this.councilState.intel / 7)
+    const moraleBonus = Math.floor((this.councilState.morale - 50) / 6)
+    const defensePenalty = Math.floor(targetCity.defense / 12)
+    const officerPenalty = Math.floor((officer.intel + officer.command) / 24)
+    return Phaser.Math.Clamp(34 + intelBonus + moraleBonus - defensePenalty - officerPenalty, 12, 72)
+  }
+
   private diplomacyCommandEffect(kind: DiplomacyCommandKind) {
     return {
       alliance: `成功率 ${this.diplomacyChance('alliance')}%｜士气 +10｜敌势 -8`,
       scout: `成功率 ${this.diplomacyChance('scout')}%｜情报 +32`,
       borrow: '府库 +260｜士气 -2',
       repay: '府库 -180｜士气 +3｜敌势 -3',
-      sabotage: `成功率 ${this.diplomacyChance('sabotage')}%｜敌兵动摇｜敌势下降`,
-      assassination: '扰乱守备，失败则敌势上升',
+      sabotage: `成功率 ${this.diplomacyChance('sabotage')}%｜选敌城武将｜降忠诚扰军心`,
+      assassination: '选敌城武将｜扰乱部曲，失败则敌势上升',
       fire: '烧敌粮并削城防，失败则情报下降',
       persuade: `成功率 ${this.diplomacyChance('persuade')}%｜守军动摇｜情报 +10`,
     }[kind]
