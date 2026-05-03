@@ -688,7 +688,8 @@ class KingdomsScene extends Phaser.Scene {
       ['攻击', () => this.resolveMarchAttack()],
     ]
     const auxCommands: [string, () => void][] = [
-      ['情报', () => this.showBriefing()],
+      ['截粮', () => this.confirmMarchForage()],
+      ['占村', () => this.confirmMarchVillage()],
       ['撤退', () => this.retreatMarchArmy()],
       ['待机', () => this.showCampaignMessage('远征军按兵待命，等待主公号令。')],
       ['月令', () => this.advanceCampaignMonth()],
@@ -714,13 +715,13 @@ class KingdomsScene extends Phaser.Scene {
       this.makeButton(x, 664, label, callback, this.overlayLayer, 122, 50)
     })
     auxCommands.forEach(([label, callback], index) => {
-      const x = 750 + index * 116
+      const x = 690 + index * 104
       this.overlayLayer.add(this.add.text(x - 42, 632, `${index + 4}.`, {
         fontFamily: 'Georgia, "Times New Roman", serif',
         fontSize: '16px',
         color: '#d4af37',
       }).setOrigin(0.5))
-      this.makeButton(x, 664, label, callback, this.overlayLayer, 96, 38)
+      this.makeButton(x, 664, label, callback, this.overlayLayer, 88, 38)
     })
   }
 
@@ -1061,6 +1062,68 @@ class KingdomsScene extends Phaser.Scene {
       onConfirm: () => this.beginSiege(),
       onCancel: () => this.showCampaign(),
     })
+  }
+
+  private confirmMarchForage() {
+    if (!this.marchArmy) {
+      this.showCampaignMessage('没有远征军可截粮。')
+      return
+    }
+    if (this.marchArmy.status === 'ready') {
+      this.showCampaignMessage('远征军尚未离城，无法截粮。')
+      return
+    }
+    this.showCommandConfirm({
+      category: '行军',
+      command: '截粮',
+      actor: `${cityName(this.marchArmy.sourceCityId)}远征军`,
+      target: this.marchArmy.targetCityId ? `${cityName(this.marchArmy.targetCityId)}粮道` : '敌军粮道',
+      scope: this.describeMarchPosition(this.marchArmy),
+      effect: '随军粮 +8｜敌势 +3｜民心 -1',
+      hint: '确认后执行行军事件',
+      onConfirm: () => this.executeMarchForage(),
+      onCancel: () => this.showCampaign(),
+    })
+  }
+
+  private executeMarchForage() {
+    if (!this.marchArmy) return
+    this.marchArmy.food = Math.min(120, this.marchArmy.food + 8)
+    this.cityState.publicOrder = Math.max(0, this.cityState.publicOrder - 1)
+    this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 3, 0, 100)
+    this.recordMonthlyAction(`${cityName(this.marchArmy.sourceCityId)}军截粮`)
+    this.showCampaignMessage('远征军截得敌粮，随军粮 +8；敌军戒备上升。')
+  }
+
+  private confirmMarchVillage() {
+    if (!this.marchArmy) {
+      this.showCampaignMessage('没有远征军可占村。')
+      return
+    }
+    if (this.marchArmy.status === 'ready') {
+      this.showCampaignMessage('远征军尚未离城，无法占村。')
+      return
+    }
+    this.showCommandConfirm({
+      category: '行军',
+      command: '占村',
+      actor: `${cityName(this.marchArmy.sourceCityId)}远征军`,
+      target: '沿途村落',
+      scope: this.describeMarchPosition(this.marchArmy),
+      effect: '随军粮 +4｜情报 +4｜士气 +1',
+      hint: '确认后执行行军事件',
+      onConfirm: () => this.executeMarchVillage(),
+      onCancel: () => this.showCampaign(),
+    })
+  }
+
+  private executeMarchVillage() {
+    if (!this.marchArmy) return
+    this.marchArmy.food = Math.min(120, this.marchArmy.food + 4)
+    this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 1, 0, 100)
+    this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 4, 0, 100)
+    this.recordMonthlyAction(`${cityName(this.marchArmy.sourceCityId)}军占村补给`)
+    this.showCampaignMessage('远征军占得沿途村落，补给与情报增加。')
   }
 
   private retreatMarchArmy() {
