@@ -168,6 +168,7 @@ type DuelState = {
 type MilitaryAllocationKind = 'recruit' | 'weapon' | 'training'
 type RecruitScale = 'small' | 'medium' | 'large'
 type TrainingMode = 'single' | 'all'
+type TransportTarget = 'expedition' | CityId
 
 const TILE = 64
 const MAP_W = 12
@@ -1909,14 +1910,60 @@ class KingdomsScene extends Phaser.Scene {
   private confirmTransportSupplies() {
     const city = this.selectedCity
     if (!city) return
+    const destinations = this.controlledNeighborCities()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 410, 760, 318, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(640, 292, '运输目标', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(640, 344, `${city.name}太守府发起运输，选择粮草去向`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#ead7b3',
+    }).setOrigin(0.5))
+    this.makeButton(430, 424, '远征粮仓', () => this.confirmTransportTarget('expedition'), this.overlayLayer, 170, 42)
+    this.overlayLayer.add(this.add.text(430, 464, '粮 -240｜行军粮 +18', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '15px',
+      color: '#ead7b3',
+    }).setOrigin(0.5))
+    destinations.forEach((destination, index) => {
+      const x = 640 + index * 170
+      this.makeButton(x, 424, destination.name, () => this.confirmTransportTarget(destination.id), this.overlayLayer, 138, 42)
+      this.overlayLayer.add(this.add.text(x, 464, '粮 -240｜到粮 +220', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '15px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    if (destinations.length === 0) {
+      this.overlayLayer.add(this.add.text(730, 424, '无相邻己方城', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '18px',
+        color: '#bda982',
+      }).setOrigin(0.5))
+    }
+    this.makeButton(640, 586, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+  }
+
+  private confirmTransportTarget(target: TransportTarget) {
+    const city = this.selectedCity
+    if (!city) return
+    const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
+    const targetName = target === 'expedition' ? '远征粮仓' : targetCity?.name ?? '目标城'
+    const scope = target === 'expedition' ? `${city.name}粮仓 → 远征粮仓` : `${city.name} → ${targetName}`
+    const effect = target === 'expedition' ? '城池粮 -240｜行军粮 +18' : '发城粮 -240｜目标城粮 +220｜路耗 20'
     this.showCommandConfirm({
       category: '内政',
       command: '运输',
       actor: `${city.name}太守府`,
-      target: '远征粮仓',
-      scope: `${city.name}存粮 → 刘备军行军粮`,
-      effect: '城池粮 -240｜行军粮 +18',
-      onConfirm: () => this.transportSupplies(),
+      target: targetName,
+      scope,
+      effect,
+      onConfirm: () => this.transportSupplies(target),
+      onCancel: () => this.confirmTransportSupplies(),
     })
   }
 
@@ -2462,7 +2509,7 @@ class KingdomsScene extends Phaser.Scene {
     this.makeButton(640, 512, '收起', () => this.showCityGovernance(), this.overlayLayer, 140, 38)
   }
 
-  private transportSupplies() {
+  private transportSupplies(target: TransportTarget) {
     const city = this.selectedCity
     if (!city) return
     if (this.councilState.actions <= 0) {
@@ -2473,12 +2520,23 @@ class KingdomsScene extends Phaser.Scene {
       this.showCityMessage('存粮不足，无法转运军粮。')
       return
     }
+    const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
+    if (target !== 'expedition' && !targetCity) {
+      this.showCityMessage('运输目标无效。')
+      return
+    }
     city.food = Math.max(0, city.food - 240)
-    this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + 18, 0, 150)
+    if (target === 'expedition') {
+      this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + 18, 0, 150)
+    } else if (targetCity) {
+      targetCity.food = Math.min(5000, targetCity.food + 220)
+    }
     this.councilState.actions -= 1
-    this.recordMonthlyAction(`${city.name}转运军粮`)
+    this.recordMonthlyAction(target === 'expedition' ? `${city.name}转运军粮` : `${city.name}运输粮草至${targetCity?.name ?? '邻城'}`)
     this.syncSelectedCityState()
-    this.showCityMessage('转运军粮入远征仓，行军粮草增加。')
+    this.showCityMessage(target === 'expedition'
+      ? '转运军粮入远征仓，行军粮草增加。'
+      : `粮车抵达${targetCity?.name ?? '邻城'}，目标城存粮增加。`)
   }
 
   private drawCitySelector() {
