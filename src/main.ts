@@ -1656,7 +1656,7 @@ class KingdomsScene extends Phaser.Scene {
       ['征兵', () => this.showMilitaryActorSelection('recruit')],
       ['武器', () => this.showMilitaryActorSelection('weapon')],
       ['情报', () => this.showIntelActorSelection('军事')],
-      ['人材', () => this.showTalentSearch()],
+      ['人材', () => this.showTalentActorSelection()],
       ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8', { treasury: -140, walls: 8 })],
       ['训练', () => this.showMilitaryActorSelection('training')],
       ['出征', () => this.showDeploymentActorSelection()],
@@ -1885,8 +1885,8 @@ class KingdomsScene extends Phaser.Scene {
 
   private showPersonnelCommand() {
     this.showCommandPanel('人事', [
-      ['搜索', () => this.showTalentSearch()],
-      ['登用', () => this.showTalentSearch()],
+      ['搜索', () => this.showTalentActorSelection()],
+      ['登用', () => this.showTalentActorSelection()],
       ['赏赐', () => this.showHeroManagement()],
       ['移动', () => this.showMoveActorSelection()],
       ['俘虏', () => this.showCampaignMessage('俘虏处置将在战后系统中开放。')],
@@ -2577,7 +2577,49 @@ class KingdomsScene extends Phaser.Scene {
     this.makeButton(740, 636, '外交交涉', () => this.showDiplomacy(), this.overlayLayer, 180, 44)
   }
 
-  private showTalentSearch() {
+  private showTalentActorSelection() {
+    const cities = this.controlledCities()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, '军事｜人材：选择发起城', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '人材命令先确定举荐所在城，再选择在野人物登用。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        this.showTalentSearch(city)
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `金${city.gold}｜民心${this.cityState.publicOrder}｜情报${this.councilState.intel}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => {
+      this.showCampaign()
+      this.showMilitaryCommand()
+    }, this.overlayLayer, 130, 38)
+  }
+
+  private showTalentSearch(actorCity = this.selectedCity) {
+    const city = actorCity
+    if (!city) return
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
     this.phase = 'talent'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
@@ -2607,8 +2649,9 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f5d487',
     }))
     this.overlayLayer.add(this.add.text(124, 230, [
+      `发起：${city.name}`,
       `政令：${this.councilState.actions}`,
-      `府库：${this.cityState.treasury}`,
+      `府库：${city.gold}`,
       `民心：${this.cityState.publicOrder}`,
       `刘备魅力影响登用成功率。`,
       `高情报会发现更多人才。`,
@@ -2636,39 +2679,63 @@ class KingdomsScene extends Phaser.Scene {
         fontSize: '17px',
         color: '#f8ecd0',
       }))
-      this.makeButton(1038, y + 10, recruited ? '已登用' : '登用', () => this.tryRecruitOfficer(officer.id), this.overlayLayer, 108, 36)
+      this.makeButton(1038, y + 10, recruited ? '已登用' : '登用', () => this.confirmRecruitOfficer(city, officer), this.overlayLayer, 108, 36)
     })
-    this.makeButton(540, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
-    this.makeButton(740, 636, '推进月份', () => this.advanceCampaignMonth(), this.overlayLayer, 180, 44)
+    this.makeButton(438, 636, '重选发起城', () => this.showTalentActorSelection(), this.overlayLayer, 180, 44)
+    this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '推进月份', () => this.advanceCampaignMonth(), this.overlayLayer, 180, 44)
   }
 
-  private tryRecruitOfficer(officerId: string) {
-    const officer = this.campaignOfficers.find((item) => item.id === officerId)
-    if (!officer) return
+  private confirmRecruitOfficer(actorCity: StrategyCity, officer: StrategyOfficer) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
     if (this.recruitedNeutralIds.has(officer.id)) {
-      this.showTalentMessage(`${officer.name}已经投效。`)
+      this.showTalentMessage(`${officer.name}已经投效。`, actorCity)
       return
     }
+    this.showCampaign()
+    this.showCommandConfirm({
+      category: '军事',
+      command: '人材',
+      actor: `${actorCity.name}举荐所`,
+      target: officer.name,
+      scope: `${actorCity.name}访贤登用`,
+      effect: `金 -20｜成功率 ${this.recruitChance(officer)}%｜成功则${officer.name}入${actorCity.name}`,
+      hint: '确认后遣使访贤',
+      onConfirm: () => this.tryRecruitOfficer(actorCity, officer),
+      onCancel: () => this.showTalentSearch(actorCity),
+    })
+  }
+
+  private tryRecruitOfficer(actorCity: StrategyCity, officer: StrategyOfficer) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
     if (this.councilState.actions <= 0) {
-      this.showTalentMessage('政令已用尽，需等下月再访。')
+      this.showTalentMessage('政令已用尽，需等下月再访。', actorCity)
       return
     }
-    if (this.cityState.treasury < 20) {
-      this.showTalentMessage('府库不足，无法备礼访贤。')
+    if (actorCity.gold < 20) {
+      this.showTalentMessage('府库不足，无法备礼访贤。', actorCity)
       return
     }
     this.councilState.actions -= 1
-    this.cityState.treasury -= 20
+    actorCity.gold = Math.max(0, actorCity.gold - 20)
     if (Phaser.Math.Between(1, 100) <= this.recruitChance(officer)) {
       this.recruitedNeutralIds.add(officer.id)
       officer.faction = 'liu'
-      officer.location = this.selectedCityId
+      officer.location = actorCity.id
       officer.role = '客将'
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 6, 0, 100)
-      this.showTalentMessage(`${officer.name}愿赴${this.selectedCity?.name ?? '本城'}效力，士气 +6。`)
+      this.recordMonthlyAction(`${actorCity.name}登用${officer.name}`)
+      this.syncSelectedCityState()
+      this.showTalentMessage(`${officer.name}愿赴${actorCity.name}效力，士气 +6。`, actorCity)
     } else {
       this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 6, 0, 100)
-      this.showTalentMessage(`${officer.name}暂未应允，但留下线索，情报 +6。`)
+      this.recordMonthlyAction(`${actorCity.name}访${officer.name}未果`)
+      this.syncSelectedCityState()
+      this.showTalentMessage(`${officer.name}暂未应允，但留下线索，情报 +6。`, actorCity)
     }
   }
 
@@ -2678,8 +2745,8 @@ class KingdomsScene extends Phaser.Scene {
     return Phaser.Math.Clamp(28 + Math.floor(charm / 4) + Math.floor(this.councilState.intel / 10) + Math.floor(this.cityState.publicOrder / 20) - Math.floor(officer.loyalty / 10), 12, 88)
   }
 
-  private showTalentMessage(message: string) {
-    this.showTalentSearch()
+  private showTalentMessage(message: string, actorCity = this.selectedCity) {
+    this.showTalentSearch(actorCity)
     this.overlayLayer.add(this.add.text(640, 590, message, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '22px',
