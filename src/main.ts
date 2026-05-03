@@ -165,6 +165,9 @@ type DuelState = {
   outcome?: 'attackerWin' | 'defenderWin' | 'draw'
 }
 
+type MilitaryAllocationKind = 'recruit' | 'weapon' | 'training'
+type RecruitScale = 'small' | 'medium' | 'large'
+
 const TILE = 64
 const MAP_W = 12
 const MAP_H = 8
@@ -373,6 +376,7 @@ class KingdomsScene extends Phaser.Scene {
   private duelState?: DuelState
   private deploymentOfficerIds = new Set<string>()
   private deploymentFood?: number
+  private recruitScale: RecruitScale = 'medium'
   private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
   private selectedDifficulty: Difficulty = 'normal'
   private campaignClock = {
@@ -1494,7 +1498,7 @@ class KingdomsScene extends Phaser.Scene {
     ])
   }
 
-  private showMilitaryOfficerSelection(kind: 'recruit' | 'weapon' | 'training') {
+  private showMilitaryOfficerSelection(kind: MilitaryAllocationKind) {
     const city = this.selectedCity
     const officers = this.currentCityOfficers()
     if (!city) return
@@ -1515,11 +1519,21 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '18px',
       color: '#ead7b3',
     }).setOrigin(0.5))
+    if (kind === 'recruit') {
+      const scales: RecruitScale[] = ['small', 'medium', 'large']
+      scales.forEach((scale, index) => {
+        const config = recruitScaleConfig(scale)
+        this.makeButton(456 + index * 184, 348, this.recruitScale === scale ? `${config.label}✓` : config.label, () => {
+          this.recruitScale = scale
+          this.showMilitaryOfficerSelection(kind)
+        }, this.overlayLayer, 142, 34)
+      })
+    }
     officers.forEach((officer, index) => {
       const col = index % 3
       const row = Math.floor(index / 3)
       const x = 410 + col * 230
-      const y = 378 + row * 78
+      const y = (kind === 'recruit' ? 412 : 378) + row * 78
       this.makeButton(x, y, officer.name, () => this.confirmMilitaryAllocation(kind, officer), this.overlayLayer, 168, 40)
       this.overlayLayer.add(this.add.text(x, y + 35, `兵${officerTroops(officer)} 武${officerWeapons(officer)} 训${officerTraining(officer)}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -1530,7 +1544,7 @@ class KingdomsScene extends Phaser.Scene {
     this.makeButton(640, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
   }
 
-  private confirmMilitaryAllocation(kind: 'recruit' | 'weapon' | 'training', officer: StrategyOfficer) {
+  private confirmMilitaryAllocation(kind: MilitaryAllocationKind, officer: StrategyOfficer) {
     const city = this.selectedCity
     if (!city) return
     const meta = militaryAllocationMeta(kind)
@@ -1540,14 +1554,14 @@ class KingdomsScene extends Phaser.Scene {
       actor: `${city.name}${meta.actor}`,
       target: officer.name,
       scope: `${city.name}本城武将`,
-      effect: meta.effect(officer),
+      effect: meta.effect(officer, kind === 'recruit' ? this.recruitScale : undefined),
       hint: '确认后执行军事分配',
       onConfirm: () => this.executeMilitaryAllocation(kind, officer),
       onCancel: () => this.showMilitaryOfficerSelection(kind),
     })
   }
 
-  private executeMilitaryAllocation(kind: 'recruit' | 'weapon' | 'training', officer: StrategyOfficer) {
+  private executeMilitaryAllocation(kind: MilitaryAllocationKind, officer: StrategyOfficer) {
     const city = this.selectedCity
     if (!city) return
     if (this.councilState.actions <= 0) {
@@ -1555,16 +1569,18 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     const meta = militaryAllocationMeta(kind)
-    if (city.gold < meta.goldCost) {
+    const goldCost = kind === 'recruit' ? recruitScaleConfig(this.recruitScale).goldCost : meta.goldCost
+    if (city.gold < goldCost) {
       this.showCampaignMessage('府库不足，无法执行军事命令。')
       return
     }
-    city.gold = Math.max(0, city.gold - meta.goldCost)
+    city.gold = Math.max(0, city.gold - goldCost)
     if (kind === 'recruit') {
-      officer.troops = Math.min(6000, officerTroops(officer) + 900)
-      city.troops = Math.min(30000, city.troops + 900)
-      this.cityState.publicOrder = Math.max(0, this.cityState.publicOrder - 2)
-      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 3, 0, 100)
+      const scale = recruitScaleConfig(this.recruitScale)
+      officer.troops = Math.min(6000, officerTroops(officer) + scale.troops)
+      city.troops = Math.min(30000, city.troops + scale.troops)
+      this.cityState.publicOrder = Math.max(0, this.cityState.publicOrder - scale.publicOrderCost)
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + scale.moraleGain, 0, 100)
     } else if (kind === 'weapon') {
       officer.weapons = Math.min(5, officerWeapons(officer) + 1)
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 2, 0, 100)
@@ -4341,13 +4357,24 @@ function initialOfficerTraining(officer: StrategyOfficer) {
   return Phaser.Math.Clamp(Math.floor((officer.command + officer.war) / 3), 12, 70)
 }
 
-function militaryAllocationMeta(kind: 'recruit' | 'weapon' | 'training') {
+function recruitScaleConfig(scale: RecruitScale) {
+  return {
+    small: { label: '小募', troops: 450, goldCost: 90, publicOrderCost: 1, moraleGain: 1 },
+    medium: { label: '中募', troops: 900, goldCost: 160, publicOrderCost: 2, moraleGain: 3 },
+    large: { label: '大募', troops: 1500, goldCost: 260, publicOrderCost: 5, moraleGain: 4 },
+  }[scale]
+}
+
+function militaryAllocationMeta(kind: MilitaryAllocationKind) {
   return {
     recruit: {
       command: '征兵',
       actor: '兵营',
-      goldCost: 160,
-      effect: (officer: StrategyOfficer) => `金 -160｜${officer.name}兵 +900｜民心 -2｜士气 +3`,
+      get goldCost() { return recruitScaleConfig('medium').goldCost },
+      effect: (officer: StrategyOfficer, scale: RecruitScale = 'medium') => {
+        const config = recruitScaleConfig(scale)
+        return `${config.label}｜金 -${config.goldCost}｜${officer.name}兵 +${config.troops}｜民心 -${config.publicOrderCost}｜士气 +${config.moraleGain}`
+      },
       resultText: (officer: StrategyOfficer) => `新募士卒入营，现统兵${officerTroops(officer)}`,
     },
     weapon: {
