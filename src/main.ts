@@ -1411,24 +1411,24 @@ class KingdomsScene extends Phaser.Scene {
 
   private showDomesticCommand() {
     this.showCommandPanel('内政', [
-      ['开发', () => this.applyCityPolicy('兴修水利，田亩渐丰，城池存粮增加。', { treasury: -130, farms: 1, publicOrder: 2, food: 260 })],
+      ['开发', () => this.confirmCityPolicy('内政', '开发', '本城', '兴修水利，田亩渐丰，城池存粮增加。', '金 -130｜粮 +260｜民心 +2', { treasury: -130, farms: 1, publicOrder: 2, food: 260 })],
       ['调动', () => this.moveCurrentCityOfficer()],
       ['情报', () => this.showBriefing()],
-      ['福利', () => this.applyCityPolicy('赈济百姓，民心上升。', { treasury: -120, publicOrder: 6, morale: 2 })],
+      ['福利', () => this.confirmCityPolicy('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜民心 +6｜士气 +2', { treasury: -120, publicOrder: 6, morale: 2 })],
       ['任命', () => this.showHeroManagement()],
-      ['税率', () => this.applyCityPolicy('调整税率，府库增加但民心微降。', { treasury: 180, publicOrder: -3 })],
-      ['教育', () => this.applyCityPolicy('设学讲武，政略与情报上升。', { treasury: -100, intel: 4, morale: 2 })],
-      ['运输', () => this.transportSupplies()],
+      ['税率', () => this.confirmCityPolicy('内政', '税率', '本城府库', '调整税率，府库增加但民心微降。', '金 +180｜民心 -3', { treasury: 180, publicOrder: -3 })],
+      ['教育', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '设学讲武，政略与情报上升。', '金 -100｜情报 +4｜士气 +2', { treasury: -100, intel: 4, morale: 2 })],
+      ['运输', () => this.confirmTransportSupplies()],
     ])
   }
 
   private showMilitaryCommand() {
     this.showCommandPanel('军事', [
-      ['征兵', () => this.applyCityPolicy('征募乡勇入营，兵力增加。', { treasury: -160, recruits: 900, morale: 3, publicOrder: -2 })],
-      ['武器', () => this.applyCityPolicy('打造军械甲胄，出征士气上升。', { treasury: -180, morale: 5 })],
+      ['征兵', () => this.confirmCityPolicy('军事', '征兵', '本城兵营', '征募乡勇入营，兵力增加。', '金 -160｜兵 +900｜士气 +3｜民心 -2', { treasury: -160, recruits: 900, morale: 3, publicOrder: -2 })],
+      ['武器', () => this.confirmCityPolicy('军事', '武器', '本城军械库', '打造军械甲胄，出征士气上升。', '金 -180｜士气 +5', { treasury: -180, morale: 5 })],
       ['人材', () => this.showTalentSearch()],
-      ['防卫', () => this.applyCityPolicy('修缮城垣箭楼，城防上升。', { treasury: -140, walls: 8 })],
-      ['训练', () => this.applyCityPolicy('校场练兵，士气与情报上升。', { treasury: -90, morale: 7, intel: 3 })],
+      ['防卫', () => this.confirmCityPolicy('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8', { treasury: -140, walls: 8 })],
+      ['训练', () => this.confirmCityPolicy('军事', '训练', '本城军士', '校场练兵，士气与情报上升。', '金 -90｜士气 +7｜情报 +3', { treasury: -90, morale: 7, intel: 3 })],
       ['出征', () => this.showDeployment()],
     ])
   }
@@ -1486,6 +1486,80 @@ class KingdomsScene extends Phaser.Scene {
       this.showCampaign()
     }, this.overlayLayer, 110, 38)
     buttons.push(close)
+  }
+
+  private showCommandConfirm(config: {
+    category: string
+    command: string
+    actor: string
+    target: string
+    scope: string
+    effect: string
+    onConfirm: () => void
+    onCancel?: () => void
+  }) {
+    const panel = this.add.rectangle(640, 448, 680, 318, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9)
+    const heading = this.add.text(342, 316, `${config.category}｜${config.command}`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    })
+    const body = this.add.text(370, 372, [
+      `发起方    ${config.actor}`,
+      `目标      ${config.target}`,
+      `范围      ${config.scope}`,
+      `效果      ${config.effect}`,
+    ].join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      lineSpacing: 12,
+    })
+    const hint = this.add.text(640, 566, '确认后消耗政令并执行命令', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#d8c092',
+    }).setOrigin(0.5)
+    const nodes: Phaser.GameObjects.GameObject[] = [panel, heading, body, hint]
+    const close = () => nodes.forEach((node) => node.destroy())
+    const cancel = this.makeButton(540, 626, '取消', () => {
+      close()
+      config.onCancel?.()
+    }, this.overlayLayer, 136, 40)
+    const confirm = this.makeButton(740, 626, '确认', () => {
+      close()
+      config.onConfirm()
+    }, this.overlayLayer, 136, 40)
+    nodes.push(cancel, confirm)
+    this.overlayLayer.add(nodes)
+  }
+
+  private confirmCityPolicy(category: string, command: string, target: string, message: string, effect: string, delta: { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; food?: number; supplies?: number; morale?: number; intel?: number }) {
+    const city = this.selectedCity
+    if (!city) return
+    this.showCommandConfirm({
+      category,
+      command,
+      actor: `${city.name}太守府`,
+      target,
+      scope: `${city.name}城`,
+      effect,
+      onConfirm: () => this.applyCityPolicy(message, delta),
+    })
+  }
+
+  private confirmTransportSupplies() {
+    const city = this.selectedCity
+    if (!city) return
+    this.showCommandConfirm({
+      category: '内政',
+      command: '运输',
+      actor: `${city.name}太守府`,
+      target: '远征粮仓',
+      scope: `${city.name}存粮 → 刘备军行军粮`,
+      effect: '城池粮 -240｜行军粮 +18',
+      onConfirm: () => this.transportSupplies(),
+    })
   }
 
   private showInspection() {
@@ -2504,11 +2578,11 @@ class KingdomsScene extends Phaser.Scene {
     }))
     this.drawDiplomacyTargets()
     const actions: [string, string, () => void][] = [
-      ['同盟', `成功率 ${this.diplomacyChance('alliance')}%，暂缓该势力攻刘`, () => this.resolveDiplomacy('alliance')],
+      ['同盟', `成功率 ${this.diplomacyChance('alliance')}%，暂缓该势力攻刘`, () => this.confirmDiplomacyAction('同盟', this.selectedDiplomacyFaction()?.name ?? '邻接势力', `成功率 ${this.diplomacyChance('alliance')}%｜士气 +10｜敌势 -8`, () => this.resolveDiplomacy('alliance'))],
       ['计策', `离间为主，成功率 ${this.diplomacyChance('sabotage')}%`, () => this.showDiplomacyPlotMenu()],
-      ['情报', `成功率 ${this.diplomacyChance('scout')}%，探明邻城守军`, () => this.resolveDiplomacy('scout')],
-      ['借款', '金 +260，士气 -2，欠下人情', () => this.borrowFunds()],
-      ['还款', '金 -180，士气 +3，邦交缓和', () => this.repayFunds()],
+      ['情报', `成功率 ${this.diplomacyChance('scout')}%，探明邻城守军`, () => this.confirmDiplomacyAction('情报', this.selectedTargetCity?.name ?? '邻境', `成功率 ${this.diplomacyChance('scout')}%｜情报 +32`, () => this.resolveDiplomacy('scout'))],
+      ['借款', '金 +260，士气 -2，欠下人情', () => this.confirmDiplomacyAction('借款', this.selectedDiplomacyFaction()?.name ?? '邻接势力', '府库 +260｜士气 -2', () => this.borrowFunds())],
+      ['还款', '金 -180，士气 +3，邦交缓和', () => this.confirmDiplomacyAction('还款', this.selectedDiplomacyFaction()?.name ?? '邻接势力', '府库 -180｜士气 +3｜敌势 -3', () => this.repayFunds())],
     ]
     actions.forEach(([label, desc, callback], index) => {
       const col = index % 2
@@ -2527,11 +2601,26 @@ class KingdomsScene extends Phaser.Scene {
 
   private showDiplomacyPlotMenu() {
     this.showCommandPanel('计策', [
-      ['离间', () => this.resolveDiplomacy('sabotage')],
-      ['暗杀', () => this.resolveAssassination()],
-      ['火计', () => this.resolveDiplomacyFire()],
-      ['劝降', () => this.resolveDiplomacy('persuade')],
+      ['离间', () => this.confirmDiplomacyAction('离间', this.selectedTargetCity?.name ?? '敌营', `成功率 ${this.diplomacyChance('sabotage')}%｜敌兵动摇｜敌势下降`, () => this.resolveDiplomacy('sabotage'))],
+      ['暗杀', () => this.confirmDiplomacyAction('暗杀', this.selectedTargetCity?.name ?? '敌营', '扰乱守备，失败则敌势上升', () => this.resolveAssassination())],
+      ['火计', () => this.confirmDiplomacyAction('火计', this.selectedTargetCity?.name ?? '敌城', '烧敌粮并削城防，失败则情报下降', () => this.resolveDiplomacyFire())],
+      ['劝降', () => this.confirmDiplomacyAction('劝降', this.selectedTargetCity?.name ?? '敌营', `成功率 ${this.diplomacyChance('persuade')}%｜守军动摇｜情报 +10`, () => this.resolveDiplomacy('persuade'))],
     ])
+  }
+
+  private confirmDiplomacyAction(command: string, target: string, effect: string, onConfirm: () => void) {
+    const city = this.selectedCity
+    if (!city) return
+    this.showCommandConfirm({
+      category: '外交',
+      command,
+      actor: `${city.name}使者`,
+      target,
+      scope: `${city.name}邻接外交`,
+      effect,
+      onConfirm,
+      onCancel: () => this.showDiplomacy(),
+    })
   }
 
   private borrowFunds() {
