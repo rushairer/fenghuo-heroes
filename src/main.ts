@@ -1646,7 +1646,7 @@ class KingdomsScene extends Phaser.Scene {
       ['任命', () => this.showHeroManagement()],
       ['税率', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '调整税率，府库增加但民心微降。', '金 +180｜民心 -3', { treasury: 180, publicOrder: -3 })],
       ['教育', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '设学讲武，政略与情报上升。', '金 -100｜情报 +4｜士气 +2', { treasury: -100, intel: 4, morale: 2 })],
-      ['运输', () => this.confirmTransportSupplies()],
+      ['运输', () => this.showTransportActorSelection()],
     ])
   }
 
@@ -2040,10 +2040,50 @@ class KingdomsScene extends Phaser.Scene {
     })
   }
 
-  private confirmTransportSupplies() {
-    const city = this.selectedCity
-    if (!city) return
-    const destinations = this.controlledNeighborCities()
+  private showTransportActorSelection() {
+    const cities = this.controlledCities()
+    this.showCampaign()
+    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.overlayLayer.add(this.add.text(274, 264, '内政｜运输：选择发起城', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }))
+    this.overlayLayer.add(this.add.text(292, 316, '运输命令先确定发车城，再选择远征粮仓或相邻己方城作为目的地。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }))
+    cities.forEach((city, index) => {
+      const col = index % 3
+      const row = Math.floor(index / 3)
+      const x = 410 + col * 230
+      const y = 398 + row * 82
+      const destinations = this.controlledNeighborCitiesFrom(city)
+      this.makeButton(x, y, city.name, () => {
+        this.selectedCityId = city.id
+        this.focusedCityId = city.id
+        this.syncSelectedCityState()
+        this.showTransportTargetSelection(city)
+      }, this.overlayLayer, 168, 40)
+      this.overlayLayer.add(this.add.text(x, y + 35, `粮${city.food}｜邻城${destinations.length}｜行军粮${this.councilState.supplies}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(640, 606, '取消', () => {
+      this.showCampaign()
+      this.showDomesticCommand()
+    }, this.overlayLayer, 130, 38)
+  }
+
+  private showTransportTargetSelection(actorCity: StrategyCity) {
+    const city = actorCity
+    const destinations = this.controlledNeighborCitiesFrom(city)
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
     this.showCampaign()
     this.overlayLayer.add(this.add.rectangle(640, 410, 760, 318, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
     this.overlayLayer.add(this.add.text(640, 292, '运输目标', {
@@ -2056,7 +2096,7 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '19px',
       color: '#ead7b3',
     }).setOrigin(0.5))
-    this.makeButton(430, 424, '远征粮仓', () => this.confirmTransportTarget('expedition'), this.overlayLayer, 170, 42)
+    this.makeButton(430, 424, '远征粮仓', () => this.confirmTransportTarget('expedition', city), this.overlayLayer, 170, 42)
     this.overlayLayer.add(this.add.text(430, 464, '粮 -240｜行军粮 +18', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '15px',
@@ -2064,7 +2104,7 @@ class KingdomsScene extends Phaser.Scene {
     }).setOrigin(0.5))
     destinations.forEach((destination, index) => {
       const x = 640 + index * 170
-      this.makeButton(x, 424, destination.name, () => this.confirmTransportTarget(destination.id), this.overlayLayer, 138, 42)
+      this.makeButton(x, 424, destination.name, () => this.confirmTransportTarget(destination.id, city), this.overlayLayer, 138, 42)
       this.overlayLayer.add(this.add.text(x, 464, '粮 -240｜到粮 +220', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '15px',
@@ -2078,12 +2118,16 @@ class KingdomsScene extends Phaser.Scene {
         color: '#bda982',
       }).setOrigin(0.5))
     }
-    this.makeButton(640, 586, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeButton(540, 586, '重选发起城', () => this.showTransportActorSelection(), this.overlayLayer, 150, 38)
+    this.makeButton(740, 586, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
   }
 
-  private confirmTransportTarget(target: TransportTarget) {
-    const city = this.selectedCity
-    if (!city) return
+  private confirmTransportTarget(target: TransportTarget, actorCity: StrategyCity) {
+    const city = actorCity
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
     const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
     const targetName = target === 'expedition' ? '远征粮仓' : targetCity?.name ?? '目标城'
     const scope = target === 'expedition' ? `${city.name}粮仓 → 远征粮仓` : `${city.name} → ${targetName}`
@@ -2095,8 +2139,8 @@ class KingdomsScene extends Phaser.Scene {
       target: targetName,
       scope,
       effect,
-      onConfirm: () => this.transportSupplies(target),
-      onCancel: () => this.confirmTransportSupplies(),
+      onConfirm: () => this.transportSupplies(target, city),
+      onCancel: () => this.showTransportTargetSelection(city),
     })
   }
 
@@ -2601,7 +2645,7 @@ class KingdomsScene extends Phaser.Scene {
       ['任命', '任命太守、先锋、军师', () => this.showHeroManagement()],
       ['税率', '金 +220，民心 -6', () => this.showCityPolicyActorSelection('内政', '税率', '本城府库', '本月税率加重，府库充盈，民心略降。', '金 +220｜民心 -6', { treasury: 220, publicOrder: -6 })],
       ['教育', '金 -80，情报 +8，士气 +2', () => this.confirmCityPolicy('内政', '教育', '本城吏士', '开设讲武讲堂，吏士见闻增长。', '金 -80｜情报 +8｜士气 +2', { treasury: -80, intel: 8, morale: 2 })],
-      ['运输', '粮 -240，随军粮 +18', () => this.confirmTransportSupplies()],
+      ['运输', '粮 -240，随军粮 +18', () => this.showTransportActorSelection()],
     ]
     commands.forEach(([label, desc, callback], index) => {
       const col = index % 2
@@ -2642,9 +2686,11 @@ class KingdomsScene extends Phaser.Scene {
     this.makeButton(640, 512, '收起', () => this.showCityGovernance(), this.overlayLayer, 140, 38)
   }
 
-  private transportSupplies(target: TransportTarget) {
-    const city = this.selectedCity
-    if (!city) return
+  private transportSupplies(target: TransportTarget, actorCity: StrategyCity) {
+    const city = actorCity
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
     if (this.councilState.actions <= 0) {
       this.showCityMessage('本月政令已用尽，无法转运军粮。')
       return
@@ -3937,6 +3983,10 @@ class KingdomsScene extends Phaser.Scene {
   private controlledNeighborCities() {
     const city = this.selectedCity
     if (!city) return []
+    return this.controlledNeighborCitiesFrom(city)
+  }
+
+  private controlledNeighborCitiesFrom(city: StrategyCity) {
     return city.routes
       .map((routeId) => this.campaignCities.find((item) => item.id === routeId))
       .filter((item): item is StrategyCity => item !== undefined && item.owner === 'liu')
