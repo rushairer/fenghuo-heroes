@@ -13,7 +13,12 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Confirmation dialogs: dark mask, centered compact panel, structured actor/target/scope/effect rows, confirm/cancel pair.
 - Battle screens: top force summary, board left, status/action panel right, log footer.
 - Battle HUD top bars use three reserved zones: screen title, force summaries, and global actions. Global action buttons must never overlap force bars.
+- Field battle must always enter with an active controllable unit selected. After a unit acts, the UI should advance to the next ready unit so the command panel never appears empty during the player turn.
+- Field battle background art belongs below terrain, highlights, units, and HUD. Do not draw battlefield art in the HUD layer because it will cover units and interaction highlights.
+- Target-selection modes, such as move target, attack target, and tactic/heal target, must expose a visible cancel action in the command panel and support keyboard cancel with `Esc`/`C`.
+- Formation choice cards must use a fixed internal structure: button/title zone, posture line, and wrapped detail text. Detail text must stay inside the card and never touch the card border.
 - Siege screens: left status panels must use compact grouped stat blocks instead of long space-padded text. Attacker and defender data should be separated into fixed label/value columns inside the panel.
+- Siege status groups with different row counts must render as separate equal-height subcards. The subcard height, not the surrounding panel, owns overflow prevention.
 - Field-battle preparation screens: show participating officers, defender status, formation options, and the selected formation effect before entering the tactical board. Formation choices must visibly affect battle stats or result writeback.
 
 ## Layout Rules

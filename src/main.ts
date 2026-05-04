@@ -541,6 +541,10 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private handleKeyboard(event: KeyboardEvent) {
+    if (this.phase === 'moveTarget' || this.phase === 'actionTarget') {
+      if (event.key === 'Escape' || event.key.toLowerCase() === 'c') this.cancelBattleTargetMode()
+      return
+    }
     if (this.phase === 'playerSelect') {
       this.handleBattleKeyboard(event)
       return
@@ -585,7 +589,13 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     const commands: Record<string, () => void> = {
-      m: () => this.enterMoveMode(selected),
+      m: () => {
+        if (!selected.hasMoved) this.enterMoveMode(selected)
+        else {
+          this.addLog(`${selected.name}本阵已经移动。`)
+          this.renderBattle()
+        }
+      },
       a: () => this.enterAttackMode(selected, undefined),
       t: () => this.enterAttackMode(selected, selected.skills[0]),
       w: () => this.finishUnit(selected),
@@ -1557,18 +1567,6 @@ class KingdomsScene extends Phaser.Scene {
 
     this.drawPanel(86, 142, 430, 416)
     this.drawSectionTitle(118, 172, '攻城态势')
-    this.overlayLayer.add(this.add.rectangle(118, 218, 362, 286, 0x21160f, 0.38).setOrigin(0).setStrokeStyle(1, 0x8f6c2b, 0.55))
-    this.overlayLayer.add(this.add.rectangle(300, 236, 1, 246, 0x8f6c2b, 0.62).setOrigin(0.5, 0))
-    this.overlayLayer.add(this.add.text(142, 238, '攻方', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '24px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(326, 238, '守方', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '24px',
-      color: '#f8df9d',
-    }))
     const attackerRows: [string, string][] = [
       ['军势', `${cityName(this.marchArmy.sourceCityId)}军`],
       ['主将', this.officerName(this.marchArmy.leaderOfficerId)],
@@ -1586,8 +1584,8 @@ class KingdomsScene extends Phaser.Scene {
       ['府库', `${city.gold}`],
       ['存粮', `${city.food}`],
     ]
-    this.drawCompactInfoRows(138, 288, attackerRows)
-    this.drawCompactInfoRows(322, 288, defenderRows)
+    this.drawCompactInfoCard(118, 218, 172, 300, '攻方', attackerRows)
+    this.drawCompactInfoCard(308, 218, 172, 300, '守方', defenderRows)
 
     this.drawPanel(558, 142, 636, 416)
     this.drawSectionTitle(590, 172, '攻城命令')
@@ -1617,19 +1615,26 @@ class KingdomsScene extends Phaser.Scene {
     this.makeButton(640, 660, '返回行军', () => this.showCampaign(), this.overlayLayer, 180, 42)
   }
 
-  private drawCompactInfoRows(x: number, y: number, rows: [string, string][]) {
+  private drawCompactInfoCard(x: number, y: number, width: number, height: number, title: string, rows: [string, string][]) {
+    this.overlayLayer.add(this.add.rectangle(x, y, width, height, 0x21160f, 0.38).setOrigin(0).setStrokeStyle(1, 0x8f6c2b, 0.55))
+    this.overlayLayer.add(this.add.text(x + 22, y + 20, title, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '23px',
+      color: '#f8df9d',
+    }))
+    const rowGap = rows.length >= 7 ? 31 : 34
     rows.forEach(([label, value], index) => {
-      const rowY = y + index * 34
-      this.overlayLayer.add(this.add.text(x, rowY, label, {
+      const rowY = y + 68 + index * rowGap
+      this.overlayLayer.add(this.add.text(x + 22, rowY, label, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '17px',
+        fontSize: '16px',
         color: '#d8c092',
       }))
-      this.overlayLayer.add(this.add.text(x + 58, rowY, value, {
+      this.overlayLayer.add(this.add.text(x + 78, rowY, value, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '18px',
+        fontSize: '17px',
         color: '#f8ecd0',
-        wordWrap: { width: 96 },
+        wordWrap: { width: width - 90 },
       }))
     })
   }
@@ -1775,21 +1780,13 @@ class KingdomsScene extends Phaser.Scene {
     this.drawPanel(586, 132, 608, 442)
     this.drawSectionTitle(618, 162, '选择阵型')
     ;(Object.entries(fieldBattleFormations) as [FieldBattleFormation, typeof fieldBattleFormations[FieldBattleFormation]][]).forEach(([key, config], index) => {
-      const x = 650 + (index % 2) * 270
-      const y = 240 + Math.floor(index / 2) * 128
+      const x = 618 + (index % 2) * 252
+      const y = 216 + Math.floor(index / 2) * 136
       const selected = this.fieldBattleFormation === key
-      this.overlayLayer.add(this.add.rectangle(x - 92, y - 38, 228, 92, selected ? 0x3c2417 : 0x21160f, selected ? 0.92 : 0.68).setOrigin(0).setStrokeStyle(2, selected ? UI.border : UI.borderDim, selected ? 0.95 : 0.55))
-      this.makeButton(x + 22, y - 12, selected ? `${config.name}*` : config.name, () => {
+      this.drawFormationCard(x, y, config.name, config.posture, config.detail, selected, () => {
         this.fieldBattleFormation = key
         this.showFieldBattlePreparation()
-      }, this.overlayLayer, 128, 34)
-      this.overlayLayer.add(this.add.text(x - 72, y + 14, `${config.posture}\n${config.detail}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '15px',
-        color: '#ead7b3',
-        lineSpacing: 4,
-        wordWrap: { width: 184 },
-      }))
+      })
     })
     const selectedFormation = fieldBattleFormations[this.fieldBattleFormation]
     const defenderRows: [string, string][] = [
@@ -1819,6 +1816,26 @@ class KingdomsScene extends Phaser.Scene {
     this.makeButton(440, 650, '返回攻城', () => this.showSiege(), this.overlayLayer, 170, 42)
     this.makeButton(640, 650, '确认会战', () => this.confirmFieldBattleStart(), this.overlayLayer, 170, 42)
     this.makeButton(840, 650, '调整阵型', () => this.showFieldBattlePreparation(), this.overlayLayer, 170, 42)
+  }
+
+  private drawFormationCard(x: number, y: number, name: string, posture: string, detail: string, selected: boolean, onSelect: () => void) {
+    const width = 220
+    const height = 112
+    this.overlayLayer.add(this.add.rectangle(x, y, width, height, selected ? 0x3c2417 : 0x21160f, selected ? 0.92 : 0.68).setOrigin(0).setStrokeStyle(2, selected ? UI.border : UI.borderDim, selected ? 0.95 : 0.55))
+    this.makeButton(x + width / 2, y + 28, selected ? `${name}*` : name, onSelect, this.overlayLayer, 132, 34)
+    this.overlayLayer.add(this.add.text(x + 20, y + 58, posture, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '15px',
+      color: '#f8ecd0',
+      wordWrap: { width: width - 40 },
+    }))
+    this.overlayLayer.add(this.add.text(x + 20, y + 82, detail, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '14px',
+      color: '#ead7b3',
+      lineSpacing: 2,
+      wordWrap: { width: width - 40 },
+    }))
   }
 
   private confirmFieldBattleStart() {
@@ -3988,6 +4005,14 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
     this.showCampaign()
+    const moveActions: ModalGridItem[] = [
+      { label: '重选对象', onSelect: () => this.showMoveKindSelection(actorCity) },
+      { label: '取消', onSelect: () => this.showCampaign() },
+      { label: '确认', onSelect: () => this.confirmMoveOfficer(actorCity, officer, destination) },
+    ]
+    if (officers.length > 1) {
+      moveActions.push({ label: '全员', onSelect: () => this.confirmMoveOfficers(actorCity, officers, destination) })
+    }
     this.showModalChoiceColumns('内政｜调动：调动武将', `${actorCity.name}太守府发起调将`, [
       {
         title: '选择武将',
@@ -4005,11 +4030,7 @@ class KingdomsScene extends Phaser.Scene {
           onSelect: () => this.showMoveOfficerSelection(actorCity, officer.id, item.id),
         })),
       },
-    ], `${officer.name}：${cityName(officer.location)} → ${destination.name}`, [
-      { label: '重选对象', onSelect: () => this.showMoveKindSelection(actorCity) },
-      { label: '取消', onSelect: () => this.showCampaign() },
-      { label: '确认', onSelect: () => this.confirmMoveOfficer(actorCity, officer, destination) },
-    ])
+    ], `${officer.name}：${cityName(officer.location)} → ${destination.name}${officers.length > 1 ? `｜全员${officers.length}将可一并调动` : ''}`, moveActions)
   }
 
   private confirmMoveOfficer(actorCity: StrategyCity, officer: StrategyOfficer, destination: StrategyCity) {
@@ -4028,6 +4049,27 @@ class KingdomsScene extends Phaser.Scene {
       hint: '确认后调动武将',
       onConfirm: () => this.executeMoveOfficer(city, officer, destination),
       onCancel: () => this.showMoveOfficerSelection(city, officer.id, destination.id),
+    })
+  }
+
+  private confirmMoveOfficers(actorCity: StrategyCity, officers: StrategyOfficer[], destination: StrategyCity) {
+    const city = actorCity
+    const movable = officers.filter((officer) => officer.location === city.id && officer.role !== '君主')
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    const names = movable.map((officer) => officer.name).join('、')
+    this.showCommandConfirm({
+      category: '内政',
+      command: '调动',
+      actor: `${city.name}太守府`,
+      target: `${destination.name}诸将`,
+      scope: `${city.name} → ${destination.name}`,
+      effect: `调动 ${names}｜共${movable.length}将｜政令 -1`,
+      hint: '确认后批量调动武将',
+      onConfirm: () => this.executeMoveOfficers(city, movable, destination),
+      onCancel: () => this.showMoveOfficerSelection(city, movable[0]?.id ?? officers[0]?.id, destination.id),
     })
   }
 
@@ -4122,11 +4164,45 @@ class KingdomsScene extends Phaser.Scene {
     this.selectedCityId = actorCity.id
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
+    if (this.councilState.actions <= 0) {
+      this.showCityMessage('本月政令已用尽，不能调动。')
+      return
+    }
+    if (!this.controlledNeighborCitiesFrom(actorCity).some((city) => city.id === destination.id)) {
+      this.showCityMessage('目的城不是相邻己方城，无法调动。')
+      return
+    }
     officer.location = destination.id
     this.councilState.actions -= 1
     this.recordMonthlyAction(`${officer.name}移驻${destination.name}`)
     this.ensureLocalAppointments()
     this.showHeroMessage(`${officer.name}已移往${destination.name}。`)
+  }
+
+  private executeMoveOfficers(actorCity: StrategyCity, officers: StrategyOfficer[], destination: StrategyCity) {
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = actorCity.id
+    this.syncSelectedCityState()
+    if (this.councilState.actions <= 0) {
+      this.showCityMessage('本月政令已用尽，不能调动。')
+      return
+    }
+    if (!this.controlledNeighborCitiesFrom(actorCity).some((city) => city.id === destination.id)) {
+      this.showCityMessage('目的城不是相邻己方城，无法调动。')
+      return
+    }
+    const movable = officers.filter((officer) => officer.location === actorCity.id && officer.role !== '君主')
+    if (movable.length === 0) {
+      this.showHeroMessage('当前没有可批量调动的武将。')
+      return
+    }
+    movable.forEach((officer) => {
+      officer.location = destination.id
+    })
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${movable.map((officer) => officer.name).join('、')}移驻${destination.name}`)
+    this.ensureLocalAppointments()
+    this.showHeroMessage(`${movable.length}名武将已移往${destination.name}。`)
   }
 
   private showDeployment() {
@@ -4978,6 +5054,7 @@ class KingdomsScene extends Phaser.Scene {
     this.roundKills = 0
     this.applyCouncilBonuses()
     this.applyFieldBattleFormationBonuses()
+    this.selectNextReadyPlayerUnit()
     this.logLines = [
       `战斗开始：${source?.name ?? '我城'}军向${target?.name ?? '敌境'}进发，遭遇守军拦截。`,
       `战前态势：补给 ${this.councilState.supplies}，士气 ${this.councilState.morale}，情报 ${this.councilState.intel}，敌势 ${this.campaignClock.enemyThreat}。`,
@@ -5214,9 +5291,9 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private drawBattleBackground() {
-    this.uiLayer.add(this.add.rectangle(0, 0, 1280, 760, 0x151a20).setOrigin(0))
+    this.boardLayer.add(this.add.rectangle(0, 0, 1280, 760, 0x151a20).setOrigin(0))
     if (this.textures.exists('battlefield-bg')) {
-      this.uiLayer.add(this.add.image(BOARD_X + MAP_W * TILE / 2, BOARD_Y + MAP_H * TILE / 2, 'battlefield-bg').setDisplaySize(MAP_W * TILE, MAP_H * TILE).setAlpha(0.48))
+      this.boardLayer.add(this.add.image(BOARD_X + MAP_W * TILE / 2, BOARD_Y + MAP_H * TILE / 2, 'battlefield-bg').setDisplaySize(MAP_W * TILE, MAP_H * TILE).setAlpha(0.48))
     }
     this.uiLayer.add(this.add.rectangle(0, 0, 1280, 72, 0x221712, 0.98).setOrigin(0))
     this.uiLayer.add(this.add.text(36, 20, `群英新篇 · ${this.selectedTargetCity?.name ?? '邻境'}攻略`, {
@@ -5920,8 +5997,18 @@ class KingdomsScene extends Phaser.Scene {
         `地形 ${terrainName(tile.type)}：防御 +${tile.defenseBonus} 攻击 +${tile.attackBonus}`,
       ].join('\n'))
       this.drawPortrait(selected)
+      if (this.currentFaction === 'player' && selected.faction === 'player' && !selected.hasActed && (this.phase === 'moveTarget' || this.phase === 'actionTarget')) {
+        const modeLabel = this.phase === 'moveTarget' ? '选择移动格' : this.selectedSkillId ? '选择计略目标' : '选择攻击目标'
+        this.addActionButton(modeLabel, 438, () => undefined)
+        this.addActionButton('[C] 取消', 480, () => this.cancelBattleTargetMode())
+        this.addActionButton('[X] 撤退', 522, () => this.retreatBattle())
+      }
       if (this.currentFaction === 'player' && selected.faction === 'player' && !selected.hasActed && this.phase === 'playerSelect') {
-        this.addActionButton('[M] 移动', 438, () => this.enterMoveMode(selected))
+        if (!selected.hasMoved) this.addActionButton('[M] 移动', 438, () => this.enterMoveMode(selected))
+        else this.addActionButton('已移动', 438, () => {
+          this.addLog(`${selected.name}本阵已经移动。`)
+          this.renderBattle()
+        })
         this.addActionButton('[A] 攻击', 480, () => this.enterAttackMode(selected, undefined))
         const skill = skills[selected.skills[0]]
         this.addActionButton(skill.type === 'heal' ? '[T] 救护' : '[T] 计略', 522, () => this.enterAttackMode(selected, skill.id))
@@ -6014,6 +6101,10 @@ class KingdomsScene extends Phaser.Scene {
 
   private handlePointer(pointer: Phaser.Input.Pointer) {
     if (this.phase === 'title' || this.phase === 'inspectionMonth' || this.phase === 'marchMonth' || this.phase === 'inspect' || this.phase === 'factions' || this.phase === 'talent' || this.phase === 'city' || this.phase === 'heroes' || this.phase === 'diplomacy' || this.phase === 'deploy' || this.phase === 'briefing' || this.phase === 'monthReport' || this.phase === 'enemyTurn' || this.phase === 'result') return
+    if (pointer.rightButtonDown() && (this.phase === 'moveTarget' || this.phase === 'actionTarget')) {
+      this.cancelBattleTargetMode()
+      return
+    }
     const pos = worldToGrid(pointer.x, pointer.y)
     if (!pos || !isInside(pos)) return
     if (this.phase === 'moveTarget') {
@@ -6043,6 +6134,14 @@ class KingdomsScene extends Phaser.Scene {
     this.selectedSkillId = skillId
     const range = skillId ? skills[skillId].range : unit.stats.range
     this.highlighted = tilesInRange(unit.position, range).filter((pos) => isInside(pos))
+    this.renderBattle()
+  }
+
+  private cancelBattleTargetMode() {
+    if (this.phase !== 'moveTarget' && this.phase !== 'actionTarget') return
+    this.phase = 'playerSelect'
+    this.selectedSkillId = undefined
+    this.highlighted = []
     this.renderBattle()
   }
 
@@ -6133,12 +6232,13 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private afterPlayerAction() {
-    this.selectedUnitId = undefined
     this.highlighted = []
     if (this.living('player').every((unit) => unit.hasActed)) {
+      this.selectedUnitId = undefined
       this.startEnemyTurn()
     } else {
       this.phase = 'playerSelect'
+      this.selectNextReadyPlayerUnit()
       this.renderBattle()
     }
   }
@@ -6206,8 +6306,18 @@ class KingdomsScene extends Phaser.Scene {
     this.turn += 1
     this.currentFaction = 'player'
     this.phase = 'playerSelect'
+    this.selectNextReadyPlayerUnit()
     this.addLog(`第 ${this.turn} 阵开始，${this.battlePosture()}。`)
     this.renderBattle()
+  }
+
+  private selectNextReadyPlayerUnit() {
+    const current = this.selectedUnit
+    if (current?.faction === 'player' && current.alive && !current.hasActed) return
+    const next = this.living('player')
+      .filter((unit) => !unit.hasActed)
+      .toSorted((a, b) => a.position.y - b.position.y || a.position.x - b.position.x)[0]
+    this.selectedUnitId = next?.id
   }
 
   private defeatUnit(target: Unit, attacker: Unit) {
