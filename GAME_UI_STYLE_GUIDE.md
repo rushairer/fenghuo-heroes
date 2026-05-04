@@ -19,6 +19,7 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Outer frame: x 42, y 34, width 1196, height 690.
 - Page content begins at y 140 and ends before y 570.
 - Footer command bars occupy y 584-706.
+- Footer command bars must reserve a left primary-command zone and a right auxiliary-command zone separated by a subtle divider when both groups are present.
 - Modal masks must cover the full canvas with at least 0.48 opacity.
 - Modal panels must not include extra decorative bands unless they carry readable text.
 - Modal action buttons always belong inside the current panel. Secondary and tertiary layers must not place cancel/back/confirm controls outside the panel border.
@@ -31,6 +32,7 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Section title: Georgia 30-34 px, gold.
 - Body text: Microsoft YaHei/Arial 16-20 px.
 - Dense stat text: 15-17 px, line spacing 2-6.
+- Compact two-column stat panels may use 14-15 px text with fixed label/value columns.
 - Buttons: 18-21 px, centered, fixed width and height.
 - Long Chinese text should be manually shortened or split with explicit newlines when Phaser wrapping is unreliable.
 

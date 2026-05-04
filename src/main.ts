@@ -537,17 +537,17 @@ class KingdomsScene extends Phaser.Scene {
     this.drawPageFrame('初始设定', '剧本 / 年代 / 难度 / 玩家数')
 
     this.drawPanel(86, 140, 710, 420)
-    this.drawSectionTitle(120, 168, '选择年代')
+    this.drawSectionTitle(120, 166, '选择年代')
     scenarioOptions.forEach((scenario, index) => {
-      const y = 238 + index * 102
+      const y = 254 + index * 100
       const active = this.selectedScenarioId === scenario.id
-      this.overlayLayer.add(this.add.rectangle(122, y - 34, 614, 82, active ? 0x342415 : 0x21160f, 0.94).setOrigin(0).setStrokeStyle(2, active ? 0xf8df9d : 0xd4af37, active ? 0.95 : 0.5))
-      this.overlayLayer.add(this.add.text(150, y - 18, `${scenario.year}年  ${scenario.name}${scenario.locked ? '（后续开放）' : ''}`, {
+      this.overlayLayer.add(this.add.rectangle(122, y - 30, 614, 78, active ? 0x342415 : 0x21160f, 0.94).setOrigin(0).setStrokeStyle(2, active ? 0xf8df9d : 0xd4af37, active ? 0.95 : 0.5))
+      this.overlayLayer.add(this.add.text(150, y - 16, `${scenario.year}年  ${scenario.name}${scenario.locked ? '（后续开放）' : ''}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '22px',
         color: active ? '#fff0bd' : '#f8df9d',
       }))
-      this.overlayLayer.add(this.add.text(150, y + 12, scenario.desc, {
+      this.overlayLayer.add(this.add.text(150, y + 14, scenario.desc, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '16px',
         color: '#ead7b3',
@@ -564,17 +564,17 @@ class KingdomsScene extends Phaser.Scene {
     })
 
     this.drawPanel(838, 140, 350, 420)
-    this.drawSectionTitle(870, 168, '选择难度')
+    this.drawSectionTitle(870, 166, '选择难度')
     difficultyOptions.forEach((difficulty, index) => {
-      const y = 238 + index * 92
+      const y = 254 + index * 92
       const active = this.selectedDifficulty === difficulty.id
-      this.overlayLayer.add(this.add.rectangle(872, y - 34, 274, 78, active ? 0x342415 : 0x21160f, 0.94).setOrigin(0).setStrokeStyle(2, active ? 0xf8df9d : 0xd4af37, active ? 0.95 : 0.45))
-      this.overlayLayer.add(this.add.text(898, y - 20, difficulty.name, {
+      this.overlayLayer.add(this.add.rectangle(872, y - 30, 274, 76, active ? 0x342415 : 0x21160f, 0.94).setOrigin(0).setStrokeStyle(2, active ? 0xf8df9d : 0xd4af37, active ? 0.95 : 0.45))
+      this.overlayLayer.add(this.add.text(898, y - 18, difficulty.name, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '20px',
         color: active ? '#fff0bd' : '#f8df9d',
       }))
-      this.overlayLayer.add(this.add.text(898, y + 8, difficultySetupDesc(difficulty.id), {
+      this.overlayLayer.add(this.add.text(898, y + 10, difficultySetupDesc(difficulty.id), {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '13px',
         color: '#ead7b3',
@@ -585,12 +585,12 @@ class KingdomsScene extends Phaser.Scene {
         this.showScenarioSetup()
       }, this.overlayLayer, 74, 34, 18)
     })
-    this.overlayLayer.add(this.add.rectangle(872, 492, 274, 48, 0x21160f, 0.7).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.35))
+    this.overlayLayer.add(this.add.rectangle(872, 494, 274, 54, 0x21160f, 0.7).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.35))
     this.overlayLayer.add(this.add.text(892, 502, '玩家数：一人｜目标：统一核心州郡\n流程：选城 → 命令 → 月令', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '15px',
+      fontSize: '14px',
       color: '#f4dfb3',
-      lineSpacing: 5,
+      lineSpacing: 4,
       wordWrap: { width: 236 },
     }))
 
@@ -659,24 +659,25 @@ class KingdomsScene extends Phaser.Scene {
       ['M', '军事', () => this.showMilitaryCommand()],
     ]
     this.drawFooterBar()
-    this.overlayLayer.add(this.add.text(102, 598, `视察情况    ${this.selectedCity?.name ?? '未选'}城    ${this.campaignClock.year}年${this.campaignClock.month}月    政令 ${this.councilState.actions}`, {
+    this.overlayLayer.add(this.add.text(102, 602, `视察情况  ${this.selectedCity?.name ?? '未选'}城  ${this.campaignClock.year}年${this.campaignClock.month}月  政令 ${this.councilState.actions}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#f8df9d',
     }))
-    this.overlayLayer.add(this.add.text(720, 600, this.marchArmy ? '出征令已下达：下月进入行军面' : '本月只从内政、外交、军事下达城池命令', {
+    this.overlayLayer.add(this.add.text(732, 602, this.marchArmy ? '辅助：出征令已下达' : '辅助命令', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '16px',
       color: '#f4dfb3',
     }))
+    this.overlayLayer.add(this.add.rectangle(700, 604, 1, 80, 0xd4af37, 0.35).setOrigin(0))
     coreCommands.forEach(([key, label, callback], index) => {
-      const x = 210 + index * 190
-      this.makeKeyButton(x, 664, key, label, callback, this.overlayLayer, 150, 50)
+      const x = 170 + index * 176
+      this.makeKeyButton(x, 668, key, label, callback, this.overlayLayer, 150, 46)
     })
-    this.makeKeyButton(766, 664, 'N', '月令', () => this.advanceCampaignMonth(), this.overlayLayer, 116, 42)
-    this.makeKeyButton(904, 664, 'V', '势力', () => this.showFactionOverview(), this.overlayLayer, 116, 42)
-    this.makeKeyButton(1042, 664, 'P', '人事', () => this.showPersonnelCommand(), this.overlayLayer, 116, 42)
-    this.makeKeyButton(1160, 664, 'S', '机能', () => this.showSystemCommand(), this.overlayLayer, 94, 38)
+    this.makeKeyButton(760, 668, 'N', '月令', () => this.advanceCampaignMonth(), this.overlayLayer, 104, 40)
+    this.makeKeyButton(890, 668, 'V', '势力', () => this.showFactionOverview(), this.overlayLayer, 104, 40)
+    this.makeKeyButton(1020, 668, 'P', '人事', () => this.showPersonnelCommand(), this.overlayLayer, 104, 40)
+    this.makeKeyButton(1144, 668, 'S', '机能', () => this.showSystemCommand(), this.overlayLayer, 92, 40)
   }
 
   private drawMarchCommandMenu() {
@@ -695,23 +696,25 @@ class KingdomsScene extends Phaser.Scene {
       ['N', '月令', () => this.advanceCampaignMonth()],
     ]
     this.drawFooterBar()
-    this.overlayLayer.add(this.add.text(102, 598, `行军命令    ${this.campaignClock.year}年${this.campaignClock.month}月    ${this.marchArmySummary()}`, {
+    this.overlayLayer.add(this.add.text(102, 602, `行军命令  ${this.campaignClock.year}年${this.campaignClock.month}月  ${this.marchArmySummary()}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#f8df9d',
+      wordWrap: { width: 600 },
     }))
-    this.overlayLayer.add(this.add.text(740, 600, this.marchArmy ? '行军面：先移动整队，再攻击目标城' : '本月暂无远征军，可直接进入月令', {
+    this.overlayLayer.add(this.add.text(682, 602, this.marchArmy ? '辅助' : '辅助：暂无远征军', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '16px',
       color: '#f4dfb3',
     }))
+    this.overlayLayer.add(this.add.rectangle(650, 604, 1, 80, 0xd4af37, 0.35).setOrigin(0))
     coreCommands.forEach(([key, label, callback], index) => {
-      const x = 168 + index * 144
-      this.makeKeyButton(x, 664, key, label, callback, this.overlayLayer, 122, 50)
+      const x = 150 + index * 128
+      this.makeKeyButton(x, 668, key, label, callback, this.overlayLayer, 112, 46)
     })
     auxCommands.forEach(([key, label, callback], index) => {
-      const x = 650 + index * 94
-      this.makeKeyButton(x, 664, key, label, callback, this.overlayLayer, 82, 38)
+      const x = 704 + index * 84
+      this.makeKeyButton(x, 668, key, label, callback, this.overlayLayer, 76, 38)
     })
   }
 
@@ -3033,56 +3036,63 @@ class KingdomsScene extends Phaser.Scene {
     this.overlayLayer.add(this.add.rectangle(846, 140, 332, 430, 0x101722, 0.95).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
     this.overlayLayer.add(this.add.text(878, 166, '城池与军情', {
       fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '30px',
+      fontSize: '28px',
       color: '#f5d487',
     }))
     const focusedCity = this.focusedCity
     const focusedFaction = focusedCity ? factionById(focusedCity.owner) : undefined
-    const focusLines = [
-      `光标    ${focusedCity?.name ?? '-'}`,
-      `归属    ${focusedFaction?.name ?? '-'}`,
-      `区域    ${focusedCity?.region ?? '-'}`,
-      `兵力    ${focusedCity?.troops ?? 0}`,
-      `城防    ${focusedCity?.defense ?? 0}`,
-      `府库    ${focusedCity?.gold ?? 0}`,
-      `存粮    ${focusedCity?.food ?? 0}`,
+    const focusRows: [string, string][] = [
+      ['光标', focusedCity?.name ?? '-'],
+      ['归属', focusedFaction?.name ?? '-'],
+      ['区域', focusedCity?.region ?? '-'],
+      ['兵力', `${focusedCity?.troops ?? 0}`],
+      ['城防', `${focusedCity?.defense ?? 0}`],
+      ['府库', `${focusedCity?.gold ?? 0}`],
+      ['存粮', `${focusedCity?.food ?? 0}`],
     ]
-    const commandLines = [
-      `命令城  ${this.selectedCity?.name ?? '未选'}`,
-      `粮草    ${this.councilState.supplies}`,
-      `士气    ${this.councilState.morale}`,
-      `情报    ${this.councilState.intel}`,
-      `政令    ${this.councilState.actions}`,
-      `民心    ${this.cityState.publicOrder}`,
-      `税率    ${taxRateConfig(this.cityTaxRates.get(this.selectedCityId) ?? 'normal').label}`,
-      `敌势    ${this.campaignClock.enemyThreat}`,
-      `军行    ${this.marchArmy ? `${this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '目标'}${marchStatusName(this.marchArmy.status)}` : '无'}`,
+    const commandRows: [string, string][] = [
+      ['命令城', this.selectedCity?.name ?? '未选'],
+      ['粮草', `${this.councilState.supplies}`],
+      ['士气', `${this.councilState.morale}`],
+      ['情报', `${this.councilState.intel}`],
+      ['政令', `${this.councilState.actions}`],
+      ['民心', `${this.cityState.publicOrder}`],
+      ['税率', taxRateConfig(this.cityTaxRates.get(this.selectedCityId) ?? 'normal').label],
+      ['敌势', `${this.campaignClock.enemyThreat}`],
+      ['军行', this.marchArmy ? `${this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '目标'}${marchStatusName(this.marchArmy.status)}` : '无'],
     ]
-    this.overlayLayer.add(this.add.text(884, 216, focusLines.join('\n'), {
+    this.drawStatColumn(884, 222, focusRows)
+    this.drawStatColumn(1026, 222, commandRows)
+    this.overlayLayer.add(this.add.rectangle(880, 472, 264, 54, 0x21160f, 0.94).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
+    this.overlayLayer.add(this.add.text(900, 482, `邻接：${this.selectedCity?.routes.map((id) => cityName(id)).join('、') ?? '-'}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '16px',
-      color: '#f8ecd0',
-      lineSpacing: 3,
-    }))
-    this.overlayLayer.add(this.add.text(1026, 216, commandLines.join('\n'), {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '16px',
-      color: '#f8ecd0',
-      lineSpacing: 3,
-    }))
-    this.overlayLayer.add(this.add.rectangle(880, 486, 264, 44, 0x21160f, 0.94).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
-    this.overlayLayer.add(this.add.text(900, 495, `邻接：${this.selectedCity?.routes.map((id) => cityName(id)).join('、') ?? '-'}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '15px',
+      fontSize: '14px',
       color: '#f4dfb3',
       wordWrap: { width: 224 },
     }))
-    this.overlayLayer.add(this.add.text(884, 542, `本月：${this.monthlyActionLog.slice(-1).join('；') || '尚未下令'}`, {
+    this.overlayLayer.add(this.add.text(884, 538, `本月：${this.monthlyActionLog.slice(-1).join('；') || '尚未下令'}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '13px',
       color: '#ead7b3',
       wordWrap: { width: 282 },
     }))
+  }
+
+  private drawStatColumn(x: number, y: number, rows: [string, string][]) {
+    rows.forEach(([label, value], index) => {
+      const rowY = y + index * 23
+      this.overlayLayer.add(this.add.text(x, rowY, label, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '14px',
+        color: '#d8c092',
+      }))
+      this.overlayLayer.add(this.add.text(x + 58, rowY, value, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '15px',
+        color: '#f8ecd0',
+        wordWrap: { width: 84 },
+      }))
+    })
   }
 
   private showCityGovernance() {
