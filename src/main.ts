@@ -1112,7 +1112,7 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8ecd0',
       lineSpacing: 10,
     }))
-    this.overlayLayer.add(this.add.text(640, 486, this.marchArmy.status === 'ready' ? '未移动前可从路线末端追加途经节点或最终目标。' : '远征军已出发，本月不能改线。', {
+    this.overlayLayer.add(this.add.text(640, 486, this.marchArmy.status === 'ready' ? '未移动前可追加节点；重置既定路线会耗粮 -2、士气 -1。' : '远征军已出发，本月不能改线。', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#ead7b3',
@@ -1163,6 +1163,11 @@ class KingdomsScene extends Phaser.Scene {
 
   private resetMarchRoute() {
     if (!this.marchArmy) return
+    if (this.marchArmy.routePlan.length > 1) {
+      this.marchArmy.food = Math.max(0, this.marchArmy.food - 2)
+      this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 1, 0, 100)
+      this.recordMonthlyAction(`${cityName(this.marchArmy.sourceCityId)}军改道整备`)
+    }
     this.marchArmy.routePlan = [this.marchArmy.sourceCityId]
     this.marchArmy.targetCityId = undefined
     this.focusedCityId = this.marchArmy.sourceCityId
@@ -1249,11 +1254,47 @@ class KingdomsScene extends Phaser.Scene {
       this.marchArmy.food = Math.max(0, this.marchArmy.food - 1)
       this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 1, 0, 100)
       this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 1, 0, 100)
-      return ` 前哨受扰，随军粮 -1，士气 -1，敌势 +1。`
+      const interceptLoss = this.resolveMarchInterception(targetCity, arrived)
+      return interceptLoss > 0
+        ? ` 前哨遭截击，随军粮 -1，士气 -1，损兵${interceptLoss}，敌势 +1。`
+        : ` 前哨受扰，随军粮 -1，士气 -1，敌势 +1。`
     }
     this.marchArmy.food = Math.min(150, this.marchArmy.food + 2)
     this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 1, 0, 100)
     return ` 乡导补水，随军粮 +2，士气 +1。`
+  }
+
+  private resolveMarchInterception(targetCity: StrategyCity, arrived: boolean) {
+    if (!this.marchArmy || targetCity.owner === this.marchArmy.factionId) return 0
+    const threat = this.campaignClock.enemyThreat + Math.floor(targetCity.troops / 1200) + (arrived ? 4 : 0)
+    if (threat < 42) return 0
+    const loss = Math.min(Math.max(80, Math.floor(threat * 4.5)), Math.max(0, this.marchArmy.troops - 400))
+    if (loss <= 0) return 0
+    this.marchArmy.troops = Math.max(400, this.marchArmy.troops - loss)
+    this.distributeMarchArmyTroopLoss(loss)
+    return loss
+  }
+
+  private distributeMarchArmyTroopLoss(totalLoss: number) {
+    if (!this.marchArmy || totalLoss <= 0) return 0
+    const ids = this.marchArmy.officerIds.filter((id) => (this.marchArmy?.officerTroops[id] ?? 0) > 80)
+    const totalTroops = ids.reduce((sum, id) => sum + (this.marchArmy?.officerTroops[id] ?? 0), 0)
+    let remainingLoss = totalLoss
+    let appliedLoss = 0
+    ids.forEach((id, index) => {
+      if (!this.marchArmy) return
+      const current = this.marchArmy.officerTroops[id] ?? 0
+      const share = index === ids.length - 1
+        ? remainingLoss
+        : Math.max(1, Math.floor(totalLoss * (current / Math.max(1, totalTroops))))
+      const loss = Math.min(Math.max(0, current - 80), share, remainingLoss)
+      this.marchArmy.officerTroops[id] = current - loss
+      const officer = this.campaignOfficers.find((item) => item.id === id)
+      if (officer) officer.troops = Math.max(80, officerTroops(officer) - loss)
+      remainingLoss -= loss
+      appliedLoss += loss
+    })
+    return appliedLoss
   }
 
   private nextMarchProgress() {
