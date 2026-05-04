@@ -147,6 +147,7 @@ type MarchArmy = {
 }
 
 const MARCH_ROUTE_STEPS = 2
+const ASSET_BASE = import.meta.env.BASE_URL
 
 type SiegeState = {
   attackerArmyId: string
@@ -521,10 +522,10 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('title-bg', '/assets/images/backgrounds/title.png')
-    this.load.image('battlefield-bg', '/assets/images/backgrounds/battlefield.png')
+    this.load.image('title-bg', `${ASSET_BASE}assets/images/backgrounds/title.png`)
+    this.load.image('battlefield-bg', `${ASSET_BASE}assets/images/backgrounds/battlefield.png`)
     for (const unitId of ['yun', 'lan', 'xuan', 'qing', 'banditA', 'banditB', 'raider', 'boss']) {
-      this.load.image(`portrait-${unitId}`, `/assets/images/portraits/${unitId}.png`)
+      this.load.image(`portrait-${unitId}`, `${ASSET_BASE}assets/images/portraits/${unitId}.png`)
     }
   }
 

@@ -4,6 +4,22 @@
 
 项目目标是从怀旧回合策略游戏的体验出发，复刻“标题初始化、选择剧本、选择势力、全国地图、视察情况、内政/外交/军事、行军、攻城、单挑、月令循环”的核心结构，同时保证代码、美术、音乐、文案和数值设计全部原创。
 
+## 在线试玩
+
+- GitHub Pages：[https://rushairer.github.io/fenghuo-heroes/](https://rushairer.github.io/fenghuo-heroes/)
+
+## 游戏截图
+
+![标题界面](docs/screenshots/title.png)
+
+![剧本设定](docs/screenshots/setup.png)
+
+![全国地图](docs/screenshots/campaign.png)
+
+![出征配置](docs/screenshots/deploy.png)
+
+![攻城会战](docs/screenshots/siege.png)
+
 ## 当前状态
 
 - 标题、初始设定、君主选择、全国地图流程。
