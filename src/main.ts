@@ -129,6 +129,8 @@ type MarchArmy = {
   targetCityId?: CityId
   leaderOfficerId: string
   officerIds: string[]
+  officerTroops: Record<string, number>
+  officerFood: Record<string, number>
   troops: number
   food: number
   morale: number
@@ -976,7 +978,7 @@ class KingdomsScene extends Phaser.Scene {
     const officerLines = this.marchArmy.officerIds
       .map((id) => this.campaignOfficers.find((officer) => officer.id === id))
       .filter((officer): officer is StrategyOfficer => Boolean(officer))
-      .map((officer) => `${officer.name} 兵${officerTroops(officer)} 武${officerWeapons(officer)} 训${officerTraining(officer)}`)
+      .map((officer) => `${officer.name} 兵${this.marchArmy?.officerTroops[officer.id] ?? officerTroops(officer)} 粮${this.marchArmy?.officerFood[officer.id] ?? 0} 武${officerWeapons(officer)} 训${officerTraining(officer)}`)
     this.overlayLayer.add(this.add.rectangle(640, 408, 650, 210, 0x101722, 0.97).setStrokeStyle(2, 0xd4af37, 0.9))
     this.overlayLayer.add(this.add.text(640, 338, '远征军', {
       fontFamily: 'Georgia, "Times New Roman", serif',
@@ -3779,6 +3781,7 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f5d487',
     }))
     const officers = this.deployableCurrentCityOfficers()
+    const manifest = new Map(this.selectedDeploymentManifest().map((item) => [item.officer.id, item]))
     officers.forEach((officer, index) => {
       const unitId = unitIdForOfficerId(officer.id)
       const unit = unitId ? heroById(unitId) : undefined
@@ -3792,13 +3795,14 @@ class KingdomsScene extends Phaser.Scene {
       }
       const roles = roleLabels(unit.id, this.appointments)
       const selected = this.deploymentOfficerIds.has(officer.id)
+      const detail = manifest.get(officer.id)
       this.makeButton(x + 190, y + 22, selected ? '随军✓' : '留守', () => this.toggleDeploymentOfficer(officer.id), this.overlayLayer, 86, 30)
       this.overlayLayer.add(this.add.text(x + 92, y + 18, `${unit.name} ${roles}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '20px',
         color: '#f8df9d',
       }))
-      this.overlayLayer.add(this.add.text(x + 92, y + 50, `兵 ${officerTroops(officer)}  武装 ${officerWeapons(officer)}  训 ${officerTraining(officer)}`, {
+      this.overlayLayer.add(this.add.text(x + 92, y + 50, `兵 ${officerTroops(officer)}  粮 ${detail?.food ?? 0}  武 ${officerWeapons(officer)}  训 ${officerTraining(officer)}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '17px',
         color: '#f8ecd0',
@@ -3865,14 +3869,15 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     const troops = this.currentCityDeploymentTroops()
-    const officers = this.selectedDeploymentOfficers().map((officer) => officer.name).join('、')
+    const manifest = this.selectedDeploymentManifest(selectedFood)
+    const officers = manifest.map(({ officer, troops, food }) => `${officer.name}兵${troops}粮${food}`).join('、')
     this.showCommandConfirm({
       category: '军事',
       command: '出征',
       actor: `${source.name}太守府`,
       target: target.name,
       scope: `${source.name} → ${target.name}`,
-      effect: `随军 ${officers}｜兵${troops}｜行军粮 -${selectedFood}`,
+      effect: `随军 ${officers}｜合兵${troops}｜行军粮 -${selectedFood}`,
       hint: '确认后编成远征军',
       onConfirm: () => this.executeDeployment(source, target),
       onCancel: () => this.showDeployment(),
@@ -3892,9 +3897,12 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     this.councilState.supplies -= selectedFood
-    const officerIds = this.selectedDeploymentOfficers().map((officer) => officer.id)
+    const manifest = this.selectedDeploymentManifest(selectedFood)
+    const officerIds = manifest.map(({ officer }) => officer.id)
+    const officerTroops = Object.fromEntries(manifest.map(({ officer, troops }) => [officer.id, troops]))
+    const officerFood = Object.fromEntries(manifest.map(({ officer, food }) => [officer.id, food]))
     const leaderOfficerId = this.officerForUnit(this.appointments.vanguard)?.id ?? officerIds[0] ?? 'liu_bei'
-    const armyTroops = this.currentCityDeploymentTroops()
+    const armyTroops = manifest.reduce((sum, item) => sum + item.troops, 0)
     this.marchArmy = {
       id: `army-${this.campaignClock.year}-${this.campaignClock.month}-${this.selectedCityId}`,
       factionId: 'liu',
@@ -3902,6 +3910,8 @@ class KingdomsScene extends Phaser.Scene {
       targetCityId: target.id,
       leaderOfficerId,
       officerIds: officerIds.slice(0, 4),
+      officerTroops,
+      officerFood,
       troops: armyTroops,
       food: selectedFood,
       morale: this.councilState.morale,
@@ -4883,6 +4893,20 @@ class KingdomsScene extends Phaser.Scene {
     const total = this.selectedDeploymentOfficers()
       .reduce((sum, officer) => sum + officerTroops(officer), 0)
     return Phaser.Math.Clamp(total, 800, 9000)
+  }
+
+  private selectedDeploymentManifest(totalFood = this.selectedDeploymentFood()) {
+    const officers = this.selectedDeploymentOfficers()
+    const totalTroops = officers.reduce((sum, officer) => sum + officerTroops(officer), 0)
+    let remainingFood = totalFood
+    return officers.map((officer, index) => {
+      const troops = officerTroops(officer)
+      const food = index === officers.length - 1
+        ? remainingFood
+        : Math.max(1, Math.floor(totalFood * (troops / Math.max(1, totalTroops))))
+      remainingFood = Math.max(0, remainingFood - food)
+      return { officer, troops, food }
+    })
   }
 
   private officerForUnit(unitId: string) {
