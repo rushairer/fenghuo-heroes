@@ -3700,7 +3700,7 @@ class KingdomsScene extends Phaser.Scene {
   private showDeploymentActorSelection() {
     const cities = this.controlledCities().filter((city) => this.deployableOfficersInCity(city.id).length > 0 && this.diplomacyTargetsFrom(city).length > 0)
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, '军事｜出征：选择发起城', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
