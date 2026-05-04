@@ -174,6 +174,7 @@ type DiplomacyCommandKind = 'alliance' | 'scout' | 'borrow' | 'repay' | 'sabotag
 type RecruitScale = 'small' | 'medium' | 'large'
 type TrainingMode = 'single' | 'all'
 type TransportTarget = 'expedition' | CityId
+type TransportAmount = 'small' | 'medium' | 'large'
 type TaxRate = 'light' | 'normal' | 'heavy'
 type DiplomacyDebt = {
   factionId: FactionId
@@ -190,6 +191,21 @@ const MAP_H = 8
 const BOARD_X = 36
 const BOARD_Y = 92
 const UI_X = BOARD_X + MAP_W * TILE + 24
+const CANVAS_W = 1280
+const CANVAS_H = 760
+const FRAME = { x: 42, y: 34, width: 1196, height: 690 }
+const FOOTER = { x: 70, y: 584, width: 1140, height: 122 }
+const UI = {
+  veil: 0x071017,
+  page: 0x071017,
+  panel: 0x101722,
+  subPanel: 0x21160f,
+  border: 0xd4af37,
+  borderDim: 0x8f6c2b,
+  shadow: 0x05070a,
+  accent: 0xf8df9d,
+  warning: 0xc94b3b,
+} as const
 
 const terrain: Record<TerrainType, TerrainTile> = {
   plain: { type: 'plain', walkable: true, moveCost: 1, defenseBonus: 0, attackBonus: 0, healPerTurn: 0 },
@@ -515,26 +531,10 @@ class KingdomsScene extends Phaser.Scene {
     this.phase = 'scenarioSetup'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, '初始设定', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1010, 72, '剧本 / 年代 / 难度 / 玩家数', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
+    this.drawPageFrame('初始设定', '剧本 / 年代 / 难度 / 玩家数')
 
-    this.overlayLayer.add(this.add.rectangle(86, 140, 710, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(120, 168, '选择年代', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPanel(86, 140, 710, 420)
+    this.drawSectionTitle(120, 168, '选择年代')
     scenarioOptions.forEach((scenario, index) => {
       const y = 238 + index * 102
       const active = this.selectedScenarioId === scenario.id
@@ -560,12 +560,8 @@ class KingdomsScene extends Phaser.Scene {
       }, this.overlayLayer, 104, 36)
     })
 
-    this.overlayLayer.add(this.add.rectangle(838, 140, 350, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(870, 168, '选择难度', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPanel(838, 140, 350, 420)
+    this.drawSectionTitle(870, 168, '选择难度')
     difficultyOptions.forEach((difficulty, index) => {
       const y = 238 + index * 92
       const active = this.selectedDifficulty === difficulty.id
@@ -604,19 +600,7 @@ class KingdomsScene extends Phaser.Scene {
     this.phase = 'rulerSelect'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, '选择君主', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1000, 72, `当前剧本：${this.selectedScenarioLabel()}｜${this.selectedDifficultyLabel()}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
+    this.drawPageFrame('选择君主', `当前剧本：${this.selectedScenarioLabel()}｜${this.selectedDifficultyLabel()}`)
     strategyFactions.filter((faction) => faction.id !== 'neutral').forEach((faction, index) => {
       const x = 116 + (index % 3) * 360
       const y = 160 + Math.floor(index / 3) * 190
@@ -651,19 +635,11 @@ class KingdomsScene extends Phaser.Scene {
     this.phase = this.campaignClock.mode === 'inspection' ? 'inspectionMonth' : 'marchMonth'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.9).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, this.campaignClock.mode === 'inspection' ? '视察情况' : '行军', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1018, 72, `${this.campaignClock.year}年${this.campaignClock.month}月   ${campaignModeName(this.campaignClock.mode)}｜${this.selectedDifficultyLabel()}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
+    this.drawPageFrame(
+      this.campaignClock.mode === 'inspection' ? '视察情况' : '行军',
+      `${this.campaignClock.year}年${this.campaignClock.month}月   ${campaignModeName(this.campaignClock.mode)}｜${this.selectedDifficultyLabel()}`,
+      0.9,
+    )
     this.drawCampaignMap()
     this.drawCampaignSidePanel()
     this.drawMainCommandMenu()
@@ -679,7 +655,7 @@ class KingdomsScene extends Phaser.Scene {
       ['F', '外交', () => this.showDiplomacy()],
       ['M', '军事', () => this.showMilitaryCommand()],
     ]
-    this.overlayLayer.add(this.add.rectangle(70, 584, 1140, 122, 0x21160f, 0.97).setOrigin(0).setStrokeStyle(2, 0xd4af37, 0.82))
+    this.drawFooterBar()
     this.overlayLayer.add(this.add.text(102, 598, `视察情况    ${this.selectedCity?.name ?? '未选'}城    ${this.campaignClock.year}年${this.campaignClock.month}月    政令 ${this.councilState.actions}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
@@ -715,7 +691,7 @@ class KingdomsScene extends Phaser.Scene {
       ['W', '待机', () => this.showCampaignMessage('远征军按兵待命，等待主公号令。')],
       ['N', '月令', () => this.advanceCampaignMonth()],
     ]
-    this.overlayLayer.add(this.add.rectangle(70, 584, 1140, 122, 0x21160f, 0.97).setOrigin(0).setStrokeStyle(2, 0xd4af37, 0.82))
+    this.drawFooterBar()
     this.overlayLayer.add(this.add.text(102, 598, `行军命令    ${this.campaignClock.year}年${this.campaignClock.month}月    ${this.marchArmySummary()}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
@@ -869,7 +845,7 @@ class KingdomsScene extends Phaser.Scene {
     this.phase = 'monthReport'
     this.showCampaign()
     this.phase = 'monthReport'
-    this.overlayLayer.add(this.add.rectangle(640, 382, 760, 390, 0x101722, 0.98).setStrokeStyle(3, 0xd4af37, 0.95))
+    this.addLayeredPanel(640, 382, 760, 390)
     this.overlayLayer.add(this.add.text(640, 226, '月令报告', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '44px',
@@ -895,13 +871,7 @@ class KingdomsScene extends Phaser.Scene {
   private showCampaignMessage(message: string) {
     this.showCampaign()
     this.playCommandSignal(message)
-    this.overlayLayer.add(this.add.text(640, 584, message, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '22px',
-      color: '#fff4cf',
-      backgroundColor: '#3c2417',
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5))
+    this.drawToast(message)
   }
 
   private playCommandSignal(message: string) {
@@ -1287,26 +1257,10 @@ class KingdomsScene extends Phaser.Scene {
     this.phase = 'marchMonth'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.93).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, `${city.name}攻城`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1010, 72, `${this.campaignClock.year}年${this.campaignClock.month}月  第${this.siegeState.turns}合`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
+    this.drawPageFrame(`${city.name}攻城`, `${this.campaignClock.year}年${this.campaignClock.month}月  第${this.siegeState.turns}合`, 0.93)
 
-    this.overlayLayer.add(this.add.rectangle(86, 142, 430, 416, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(118, 172, '攻城态势', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPanel(86, 142, 430, 416)
+    this.drawSectionTitle(118, 172, '攻城态势')
     const lines = [
       `攻方      ${cityName(this.marchArmy.sourceCityId)}军`,
       `主将      ${this.officerName(this.marchArmy.leaderOfficerId)}`,
@@ -1328,12 +1282,8 @@ class KingdomsScene extends Phaser.Scene {
       lineSpacing: 11,
     }))
 
-    this.overlayLayer.add(this.add.rectangle(558, 142, 636, 416, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(590, 172, '攻城命令', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPanel(558, 142, 636, 416)
+    this.drawSectionTitle(590, 172, '攻城命令')
     const actions: [string, string, () => void][] = [
       ['强攻', '高兵损，快速削城防与守军', () => this.confirmSiegeAction('assault')],
       ['围城', '耗粮，低兵损削士气与守军', () => this.confirmSiegeAction('surround')],
@@ -1978,19 +1928,19 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private addLayeredPanel(x: number, y: number, width: number, height: number, layer = this.overlayLayer) {
-    const veil = this.add.rectangle(640, 380, 1280, 760, 0x05070a, 0.5)
+    const veil = this.add.rectangle(640, 380, CANVAS_W, CANVAS_H, UI.shadow, 0.68)
     const shadow = this.add.rectangle(x + 10, y + 12, width, height, 0x000000, 0.34)
-    const panel = this.add.rectangle(x, y, width, height, 0x101722, 0.975).setStrokeStyle(3, 0xd4af37, 0.9)
+    const panel = this.add.rectangle(x, y, width, height, UI.panel, 0.978).setStrokeStyle(3, UI.border, 0.92)
     const topShade = this.add.rectangle(x, y - height / 2 + 26, width - 52, 30, 0x2a1b12, 0)
     layer.add([veil, shadow, panel, topShade])
     return { veil, shadow, panel, topShade }
   }
 
   private showCommandPanel(title: string, items: [string, () => void][]) {
-    const panelWidth = 720
+    const panelWidth = 760
     const rows = Math.ceil(items.length / 3)
-    const panelHeight = Phaser.Math.Clamp(156 + rows * 76, 260, 392)
-    const panelY = Phaser.Math.Clamp(402 + rows * 18, 392, 444)
+    const panelHeight = Phaser.Math.Clamp(170 + rows * 78, 280, 410)
+    const panelY = Phaser.Math.Clamp(394 + rows * 18, 392, 438)
     const layered = this.addLayeredPanel(640, panelY, panelWidth, panelHeight)
     const top = panelY - panelHeight / 2
     const heading = this.add.text(640 - panelWidth / 2 + 34, top + 30, `${title}命令  ｜  ${this.selectedCity?.name ?? '未选'}城`, {
@@ -2003,14 +1953,14 @@ class KingdomsScene extends Phaser.Scene {
     items.forEach(([label, callback], index) => {
       const col = index % 3
       const row = Math.floor(index / 3)
-      const x = 428 + col * 212
-      const y = top + 108 + row * 72
+      const x = 420 + col * 220
+      const y = top + 112 + row * 76
       const button = this.makeButton(x, y, label, () => {
         Object.values(layered).forEach((node) => node.destroy())
         heading.destroy()
         buttons.forEach((item) => item.destroy())
         callback()
-      }, this.overlayLayer, 158, 46)
+      }, this.overlayLayer, 168, 44)
       buttons.push(button)
     })
     const closeY = top + panelHeight - 42
@@ -2034,13 +1984,13 @@ class KingdomsScene extends Phaser.Scene {
     onCancel?: () => void
     hint?: string
   }) {
-    const layered = this.addLayeredPanel(640, 438, 700, 318)
-    const heading = this.add.text(326, 310, `${config.category}｜${config.command}`, {
+    const layered = this.addLayeredPanel(640, 424, 760, 340)
+    const heading = this.add.text(294, 282, `${config.category}｜${config.command}`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
       color: '#f8df9d',
     })
-    const body = this.add.text(370, 372, [
+    const body = this.add.text(334, 346, [
       `发起方    ${config.actor}`,
       `目标      ${config.target}`,
       `范围      ${config.scope}`,
@@ -2049,20 +1999,21 @@ class KingdomsScene extends Phaser.Scene {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '21px',
       color: '#f8ecd0',
-      lineSpacing: 12,
+      lineSpacing: 10,
+      wordWrap: { width: 620 },
     })
-    const hint = this.add.text(640, 566, config.hint ?? '确认后消耗政令并执行命令', {
+    const hint = this.add.text(640, 558, config.hint ?? '确认后消耗政令并执行命令', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#d8c092',
     }).setOrigin(0.5)
     const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), heading, body, hint]
     const close = () => nodes.forEach((node) => node.destroy())
-    const cancel = this.makeButton(540, 626, '取消', () => {
+    const cancel = this.makeButton(540, 616, '取消', () => {
       close()
       config.onCancel?.()
     }, this.overlayLayer, 136, 40)
-    const confirm = this.makeButton(740, 626, '确认', () => {
+    const confirm = this.makeButton(740, 616, '确认', () => {
       close()
       config.onConfirm()
     }, this.overlayLayer, 136, 40)
@@ -2223,7 +2174,7 @@ class KingdomsScene extends Phaser.Scene {
   private showIntelActorSelection(category: IntelCommandCategory) {
     const cities = this.controlledCities().filter((city) => this.intelTargetsFrom(city, category).length > 0)
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, `${category}｜情报：选择发起城`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -2275,7 +2226,7 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, `${category}｜情报：选择目标`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -2365,7 +2316,7 @@ class KingdomsScene extends Phaser.Scene {
       `邻接      ${neighbors.map((city) => city.name).join('、') || '-'}`,
       `情报      ${this.councilState.intel}`,
     ]
-    this.overlayLayer.add(this.add.rectangle(640, 404, 720, 330, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 404, 720, 330)
     this.overlayLayer.add(this.add.text(640, 270, `${category}情报`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '36px',
@@ -2383,7 +2334,7 @@ class KingdomsScene extends Phaser.Scene {
   private showEducationActorSelection() {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, '内政｜教育：选择发起城', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -2424,7 +2375,7 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 350)
     this.overlayLayer.add(this.add.text(274, 264, '内政｜教育：选择目标', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -2512,7 +2463,7 @@ class KingdomsScene extends Phaser.Scene {
   private showTransportActorSelection() {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, '内政｜运输：选择发起城', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -2554,7 +2505,7 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = city.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 410, 760, 318, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 410, 760, 318)
     this.overlayLayer.add(this.add.text(640, 292, '运输目标', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '34px',
@@ -2565,16 +2516,16 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '19px',
       color: '#ead7b3',
     }).setOrigin(0.5))
-    this.makeButton(430, 424, '远征粮仓', () => this.confirmTransportTarget('expedition', city), this.overlayLayer, 170, 42)
-    this.overlayLayer.add(this.add.text(430, 464, '粮 -240｜行军粮 +18', {
+    this.makeButton(430, 424, '远征粮仓', () => this.showTransportAmountSelection('expedition', city), this.overlayLayer, 170, 42)
+    this.overlayLayer.add(this.add.text(430, 464, '选择发运量', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '15px',
       color: '#ead7b3',
     }).setOrigin(0.5))
     destinations.forEach((destination, index) => {
       const x = 640 + index * 170
-      this.makeButton(x, 424, destination.name, () => this.confirmTransportTarget(destination.id, city), this.overlayLayer, 138, 42)
-      this.overlayLayer.add(this.add.text(x, 464, '粮 -240｜到粮 +220', {
+      this.makeButton(x, 424, destination.name, () => this.showTransportAmountSelection(destination.id, city), this.overlayLayer, 138, 42)
+      this.overlayLayer.add(this.add.text(x, 464, '选择发运量', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '15px',
         color: '#ead7b3',
@@ -2591,8 +2542,43 @@ class KingdomsScene extends Phaser.Scene {
     this.makeButton(740, 586, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
   }
 
-  private confirmTransportTarget(target: TransportTarget, actorCity: StrategyCity) {
+  private showTransportAmountSelection(target: TransportTarget, actorCity: StrategyCity) {
     const city = actorCity
+    const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
+    const targetName = target === 'expedition' ? '远征粮仓' : targetCity?.name ?? '目标城'
+    this.selectedCityId = city.id
+    this.focusedCityId = targetCity?.id ?? city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.addLayeredPanel(640, 410, 760, 318)
+    this.overlayLayer.add(this.add.text(640, 292, '运输数量', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(640, 344, `${city.name} → ${targetName}，选择本次发运规模`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#ead7b3',
+    }).setOrigin(0.5))
+    ;(['small', 'medium', 'large'] as TransportAmount[]).forEach((amount, index) => {
+      const config = transportAmountConfig(amount)
+      const x = 456 + index * 184
+      const gain = target === 'expedition' ? config.expeditionGain : config.cityGain
+      this.makeButton(x, 424, config.label, () => this.confirmTransportTarget(target, city, amount), this.overlayLayer, 142, 40)
+      this.overlayLayer.add(this.add.text(x, 464, `发粮-${config.sourceFood}｜到粮+${gain}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '15px',
+        color: '#ead7b3',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(540, 586, '重选目标', () => this.showTransportTargetSelection(city), this.overlayLayer, 150, 38)
+    this.makeButton(740, 586, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+  }
+
+  private confirmTransportTarget(target: TransportTarget, actorCity: StrategyCity, amount: TransportAmount) {
+    const city = actorCity
+    const config = transportAmountConfig(amount)
     this.selectedCityId = city.id
     this.focusedCityId = city.id
     this.syncSelectedCityState()
@@ -2600,7 +2586,10 @@ class KingdomsScene extends Phaser.Scene {
     const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
     const targetName = target === 'expedition' ? '远征粮仓' : targetCity?.name ?? '目标城'
     const scope = target === 'expedition' ? `${city.name}粮仓 → 远征粮仓` : `${city.name} → ${targetName}`
-    const effect = target === 'expedition' ? '城池粮 -240｜行军粮 +18' : '发城粮 -240｜目标城粮 +220｜路耗 20'
+    const gain = target === 'expedition' ? config.expeditionGain : config.cityGain
+    const effect = target === 'expedition'
+      ? `${config.label}｜城池粮 -${config.sourceFood}｜行军粮 +${gain}`
+      : `${config.label}｜发城粮 -${config.sourceFood}｜目标城粮 +${gain}｜路耗 ${config.sourceFood - gain}`
     this.showCommandConfirm({
       category: '内政',
       command: '运输',
@@ -2608,8 +2597,8 @@ class KingdomsScene extends Phaser.Scene {
       target: targetName,
       scope,
       effect,
-      onConfirm: () => this.transportSupplies(target, city),
-      onCancel: () => this.showTransportTargetSelection(city),
+      onConfirm: () => this.transportSupplies(target, city, amount),
+      onCancel: () => this.showTransportAmountSelection(target, city),
     })
   }
 
@@ -2617,19 +2606,7 @@ class KingdomsScene extends Phaser.Scene {
     this.phase = 'inspect'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, '视察情况', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1010, 72, `${this.campaignClock.year}年${this.campaignClock.month}月   ${campaignModeName(this.campaignClock.mode)}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
+    this.drawPageFrame('视察情况', `${this.campaignClock.year}年${this.campaignClock.month}月   ${campaignModeName(this.campaignClock.mode)}`)
     this.drawInspectionCity()
     this.drawInspectionHeroes()
     this.drawInspectionThreat()
@@ -2639,12 +2616,8 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private drawInspectionCity() {
-    this.overlayLayer.add(this.add.rectangle(82, 140, 330, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(112, 170, '城池', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPanel(82, 140, 330, 430)
+    this.drawSectionTitle(112, 170, '城池')
     const lines = [
       `势力    刘备军`,
       `主城    成都`,
@@ -2665,12 +2638,8 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private drawInspectionHeroes() {
-    this.overlayLayer.add(this.add.rectangle(450, 140, 380, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(480, 170, '武将', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPanel(450, 140, 380, 430)
+    this.drawSectionTitle(480, 170, '武将')
     this.campaignOfficers.filter((officer) => officer.faction === 'liu').forEach((officer, index) => {
       const y = 218 + index * 64
       const key = officerPortraitKey(officer.id)
@@ -2692,12 +2661,8 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private drawInspectionThreat() {
-    this.overlayLayer.add(this.add.rectangle(868, 140, 326, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(898, 170, '敌情', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPanel(868, 140, 326, 430)
+    this.drawSectionTitle(898, 170, '敌情')
     const supplyNeed = this.deploymentSupplyNeed()
     const threatLabel = this.campaignClock.enemyThreat >= 75 ? '强盛' : this.campaignClock.enemyThreat >= 55 ? '警戒' : '可战'
     const lines = [
@@ -2722,20 +2687,8 @@ class KingdomsScene extends Phaser.Scene {
     this.phase = 'factions'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, '势力一览', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1000, 72, '观天下强弱，择交战时机', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.rectangle(94, 142, 1092, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
+    this.drawPageFrame('势力一览', '观天下强弱，择交战时机')
+    this.drawPanel(94, 142, 1092, 420)
     this.overlayLayer.add(this.add.text(124, 170, '势力        君主        城池    武将    总兵       总粮       特性', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '21px',
@@ -2758,7 +2711,7 @@ class KingdomsScene extends Phaser.Scene {
   private showTalentActorSelection() {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, '军事｜人材：选择发起城', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -2801,31 +2754,11 @@ class KingdomsScene extends Phaser.Scene {
     this.phase = 'talent'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, '访贤登用', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1010, 72, '搜索在野、举荐名士、补强阵营', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.rectangle(92, 140, 470, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.rectangle(604, 140, 590, 420, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(124, 170, '传闻', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
-    this.overlayLayer.add(this.add.text(636, 170, '在野人才', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPageFrame('访贤登用', '搜索在野、举荐名士、补强阵营')
+    this.drawPanel(92, 140, 470, 420)
+    this.drawPanel(604, 140, 590, 420)
+    this.drawSectionTitle(124, 170, '传闻')
+    this.drawSectionTitle(636, 170, '在野人才')
     this.overlayLayer.add(this.add.text(124, 230, [
       `发起：${city.name}`,
       `政令：${this.councilState.actions}`,
@@ -2925,13 +2858,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private showTalentMessage(message: string, actorCity = this.selectedCity) {
     this.showTalentSearch(actorCity)
-    this.overlayLayer.add(this.add.text(640, 590, message, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '22px',
-      color: '#fff4cf',
-      backgroundColor: '#3c2417',
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5))
+    this.drawToast(message, 590)
   }
 
   private drawCampaignMap() {
@@ -3109,19 +3036,7 @@ class KingdomsScene extends Phaser.Scene {
     this.syncSelectedCityState()
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.91).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, `${this.cityState.name} 政厅`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1030, 72, '内政结果会转化为粮草、士气和出征兵源', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
+    this.drawPageFrame(`${this.cityState.name} 政厅`, '内政结果会转化为粮草、士气和出征兵源', 0.91)
     this.drawCityStatsPanel()
     this.drawCityCommandPanel()
     this.drawCitySelector()
@@ -3131,12 +3046,8 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private drawCityStatsPanel() {
-    this.overlayLayer.add(this.add.rectangle(84, 144, 472, 430, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    this.overlayLayer.add(this.add.text(116, 174, '城池状态', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f5d487',
-    }))
+    this.drawPanel(84, 144, 472, 430)
+    this.drawSectionTitle(116, 174, '城池状态')
     const stats = [
       ['府库', this.cityState.treasury, 3000],
       ['粮草', this.selectedCity?.food ?? 0, 5000],
@@ -3176,7 +3087,7 @@ class KingdomsScene extends Phaser.Scene {
       ['任命', '任命太守、先锋、军师', () => this.showAppointmentActorSelection()],
       ['税率', '轻/常/重税，月令结算', () => this.showTaxActorSelection()],
       ['教育', '教育武将或本城吏士', () => this.showEducationActorSelection()],
-      ['运输', '粮 -240，随军粮 +18', () => this.showTransportActorSelection()],
+      ['运输', '选择发运量，支援粮仓或邻城', () => this.showTransportActorSelection()],
     ]
     commands.forEach(([label, desc, callback], index) => {
       const col = index % 2
@@ -3193,8 +3104,9 @@ class KingdomsScene extends Phaser.Scene {
     })
   }
 
-  private transportSupplies(target: TransportTarget, actorCity: StrategyCity) {
+  private transportSupplies(target: TransportTarget, actorCity: StrategyCity, amount: TransportAmount) {
     const city = actorCity
+    const config = transportAmountConfig(amount)
     this.selectedCityId = city.id
     this.focusedCityId = city.id
     this.syncSelectedCityState()
@@ -3202,8 +3114,8 @@ class KingdomsScene extends Phaser.Scene {
       this.showCityMessage('本月政令已用尽，无法转运军粮。')
       return
     }
-    if (city.food < 240) {
-      this.showCityMessage('存粮不足，无法转运军粮。')
+    if (city.food < config.sourceFood) {
+      this.showCityMessage(`${city.name}存粮不足，无法执行${config.label}。`)
       return
     }
     const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
@@ -3211,18 +3123,18 @@ class KingdomsScene extends Phaser.Scene {
       this.showCityMessage('运输目标无效。')
       return
     }
-    city.food = Math.max(0, city.food - 240)
+    city.food = Math.max(0, city.food - config.sourceFood)
     if (target === 'expedition') {
-      this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + 18, 0, 150)
+      this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + config.expeditionGain, 0, 150)
     } else if (targetCity) {
-      targetCity.food = Math.min(5000, targetCity.food + 220)
+      targetCity.food = Math.min(5000, targetCity.food + config.cityGain)
     }
     this.councilState.actions -= 1
-    this.recordMonthlyAction(target === 'expedition' ? `${city.name}转运军粮` : `${city.name}运输粮草至${targetCity?.name ?? '邻城'}`)
+    this.recordMonthlyAction(target === 'expedition' ? `${city.name}${config.label}入远征仓` : `${city.name}${config.label}至${targetCity?.name ?? '邻城'}`)
     this.syncSelectedCityState()
     this.showCityMessage(target === 'expedition'
-      ? '转运军粮入远征仓，行军粮草增加。'
-      : `粮车抵达${targetCity?.name ?? '邻城'}，目标城存粮增加。`)
+      ? `${config.label}入远征仓，行军粮草 +${config.expeditionGain}。`
+      : `${config.label}粮车抵达${targetCity?.name ?? '邻城'}，目标城存粮 +${config.cityGain}。`)
   }
 
   private drawCitySelector() {
@@ -3262,13 +3174,7 @@ class KingdomsScene extends Phaser.Scene {
   private showCityMessage(message: string) {
     this.showCampaign()
     this.playCommandSignal(message)
-    this.overlayLayer.add(this.add.text(640, 548, message, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '22px',
-      color: '#fff4cf',
-      backgroundColor: '#3c2417',
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5))
+    this.drawToast(message, 548)
   }
 
   private cycleControlledCity() {
@@ -3296,19 +3202,7 @@ class KingdomsScene extends Phaser.Scene {
     this.ensureLocalAppointments()
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.91).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, '武将任命', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1018, 72, '太守影响内政，先锋影响出征，军师影响情报', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
+    this.drawPageFrame('武将任命', '太守影响内政，先锋影响出征，军师影响情报', 0.91)
     this.drawHeroCards()
     this.drawAppointmentPanel()
     this.makeButton(540, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
@@ -3376,7 +3270,7 @@ class KingdomsScene extends Phaser.Scene {
   private showAppointmentActorSelection(role?: keyof typeof this.appointments) {
     const cities = this.controlledCities().filter((city) => this.officersInCity(city.id).length > 0)
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, `内政｜任命${role ? `：${appointmentRoleName(role)}` : '：选择发起城'}`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -3421,7 +3315,7 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 760, 300, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 760, 300)
     this.overlayLayer.add(this.add.text(640, 292, '内政｜任命：选择职位', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '34px',
@@ -3452,7 +3346,7 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 394, 760, 330, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 394, 760, 330)
     this.overlayLayer.add(this.add.text(640, 276, `${city.name}｜选择${appointmentRoleName(role)}`, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '34px',
@@ -3516,13 +3410,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private showHeroMessage(message: string) {
     this.showHeroManagement()
-    this.overlayLayer.add(this.add.text(640, 602, message, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '22px',
-      color: '#fff4cf',
-      backgroundColor: '#3c2417',
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5))
+    this.drawToast(message, 602)
   }
 
   private applyAppointmentEffects() {
@@ -3543,7 +3431,7 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 342, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 342)
     this.overlayLayer.add(this.add.text(274, 264, '内政｜调动：选择发起城', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '32px',
@@ -3596,7 +3484,7 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.overlayLayer.add(this.add.rectangle(640, 402, 820, 350, 0x101722, 0.985).setStrokeStyle(3, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 402, 820, 350)
     this.overlayLayer.add(this.add.text(640, 276, '调动武将', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '34px',
@@ -3664,19 +3552,7 @@ class KingdomsScene extends Phaser.Scene {
     this.ensureDeploymentSelection()
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.overlayLayer.add(this.add.rectangle(42, 34, 1196, 690, 0x071017, 0.92).setOrigin(0).setStrokeStyle(4, 0xd4af37, 0.95))
-    this.overlayLayer.add(this.add.text(82, 62, '行军出征', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '42px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 4,
-    }))
-    this.overlayLayer.add(this.add.text(1000, 72, '确认兵粮、任命与敌情后发兵', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f4dfb3',
-    }).setOrigin(0.5))
+    this.drawPageFrame('行军出征', '确认兵粮、任命与敌情后发兵')
     this.drawDeploymentSummary()
     this.drawDeploymentRoster()
     this.makeButton(438, 636, '重选发起城', () => this.showDeploymentActorSelection(), this.overlayLayer, 180, 44)
@@ -3942,13 +3818,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private showDeploymentMessage(message: string) {
     this.showDeployment()
-    this.overlayLayer.add(this.add.text(640, 590, message, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '22px',
-      color: '#fff4cf',
-      backgroundColor: '#3c2417',
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5))
+    this.drawToast(message, 590)
   }
 
   private showDiplomacy() {
@@ -4474,7 +4344,7 @@ class KingdomsScene extends Phaser.Scene {
       `邦交      ${treaty ? `盟约余${treaty}月` : debt ? `债契${debt.principal}` : '无特殊约束'}`,
       `情报      +32，现为${this.councilState.intel}`,
     ]
-    this.overlayLayer.add(this.add.rectangle(640, 414, 760, 330, 0x101722, 0.98).setStrokeStyle(3, 0xd4af37, 0.95))
+    this.addLayeredPanel(640, 414, 760, 330)
     this.overlayLayer.add(this.add.text(640, 286, '外交情报', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '38px',
@@ -4509,13 +4379,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private showDiplomacyMessage(message: string) {
     this.showDiplomacy()
-    this.overlayLayer.add(this.add.text(640, 590, message, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '22px',
-      color: '#fff4cf',
-      backgroundColor: '#3c2417',
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5))
+    this.drawToast(message, 590)
   }
 
   private startMarchArmy() {
@@ -4678,6 +4542,59 @@ class KingdomsScene extends Phaser.Scene {
       close.destroy()
     }, this.overlayLayer, 140, 40)
     this.overlayLayer.add([mask, bg, heading, body])
+  }
+
+  private drawPageFrame(title: string, context?: string, alpha = 0.92) {
+    this.overlayLayer.add(this.add.rectangle(FRAME.x, FRAME.y, FRAME.width, FRAME.height, UI.page, alpha).setOrigin(0).setStrokeStyle(4, UI.border, 0.95))
+    this.overlayLayer.add(this.add.text(82, 62, title, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '42px',
+      color: '#f8df9d',
+      stroke: '#2a120c',
+      strokeThickness: 4,
+    }))
+    if (context) {
+      this.overlayLayer.add(this.add.text(1010, 72, context, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f4dfb3',
+        align: 'right',
+      }).setOrigin(0.5))
+    }
+  }
+
+  private drawPanel(x: number, y: number, width: number, height: number, alpha = 0.96) {
+    const panel = this.add.rectangle(x, y, width, height, UI.panel, alpha).setOrigin(0).setStrokeStyle(2, UI.borderDim, 0.9)
+    this.overlayLayer.add(panel)
+    return panel
+  }
+
+  private drawSectionTitle(x: number, y: number, text: string, size = 32) {
+    const title = this.add.text(x, y, text, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: `${size}px`,
+      color: '#f5d487',
+    })
+    this.overlayLayer.add(title)
+    return title
+  }
+
+  private drawFooterBar() {
+    this.overlayLayer.add(this.add.rectangle(FOOTER.x, FOOTER.y, FOOTER.width, FOOTER.height, UI.subPanel, 0.97).setOrigin(0).setStrokeStyle(2, UI.border, 0.82))
+  }
+
+  private drawToast(message: string, y = 584) {
+    const toast = this.add.text(640, y, message, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '21px',
+      color: '#fff4cf',
+      backgroundColor: '#3c2417',
+      padding: { x: 18, y: 9 },
+      align: 'center',
+      wordWrap: { width: 820 },
+    }).setOrigin(0.5)
+    this.overlayLayer.add(toast)
+    return toast
   }
 
   private drawBattleBackground() {
@@ -5214,14 +5131,14 @@ class KingdomsScene extends Phaser.Scene {
       lineSpacing: 5,
       wordWrap: { width: 1120 },
     })
-    this.uiLayer.add(this.add.rectangle(UI_X - 18, 86, 420, 498, 0x111820, 0.92).setOrigin(0).setStrokeStyle(2, 0x9f7e3a, 0.8))
-    this.uiLayer.add(this.add.rectangle(UI_X - 2, 386, 388, 188, 0x21160f, 0.86).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.6))
+    this.uiLayer.add(this.add.rectangle(UI_X - 18, 86, 420, 498, UI.panel, 0.94).setOrigin(0).setStrokeStyle(2, UI.border, 0.76))
+    this.uiLayer.add(this.add.rectangle(UI_X - 2, 386, 388, 188, UI.subPanel, 0.88).setOrigin(0).setStrokeStyle(1, UI.border, 0.6))
     this.uiLayer.add(this.add.text(UI_X + 18, 400, '战斗命令', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '24px',
       color: '#f8df9d',
     }))
-    this.uiLayer.add(this.add.rectangle(24, 612, 1190, 114, 0x111820, 0.92).setOrigin(0).setStrokeStyle(2, 0x9f7e3a, 0.8))
+    this.uiLayer.add(this.add.rectangle(24, 612, 1190, 114, UI.panel, 0.94).setOrigin(0).setStrokeStyle(2, UI.border, 0.76))
     this.uiLayer.add([this.statusText, this.infoText, this.logText])
     this.makeButton(1110, 24, '退却', () => this.retreatBattle(), this.uiLayer, 132, 38)
     this.makeButton(960, 24, this.siegeState ? '攻城' : '版图', () => {
@@ -5861,6 +5778,14 @@ function taxRateConfig(rate: TaxRate) {
     normal: { label: '常税', goldMultiplier: 1, publicOrderDelta: 0 },
     heavy: { label: '重税', goldMultiplier: 1.42, publicOrderDelta: -5 },
   }[rate]
+}
+
+function transportAmountConfig(amount: TransportAmount) {
+  return {
+    small: { label: '小运', sourceFood: 120, expeditionGain: 9, cityGain: 110 },
+    medium: { label: '中运', sourceFood: 240, expeditionGain: 18, cityGain: 220 },
+    large: { label: '大运', sourceFood: 360, expeditionGain: 28, cityGain: 330 },
+  }[amount]
 }
 
 function militaryAllocationMeta(kind: MilitaryAllocationKind) {
