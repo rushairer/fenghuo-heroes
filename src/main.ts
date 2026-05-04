@@ -175,6 +175,7 @@ type RecruitScale = 'small' | 'medium' | 'large'
 type TrainingMode = 'single' | 'all'
 type TransportTarget = 'expedition' | CityId
 type TransportAmount = 'small' | 'medium' | 'large'
+type MoveResourceKind = 'troops' | 'food' | 'gold'
 type TaxRate = 'light' | 'normal' | 'heavy'
 type DiplomacyDebt = {
   factionId: FactionId
@@ -3446,9 +3447,9 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private showMoveActorSelection() {
-    const cities = this.controlledCities().filter((city) => this.movableOfficersInCity(city.id).length > 0 && this.controlledNeighborCitiesFrom(city).length > 0)
+    const cities = this.controlledCities().filter((city) => this.controlledNeighborCitiesFrom(city).length > 0 && this.canMoveAnythingFrom(city))
     if (this.councilState.actions <= 0) {
-      this.showHeroMessage('本月政令已用尽，不能调动武将。')
+      this.showHeroMessage('本月政令已用尽，不能调动。')
       return
     }
     this.showCampaign()
@@ -3458,13 +3459,13 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '32px',
       color: '#f8df9d',
     }))
-    this.overlayLayer.add(this.add.text(292, 316, '调动命令先确定发起城，再选择相邻己方目的城和要移动的武将。', {
+    this.overlayLayer.add(this.add.text(292, 316, '调动命令先确定发起城，再选择调将、调兵、调粮或调金。', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#ead7b3',
     }))
     if (cities.length === 0) {
-      this.overlayLayer.add(this.add.text(640, 414, '当前没有同时具备可调武将和相邻己方城的城池。', {
+      this.overlayLayer.add(this.add.text(640, 414, '当前没有可调动对象或相邻己方目的城。', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '20px',
         color: '#f8ecd0',
@@ -3476,20 +3477,62 @@ class KingdomsScene extends Phaser.Scene {
       const x = 410 + col * 230
       const y = 398 + row * 82
       const officers = this.movableOfficersInCity(city.id)
-      const destinations = this.controlledNeighborCitiesFrom(city)
       this.makeButton(x, y, city.name, () => {
         this.selectedCityId = city.id
         this.focusedCityId = city.id
         this.syncSelectedCityState()
-        this.showMoveOfficerSelection(city, officers[0].id, destinations[0].id)
+        this.showMoveKindSelection(city)
       }, this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `可调${officers.length}｜邻城${destinations.length}`, {
+      this.overlayLayer.add(this.add.text(x, y + 35, `将${officers.length}｜兵${city.troops}｜粮${city.food}｜金${city.gold}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '14px',
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
     this.makeButton(640, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+  }
+
+  private showMoveKindSelection(actorCity: StrategyCity) {
+    const city = actorCity
+    const officers = this.movableOfficersInCity(city.id)
+    const destinations = this.controlledNeighborCitiesFrom(city)
+    if (destinations.length === 0) {
+      this.showHeroMessage('当前没有相邻己方目的城。')
+      return
+    }
+    this.selectedCityId = city.id
+    this.focusedCityId = city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.addLayeredPanel(640, 402, 820, 342)
+    this.overlayLayer.add(this.add.text(640, 276, '调动对象', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(640, 328, `${city.name}可向${destinations.map((item) => item.name).join('、')}调动`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#ead7b3',
+    }).setOrigin(0.5))
+    const firstDestination = destinations[0]
+    const items: [string, string, boolean, () => void][] = [
+      ['调将', `可调武将 ${officers.length}`, officers.length > 0, () => this.showMoveOfficerSelection(city, officers[0].id, firstDestination.id)],
+      ['调兵', `可调兵 ${Math.max(0, city.troops - 500)}`, city.troops > 800, () => this.showMoveResourceSelection(city, 'troops', firstDestination.id, 'medium')],
+      ['调粮', `存粮 ${city.food}`, city.food >= moveResourceConfig('food', 'small').amount, () => this.showMoveResourceSelection(city, 'food', firstDestination.id, 'medium')],
+      ['调金', `府库 ${city.gold}`, city.gold >= moveResourceConfig('gold', 'small').amount, () => this.showMoveResourceSelection(city, 'gold', firstDestination.id, 'medium')],
+    ]
+    items.forEach(([label, hint, enabled, callback], index) => {
+      const x = 382 + index * 172
+      this.makeButton(x, 424, enabled ? label : `${label}-`, enabled ? callback : () => this.showCampaignMessage(`${label}条件不足。`), this.overlayLayer, 132, 40)
+      this.overlayLayer.add(this.add.text(x, 464, hint, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '15px',
+        color: enabled ? '#ead7b3' : '#8a7b65',
+      }).setOrigin(0.5))
+    })
+    this.makeButton(540, 594, '重选发起城', () => this.showMoveActorSelection(), this.overlayLayer, 150, 38)
+    this.makeButton(740, 594, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
   }
 
   private showMoveOfficerSelection(actorCity: StrategyCity, officerId: string, destinationId: CityId) {
@@ -3532,7 +3575,7 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '20px',
       color: '#f7ecd5',
     }).setOrigin(0.5))
-    this.makeButton(440, 594, '重选发起城', () => this.showMoveActorSelection(), this.overlayLayer, 150, 38)
+    this.makeButton(440, 594, '重选对象', () => this.showMoveKindSelection(actorCity), this.overlayLayer, 150, 38)
     this.makeButton(610, 594, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
     this.makeButton(780, 594, '确认', () => this.confirmMoveOfficer(actorCity, officer, destination), this.overlayLayer, 130, 38)
   }
@@ -3554,6 +3597,103 @@ class KingdomsScene extends Phaser.Scene {
       onConfirm: () => this.executeMoveOfficer(city, officer, destination),
       onCancel: () => this.showMoveOfficerSelection(city, officer.id, destination.id),
     })
+  }
+
+  private showMoveResourceSelection(actorCity: StrategyCity, kind: MoveResourceKind, destinationId: CityId, amount: TransportAmount) {
+    const city = actorCity
+    const destinations = this.controlledNeighborCitiesFrom(city)
+    const destination = destinations.find((item) => item.id === destinationId) ?? destinations[0]
+    if (!destination) {
+      this.showHeroMessage('当前没有相邻己方目的城。')
+      return
+    }
+    this.selectedCityId = city.id
+    this.focusedCityId = destination.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.addLayeredPanel(640, 402, 820, 370)
+    this.overlayLayer.add(this.add.text(640, 266, `调动${moveResourceName(kind)}`, {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5))
+    this.overlayLayer.add(this.add.text(300, 318, '目的城', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#f8df9d',
+    }))
+    destinations.forEach((item, index) => {
+      this.makeButton(368, 362 + index * 48, item.id === destination.id ? `${item.name}✓` : item.name, () => this.showMoveResourceSelection(city, kind, item.id, amount), this.overlayLayer, 154, 36)
+    })
+    this.overlayLayer.add(this.add.text(670, 318, '数量', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '19px',
+      color: '#f8df9d',
+    }))
+    ;(['small', 'medium', 'large'] as TransportAmount[]).forEach((item, index) => {
+      const config = moveResourceConfig(kind, item)
+      this.makeButton(742, 362 + index * 48, item === amount ? `${config.label}✓` : config.label, () => this.showMoveResourceSelection(city, kind, destination.id, item), this.overlayLayer, 154, 36)
+      this.overlayLayer.add(this.add.text(832, 362 + index * 48, `${config.amount}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '16px',
+        color: '#ead7b3',
+      }).setOrigin(0, 0.5))
+    })
+    const config = moveResourceConfig(kind, amount)
+    this.overlayLayer.add(this.add.text(640, 536, `${city.name} → ${destination.name}｜${config.label}${moveResourceName(kind)} ${config.amount}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f7ecd5',
+    }).setOrigin(0.5))
+    this.makeButton(440, 594, '重选对象', () => this.showMoveKindSelection(city), this.overlayLayer, 150, 38)
+    this.makeButton(610, 594, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeButton(780, 594, '确认', () => this.confirmMoveResource(city, destination, kind, amount), this.overlayLayer, 130, 38)
+  }
+
+  private confirmMoveResource(actorCity: StrategyCity, destination: StrategyCity, kind: MoveResourceKind, amount: TransportAmount) {
+    const city = actorCity
+    const config = moveResourceConfig(kind, amount)
+    this.selectedCityId = city.id
+    this.focusedCityId = destination.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.showCommandConfirm({
+      category: '内政',
+      command: '调动',
+      actor: `${city.name}太守府`,
+      target: `${destination.name}${moveResourceName(kind)}`,
+      scope: `${city.name} → ${destination.name}`,
+      effect: `${config.label}${moveResourceName(kind)} ${config.amount}｜政令 -1`,
+      hint: '确认后调动物资',
+      onConfirm: () => this.executeMoveResource(city, destination, kind, amount),
+      onCancel: () => this.showMoveResourceSelection(city, kind, destination.id, amount),
+    })
+  }
+
+  private executeMoveResource(actorCity: StrategyCity, destination: StrategyCity, kind: MoveResourceKind, amount: TransportAmount) {
+    const config = moveResourceConfig(kind, amount)
+    this.selectedCityId = actorCity.id
+    this.focusedCityId = destination.id
+    this.syncSelectedCityState()
+    if (this.councilState.actions <= 0) {
+      this.showCityMessage('本月政令已用尽，不能调动。')
+      return
+    }
+    if (!this.controlledNeighborCitiesFrom(actorCity).some((city) => city.id === destination.id)) {
+      this.showCityMessage('目的城不是相邻己方城，无法调动。')
+      return
+    }
+    const available = kind === 'troops' ? Math.max(0, actorCity.troops - 500) : actorCity[kind]
+    if (available < config.amount) {
+      this.showCityMessage(`${actorCity.name}${moveResourceName(kind)}不足，无法执行${config.label}。`)
+      return
+    }
+    actorCity[kind] = Math.max(kind === 'troops' ? 500 : 0, actorCity[kind] - config.amount)
+    destination[kind] = Math.min(moveResourceCap(kind), destination[kind] + config.amount)
+    this.councilState.actions -= 1
+    this.recordMonthlyAction(`${actorCity.name}${config.label}${moveResourceName(kind)}至${destination.name}`)
+    this.syncSelectedCityState()
+    this.showCityMessage(`${config.label}${moveResourceName(kind)}已调往${destination.name}。`)
   }
 
   private executeMoveOfficer(actorCity: StrategyCity, officer: StrategyOfficer, destination: StrategyCity) {
@@ -4789,6 +4929,13 @@ class KingdomsScene extends Phaser.Scene {
     return this.officersInCity(cityId).filter((officer) => officer.role !== '君主')
   }
 
+  private canMoveAnythingFrom(city: StrategyCity) {
+    return this.movableOfficersInCity(city.id).length > 0
+      || city.troops > 800
+      || city.food >= moveResourceConfig('food', 'small').amount
+      || city.gold >= moveResourceConfig('gold', 'small').amount
+  }
+
   private currentCityUnits() {
     const localUnitIds = new Set(this.currentCityOfficers().map((officer) => unitIdForOfficerId(officer.id)).filter((id): id is string => id !== undefined))
     return baseUnits.filter((unit) => unit.faction === 'player' && localUnitIds.has(unit.id))
@@ -5820,6 +5967,42 @@ function transportAmountConfig(amount: TransportAmount) {
     medium: { label: '中运', sourceFood: 240, expeditionGain: 18, cityGain: 220 },
     large: { label: '大运', sourceFood: 360, expeditionGain: 28, cityGain: 330 },
   }[amount]
+}
+
+function moveResourceName(kind: MoveResourceKind) {
+  return {
+    troops: '兵力',
+    food: '粮草',
+    gold: '金',
+  }[kind]
+}
+
+function moveResourceCap(kind: MoveResourceKind) {
+  return {
+    troops: 30000,
+    food: 5000,
+    gold: 3000,
+  }[kind]
+}
+
+function moveResourceConfig(kind: MoveResourceKind, amount: TransportAmount) {
+  return {
+    troops: {
+      small: { label: '小调', amount: 500 },
+      medium: { label: '中调', amount: 1000 },
+      large: { label: '大调', amount: 1800 },
+    },
+    food: {
+      small: { label: '小调', amount: 160 },
+      medium: { label: '中调', amount: 320 },
+      large: { label: '大调', amount: 520 },
+    },
+    gold: {
+      small: { label: '小调', amount: 80 },
+      medium: { label: '中调', amount: 160 },
+      large: { label: '大调', amount: 260 },
+    },
+  }[kind][amount]
 }
 
 function militaryAllocationMeta(kind: MilitaryAllocationKind) {
