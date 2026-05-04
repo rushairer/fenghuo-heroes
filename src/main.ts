@@ -131,6 +131,7 @@ type MarchArmy = {
   officerIds: string[]
   officerTroops: Record<string, number>
   officerFood: Record<string, number>
+  officerFatigue: Record<string, number>
   troops: number
   food: number
   morale: number
@@ -1047,7 +1048,12 @@ class KingdomsScene extends Phaser.Scene {
     const officerLines = this.marchArmy.officerIds
       .map((id) => this.campaignOfficers.find((officer) => officer.id === id))
       .filter((officer): officer is StrategyOfficer => Boolean(officer))
-      .map((officer) => `${officer.name} 兵${this.marchArmy?.officerTroops[officer.id] ?? officerTroops(officer)} 粮${this.marchArmy?.officerFood[officer.id] ?? 0} 武${officerWeapons(officer)} 训${officerTraining(officer)}`)
+      .map((officer) => {
+        const troops = this.marchArmy?.officerTroops[officer.id] ?? officerTroops(officer)
+        const food = this.marchArmy?.officerFood[officer.id] ?? 0
+        const fatigue = this.marchArmy?.officerFatigue[officer.id] ?? 0
+        return `${officer.name} 兵${troops} 粮${food} 疲${fatigue} ${this.marchOfficerCondition(officer)}`
+      })
     this.addLayeredPanel(640, 404, 820, 390)
     this.overlayLayer.add(this.add.text(640, 248, '远征军', {
       fontFamily: 'Georgia, "Times New Roman", serif',
@@ -1061,6 +1067,7 @@ class KingdomsScene extends Phaser.Scene {
       `兵粮      兵${this.marchArmy.troops}  粮${this.marchArmy.food}  士气${this.marchArmy.morale}`,
       `主将      ${this.officerName(this.marchArmy.leaderOfficerId)}`,
       `状态      ${marchStatusName(this.marchArmy.status)}  移动${this.marchArmy.movePoints}`,
+      `分摊      移动/改道先扣随军粮，粮尽加疲劳`,
     ].join('\n')
     this.overlayLayer.add(this.add.text(300, 306, summary, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -1164,7 +1171,7 @@ class KingdomsScene extends Phaser.Scene {
   private resetMarchRoute() {
     if (!this.marchArmy) return
     if (this.marchArmy.routePlan.length > 1) {
-      this.marchArmy.food = Math.max(0, this.marchArmy.food - 2)
+      this.consumeMarchArmyFood(2)
       this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 1, 0, 100)
       this.recordMonthlyAction(`${cityName(this.marchArmy.sourceCityId)}军改道整备`)
     }
@@ -1224,7 +1231,8 @@ class KingdomsScene extends Phaser.Scene {
       this.marchArmy.status = 'marching'
     }
     this.marchArmy.movePoints -= 1
-    this.marchArmy.food = Math.max(0, this.marchArmy.food - 4)
+    this.consumeMarchArmyFood(4)
+    this.addMarchFatigue(2)
     const eventMessage = this.applyMarchNodeEvent(from, target, nextProgress >= MARCH_ROUTE_STEPS)
     this.focusedCityId = target
     this.selectedTargetCityId = target
@@ -1241,6 +1249,7 @@ class KingdomsScene extends Phaser.Scene {
     if (!targetCity) return ''
     if (arrived && targetCity.owner === this.marchArmy.factionId) {
       this.marchArmy.food = Math.min(150, this.marchArmy.food + 3)
+      this.distributeMarchSupply(3)
       this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 2, 0, 100)
       return ` 沿途驿站接应，随军粮 +3，情报 +2。`
     }
@@ -1251,7 +1260,7 @@ class KingdomsScene extends Phaser.Scene {
     }
     const pressure = targetCity.owner !== this.marchArmy.factionId || from === this.marchArmy.targetCityId
     if (pressure) {
-      this.marchArmy.food = Math.max(0, this.marchArmy.food - 1)
+      this.consumeMarchArmyFood(1)
       this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 1, 0, 100)
       this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 1, 0, 100)
       const interceptLoss = this.resolveMarchInterception(targetCity, arrived)
@@ -1260,8 +1269,51 @@ class KingdomsScene extends Phaser.Scene {
         : ` 前哨受扰，随军粮 -1，士气 -1，敌势 +1。`
     }
     this.marchArmy.food = Math.min(150, this.marchArmy.food + 2)
+    this.distributeMarchSupply(2)
     this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 1, 0, 100)
     return ` 乡导补水，随军粮 +2，士气 +1。`
+  }
+
+  private consumeMarchArmyFood(amount: number) {
+    if (!this.marchArmy || amount <= 0) return 0
+    let remaining = Math.min(amount, this.marchArmy.food)
+    let shortage = amount - remaining
+    this.marchArmy.food = Math.max(0, this.marchArmy.food - amount)
+    const ids = this.marchArmy.officerIds.filter((id) => (this.marchArmy?.officerFood[id] ?? 0) > 0)
+    while (remaining > 0 && ids.length > 0) {
+      const donor = ids
+        .sort((a, b) => (this.marchArmy?.officerFood[b] ?? 0) - (this.marchArmy?.officerFood[a] ?? 0))[0]
+      if (!donor || (this.marchArmy.officerFood[donor] ?? 0) <= 0) break
+      this.marchArmy.officerFood[donor] = Math.max(0, (this.marchArmy.officerFood[donor] ?? 0) - 1)
+      remaining -= 1
+    }
+    shortage += remaining
+    if (shortage > 0) this.addMarchFatigue(shortage * 2)
+    return amount - shortage
+  }
+
+  private distributeMarchSupply(amount: number) {
+    if (!this.marchArmy || amount <= 0 || this.marchArmy.officerIds.length === 0) return
+    for (let i = 0; i < amount; i += 1) {
+      const id = this.marchArmy.officerIds[i % this.marchArmy.officerIds.length]
+      this.marchArmy.officerFood[id] = (this.marchArmy.officerFood[id] ?? 0) + 1
+    }
+  }
+
+  private addMarchFatigue(amount: number) {
+    if (!this.marchArmy || amount <= 0) return
+    this.marchArmy.officerIds.forEach((id) => {
+      this.marchArmy!.officerFatigue[id] = Phaser.Math.Clamp((this.marchArmy!.officerFatigue[id] ?? 0) + amount, 0, 100)
+    })
+  }
+
+  private marchOfficerCondition(officer: StrategyOfficer) {
+    const fatigue = this.marchArmy?.officerFatigue[officer.id] ?? 0
+    const troops = this.marchArmy?.officerTroops[officer.id] ?? officerTroops(officer)
+    if (troops <= 160) return '重伤'
+    if (fatigue >= 70) return '疲困'
+    if (fatigue >= 42) return '劳顿'
+    return '可战'
   }
 
   private resolveMarchInterception(targetCity: StrategyCity, arrived: boolean) {
@@ -1272,6 +1324,7 @@ class KingdomsScene extends Phaser.Scene {
     if (loss <= 0) return 0
     this.marchArmy.troops = Math.max(400, this.marchArmy.troops - loss)
     this.distributeMarchArmyTroopLoss(loss)
+    this.addMarchFatigue(arrived ? 8 : 5)
     return loss
   }
 
@@ -4300,6 +4353,7 @@ class KingdomsScene extends Phaser.Scene {
     const officerIds = manifest.map(({ officer }) => officer.id)
     const officerTroops = Object.fromEntries(manifest.map(({ officer, troops }) => [officer.id, troops]))
     const officerFood = Object.fromEntries(manifest.map(({ officer, food }) => [officer.id, food]))
+    const officerFatigue = Object.fromEntries(manifest.map(({ officer }) => [officer.id, 0]))
     const leaderOfficerId = this.officerForUnit(this.appointments.vanguard)?.id ?? officerIds[0] ?? 'liu_bei'
     const armyTroops = manifest.reduce((sum, item) => sum + item.troops, 0)
     this.marchArmy = {
@@ -4311,6 +4365,7 @@ class KingdomsScene extends Phaser.Scene {
       officerIds: officerIds.slice(0, 4),
       officerTroops,
       officerFood,
+      officerFatigue,
       troops: armyTroops,
       food: selectedFood,
       morale: this.councilState.morale,
