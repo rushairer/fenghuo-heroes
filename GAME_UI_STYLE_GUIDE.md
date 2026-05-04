@@ -23,6 +23,10 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Modal masks must cover the full canvas with at least 0.48 opacity.
 - Modal panels must not include extra decorative bands unless they carry readable text.
 - Modal action buttons always belong inside the current panel. Secondary and tertiary layers must not place cancel/back/confirm controls outside the panel border.
+- Standard command modal: center `(640, 402)`, size `820 x 470`, left inset `58`, title at `top + 58`, helper text at `top + 112`, option grid at `top + 202`, action row at `top + 410`.
+- All command-family layers use the same option grid: 3 columns, 230 px column pitch, 82 px row pitch, 168 x 40 buttons.
+- Confirmation dialogs use the same modal title and action-row offsets. They may use a narrower panel only when the content remains aligned to the same inset rhythm.
+- Opening a confirmation dialog must clear the previous command-selection modal first; do not leave a prior modal panel visible behind the new mask.
 - Repeated command choices use a 3-column grid, 168 x 40 buttons, 82 px row pitch.
 - Button labels include fixed shortcut letters only in persistent footer commands.
 - Lists and tables must render through a bounded viewport. If the data can exceed the visible area, show a pager inside the same panel instead of allowing item rows to push into buttons, footers, or sibling sections.
