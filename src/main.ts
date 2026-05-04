@@ -1163,11 +1163,40 @@ class KingdomsScene extends Phaser.Scene {
     }
     this.marchArmy.movePoints -= 1
     this.marchArmy.food = Math.max(0, this.marchArmy.food - 4)
+    const eventMessage = this.applyMarchNodeEvent(from, target, nextProgress >= MARCH_ROUTE_STEPS)
     this.focusedCityId = target
     this.selectedTargetCityId = target
-    this.showCampaignMessage(nextProgress >= MARCH_ROUTE_STEPS
+    const moveMessage = nextProgress >= MARCH_ROUTE_STEPS
       ? `${cityName(from)}军抵达${cityName(target)}${target === this.marchArmy.targetCityId ? '城下，可发起攻城。' : '，可继续沿路线前进。'}`
-      : `${cityName(from)}军沿道路向${cityName(target)}推进，路线进度 ${nextProgress}/${MARCH_ROUTE_STEPS}。`)
+      : `${cityName(from)}军沿道路向${cityName(target)}推进，路线进度 ${nextProgress}/${MARCH_ROUTE_STEPS}。`
+    this.recordMonthlyAction(`${cityName(from)}军行至${cityName(target)}`)
+    this.showCampaignMessage(eventMessage ? `${moveMessage}${eventMessage}` : moveMessage)
+  }
+
+  private applyMarchNodeEvent(from: CityId, target: CityId, arrived: boolean) {
+    if (!this.marchArmy) return ''
+    const targetCity = this.campaignCities.find((city) => city.id === target)
+    if (!targetCity) return ''
+    if (arrived && targetCity.owner === this.marchArmy.factionId) {
+      this.marchArmy.food = Math.min(150, this.marchArmy.food + 3)
+      this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 2, 0, 100)
+      return ` 沿途驿站接应，随军粮 +3，情报 +2。`
+    }
+    if (arrived && target === this.marchArmy.targetCityId) {
+      this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 3, 0, 100)
+      this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 1, 0, 100)
+      return ` 城外斥候探明守备，情报 +3，敌势 +1。`
+    }
+    const pressure = targetCity.owner !== this.marchArmy.factionId || from === this.marchArmy.targetCityId
+    if (pressure) {
+      this.marchArmy.food = Math.max(0, this.marchArmy.food - 1)
+      this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 1, 0, 100)
+      this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 1, 0, 100)
+      return ` 前哨受扰，随军粮 -1，士气 -1，敌势 +1。`
+    }
+    this.marchArmy.food = Math.min(150, this.marchArmy.food + 2)
+    this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 1, 0, 100)
+    return ` 乡导补水，随军粮 +2，士气 +1。`
   }
 
   private nextMarchProgress() {
@@ -2524,39 +2553,22 @@ class KingdomsScene extends Phaser.Scene {
   private showTransportActorSelection() {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 342)
-    this.overlayLayer.add(this.add.text(274, 264, '内政｜运输：选择发起城', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, '运输命令先确定发车城，再选择远征粮仓或相邻己方城作为目的地。', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
-    cities.forEach((city, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
+    this.showModalGrid('内政｜运输：选择发起城', '运输命令先确定发车城，再选择远征粮仓或相邻己方城作为目的地。', cities.map((city) => {
       const destinations = this.controlledNeighborCitiesFrom(city)
-      this.makeButton(x, y, city.name, () => {
+      return {
+        label: city.name,
+        detail: `粮${city.food}｜邻城${destinations.length}｜行军粮${this.councilState.supplies}`,
+        onSelect: () => {
         this.selectedCityId = city.id
         this.focusedCityId = city.id
         this.syncSelectedCityState()
         this.showTransportTargetSelection(city)
-      }, this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `粮${city.food}｜邻城${destinations.length}｜行军粮${this.councilState.supplies}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeButton(640, 606, '取消', () => {
+        },
+      }
+    }), () => {
       this.showCampaign()
       this.showDomesticCommand()
-    }, this.overlayLayer, 130, 38)
+    })
   }
 
   private showTransportTargetSelection(actorCity: StrategyCity) {
@@ -2566,41 +2578,24 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = city.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.addLayeredPanel(640, 410, 760, 318)
-    this.overlayLayer.add(this.add.text(640, 292, '运输目标', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '34px',
-      color: '#f8df9d',
-    }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.text(640, 344, `${city.name}太守府发起运输，选择粮草去向`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '19px',
-      color: '#ead7b3',
-    }).setOrigin(0.5))
-    this.makeButton(430, 424, '远征粮仓', () => this.showTransportAmountSelection('expedition', city), this.overlayLayer, 170, 42)
-    this.overlayLayer.add(this.add.text(430, 464, '选择发运量', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '15px',
-      color: '#ead7b3',
-    }).setOrigin(0.5))
-    destinations.forEach((destination, index) => {
-      const x = 640 + index * 170
-      this.makeButton(x, 424, destination.name, () => this.showTransportAmountSelection(destination.id, city), this.overlayLayer, 138, 42)
-      this.overlayLayer.add(this.add.text(x, 464, '选择发运量', {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '15px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    if (destinations.length === 0) {
-      this.overlayLayer.add(this.add.text(730, 424, '无相邻己方城', {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '18px',
-        color: '#bda982',
-      }).setOrigin(0.5))
-    }
-    this.makeModalActionButton(this.modalActionX(0, 2), 586, '重选发起城', () => this.showTransportActorSelection())
-    this.makeModalActionButton(this.modalActionX(1, 2), 586, '取消', () => this.showCampaign())
+    this.showModalGrid(
+      '内政｜运输：选择目标',
+      `${city.name}太守府发起运输，选择粮草去向`,
+      [
+        { label: '远征粮仓', detail: '选择发运量', onSelect: () => this.showTransportAmountSelection('expedition', city) },
+        ...destinations.map((destination) => ({
+          label: destination.name,
+          detail: '选择发运量',
+          onSelect: () => this.showTransportAmountSelection(destination.id, city),
+        })),
+      ],
+      () => this.showCampaign(),
+      '取消',
+      [
+        { label: '重选发起城', onSelect: () => this.showTransportActorSelection() },
+        { label: '取消', onSelect: () => this.showCampaign() },
+      ],
+    )
   }
 
   private showTransportAmountSelection(target: TransportTarget, actorCity: StrategyCity) {
@@ -2611,30 +2606,25 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = targetCity?.id ?? city.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.addLayeredPanel(640, 410, 760, 318)
-    this.overlayLayer.add(this.add.text(640, 292, '运输数量', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '34px',
-      color: '#f8df9d',
-    }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.text(640, 344, `${city.name} → ${targetName}，选择本次发运规模`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '19px',
-      color: '#ead7b3',
-    }).setOrigin(0.5))
-    ;(['small', 'medium', 'large'] as TransportAmount[]).forEach((amount, index) => {
+    this.showModalGrid(
+      '内政｜运输：选择数量',
+      `${city.name} → ${targetName}，选择本次发运规模`,
+      (['small', 'medium', 'large'] as TransportAmount[]).map((amount) => {
       const config = transportAmountConfig(amount)
-      const x = 456 + index * 184
       const gain = target === 'expedition' ? config.expeditionGain : config.cityGain
-      this.makeButton(x, 424, config.label, () => this.confirmTransportTarget(target, city, amount), this.overlayLayer, 142, 40)
-      this.overlayLayer.add(this.add.text(x, 464, `发粮-${config.sourceFood}｜到粮+${gain}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '15px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeModalActionButton(this.modalActionX(0, 2), 586, '重选目标', () => this.showTransportTargetSelection(city))
-    this.makeModalActionButton(this.modalActionX(1, 2), 586, '取消', () => this.showCampaign())
+        return {
+          label: config.label,
+          detail: `发粮-${config.sourceFood}｜到粮+${gain}`,
+          onSelect: () => this.confirmTransportTarget(target, city, amount),
+        }
+      }),
+      () => this.showCampaign(),
+      '取消',
+      [
+        { label: '重选目标', onSelect: () => this.showTransportTargetSelection(city) },
+        { label: '取消', onSelect: () => this.showCampaign() },
+      ],
+    )
   }
 
   private confirmTransportTarget(target: TransportTarget, actorCity: StrategyCity, amount: TransportAmount) {
