@@ -989,12 +989,6 @@ class KingdomsScene extends Phaser.Scene {
     if (this.marchArmy.targetCityId) this.selectedTargetCityId = this.marchArmy.targetCityId
     this.syncSelectedCityState()
     this.showCampaign()
-    const source = this.campaignCities.find((city) => city.id === this.marchArmy?.sourceCityId)
-    const targets = source
-      ? source.routes
-        .map((id) => this.campaignCities.find((city) => city.id === id))
-        .filter((city): city is StrategyCity => city !== undefined && city.owner !== 'liu')
-      : []
     this.addLayeredPanel(640, 414, 760, 320)
     this.overlayLayer.add(this.add.text(640, 330, '行军路线', {
       fontFamily: 'Georgia, "Times New Roman", serif',
@@ -1003,10 +997,14 @@ class KingdomsScene extends Phaser.Scene {
     }).setOrigin(0.5))
     const route = this.marchArmy.routePlan.length > 1 ? this.marchArmy.routePlan.map((id) => cityName(id)).join(' → ') : `${cityName(this.marchArmy.sourceCityId)} → 未定`
     const nextNode = this.nextMarchNode()
+    const routeEnd = this.marchArmy.routePlan.at(-1) ?? this.marchArmy.sourceCityId
+    const routeEndCity = this.campaignCities.find((city) => city.id === routeEnd)
+    const candidates = this.marchArmy.status === 'ready' ? this.marchRouteExtensionCandidates() : []
     this.overlayLayer.add(this.add.text(330, 378, [
       `当前路线    ${route}`,
       `当前位置      ${this.describeMarchPosition(this.marchArmy)}`,
       `下一节点      ${nextNode ? cityName(nextNode) : '已抵达'}`,
+      `路线末端      ${cityName(routeEnd)}`,
       `状态          ${marchStatusName(this.marchArmy.status)}`,
     ].join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -1014,40 +1012,61 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8ecd0',
       lineSpacing: 10,
     }))
-    this.overlayLayer.add(this.add.text(640, 486, this.marchArmy.status === 'ready' ? '未移动前可改目标。' : '远征军已出发，本月不能改线。', {
+    this.overlayLayer.add(this.add.text(640, 486, this.marchArmy.status === 'ready' ? '未移动前可从路线末端追加途经节点或最终目标。' : '远征军已出发，本月不能改线。', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#ead7b3',
     }).setOrigin(0.5))
     if (this.marchArmy.status === 'ready') {
-      targets.forEach((city, index) => {
-        const x = 420 + index * 148
-        this.makeButton(x, 526, city.id === this.marchArmy?.targetCityId ? `${city.name}✓` : city.name, () => this.confirmMarchRoute(city), this.overlayLayer, 126, 36)
+      candidates.slice(0, 4).forEach((city, index) => {
+        const x = 346 + index * 146
+        const mark = city.owner === 'liu' ? '途' : '攻'
+        this.makeButton(x, 526, `${city.name}${mark}`, () => this.confirmMarchRouteNode(city), this.overlayLayer, 126, 36)
       })
+      if (candidates.length === 0) {
+        this.overlayLayer.add(this.add.text(640, 526, `${routeEndCity?.name ?? '末端'}周边暂无可追加节点。`, {
+          fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+          fontSize: '18px',
+          color: '#ead7b3',
+        }).setOrigin(0.5))
+      }
+      this.makeButton(930, 526, '重置', () => this.resetMarchRoute(), this.overlayLayer, 96, 36)
     }
     this.makeButton(540, 594, '部队', () => this.showMarchArmyStatus(), this.overlayLayer, 136, 40)
     this.makeButton(740, 594, '返回行军', () => this.showCampaign(), this.overlayLayer, 150, 40)
   }
 
-  private confirmMarchRoute(target: StrategyCity) {
+  private confirmMarchRouteNode(target: StrategyCity) {
     if (!this.marchArmy) return
+    const routeEnd = this.marchArmy.routePlan.at(-1) ?? this.marchArmy.sourceCityId
+    const nextRoute = [...this.marchArmy.routePlan.filter((id) => id !== target.id), target.id]
+    const finalTarget = target.owner !== 'liu'
     this.showCommandConfirm({
       category: '行军',
       command: '路线',
       actor: `${cityName(this.marchArmy.sourceCityId)}远征军`,
       target: target.name,
-      scope: `${cityName(this.marchArmy.sourceCityId)} → ${target.name}`,
-      effect: '改定远征目标，移动前可再次调整',
+      scope: `${cityName(routeEnd)} → ${target.name}`,
+      effect: finalTarget ? '追加最终攻击目标，移动前可再次调整' : '追加途经节点，仍需选择最终攻击目标',
       hint: '确认后更新行军路线',
       onConfirm: () => {
         if (!this.marchArmy) return
-        this.marchArmy.targetCityId = target.id
-        this.marchArmy.routePlan = [this.marchArmy.sourceCityId, target.id]
-        this.selectedTargetCityId = target.id
+        this.marchArmy.routePlan = nextRoute
+        this.marchArmy.targetCityId = finalTarget ? target.id : undefined
+        if (finalTarget) this.selectedTargetCityId = target.id
+        this.focusedCityId = target.id
         this.showMarchRoute()
       },
       onCancel: () => this.showMarchRoute(),
     })
+  }
+
+  private resetMarchRoute() {
+    if (!this.marchArmy) return
+    this.marchArmy.routePlan = [this.marchArmy.sourceCityId]
+    this.marchArmy.targetCityId = undefined
+    this.focusedCityId = this.marchArmy.sourceCityId
+    this.showMarchRoute()
   }
 
   private resolveMarchMove() {
@@ -1059,8 +1078,8 @@ class KingdomsScene extends Phaser.Scene {
       this.showCampaignMessage('本月移动已尽，远征军只能待机或攻击邻近目标。')
       return
     }
-    if (!this.marchArmy.targetCityId) {
-      this.showCampaignMessage('远征军尚未指定目标城。')
+    if (this.marchArmy.routePlan.length < 2) {
+      this.showCampaignMessage('远征军尚未指定路线节点。')
       return
     }
     const from = this.currentMarchNode()
@@ -1087,7 +1106,7 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private executeMarchMove() {
-    if (!this.marchArmy?.targetCityId) return
+    if (!this.marchArmy || this.marchArmy.routePlan.length < 2) return
     const from = this.currentMarchNode()
     const target = this.nextMarchNode() ?? this.marchArmy.targetCityId
     if (!target) return
@@ -1126,6 +1145,19 @@ class KingdomsScene extends Phaser.Scene {
     const current = this.currentMarchNode()
     const index = this.marchArmy.routePlan.indexOf(current)
     return index >= 0 ? this.marchArmy.routePlan[index + 1] : this.marchArmy.targetCityId
+  }
+
+  private marchRouteExtensionCandidates() {
+    if (!this.marchArmy) return []
+    const routeEnd = this.marchArmy.routePlan.at(-1) ?? this.marchArmy.sourceCityId
+    const used = new Set(this.marchArmy.routePlan)
+    const city = this.campaignCities.find((item) => item.id === routeEnd)
+    if (!city) return []
+    if (city.owner !== this.marchArmy.factionId) return []
+    return city.routes
+      .map((id) => this.campaignCities.find((item) => item.id === id))
+      .filter((item): item is StrategyCity => item !== undefined && !used.has(item.id))
+      .filter((item) => item.owner === 'liu' || item.owner !== this.marchArmy?.factionId)
   }
 
   private resolveMarchAttack() {
