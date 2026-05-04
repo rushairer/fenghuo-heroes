@@ -25,6 +25,9 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Modal action buttons always belong inside the current panel. Secondary and tertiary layers must not place cancel/back/confirm controls outside the panel border.
 - Repeated command choices use a 3-column grid, 168 x 40 buttons, 82 px row pitch.
 - Button labels include fixed shortcut letters only in persistent footer commands.
+- Lists and tables must render through a bounded viewport. If the data can exceed the visible area, show a pager inside the same panel instead of allowing item rows to push into buttons, footers, or sibling sections.
+- List item cards must reserve separate regions for portrait, title, metadata, stats, and action button. Multi-line stats stay inside the card and never share the same horizontal lane as the action button.
+- Tables use fixed column x positions and column widths. Do not align table data with space-padded strings.
 
 ## Typography
 
@@ -58,10 +61,12 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Equivalent actions must keep the same shortcut at every layer.
 - Only the primary next-step button gets central emphasis; cancel/back stays lower priority.
 - No page should require users to visually separate stacked menus without a mask.
+- Pagination controls are part of the content panel, not footer commands. Use them only for overflow within the current list/table.
 
 ## Acceptance Checklist
 
 - No visible text overlaps a button, panel border, or another text block.
+- Long lists and table-like areas have a viewport or pager, with no item content hidden under action buttons.
 - City markers and labels stay inside the map panel.
 - Right intelligence panels never overflow vertically.
 - Footer buttons fit within the command bar at desktop canvas size.

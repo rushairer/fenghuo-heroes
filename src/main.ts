@@ -196,6 +196,21 @@ const CANVAS_W = 1280
 const CANVAS_H = 760
 const FRAME = { x: 42, y: 34, width: 1196, height: 690 }
 const FOOTER = { x: 70, y: 584, width: 1140, height: 122 }
+const MODAL = {
+  x: 640,
+  y: 402,
+  width: 820,
+  height: 470,
+  insetX: 58,
+  titleOffsetY: 58,
+  helperOffsetY: 112,
+  gridOffsetY: 202,
+  actionOffsetY: 410,
+  colWidth: 230,
+  rowHeight: 82,
+  optionWidth: 168,
+  optionHeight: 40,
+} as const
 const UI = {
   veil: 0x071017,
   page: 0x071017,
@@ -428,6 +443,13 @@ class KingdomsScene extends Phaser.Scene {
     strategist: 'xuan',
   }
   private recruitedNeutralIds = new Set<string>()
+  private inspectionHeroPage = 0
+  private deploymentRosterPage = 0
+  private deploymentTargetPage = 0
+  private talentPage = 0
+  private heroManagementPage = 0
+  private monthReportLines: string[] = []
+  private monthReportPage = 0
 
   private boardLayer!: Phaser.GameObjects.Container
   private unitLayer!: Phaser.GameObjects.Container
@@ -709,12 +731,12 @@ class KingdomsScene extends Phaser.Scene {
     }))
     this.overlayLayer.add(this.add.rectangle(650, 604, 1, 80, 0xd4af37, 0.35).setOrigin(0))
     coreCommands.forEach(([key, label, callback], index) => {
-      const x = 150 + index * 128
-      this.makeKeyButton(x, 668, key, label, callback, this.overlayLayer, 112, 46)
+      const x = 140 + index * 122
+      this.makeKeyButton(x, 668, key, label, callback, this.overlayLayer, 106, 44)
     })
     auxCommands.forEach(([key, label, callback], index) => {
-      const x = 704 + index * 84
-      this.makeKeyButton(x, 668, key, label, callback, this.overlayLayer, 76, 38)
+      const x = 692 + index * 86
+      this.makeKeyButton(x, 668, key, label, callback, this.overlayLayer, 78, 38)
     })
   }
 
@@ -850,37 +872,47 @@ class KingdomsScene extends Phaser.Scene {
     return now >= due
   }
 
-  private showMonthReport(lines: string[]) {
+  private showMonthReport(lines: string[], page = 0) {
     this.phase = 'monthReport'
+    this.monthReportLines = lines
     this.showCampaign()
     this.phase = 'monthReport'
-    this.addLayeredPanel(640, 382, 760, 390)
-    this.overlayLayer.add(this.add.text(640, 226, '月令报告', {
+    this.addLayeredPanel(640, 410, 800, 500)
+    this.overlayLayer.add(this.add.text(640, 214, '月令报告', {
       fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '44px',
+      fontSize: '42px',
       color: '#f8df9d',
       stroke: '#2a120c',
       strokeThickness: 4,
     }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.text(640, 286, `${this.campaignClock.year}年${this.campaignClock.month}月`, {
+    this.overlayLayer.add(this.add.text(640, 270, `${this.campaignClock.year}年${this.campaignClock.month}月`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '22px',
       color: '#f4dfb3',
     }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.text(316, 330, lines.join('\n'), {
+    const pageSize = 7
+    const pageData = this.pagedItems(lines, page, pageSize)
+    this.monthReportPage = pageData.page
+    this.drawListViewport(286, 304, 708, 244)
+    this.overlayLayer.add(this.add.text(314, 326, pageData.items.join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '21px',
+      fontSize: '18px',
       color: '#f8ecd0',
-      lineSpacing: 12,
-      wordWrap: { width: 650 },
+      lineSpacing: 8,
+      wordWrap: { width: 642 },
     }))
-    this.makeButton(640, 536, '回到版图', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.drawPager(640, 568, pageData.page, pageData.totalPages, () => {
+      this.showMonthReport(this.monthReportLines, Math.max(0, this.monthReportPage - 1))
+    }, () => {
+      this.showMonthReport(this.monthReportLines, Math.min(pageData.totalPages - 1, this.monthReportPage + 1))
+    })
+    this.makeButton(640, 612, '回到版图', () => this.showCampaign(), this.overlayLayer, 180, 44)
   }
 
   private showCampaignMessage(message: string) {
     this.showCampaign()
     this.playCommandSignal(message)
-    this.drawToast(message)
+    this.drawToast(message, 548)
   }
 
   private playCommandSignal(message: string) {
@@ -1992,37 +2024,63 @@ class KingdomsScene extends Phaser.Scene {
     return { veil, shadow, panel, topShade }
   }
 
-  private showCommandPanel(title: string, items: [string, () => void][]) {
-    const panelWidth = 760
-    const rows = Math.ceil(items.length / 3)
-    const panelHeight = Phaser.Math.Clamp(170 + rows * 78, 280, 410)
-    const panelY = Phaser.Math.Clamp(394 + rows * 18, 392, 438)
-    const layered = this.addLayeredPanel(640, panelY, panelWidth, panelHeight)
-    const top = panelY - panelHeight / 2
-    const heading = this.add.text(640 - panelWidth / 2 + 34, top + 30, `${title}命令  ｜  ${this.selectedCity?.name ?? '未选'}城`, {
+  private modalTop(height: number = MODAL.height, y: number = MODAL.y) {
+    return y - Math.max(height, MODAL.height) / 2
+  }
+
+  private modalLeft(width: number = MODAL.width, x: number = MODAL.x) {
+    return x - width / 2
+  }
+
+  private drawModalTitle(title: string, subtitle?: string, width: number = MODAL.width, height: number = MODAL.height, x: number = MODAL.x, y: number = MODAL.y) {
+    const left = this.modalLeft(width, x)
+    const top = this.modalTop(height, y)
+    const heading = this.add.text(left + MODAL.insetX, top + MODAL.titleOffsetY, title, {
       fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '30px',
+      fontSize: '32px',
       color: '#f8df9d',
     })
     this.overlayLayer.add(heading)
+    const nodes: Phaser.GameObjects.GameObject[] = [heading]
+    if (subtitle) {
+      const helper = this.add.text(left + MODAL.insetX + 18, top + MODAL.helperOffsetY, subtitle, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '18px',
+        color: '#ead7b3',
+        wordWrap: { width: width - MODAL.insetX * 2 - 36 },
+      })
+      this.overlayLayer.add(helper)
+      nodes.push(helper)
+    }
+    return { left, top, nodes }
+  }
+
+  private modalGridPosition(index: number, left = this.modalLeft(), top = this.modalTop()) {
+    const col = index % 3
+    const row = Math.floor(index / 3)
+    return {
+      x: left + MODAL.insetX + MODAL.optionWidth / 2 + col * MODAL.colWidth,
+      y: top + MODAL.gridOffsetY + row * MODAL.rowHeight,
+    }
+  }
+
+  private showCommandPanel(title: string, items: [string, () => void][]) {
+    const layered = this.addLayeredPanel(MODAL.x, MODAL.y, MODAL.width, MODAL.height)
+    const { left, top, nodes } = this.drawModalTitle(`${title}命令  ｜  ${this.selectedCity?.name ?? '未选'}城`)
     const buttons: Phaser.GameObjects.Text[] = []
     items.forEach(([label, callback], index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 420 + col * 220
-      const y = top + 112 + row * 76
+      const { x, y } = this.modalGridPosition(index, left, top)
       const button = this.makeButton(x, y, label, () => {
         Object.values(layered).forEach((node) => node.destroy())
-        heading.destroy()
+        nodes.forEach((node) => node.destroy())
         buttons.forEach((item) => item.destroy())
         callback()
-      }, this.overlayLayer, 168, 44)
+      }, this.overlayLayer, MODAL.optionWidth, 44)
       buttons.push(button)
     })
-    const closeY = top + panelHeight - 42
-    const close = this.makeButton(640, closeY, '取消', () => {
+    const close = this.makeButton(MODAL.x, top + MODAL.actionOffsetY, '取消', () => {
       Object.values(layered).forEach((node) => node.destroy())
-      heading.destroy()
+      nodes.forEach((node) => node.destroy())
       buttons.forEach((item) => item.destroy())
       this.showCampaign()
     }, this.overlayLayer, 110, 38)
@@ -2040,37 +2098,34 @@ class KingdomsScene extends Phaser.Scene {
     onCancel?: () => void
     hint?: string
   }) {
-    const layered = this.addLayeredPanel(640, 424, 760, 340)
-    const heading = this.add.text(294, 282, `${config.category}｜${config.command}`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    })
+    const width = 760
+    const layered = this.addLayeredPanel(MODAL.x, MODAL.y, width, MODAL.height)
+    const { left, top, nodes: titleNodes } = this.drawModalTitle(`${config.category}｜${config.command}`, undefined, width)
     const bodyLines = [
       ...modalInfoLines('发起方', config.actor, 28),
       ...modalInfoLines('目标', config.target, 28),
       ...modalInfoLines('范围', config.scope, 28),
       ...modalInfoLines('效果', config.effect, 30),
     ]
-    const body = this.add.text(334, 346, bodyLines.join('\n'), {
+    const body = this.add.text(left + MODAL.insetX + 28, top + MODAL.helperOffsetY, bodyLines.join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '20px',
       color: '#f8ecd0',
       lineSpacing: 8,
-      wordWrap: { width: 620 },
+      wordWrap: { width: width - MODAL.insetX * 2 - 56 },
     })
-    const hint = this.add.text(640, 558, config.hint ?? '确认后消耗政令并执行命令', {
+    const hint = this.add.text(640, top + 350, config.hint ?? '确认后消耗政令并执行命令', {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#d8c092',
     }).setOrigin(0.5)
-    const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), heading, body, hint]
+    const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), ...titleNodes, body, hint]
     const close = () => nodes.forEach((node) => node.destroy())
-    const cancel = this.makeButton(540, 616, '取消', () => {
+    const cancel = this.makeButton(540, top + MODAL.actionOffsetY, '取消', () => {
       close()
       config.onCancel?.()
     }, this.overlayLayer, 136, 40)
-    const confirm = this.makeButton(740, 616, '确认', () => {
+    const confirm = this.makeButton(740, top + MODAL.actionOffsetY, '确认', () => {
       close()
       config.onConfirm()
     }, this.overlayLayer, 136, 40)
@@ -2697,23 +2752,36 @@ class KingdomsScene extends Phaser.Scene {
   private drawInspectionHeroes() {
     this.drawPanel(450, 140, 380, 430)
     this.drawSectionTitle(480, 170, '武将')
-    this.campaignOfficers.filter((officer) => officer.faction === 'liu').forEach((officer, index) => {
-      const y = 218 + index * 64
+    const officers = this.campaignOfficers.filter((officer) => officer.faction === 'liu')
+    const pageSize = 4
+    const pageData = this.pagedItems(officers, this.inspectionHeroPage, pageSize)
+    this.inspectionHeroPage = pageData.page
+    this.drawListViewport(474, 218, 332, 286)
+    pageData.items.forEach((officer, index) => {
+      const y = 250 + index * 66
       const key = officerPortraitKey(officer.id)
-      this.overlayLayer.add(this.add.rectangle(480, y - 22, 310, 58, 0x21160f, 0.9).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.45))
+      this.overlayLayer.add(this.add.rectangle(488, y - 24, 292, 58, 0x21160f, 0.9).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.45))
       if (this.textures.exists(key)) {
-        this.overlayLayer.add(this.add.image(510, y + 6, key).setDisplaySize(42, 50))
+        this.overlayLayer.add(this.add.image(512, y + 7, key).setDisplaySize(44, 52))
       }
-      this.overlayLayer.add(this.add.text(542, y - 12, `${officer.name}｜${officer.role}`, {
+      this.overlayLayer.add(this.add.text(552, y - 14, `${officer.name}｜${officer.role}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '19px',
+        fontSize: '18px',
         color: '#f8df9d',
+        wordWrap: { width: 188 },
       }))
-      this.overlayLayer.add(this.add.text(542, y + 16, `武 ${officer.war}  智 ${officer.intel}  政 ${officer.gov}  忠 ${officer.loyalty}`, {
+      this.overlayLayer.add(this.add.text(552, y + 13, `武${officer.war}  智${officer.intel}  政${officer.gov}  忠${officer.loyalty}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '16px',
+        fontSize: '15px',
         color: '#f8ecd0',
       }))
+    })
+    this.drawPager(640, 528, pageData.page, pageData.totalPages, () => {
+      this.inspectionHeroPage = Math.max(0, this.inspectionHeroPage - 1)
+      this.showInspection()
+    }, () => {
+      this.inspectionHeroPage = Math.min(pageData.totalPages - 1, this.inspectionHeroPage + 1)
+      this.showInspection()
     })
   }
 
@@ -2746,20 +2814,40 @@ class KingdomsScene extends Phaser.Scene {
     this.drawBackdrop()
     this.drawPageFrame('势力一览', '观天下强弱，择交战时机')
     this.drawPanel(94, 142, 1092, 420)
-    this.overlayLayer.add(this.add.text(124, 170, '势力        君主        城池    武将    总兵       总粮       特性', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '21px',
-      color: '#f5d487',
-    }))
+    const columns = [
+      ['势力', 124],
+      ['君主', 276],
+      ['城池', 410],
+      ['武将', 498],
+      ['总兵', 592],
+      ['总粮', 728],
+      ['特性', 860],
+    ] as const
+    columns.forEach(([label, x]) => {
+      this.overlayLayer.add(this.add.text(x, 170, label, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '21px',
+        color: '#f5d487',
+      }))
+    })
     strategyFactions.filter((faction) => faction.id !== 'neutral').forEach((faction, index) => {
       const y = 220 + index * 60
       this.overlayLayer.add(this.add.rectangle(120, y - 12, 1010, 44, 0x21160f, index % 2 === 0 ? 0.88 : 0.72).setOrigin(0).setStrokeStyle(1, faction.color, 0.7))
-      const line = `${faction.name.padEnd(6, '　')}  ${faction.ruler.padEnd(4, '　')}    ${String(this.countCities(faction.id)).padStart(2, ' ')}      ${String(this.countOfficers(faction.id)).padStart(2, ' ')}    ${String(this.sumCityField(faction.id, 'troops')).padStart(5, ' ')}    ${String(this.sumCityField(faction.id, 'food')).padStart(5, ' ')}    ${faction.trait}`
-      this.overlayLayer.add(this.add.text(134, y, line, {
+      const values = [
+        [faction.name, 134, 132],
+        [faction.ruler, 286, 104],
+        [String(this.countCities(faction.id)), 424, 54],
+        [String(this.countOfficers(faction.id)), 512, 54],
+        [String(this.sumCityField(faction.id, 'troops')), 594, 104],
+        [String(this.sumCityField(faction.id, 'food')), 730, 104],
+        [faction.trait, 862, 240],
+      ] as const
+      values.forEach(([value, x, width]) => this.overlayLayer.add(this.add.text(x, y, value, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '20px',
         color: '#f8ecd0',
-      }))
+        wordWrap: { width },
+      })))
     })
     this.makeButton(540, 636, '返回视察', () => this.showInspection(), this.overlayLayer, 180, 44)
     this.makeButton(740, 636, '外交交涉', () => this.showDiplomacy(), this.overlayLayer, 180, 44)
@@ -2833,14 +2921,19 @@ class KingdomsScene extends Phaser.Scene {
       wordWrap: { width: 390 },
     }))
     const candidates = this.campaignOfficers.filter((officer) => officer.faction === 'neutral')
-    candidates.forEach((officer, index) => {
-      const y = 244 + index * 96
+    const pageSize = 3
+    const pageData = this.pagedItems(candidates, this.talentPage, pageSize)
+    this.talentPage = pageData.page
+    this.drawListViewport(628, 218, 530, 304)
+    pageData.items.forEach((officer, index) => {
+      const y = 248 + index * 94
       const recruited = this.recruitedNeutralIds.has(officer.id)
       this.overlayLayer.add(this.add.rectangle(636, y - 26, 500, 76, 0x21160f, 0.9).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.55))
       this.overlayLayer.add(this.add.text(660, y - 10, `${officer.name}｜${officer.role}｜${officer.location}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '20px',
         color: '#f8df9d',
+        wordWrap: { width: 330 },
       }))
       this.overlayLayer.add(this.add.text(660, y + 18, `智 ${officer.intel}  政 ${officer.gov}  魅 ${officer.charm}  成功率 ${this.recruitChance(officer)}%`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -2848,6 +2941,13 @@ class KingdomsScene extends Phaser.Scene {
         color: '#f8ecd0',
       }))
       this.makeButton(1038, y + 10, recruited ? '已登用' : '登用', () => this.confirmRecruitOfficer(city, officer), this.overlayLayer, 108, 36)
+    })
+    this.drawPager(890, 540, pageData.page, pageData.totalPages, () => {
+      this.talentPage = Math.max(0, this.talentPage - 1)
+      this.showTalentSearch(city)
+    }, () => {
+      this.talentPage = Math.min(pageData.totalPages - 1, this.talentPage + 1)
+      this.showTalentSearch(city)
     })
     this.makeButton(438, 636, '重选发起城', () => this.showTalentActorSelection(), this.overlayLayer, 180, 44)
     this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
@@ -3284,7 +3384,10 @@ class KingdomsScene extends Phaser.Scene {
       }).setOrigin(0.5))
       return
     }
-    heroes.forEach((officer, index) => {
+    const pageSize = 8
+    const pageData = this.pagedItems(heroes, this.heroManagementPage, pageSize)
+    this.heroManagementPage = pageData.page
+    pageData.items.forEach((officer, index) => {
       const x = 92 + (index % 4) * 278
       const y = 150 + Math.floor(index / 4) * 172
       this.overlayLayer.add(this.add.rectangle(x, y, 244, 160, 0x101722, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
@@ -3313,6 +3416,13 @@ class KingdomsScene extends Phaser.Scene {
         color: '#f8ecd0',
         lineSpacing: 6,
       }))
+    })
+    this.drawPager(640, 488, pageData.page, pageData.totalPages, () => {
+      this.heroManagementPage = Math.max(0, this.heroManagementPage - 1)
+      this.showHeroManagement()
+    }, () => {
+      this.heroManagementPage = Math.min(pageData.totalPages - 1, this.heroManagementPage + 1)
+      this.showHeroManagement()
     })
   }
 
@@ -3870,38 +3980,46 @@ class KingdomsScene extends Phaser.Scene {
     }))
     const officers = this.deployableCurrentCityOfficers()
     const manifest = new Map(this.selectedDeploymentManifest().map((item) => [item.officer.id, item]))
-    officers.forEach((officer, index) => {
+    const pageSize = 4
+    const pageData = this.pagedItems(officers, this.deploymentRosterPage, pageSize)
+    this.deploymentRosterPage = pageData.page
+    this.drawListViewport(570, 214, 596, 258)
+    pageData.items.forEach((officer, index) => {
       const unitId = unitIdForOfficerId(officer.id)
       const unit = unitId ? heroById(unitId) : undefined
       if (!unit || !unitId) return
-      const x = 590 + (index % 2) * 294
-      const y = 238 + Math.floor(index / 2) * 138
-      this.overlayLayer.add(this.add.rectangle(x, y, 260, 110, 0x21160f, 0.92).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
+      const x = 588 + (index % 2) * 288
+      const y = 230 + Math.floor(index / 2) * 120
+      this.overlayLayer.add(this.add.rectangle(x, y, 268, 102, 0x21160f, 0.92).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
       const key = `portrait-${unit.id}`
       if (this.textures.exists(key)) {
-        this.overlayLayer.add(this.add.image(x + 46, y + 52, key).setDisplaySize(64, 78))
+        this.overlayLayer.add(this.add.image(x + 44, y + 50, key).setDisplaySize(58, 72))
       }
       const roles = roleLabels(unit.id, this.appointments)
       const selected = this.deploymentOfficerIds.has(officer.id)
       const detail = manifest.get(officer.id)
-      this.overlayLayer.add(this.add.text(x + 92, y + 16, unit.name, {
+      this.overlayLayer.add(this.add.text(x + 88, y + 14, unit.name, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '19px',
         color: '#f8df9d',
       }))
-      this.overlayLayer.add(this.add.text(x + 92, y + 42, roles || '随军武将', {
+      this.makeButton(x + 220, y + 22, selected ? '随军' : '留守', () => this.toggleDeploymentOfficer(officer.id), this.overlayLayer, 82, 30)
+      if (selected) {
+        this.overlayLayer.add(this.add.circle(x + 250, y + 14, 6, 0xf8df9d, 0.95))
+      }
+      this.overlayLayer.add(this.add.text(x + 88, y + 42, roles || '随军武将', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '14px',
         color: '#d8c092',
-        wordWrap: { width: 148 },
+        wordWrap: { width: 154 },
       }))
-      this.overlayLayer.add(this.add.text(x + 92, y + 66, `兵${officerTroops(officer)} 粮${detail?.food ?? 0} 武${officerWeapons(officer)} 训${officerTraining(officer)}`, {
+      this.overlayLayer.add(this.add.text(x + 88, y + 66, `兵${officerTroops(officer)}  粮${detail?.food ?? 0}\n武${officerWeapons(officer)}  训${officerTraining(officer)}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '15px',
+        fontSize: '14px',
         color: '#f8ecd0',
-        wordWrap: { width: 142 },
+        lineSpacing: 2,
+        wordWrap: { width: 150 },
       }))
-      this.makeButton(x + 202, y + 82, selected ? '随军✓' : '留守', () => this.toggleDeploymentOfficer(officer.id), this.overlayLayer, 86, 30)
     })
     if (officers.length === 0) {
       this.overlayLayer.add(this.add.text(872, 322, '本城暂无可出战武将。', {
@@ -3910,37 +4028,50 @@ class KingdomsScene extends Phaser.Scene {
         color: '#f8ecd0',
       }).setOrigin(0.5))
     }
+    this.drawPager(868, 486, pageData.page, pageData.totalPages, () => {
+      this.deploymentRosterPage = Math.max(0, this.deploymentRosterPage - 1)
+      this.showDeployment()
+    }, () => {
+      this.deploymentRosterPage = Math.min(pageData.totalPages - 1, this.deploymentRosterPage + 1)
+      this.showDeployment()
+    }, 164)
     this.drawDeploymentTargets()
   }
 
   private drawDeploymentTargets() {
     const targets = this.availableDeploymentTargets()
-    this.overlayLayer.add(this.add.text(580, 498, '邻接目标', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '24px',
-      color: '#f5d487',
-    }))
+    this.drawListViewport(570, 494, 596, 60, '邻接目标')
     if (targets.length === 0) {
-      this.overlayLayer.add(this.add.text(704, 502, '当前城池周边暂无可攻目标。', {
+      this.overlayLayer.add(this.add.text(704, 521, '当前城池周边暂无可攻目标。', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '18px',
         color: '#ead7b3',
       }))
       return
     }
-    targets.forEach((city, index) => {
-      const x = 690 + index * 156
+    const pageSize = 2
+    const pageData = this.pagedItems(targets, this.deploymentTargetPage, pageSize)
+    this.deploymentTargetPage = pageData.page
+    pageData.items.forEach((city, index) => {
+      const x = 724 + index * 150
       const selected = city.id === this.selectedTargetCityId
-      this.makeButton(x, 526, selected ? `${city.name}✓` : city.name, () => {
+      this.makeButton(x, 518, selected ? `${city.name}*` : city.name, () => {
         this.selectedTargetCityId = city.id
         this.showDeployment()
-      }, this.overlayLayer, 136, 36)
-      this.overlayLayer.add(this.add.text(x, 552, `${factionById(city.owner)?.name ?? '群雄'} 兵${city.troops}`, {
+      }, this.overlayLayer, 126, 32)
+      this.overlayLayer.add(this.add.text(x, 546, `${factionById(city.owner)?.name ?? '群雄'} 兵${city.troops}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '13px',
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
+    this.drawPager(1120, 518, pageData.page, pageData.totalPages, () => {
+      this.deploymentTargetPage = Math.max(0, this.deploymentTargetPage - 1)
+      this.showDeployment()
+    }, () => {
+      this.deploymentTargetPage = Math.min(pageData.totalPages - 1, this.deploymentTargetPage + 1)
+      this.showDeployment()
+    }, 88)
   }
 
   private confirmDeployment() {
@@ -4056,17 +4187,8 @@ class KingdomsScene extends Phaser.Scene {
     const meta = diplomacyCommandMeta(kind)
     const actors = this.controlledCities().filter((city) => this.diplomacyTargetsFrom(city).length > 0)
     this.showCampaign()
-    this.addLayeredPanel(640, 392, 820, 330)
-    this.overlayLayer.add(this.add.text(272, 258, `外交｜${meta.command}：选择发起方`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 310, '外交命令先确定出使城，再选择邻接势力或敌城，最后确认执行。', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
+    this.addLayeredPanel(MODAL.x, MODAL.y, MODAL.width, MODAL.height)
+    const { left, top } = this.drawModalTitle(`外交｜${meta.command}：选择发起方`, '外交命令先确定出使城，再选择邻接势力或敌城，最后确认执行。')
     if (actors.length === 0) {
       this.overlayLayer.add(this.add.text(640, 414, '当前没有邻接外交目标的己方城。', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -4075,10 +4197,7 @@ class KingdomsScene extends Phaser.Scene {
       }).setOrigin(0.5))
     }
     actors.forEach((city, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 392 + row * 78
+      const { x, y } = this.modalGridPosition(index, left, top)
       const targets = this.diplomacyTargetsFrom(city)
       this.makeButton(x, y, city.name, () => {
         this.selectedCityId = city.id
@@ -4092,24 +4211,19 @@ class KingdomsScene extends Phaser.Scene {
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(640, 586, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+    this.makeButton(640, top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
   }
 
   private showDiplomacyTargetSelection(kind: DiplomacyCommandKind, actor: StrategyCity) {
     const meta = diplomacyCommandMeta(kind)
     const targets = this.diplomacyTargetsFrom(actor)
     this.showCampaign()
-    this.addLayeredPanel(640, 392, 850, 350)
-    this.overlayLayer.add(this.add.text(260, 248, `外交｜${meta.command}：选择目标`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 302, `发起方：${actor.name}使者    目标类型：${meta.targetKind === 'faction' ? '邻接势力' : '邻接敌城'}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '19px',
-      color: '#f8ecd0',
-    }))
+    this.addLayeredPanel(MODAL.x, MODAL.y, 850, MODAL.height)
+    const { left, top } = this.drawModalTitle(
+      `外交｜${meta.command}：选择目标`,
+      `发起方：${actor.name}使者    目标类型：${meta.targetKind === 'faction' ? '邻接势力' : '邻接敌城'}`,
+      850,
+    )
     if (meta.targetKind === 'faction') {
       const factionTargets = this.diplomacyFactionTargetsForCommand(kind, actor)
       if (factionTargets.length === 0) {
@@ -4125,10 +4239,7 @@ class KingdomsScene extends Phaser.Scene {
       factionTargets.forEach((faction, index) => {
         const cityNames = targets.filter((city) => city.owner === faction.id).map((city) => city.name).join('、')
         const status = this.diplomacyFactionStatus(kind, faction.id)
-        const col = index % 3
-        const row = Math.floor(index / 3)
-        const x = 410 + col * 230
-        const y = 390 + row * 82
+        const { x, y } = this.modalGridPosition(index, left, top)
         this.makeButton(x, y, faction.ruler, () => this.confirmDiplomacyAction(kind, actor, faction), this.overlayLayer, 168, 40)
         this.overlayLayer.add(this.add.text(x, y + 35, `${faction.name}｜${status || `邻城 ${cityNames}`}`, {
           fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -4139,10 +4250,7 @@ class KingdomsScene extends Phaser.Scene {
     } else {
       targets.forEach((city, index) => {
         const faction = factionById(city.owner)
-        const col = index % 3
-        const row = Math.floor(index / 3)
-        const x = 410 + col * 230
-        const y = 390 + row * 82
+        const { x, y } = this.modalGridPosition(index, left, top)
         this.makeButton(x, y, city.name, () => {
           if (kind === 'sabotage' || kind === 'assassination') {
             this.showDiplomacyOfficerTargetSelection(kind, actor, city)
@@ -4157,8 +4265,8 @@ class KingdomsScene extends Phaser.Scene {
         }).setOrigin(0.5))
       })
     }
-    this.makeButton(540, 606, '重选发起方', () => this.showDiplomacyActorSelection(kind), this.overlayLayer, 150, 38)
-    this.makeButton(740, 606, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+    this.makeButton(540, top + MODAL.actionOffsetY, '重选发起方', () => this.showDiplomacyActorSelection(kind), this.overlayLayer, 150, 38)
+    this.makeButton(740, top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
   }
 
   private confirmDiplomacyAction(kind: DiplomacyCommandKind, actor: StrategyCity, target: StrategyCity | StrategyFaction) {
@@ -4170,6 +4278,7 @@ class KingdomsScene extends Phaser.Scene {
     this.selectedTargetCityId = targetCity?.id
     this.selectedDiplomacyFactionId = faction?.id
     this.syncSelectedCityState()
+    this.showCampaign()
     this.showCommandConfirm({
       category: '外交',
       command: meta.command,
@@ -4191,17 +4300,8 @@ class KingdomsScene extends Phaser.Scene {
     this.selectedDiplomacyFactionId = targetCity.owner
     this.syncSelectedCityState()
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 342)
-    this.overlayLayer.add(this.add.text(274, 264, `外交｜${meta.command}：选择武将`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, `发起方：${actor.name}使者    目标城：${targetCity.name}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
+    this.addLayeredPanel(MODAL.x, MODAL.y, MODAL.width, MODAL.height)
+    const { left, top } = this.drawModalTitle(`外交｜${meta.command}：选择武将`, `发起方：${actor.name}使者    目标城：${targetCity.name}`)
     if (officers.length === 0) {
       this.overlayLayer.add(this.add.text(640, 414, `${targetCity.name}暂无可指定武将，只能改用火计或劝降。`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -4210,10 +4310,7 @@ class KingdomsScene extends Phaser.Scene {
       }).setOrigin(0.5))
     }
     officers.forEach((officer, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
+      const { x, y } = this.modalGridPosition(index, left, top)
       this.makeButton(x, y, officer.name, () => this.confirmDiplomacyOfficerAction(kind, actor, targetCity, officer), this.overlayLayer, 168, 40)
       this.overlayLayer.add(this.add.text(x, y + 35, `忠${officer.loyalty} 智${officer.intel} 兵${officerTroops(officer)}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -4221,8 +4318,8 @@ class KingdomsScene extends Phaser.Scene {
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(540, 606, '重选敌城', () => this.showDiplomacyTargetSelection(kind, actor), this.overlayLayer, 150, 38)
-    this.makeButton(740, 606, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+    this.makeButton(540, top + MODAL.actionOffsetY, '重选敌城', () => this.showDiplomacyTargetSelection(kind, actor), this.overlayLayer, 150, 38)
+    this.makeButton(740, top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
   }
 
   private confirmDiplomacyOfficerAction(kind: 'sabotage' | 'assassination', actor: StrategyCity, targetCity: StrategyCity, officer: StrategyOfficer) {
@@ -4790,7 +4887,47 @@ class KingdomsScene extends Phaser.Scene {
     this.overlayLayer.add(this.add.rectangle(FOOTER.x, FOOTER.y, FOOTER.width, FOOTER.height, UI.subPanel, 0.97).setOrigin(0).setStrokeStyle(2, UI.border, 0.82))
   }
 
+  private clampListPage(page: number, count: number, pageSize: number) {
+    const totalPages = Math.max(1, Math.ceil(count / pageSize))
+    return Phaser.Math.Clamp(page, 0, totalPages - 1)
+  }
+
+  private pagedItems<T>(items: T[], page: number, pageSize: number) {
+    const safePage = this.clampListPage(page, items.length, pageSize)
+    const start = safePage * pageSize
+    return {
+      page: safePage,
+      totalPages: Math.max(1, Math.ceil(items.length / pageSize)),
+      items: items.slice(start, start + pageSize),
+    }
+  }
+
+  private drawListViewport(x: number, y: number, width: number, height: number, title?: string) {
+    this.overlayLayer.add(this.add.rectangle(x, y, width, height, UI.subPanel, 0.56).setOrigin(0).setStrokeStyle(1, UI.borderDim, 0.45))
+    if (title) {
+      this.overlayLayer.add(this.add.text(x + 16, y + 10, title, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '16px',
+        color: '#f4dfb3',
+      }))
+    }
+  }
+
+  private drawPager(x: number, y: number, page: number, totalPages: number, onPrev: () => void, onNext: () => void, width = 180) {
+    if (totalPages <= 1) return
+    const safeWidth = Math.max(width, 142)
+    this.overlayLayer.add(this.add.text(x, y, `${page + 1}/${totalPages}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '16px',
+      color: '#f4dfb3',
+      align: 'center',
+    }).setOrigin(0.5))
+    this.makeButton(x - safeWidth / 2 + 26, y, '<', onPrev, this.overlayLayer, 42, 30, 17)
+    this.makeButton(x + safeWidth / 2 - 26, y, '>', onNext, this.overlayLayer, 42, 30, 17)
+  }
+
   private drawToast(message: string, y = 584) {
+    const safeY = Math.min(y, FOOTER.y - 30)
     const toast = this.add.text(640, y, message, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '21px',
@@ -4800,6 +4937,7 @@ class KingdomsScene extends Phaser.Scene {
       align: 'center',
       wordWrap: { width: 820 },
     }).setOrigin(0.5)
+    toast.setY(safeY)
     this.overlayLayer.add(toast)
     return toast
   }
