@@ -12,6 +12,8 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Modal command layers: full-screen dark mask, centered panel, title row, command grid, one cancel/back action.
 - Confirmation dialogs: dark mask, centered compact panel, structured actor/target/scope/effect rows, confirm/cancel pair.
 - Battle screens: top force summary, board left, status/action panel right, log footer.
+- Siege screens: left status panels must use compact grouped stat blocks instead of long space-padded text. Attacker and defender data should be separated into fixed label/value columns inside the panel.
+- Field-battle preparation screens: show participating officers, defender status, formation options, and the selected formation effect before entering the tactical board. Formation choices must visibly affect battle stats or result writeback.
 
 ## Layout Rules
 
@@ -23,10 +25,11 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Modal masks must cover the full canvas with at least 0.48 opacity.
 - Modal panels must not include extra decorative bands unless they carry readable text.
 - Modal action buttons always belong inside the current panel. Secondary and tertiary layers must not place cancel/back/confirm controls outside the panel border.
-- Standard command modal: center `(640, 402)`, size `820 x 470`, left inset `58`, title at `top + 58`, helper text at `top + 112`, option grid at `top + 202`, action row at `top + 410`.
+- Standard command modal: center `(640, 402)`, size `820 x 470`, left inset `58`, title at `top + 58`, helper text at `top + 112`, option grid at `top + 202`, action row at `top + 430`.
 - All command-family layers use the same option grid: 3 columns, 230 px column pitch, 82 px row pitch, 168 x 40 buttons.
 - All modal action buttons use one fixed size: `150 x 38`. A single action is centered at x `640`; two or three actions are centered as a group using the shared modal action gap.
 - Modal option buttons and modal action buttons must be created through the shared helpers, not direct `makeButton` calls with per-screen widths.
+- Dual-picker command layers, such as choosing officer + destination or destination + amount, must use the shared two-column modal component. These screens keep the same modal title, mask, summary line, and action-row tokens as grid command layers.
 - Confirmation dialogs use the same modal title and action-row offsets. They may use a narrower panel only when the content remains aligned to the same inset rhythm.
 - Opening a confirmation dialog must clear the previous command-selection modal first; do not leave a prior modal panel visible behind the new mask.
 - Repeated command choices use a 3-column grid, 168 x 40 buttons, 82 px row pitch.
@@ -34,6 +37,7 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Lists and tables must render through a bounded viewport. If the data can exceed the visible area, show a pager inside the same panel instead of allowing item rows to push into buttons, footers, or sibling sections.
 - List item cards must reserve separate regions for portrait, title, metadata, stats, and action button. Multi-line stats stay inside the card and never share the same horizontal lane as the action button.
 - Tables use fixed column x positions and column widths. Do not align table data with space-padded strings.
+- Dense status summaries with more than six rows must be split into columns or paged blocks; never allow a single text object to push past its panel boundary.
 
 ## Typography
 
