@@ -2201,6 +2201,29 @@ class KingdomsScene extends Phaser.Scene {
     })
   }
 
+  private showModalReport(title: string, subtitle: string | undefined, lines: string[], actionLabel: string, onAction: () => void) {
+    const layered = this.addLayeredPanel(MODAL.x, MODAL.y, MODAL.width, MODAL.height)
+    const { left, top, nodes } = this.drawModalTitle(title, subtitle)
+    const body = this.add.text(left + MODAL.insetX + 22, top + 146, lines.join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f8ecd0',
+      lineSpacing: 8,
+      wordWrap: { width: MODAL.width - MODAL.insetX * 2 - 44 },
+    })
+    this.overlayLayer.add(body)
+    const close = () => {
+      Object.values(layered).forEach((node) => node.destroy())
+      nodes.forEach((node) => node.destroy())
+      body.destroy()
+    }
+    const action = this.makeModalActionButton(MODAL.x, top + MODAL.actionOffsetY, actionLabel, () => {
+      close()
+      onAction()
+    })
+    this.overlayLayer.add(action)
+  }
+
   private showCommandPanel(title: string, items: [string, () => void][]) {
     const layered = this.addLayeredPanel(MODAL.x, MODAL.y, MODAL.width, MODAL.height)
     const { left, top, nodes } = this.drawModalTitle(`${title}命令  ｜  ${this.selectedCity?.name ?? '未选'}城`)
@@ -2501,19 +2524,7 @@ class KingdomsScene extends Phaser.Scene {
       `邻接      ${neighbors.map((city) => city.name).join('、') || '-'}`,
       `情报      ${this.councilState.intel}`,
     ]
-    this.addLayeredPanel(640, 404, 720, 330)
-    this.overlayLayer.add(this.add.text(640, 270, `${category}情报`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '36px',
-      color: '#f8df9d',
-    }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.text(350, 326, lines.join('\n'), {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '20px',
-      color: '#f8ecd0',
-      lineSpacing: 8,
-    }))
-    this.makeButton(640, 590, '返回', () => category === '军事' ? this.showMilitaryCommand() : this.showDomesticCommand(), this.overlayLayer, 130, 38)
+    this.showModalReport(`${category}情报`, undefined, lines, '返回', () => category === '军事' ? this.showMilitaryCommand() : this.showDomesticCommand())
   }
 
   private showEducationActorSelection() {
@@ -4555,22 +4566,7 @@ class KingdomsScene extends Phaser.Scene {
       `邦交      ${treaty ? `盟约余${treaty}月` : debt ? `债契${debt.principal}` : '无特殊约束'}`,
       `情报      +32，现为${this.councilState.intel}`,
     ]
-    this.addLayeredPanel(640, 414, 760, 330)
-    this.overlayLayer.add(this.add.text(640, 286, '外交情报', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '38px',
-      color: '#f8df9d',
-      stroke: '#2a120c',
-      strokeThickness: 3,
-    }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.text(326, 342, report.join('\n'), {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '21px',
-      color: '#f8ecd0',
-      lineSpacing: 11,
-      wordWrap: { width: 620 },
-    }))
-    this.makeButton(640, 568, '返回外交', () => this.showDiplomacy(), this.overlayLayer, 170, 42)
+    this.showModalReport('外交情报', undefined, report, '返回外交', () => this.showDiplomacy())
   }
 
   private diplomacyChance(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
