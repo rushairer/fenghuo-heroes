@@ -492,9 +492,11 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private handleBattleKeyboard(event: KeyboardEvent) {
+    const key = event.key.toLowerCase()
     const selected = this.selectedUnit
     if (!selected || selected.faction !== 'player' || selected.hasActed) {
-      const index = Number(event.key) - 1
+      const unitKeys = ['q', 'w', 'e', 'r']
+      const index = unitKeys.indexOf(key)
       const unit = Number.isInteger(index) ? this.living('player')[index] : undefined
       if (unit) {
         this.selectedUnitId = unit.id
@@ -504,14 +506,14 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     const commands: Record<string, () => void> = {
-      '1': () => this.enterMoveMode(selected),
-      '2': () => this.enterAttackMode(selected, undefined),
-      '3': () => this.enterAttackMode(selected, selected.skills[0]),
-      '4': () => this.finishUnit(selected),
-      '5': () => this.delegateUnit(selected),
-      '6': () => this.retreatBattle(),
+      m: () => this.enterMoveMode(selected),
+      a: () => this.enterAttackMode(selected, undefined),
+      t: () => this.enterAttackMode(selected, selected.skills[0]),
+      w: () => this.finishUnit(selected),
+      g: () => this.delegateUnit(selected),
+      x: () => this.retreatBattle(),
     }
-    commands[event.key]?.()
+    commands[key]?.()
   }
 
   private showTitle() {
@@ -719,9 +721,9 @@ class KingdomsScene extends Phaser.Scene {
     const target = this.selectedTargetCity
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
-    this.addTitleText('敌城情报', `${source?.name ?? '本城'}至${target?.name ?? '邻境'}军情。`)
-    const panel = this.add.rectangle(520, 392, 820, 300, 0x101722, 0.9).setStrokeStyle(2, 0xd4af37, 0.8)
-    this.overlayLayer.add(panel)
+    this.drawPageFrame('敌城情报', `${source?.name ?? '本城'}至${target?.name ?? '邻境'}军情`)
+    this.drawPanel(230, 168, 820, 394)
+    this.drawSectionTitle(270, 202, '邻境军情')
     const owner = target ? factionById(target.owner) : undefined
     const officers = target ? this.campaignOfficers.filter((officer) => officer.location === target.id && officer.faction === target.owner) : []
     const odds = target && source ? Math.floor((source.troops / Math.max(1, target.troops + target.defense * 60)) * 100) : 0
@@ -737,13 +739,16 @@ class KingdomsScene extends Phaser.Scene {
       `邻接      ${target?.routes.map((id) => cityName(id)).join('、') ?? '-'}`,
       `胜算      ${odds >= 150 ? '上风' : odds >= 95 ? '可战' : '艰难'}`,
     ].join('\n')
-    this.overlayLayer.add(this.add.text(180, 258, copy, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '24px',
-      lineSpacing: 11,
+    this.overlayLayer.add(this.add.text(282, 268, copy, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      lineSpacing: 9,
       color: '#f7ead0',
+      wordWrap: { width: 720 },
     }))
-    this.makeButton(520, 568, '进入军事命令', () => this.showMilitaryCommand(), this.overlayLayer)
+    this.makeButton(438, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
+    this.makeButton(640, 636, '军事命令', () => this.showMilitaryCommand(), this.overlayLayer, 180, 44)
+    this.makeButton(842, 636, '行军出征', () => this.showDeployment(), this.overlayLayer, 180, 44)
   }
 
   private advanceCampaignMonth() {
@@ -942,7 +947,7 @@ class KingdomsScene extends Phaser.Scene {
       .map((id) => this.campaignOfficers.find((officer) => officer.id === id))
       .filter((officer): officer is StrategyOfficer => Boolean(officer))
       .map((officer) => `${officer.name} 兵${this.marchArmy?.officerTroops[officer.id] ?? officerTroops(officer)} 粮${this.marchArmy?.officerFood[officer.id] ?? 0} 武${officerWeapons(officer)} 训${officerTraining(officer)}`)
-    this.overlayLayer.add(this.add.rectangle(640, 408, 650, 210, 0x101722, 0.97).setStrokeStyle(2, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 414, 720, 300)
     this.overlayLayer.add(this.add.text(640, 338, '远征军', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '38px',
@@ -963,6 +968,7 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '22px',
       color: '#f8ecd0',
       lineSpacing: 10,
+      wordWrap: { width: 610 },
     }))
   }
 
@@ -981,7 +987,7 @@ class KingdomsScene extends Phaser.Scene {
         .map((id) => this.campaignCities.find((city) => city.id === id))
         .filter((city): city is StrategyCity => city !== undefined && city.owner !== 'liu')
       : []
-    this.overlayLayer.add(this.add.rectangle(640, 408, 710, 230, 0x101722, 0.97).setStrokeStyle(2, 0xd4af37, 0.9))
+    this.addLayeredPanel(640, 414, 760, 320)
     this.overlayLayer.add(this.add.text(640, 330, '行军路线', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '38px',
@@ -4520,8 +4526,7 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private showTitleNotice(title: string, message: string) {
-    const mask = this.add.rectangle(640, 380, 1280, 760, 0x05070a, 0.48)
-    const bg = this.add.rectangle(640, 420, 660, 220, 0x111821, 0.97).setStrokeStyle(2, 0xd4af37)
+    const layered = this.addLayeredPanel(640, 420, 660, 220)
     const heading = this.add.text(640, 362, title, {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '34px',
@@ -4534,14 +4539,12 @@ class KingdomsScene extends Phaser.Scene {
       align: 'center',
       wordWrap: { width: 560 },
     }).setOrigin(0.5)
+    const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), heading, body]
     const close = this.makeButton(640, 506, '关闭', () => {
-      mask.destroy()
-      bg.destroy()
-      heading.destroy()
-      body.destroy()
-      close.destroy()
+      nodes.forEach((node) => node.destroy())
     }, this.overlayLayer, 140, 40)
-    this.overlayLayer.add([mask, bg, heading, body])
+    nodes.push(close)
+    this.overlayLayer.add([heading, body])
   }
 
   private drawPageFrame(title: string, context?: string, alpha = 0.92) {
@@ -5165,17 +5168,18 @@ class KingdomsScene extends Phaser.Scene {
       ].join('\n'))
       this.drawPortrait(selected)
       if (this.currentFaction === 'player' && selected.faction === 'player' && !selected.hasActed && this.phase === 'playerSelect') {
-        this.addActionButton('1 移动', 438, () => this.enterMoveMode(selected))
-        this.addActionButton('2 攻击', 480, () => this.enterAttackMode(selected, undefined))
+        this.addActionButton('[M] 移动', 438, () => this.enterMoveMode(selected))
+        this.addActionButton('[A] 攻击', 480, () => this.enterAttackMode(selected, undefined))
         const skill = skills[selected.skills[0]]
-        this.addActionButton(skill.type === 'heal' ? '3 救护' : '3 计略', 522, () => this.enterAttackMode(selected, skill.id))
-        this.addActionButton('4 待机', 564, () => this.finishUnit(selected))
-        this.addActionButton('5 委任', 438, () => this.delegateUnit(selected), UI_X + 298)
-        this.addActionButton('6 撤退', 480, () => this.retreatBattle(), UI_X + 298)
+        this.addActionButton(skill.type === 'heal' ? '[T] 救护' : '[T] 计略', 522, () => this.enterAttackMode(selected, skill.id))
+        this.addActionButton('[W] 待机', 564, () => this.finishUnit(selected))
+        this.addActionButton('[G] 委任', 438, () => this.delegateUnit(selected), UI_X + 298)
+        this.addActionButton('[X] 撤退', 480, () => this.retreatBattle(), UI_X + 298)
       }
     } else {
-      const roster = this.living('player').map((unit, index) => `${index + 1}. ${unit.name} 兵${unit.stats.hp}/${unit.stats.maxHp}`).join('\n')
-      this.infoText.setText(`军势态势：${this.battlePosture()}\n目标：击破守军主将并夺取${this.selectedTargetCity?.name ?? '目标城'}。\n数字键可选武将。\n\n${roster}`)
+      const unitKeys = ['Q', 'W', 'E', 'R']
+      const roster = this.living('player').map((unit, index) => `[${unitKeys[index] ?? '-'}] ${unit.name} 兵${unit.stats.hp}/${unit.stats.maxHp}`).join('\n')
+      this.infoText.setText(`军势态势：${this.battlePosture()}\n目标：击破守军主将并夺取${this.selectedTargetCity?.name ?? '目标城'}。\n字母键可选武将。\n\n${roster}`)
     }
     this.logText.setText(this.logLines.slice(-4).join('\n'))
   }
@@ -5230,13 +5234,21 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private makeButton(x: number, y: number, label: string, callback: () => void, layer: Phaser.GameObjects.Container, width = 220, height = 48, fontSize = 21) {
+    const effectiveFontSize = Math.min(
+      fontSize,
+      height <= 36 ? 17 : height <= 40 ? 19 : fontSize,
+      width <= 96 ? 16 : width <= 140 ? 18 : fontSize,
+      label.length >= 8 && width <= 170 ? 18 : fontSize,
+    )
+    const padY = height <= 36 ? 5 : height <= 40 ? 7 : 9
+    const padX = width <= 110 ? 10 : 18
     const button = this.add.text(x, y, label, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: `${fontSize}px`,
+      fontSize: `${effectiveFontSize}px`,
       color: '#21140f',
       align: 'center',
       backgroundColor: '#f5d487',
-      padding: { x: 18, y: 9 },
+      padding: { x: padX, y: padY },
       fixedWidth: width,
       fixedHeight: height,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true })
@@ -5479,7 +5491,7 @@ class KingdomsScene extends Phaser.Scene {
       : victory
       ? `敌军主将已败，${target?.name ?? '目标城'}归入刘备军。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}  击破：${this.roundKills}`
       : `我方军势受挫，粮道失守。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}`)
-    this.overlayLayer.add(this.add.rectangle(640, 382, 620, 320, 0x101722, 0.96).setStrokeStyle(3, victory ? 0xf8df9d : 0xd65f5f))
+    this.addLayeredPanel(640, 382, 660, 328)
     this.overlayLayer.add(this.add.text(640, 306, title, {
       fontFamily: 'Georgia, serif',
       fontSize: '48px',

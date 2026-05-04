@@ -50,6 +50,8 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
   - `D` 内政, `F` 外交, `M` 军事, `N` 月令, `V` 势力, `P` 人事, `S` 机能.
 - March shortcuts:
   - `A` 部队, `R` 路线, `G` 移动, `X` 攻击, `B` 情报, `C` 截粮, `Z` 占村, `Q` 撤退, `W` 待机, `N` 月令.
+- Battle shortcuts:
+  - `Q/W/E/R` 选择我方武将；`M` 移动, `A` 攻击, `T` 计略/救护, `W` 待机, `G` 委任, `X` 撤退.
 - Equivalent actions must keep the same shortcut at every layer.
 - Only the primary next-step button gets central emphasis; cancel/back stays lower priority.
 - No page should require users to visually separate stacked menus without a mask.
