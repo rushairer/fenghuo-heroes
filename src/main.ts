@@ -185,6 +185,11 @@ type DiplomacyDebt = {
 }
 type CityPolicyDelta = { treasury?: number; publicOrder?: number; recruits?: number; farms?: number; walls?: number; food?: number; supplies?: number; morale?: number; intel?: number }
 type IntelCommandCategory = '内政' | '军事'
+type ModalGridItem = {
+  label: string
+  detail?: string
+  onSelect: () => void
+}
 
 const TILE = 64
 const MAP_W = 12
@@ -210,6 +215,9 @@ const MODAL = {
   rowHeight: 82,
   optionWidth: 168,
   optionHeight: 40,
+  actionWidth: 150,
+  actionHeight: 38,
+  actionGap: 40,
 } as const
 const UI = {
   veil: 0x071017,
@@ -1778,46 +1786,27 @@ class KingdomsScene extends Phaser.Scene {
     const meta = militaryAllocationMeta(kind)
     const cities = this.controlledCities().filter((city) => this.officersInCity(city.id).length > 0)
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 342)
-    this.overlayLayer.add(this.add.text(274, 264, `军事｜${meta.command}：选择发起城`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, '军事命令先确定军府所在城，再选择本城武将或全军作为目标。', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
-    if (cities.length === 0) {
-      this.overlayLayer.add(this.add.text(640, 414, '当前没有可执行军令的己方城。', {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '20px',
-        color: '#f8ecd0',
-      }).setOrigin(0.5))
-    }
-    cities.forEach((city, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
+    this.showModalGrid(
+      `军事｜${meta.command}：选择发起城`,
+      '军事命令先确定军府所在城，再选择本城武将或全军作为目标。',
+      cities.map((city) => {
       const officers = this.officersInCity(city.id)
-      this.makeButton(x, y, city.name, () => {
+        return {
+          label: city.name,
+          detail: `武将${officers.length}｜金${city.gold} 兵${city.troops}`,
+          onSelect: () => {
         this.selectedCityId = city.id
         this.focusedCityId = city.id
         this.syncSelectedCityState()
         this.showMilitaryOfficerSelection(kind, city)
-      }, this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `武将${officers.length}｜金${city.gold} 兵${city.troops}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeButton(640, 606, '取消', () => {
+          },
+        }
+      }),
+      () => {
       this.showCampaign()
       this.showMilitaryCommand()
-    }, this.overlayLayer, 130, 38)
+      },
+    )
   }
 
   private showMilitaryOfficerSelection(kind: MilitaryAllocationKind, actorCity = this.selectedCity) {
@@ -1833,60 +1822,50 @@ class KingdomsScene extends Phaser.Scene {
     }
     this.showCampaign()
     const meta = militaryAllocationMeta(kind)
-    this.addLayeredPanel(640, 402, 820, 350)
-    this.overlayLayer.add(this.add.text(640, 276, `${meta.command}对象`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '34px',
-      color: '#f8df9d',
-    }).setOrigin(0.5))
-    this.overlayLayer.add(this.add.text(640, 318, `${city.name}${meta.actor}发起，选择本城武将作为目标`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }).setOrigin(0.5))
+    this.addLayeredPanel(MODAL.x, MODAL.y, MODAL.width, MODAL.height)
+    const { left, top } = this.drawModalTitle(`军事｜${meta.command}：选择对象`, `${city.name}${meta.actor}发起，选择本城武将作为目标`)
     if (kind === 'recruit') {
       const scales: RecruitScale[] = ['small', 'medium', 'large']
       scales.forEach((scale, index) => {
         const config = recruitScaleConfig(scale)
-        this.makeButton(456 + index * 184, 348, this.recruitScale === scale ? `${config.label}✓` : config.label, () => {
+        this.makeModalOptionButton(this.modalGridPosition(index, left, top).x, top + 162, this.recruitScale === scale ? `${config.label}✓` : config.label, () => {
           this.recruitScale = scale
           this.showMilitaryOfficerSelection(kind, city)
-        }, this.overlayLayer, 142, 34)
+        }, 142)
       })
     } else if (kind === 'training') {
       const modes: [TrainingMode, string][] = [['single', '单将训练'], ['all', '全军操练']]
       modes.forEach(([mode, label], index) => {
-        this.makeButton(548 + index * 184, 348, this.trainingMode === mode ? `${label}✓` : label, () => {
+        this.makeModalOptionButton(this.modalGridPosition(index, left, top).x, top + 162, this.trainingMode === mode ? `${label}✓` : label, () => {
           this.trainingMode = mode
           this.showMilitaryOfficerSelection(kind, city)
-        }, this.overlayLayer, 150, 34)
+        }, 150)
       })
       if (this.trainingMode === 'all') {
-        this.makeButton(640, 438, '确认全军操练', () => this.confirmTrainingAll(city), this.overlayLayer, 190, 42)
-        this.overlayLayer.add(this.add.text(640, 486, '目标：本城所有可战武将｜金 -180｜全员训练 +6｜士气 +4', {
+        this.makeModalOptionButton(640, top + 248, '确认全军操练', () => this.confirmTrainingAll(city), 190)
+        this.overlayLayer.add(this.add.text(640, top + 296, '目标：本城所有可战武将｜金 -180｜全员训练 +6｜士气 +4', {
           fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
           fontSize: '18px',
           color: '#f7ecd5',
         }).setOrigin(0.5))
-        this.makeButton(540, 596, '重选发起城', () => this.showMilitaryActorSelection(kind), this.overlayLayer, 150, 38)
-        this.makeButton(740, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+        this.makeModalActionButton(this.modalActionX(0, 2), top + MODAL.actionOffsetY, '重选发起城', () => this.showMilitaryActorSelection(kind))
+        this.makeModalActionButton(this.modalActionX(1, 2), top + MODAL.actionOffsetY, '取消', () => this.showCampaign())
         return
       }
     }
     officers.forEach((officer, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = (kind === 'recruit' ? 412 : 378) + row * 78
-      this.makeButton(x, y, officer.name, () => this.confirmMilitaryAllocation(kind, officer, city), this.overlayLayer, 168, 40)
+      const { x, y: gridY } = this.modalGridPosition(index, left, top)
+      const y = (kind === 'recruit' || kind === 'training' ? top + 258 : gridY)
+        + Math.floor(index / 3) * (kind === 'recruit' || kind === 'training' ? MODAL.rowHeight : 0)
+      this.makeModalOptionButton(x, y, officer.name, () => this.confirmMilitaryAllocation(kind, officer, city))
       this.overlayLayer.add(this.add.text(x, y + 35, `兵${officerTroops(officer)} 武${officerWeapons(officer)} 训${officerTraining(officer)}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '14px',
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(540, 596, '重选发起城', () => this.showMilitaryActorSelection(kind), this.overlayLayer, 150, 38)
-    this.makeButton(740, 596, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 2), top + MODAL.actionOffsetY, '重选发起城', () => this.showMilitaryActorSelection(kind))
+    this.makeModalActionButton(this.modalActionX(1, 2), top + MODAL.actionOffsetY, '取消', () => this.showCampaign())
   }
 
   private confirmMilitaryAllocation(kind: MilitaryAllocationKind, officer: StrategyOfficer, actorCity: StrategyCity) {
@@ -2064,26 +2043,86 @@ class KingdomsScene extends Phaser.Scene {
     }
   }
 
+  private modalActionX(index: number, total: number) {
+    const step = MODAL.actionWidth + MODAL.actionGap
+    return MODAL.x - ((total - 1) * step) / 2 + index * step
+  }
+
+  private makeModalOptionButton(x: number, y: number, label: string, callback: () => void, width: number = MODAL.optionWidth) {
+    return this.makeButton(x, y, label, callback, this.overlayLayer, width, MODAL.optionHeight)
+  }
+
+  private makeModalActionButton(x: number, y: number, label: string, callback: () => void) {
+    return this.makeButton(x, y, label, callback, this.overlayLayer, MODAL.actionWidth, MODAL.actionHeight)
+  }
+
+  private showModalGrid(title: string, subtitle: string | undefined, items: ModalGridItem[], onCancel: () => void, cancelLabel = '取消', actions?: ModalGridItem[]) {
+    const layered = this.addLayeredPanel(MODAL.x, MODAL.y, MODAL.width, MODAL.height)
+    const { left, top, nodes } = this.drawModalTitle(title, subtitle)
+    const dynamicNodes: Phaser.GameObjects.GameObject[] = []
+    const close = () => {
+      Object.values(layered).forEach((node) => node.destroy())
+      nodes.forEach((node) => node.destroy())
+      dynamicNodes.forEach((node) => node.destroy())
+    }
+    if (items.length === 0) {
+      const empty = this.add.text(MODAL.x, top + MODAL.gridOffsetY, '当前没有可选项目。', {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '20px',
+        color: '#f8ecd0',
+      }).setOrigin(0.5)
+      this.overlayLayer.add(empty)
+      dynamicNodes.push(empty)
+    }
+    items.forEach((item, index) => {
+      const { x, y } = this.modalGridPosition(index, left, top)
+      const button = this.makeModalOptionButton(x, y, item.label, () => {
+        close()
+        item.onSelect()
+      })
+      dynamicNodes.push(button)
+      if (item.detail) {
+        const detail = this.add.text(x, y + 35, item.detail, {
+          fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+          fontSize: '14px',
+          color: '#ead7b3',
+          align: 'center',
+          wordWrap: { width: MODAL.colWidth - 34 },
+        }).setOrigin(0.5)
+        this.overlayLayer.add(detail)
+        dynamicNodes.push(detail)
+      }
+    })
+    const actionItems = actions ?? [{ label: cancelLabel, onSelect: onCancel }]
+    actionItems.forEach((action, index) => {
+      const button = this.makeModalActionButton(this.modalActionX(index, actionItems.length), top + MODAL.actionOffsetY, action.label, () => {
+      close()
+        action.onSelect()
+      })
+      dynamicNodes.push(button)
+    })
+  }
+
   private showCommandPanel(title: string, items: [string, () => void][]) {
     const layered = this.addLayeredPanel(MODAL.x, MODAL.y, MODAL.width, MODAL.height)
     const { left, top, nodes } = this.drawModalTitle(`${title}命令  ｜  ${this.selectedCity?.name ?? '未选'}城`)
     const buttons: Phaser.GameObjects.Text[] = []
     items.forEach(([label, callback], index) => {
       const { x, y } = this.modalGridPosition(index, left, top)
-      const button = this.makeButton(x, y, label, () => {
+      const button = this.makeModalOptionButton(x, y, label, () => {
         Object.values(layered).forEach((node) => node.destroy())
         nodes.forEach((node) => node.destroy())
         buttons.forEach((item) => item.destroy())
         callback()
-      }, this.overlayLayer, MODAL.optionWidth, 44)
+      })
       buttons.push(button)
     })
-    const close = this.makeButton(MODAL.x, top + MODAL.actionOffsetY, '取消', () => {
+    const close = this.makeModalActionButton(MODAL.x, top + MODAL.actionOffsetY, '取消', () => {
       Object.values(layered).forEach((node) => node.destroy())
       nodes.forEach((node) => node.destroy())
       buttons.forEach((item) => item.destroy())
       this.showCampaign()
-    }, this.overlayLayer, 110, 38)
+    })
     buttons.push(close)
   }
 
@@ -2121,14 +2160,14 @@ class KingdomsScene extends Phaser.Scene {
     }).setOrigin(0.5)
     const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), ...titleNodes, body, hint]
     const close = () => nodes.forEach((node) => node.destroy())
-    const cancel = this.makeButton(540, top + MODAL.actionOffsetY, '取消', () => {
+    const cancel = this.makeModalActionButton(this.modalActionX(0, 2), top + MODAL.actionOffsetY, '取消', () => {
       close()
       config.onCancel?.()
-    }, this.overlayLayer, 136, 40)
-    const confirm = this.makeButton(740, top + MODAL.actionOffsetY, '确认', () => {
+    })
+    const confirm = this.makeModalActionButton(this.modalActionX(1, 2), top + MODAL.actionOffsetY, '确认', () => {
       close()
       config.onConfirm()
-    }, this.overlayLayer, 136, 40)
+    })
     nodes.push(cancel, confirm)
     this.overlayLayer.add(nodes)
   }
@@ -2136,69 +2175,38 @@ class KingdomsScene extends Phaser.Scene {
   private showCityPolicyActorSelection(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta) {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 342)
-    this.overlayLayer.add(this.add.text(274, 264, `${category}｜${command}：选择发起城`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, '此命令以城池为发起方和目标，确认前必须明确是哪一座城执行。', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
-    cities.forEach((city, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
-      this.makeButton(x, y, city.name, () => {
+    this.showModalGrid(
+      `${category}｜${command}：选择发起城`,
+      '此命令以城池为发起方和目标，确认前必须明确是哪一座城执行。',
+      cities.map((city) => ({
+        label: city.name,
+        detail: `金${city.gold} 粮${city.food} 兵${city.troops} 防${city.defense}`,
+        onSelect: () => {
         this.selectedCityId = city.id
         this.focusedCityId = city.id
         this.syncSelectedCityState()
         this.confirmCityPolicy(category, command, target, message, effect, delta, city, () => this.showCityPolicyActorSelection(category, command, target, message, effect, delta))
-      }, this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `金${city.gold} 粮${city.food} 兵${city.troops} 防${city.defense}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeButton(640, 606, '取消', () => {
+        },
+      })),
+      () => {
       this.showCampaign()
       if (category === '军事') this.showMilitaryCommand()
       else this.showDomesticCommand()
-    }, this.overlayLayer, 130, 38)
+      },
+    )
   }
 
   private showTaxActorSelection() {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 342)
-    this.overlayLayer.add(this.add.text(274, 264, '内政｜税率：选择发起城', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, '税率是持续政令，会在月令收入中生效；确认前必须明确执行城。', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
-    cities.forEach((city, index) => {
+    this.showModalGrid('内政｜税率：选择发起城', '税率是持续政令，会在月令收入中生效；确认前必须明确执行城。', cities.map((city) => {
       const current = taxRateConfig(this.cityTaxRates.get(city.id) ?? 'normal')
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
-      this.makeButton(x, y, city.name, () => this.showTaxRateSelection(city), this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `${current.label}｜金${city.gold} 民心${this.cityState.publicOrder}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeButton(640, 606, '取消', () => this.showDomesticCommand(), this.overlayLayer, 130, 38)
+      return {
+        label: city.name,
+        detail: `${current.label}｜金${city.gold} 民心${this.cityState.publicOrder}`,
+        onSelect: () => this.showTaxRateSelection(city),
+      }
+    }), () => this.showDomesticCommand())
   }
 
   private showTaxRateSelection(city: StrategyCity) {
@@ -2221,15 +2229,15 @@ class KingdomsScene extends Phaser.Scene {
       const config = taxRateConfig(rate)
       const selected = (this.cityTaxRates.get(city.id) ?? 'normal') === rate
       const x = 456 + index * 184
-      this.makeButton(x, 430, selected ? `${config.label}✓` : config.label, () => this.confirmTaxRate(city, rate), this.overlayLayer, 142, 40)
+      this.makeModalOptionButton(x, 430, selected ? `${config.label}✓` : config.label, () => this.confirmTaxRate(city, rate), 142)
       this.overlayLayer.add(this.add.text(x, 468, `收入x${config.goldMultiplier.toFixed(1)}｜民心${config.publicOrderDelta >= 0 ? '+' : ''}${config.publicOrderDelta}/月`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '14px',
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(540, 566, '重选发起城', () => this.showTaxActorSelection(), this.overlayLayer, 150, 38)
-    this.makeButton(740, 566, '取消', () => this.showDomesticCommand(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 2), 566, '重选发起城', () => this.showTaxActorSelection())
+    this.makeModalActionButton(this.modalActionX(1, 2), 566, '取消', () => this.showDomesticCommand())
   }
 
   private confirmTaxRate(city: StrategyCity, rate: TaxRate) {
@@ -2286,50 +2294,30 @@ class KingdomsScene extends Phaser.Scene {
   private showIntelActorSelection(category: IntelCommandCategory) {
     const cities = this.controlledCities().filter((city) => this.intelTargetsFrom(city, category).length > 0)
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 342)
-    this.overlayLayer.add(this.add.text(274, 264, `${category}｜情报：选择发起城`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, category === '军事'
+    this.showModalGrid(
+      `${category}｜情报：选择发起城`,
+      category === '军事'
       ? '军事情报先确定斥候出发城，再选择邻接敌城。'
       : '内政情报先确定发起城，再选择本城或邻接城池查看。',
-    {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
-    if (cities.length === 0) {
-      this.overlayLayer.add(this.add.text(640, 414, '当前没有可侦察目标。', {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '20px',
-        color: '#f8ecd0',
-      }).setOrigin(0.5))
-    }
-    cities.forEach((city, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
+      cities.map((city) => {
       const targets = this.intelTargetsFrom(city, category)
-      this.makeButton(x, y, city.name, () => {
+        return {
+          label: city.name,
+          detail: `目标${targets.length}｜情报${this.councilState.intel}`,
+          onSelect: () => {
         this.selectedCityId = city.id
         this.focusedCityId = city.id
         this.syncSelectedCityState()
         this.showIntelTargetSelection(category, city)
-      }, this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `目标${targets.length}｜情报${this.councilState.intel}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeButton(640, 606, '取消', () => {
+          },
+        }
+      }),
+      () => {
       this.showCampaign()
       if (category === '军事') this.showMilitaryCommand()
       else this.showDomesticCommand()
-    }, this.overlayLayer, 130, 38)
+      },
+    )
   }
 
   private showIntelTargetSelection(category: IntelCommandCategory, actorCity: StrategyCity) {
@@ -2338,32 +2326,24 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 342)
-    this.overlayLayer.add(this.add.text(274, 264, `${category}｜情报：选择目标`, {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, `发起方：${actorCity.name}${category === '军事' ? '斥候' : '军师府'}`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
-    targets.forEach((city, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
+    this.showModalGrid(
+      `${category}｜情报：选择目标`,
+      `发起方：${actorCity.name}${category === '军事' ? '斥候' : '军师府'}`,
+      targets.map((city) => {
       const owner = factionById(city.owner)
-      this.makeButton(x, y, city.id === actorCity.id ? `${city.name}本城` : city.name, () => this.confirmIntelCommand(category, actorCity, city), this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `${owner?.name ?? '-'}｜兵${city.troops} 防${city.defense}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeButton(540, 606, '重选发起城', () => this.showIntelActorSelection(category), this.overlayLayer, 150, 38)
-    this.makeButton(740, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+        return {
+          label: city.id === actorCity.id ? `${city.name}本城` : city.name,
+          detail: `${owner?.name ?? '-'}｜兵${city.troops} 防${city.defense}`,
+          onSelect: () => this.confirmIntelCommand(category, actorCity, city),
+        }
+      }),
+      () => this.showCampaign(),
+      '取消',
+      [
+        { label: '重选发起城', onSelect: () => this.showIntelActorSelection(category) },
+        { label: '取消', onSelect: () => this.showCampaign() },
+      ],
+    )
   }
 
   private intelTargetsFrom(actorCity: StrategyCity, category: IntelCommandCategory) {
@@ -2446,39 +2426,22 @@ class KingdomsScene extends Phaser.Scene {
   private showEducationActorSelection() {
     const cities = this.controlledCities()
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 342)
-    this.overlayLayer.add(this.add.text(274, 264, '内政｜教育：选择发起城', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, '教育命令先确定讲堂所在城，再选择本城武将或本城吏士。', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
-    cities.forEach((city, index) => {
-      const col = index % 3
-      const row = Math.floor(index / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
+    this.showModalGrid('内政｜教育：选择发起城', '教育命令先确定讲堂所在城，再选择本城武将或本城吏士。', cities.map((city) => {
       const officers = this.officersInCity(city.id)
-      this.makeButton(x, y, city.name, () => {
+      return {
+        label: city.name,
+        detail: `武将${officers.length}｜金${city.gold} 情报${this.councilState.intel}`,
+        onSelect: () => {
         this.selectedCityId = city.id
         this.focusedCityId = city.id
         this.syncSelectedCityState()
         this.showEducationTargetSelection(city)
-      }, this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `武将${officers.length}｜金${city.gold} 情报${this.councilState.intel}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeButton(640, 606, '取消', () => {
+        },
+      }
+    }), () => {
       this.showCampaign()
       this.showDomesticCommand()
-    }, this.overlayLayer, 130, 38)
+    })
   }
 
   private showEducationTargetSelection(actorCity: StrategyCity) {
@@ -2487,38 +2450,24 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
     this.showCampaign()
-    this.addLayeredPanel(640, 402, 820, 350)
-    this.overlayLayer.add(this.add.text(274, 264, '内政｜教育：选择目标', {
-      fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '32px',
-      color: '#f8df9d',
-    }))
-    this.overlayLayer.add(this.add.text(292, 316, `${actorCity.name}讲堂发起教育`, {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
-      color: '#ead7b3',
-    }))
-    this.makeButton(410, 398, '本城吏士', () => this.confirmEducation(actorCity), this.overlayLayer, 168, 40)
-    this.overlayLayer.add(this.add.text(410, 433, '情报 +4｜士气 +2', {
-      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '14px',
-      color: '#ead7b3',
-    }).setOrigin(0.5))
-    officers.forEach((officer, index) => {
-      const adjusted = index + 1
-      const col = adjusted % 3
-      const row = Math.floor(adjusted / 3)
-      const x = 410 + col * 230
-      const y = 398 + row * 82
-      this.makeButton(x, y, officer.name, () => this.confirmEducation(actorCity, officer), this.overlayLayer, 168, 40)
-      this.overlayLayer.add(this.add.text(x, y + 35, `智${officer.intel} 政${officer.gov} 忠${officer.loyalty}`, {
-        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
-        color: '#ead7b3',
-      }).setOrigin(0.5))
-    })
-    this.makeButton(540, 606, '重选发起城', () => this.showEducationActorSelection(), this.overlayLayer, 150, 38)
-    this.makeButton(740, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.showModalGrid(
+      '内政｜教育：选择目标',
+      `${actorCity.name}讲堂发起教育`,
+      [
+        { label: '本城吏士', detail: '情报 +4｜士气 +2', onSelect: () => this.confirmEducation(actorCity) },
+        ...officers.map((officer) => ({
+          label: officer.name,
+          detail: `智${officer.intel} 政${officer.gov} 忠${officer.loyalty}`,
+          onSelect: () => this.confirmEducation(actorCity, officer),
+        })),
+      ],
+      () => this.showCampaign(),
+      '取消',
+      [
+        { label: '重选发起城', onSelect: () => this.showEducationActorSelection() },
+        { label: '取消', onSelect: () => this.showCampaign() },
+      ],
+    )
   }
 
   private confirmEducation(actorCity: StrategyCity, officer?: StrategyOfficer) {
@@ -2650,8 +2599,8 @@ class KingdomsScene extends Phaser.Scene {
         color: '#bda982',
       }).setOrigin(0.5))
     }
-    this.makeButton(540, 586, '重选发起城', () => this.showTransportActorSelection(), this.overlayLayer, 150, 38)
-    this.makeButton(740, 586, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 2), 586, '重选发起城', () => this.showTransportActorSelection())
+    this.makeModalActionButton(this.modalActionX(1, 2), 586, '取消', () => this.showCampaign())
   }
 
   private showTransportAmountSelection(target: TransportTarget, actorCity: StrategyCity) {
@@ -2684,8 +2633,8 @@ class KingdomsScene extends Phaser.Scene {
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(540, 586, '重选目标', () => this.showTransportTargetSelection(city), this.overlayLayer, 150, 38)
-    this.makeButton(740, 586, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 2), 586, '重选目标', () => this.showTransportTargetSelection(city))
+    this.makeModalActionButton(this.modalActionX(1, 2), 586, '取消', () => this.showCampaign())
   }
 
   private confirmTransportTarget(target: TransportTarget, actorCity: StrategyCity, amount: TransportAmount) {
@@ -3481,7 +3430,7 @@ class KingdomsScene extends Phaser.Scene {
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(640, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(MODAL.x, 606, '取消', () => this.showCampaign())
   }
 
   private showAppointmentRoleSelection(actorCity: StrategyCity) {
@@ -3504,8 +3453,8 @@ class KingdomsScene extends Phaser.Scene {
     roles.forEach(([role, label], index) => {
       this.makeButton(456 + index * 184, 430, label, () => this.showAppointmentSelection(role, actorCity), this.overlayLayer, 142, 40)
     })
-    this.makeButton(540, 566, '重选发起城', () => this.showAppointmentActorSelection(), this.overlayLayer, 150, 38)
-    this.makeButton(740, 566, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 2), 566, '重选发起城', () => this.showAppointmentActorSelection())
+    this.makeModalActionButton(this.modalActionX(1, 2), 566, '取消', () => this.showCampaign())
   }
 
   private showAppointmentSelection(role: keyof typeof this.appointments, actorCity = this.selectedCity) {
@@ -3538,9 +3487,9 @@ class KingdomsScene extends Phaser.Scene {
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(440, 548, '重选职位', () => this.showAppointmentRoleSelection(city), this.overlayLayer, 150, 38)
-    this.makeButton(610, 548, '重选发起城', () => this.showAppointmentActorSelection(role), this.overlayLayer, 150, 38)
-    this.makeButton(780, 548, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 3), 548, '重选职位', () => this.showAppointmentRoleSelection(city))
+    this.makeModalActionButton(this.modalActionX(1, 3), 548, '重选发起城', () => this.showAppointmentActorSelection(role))
+    this.makeModalActionButton(this.modalActionX(2, 3), 548, '取消', () => this.showCampaign())
   }
 
   private confirmAppointment(role: keyof typeof this.appointments, officer: StrategyOfficer, actorCity: StrategyCity) {
@@ -3641,7 +3590,7 @@ class KingdomsScene extends Phaser.Scene {
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(640, 606, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(MODAL.x, 606, '取消', () => this.showCampaign())
   }
 
   private showMoveKindSelection(actorCity: StrategyCity) {
@@ -3683,8 +3632,8 @@ class KingdomsScene extends Phaser.Scene {
         color: enabled ? '#ead7b3' : '#8a7b65',
       }).setOrigin(0.5))
     })
-    this.makeButton(540, 594, '重选发起城', () => this.showMoveActorSelection(), this.overlayLayer, 150, 38)
-    this.makeButton(740, 594, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 2), 594, '重选发起城', () => this.showMoveActorSelection())
+    this.makeModalActionButton(this.modalActionX(1, 2), 594, '取消', () => this.showCampaign())
   }
 
   private showMoveOfficerSelection(actorCity: StrategyCity, officerId: string, destinationId: CityId) {
@@ -3727,9 +3676,9 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '20px',
       color: '#f7ecd5',
     }).setOrigin(0.5))
-    this.makeButton(440, 594, '重选对象', () => this.showMoveKindSelection(actorCity), this.overlayLayer, 150, 38)
-    this.makeButton(610, 594, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
-    this.makeButton(780, 594, '确认', () => this.confirmMoveOfficer(actorCity, officer, destination), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 3), 594, '重选对象', () => this.showMoveKindSelection(actorCity))
+    this.makeModalActionButton(this.modalActionX(1, 3), 594, '取消', () => this.showCampaign())
+    this.makeModalActionButton(this.modalActionX(2, 3), 594, '确认', () => this.confirmMoveOfficer(actorCity, officer, destination))
   }
 
   private confirmMoveOfficer(actorCity: StrategyCity, officer: StrategyOfficer, destination: StrategyCity) {
@@ -3797,9 +3746,9 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '20px',
       color: '#f7ecd5',
     }).setOrigin(0.5))
-    this.makeButton(440, 594, '重选对象', () => this.showMoveKindSelection(city), this.overlayLayer, 150, 38)
-    this.makeButton(610, 594, '取消', () => this.showCampaign(), this.overlayLayer, 130, 38)
-    this.makeButton(780, 594, '确认', () => this.confirmMoveResource(city, destination, kind, amount), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 3), 594, '重选对象', () => this.showMoveKindSelection(city))
+    this.makeModalActionButton(this.modalActionX(1, 3), 594, '取消', () => this.showCampaign())
+    this.makeModalActionButton(this.modalActionX(2, 3), 594, '确认', () => this.confirmMoveResource(city, destination, kind, amount))
   }
 
   private confirmMoveResource(actorCity: StrategyCity, destination: StrategyCity, kind: MoveResourceKind, amount: TransportAmount) {
@@ -4211,7 +4160,7 @@ class KingdomsScene extends Phaser.Scene {
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(640, top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(MODAL.x, top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy())
   }
 
   private showDiplomacyTargetSelection(kind: DiplomacyCommandKind, actor: StrategyCity) {
@@ -4240,7 +4189,7 @@ class KingdomsScene extends Phaser.Scene {
         const cityNames = targets.filter((city) => city.owner === faction.id).map((city) => city.name).join('、')
         const status = this.diplomacyFactionStatus(kind, faction.id)
         const { x, y } = this.modalGridPosition(index, left, top)
-        this.makeButton(x, y, faction.ruler, () => this.confirmDiplomacyAction(kind, actor, faction), this.overlayLayer, 168, 40)
+        this.makeModalOptionButton(x, y, faction.ruler, () => this.confirmDiplomacyAction(kind, actor, faction))
         this.overlayLayer.add(this.add.text(x, y + 35, `${faction.name}｜${status || `邻城 ${cityNames}`}`, {
           fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
           fontSize: '14px',
@@ -4251,13 +4200,13 @@ class KingdomsScene extends Phaser.Scene {
       targets.forEach((city, index) => {
         const faction = factionById(city.owner)
         const { x, y } = this.modalGridPosition(index, left, top)
-        this.makeButton(x, y, city.name, () => {
+        this.makeModalOptionButton(x, y, city.name, () => {
           if (kind === 'sabotage' || kind === 'assassination') {
             this.showDiplomacyOfficerTargetSelection(kind, actor, city)
             return
           }
           this.confirmDiplomacyAction(kind, actor, city)
-        }, this.overlayLayer, 168, 40)
+        })
         this.overlayLayer.add(this.add.text(x, y + 35, `${faction?.ruler ?? '敌将'}｜兵${city.troops} 防${city.defense}`, {
           fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
           fontSize: '14px',
@@ -4265,8 +4214,8 @@ class KingdomsScene extends Phaser.Scene {
         }).setOrigin(0.5))
       })
     }
-    this.makeButton(540, top + MODAL.actionOffsetY, '重选发起方', () => this.showDiplomacyActorSelection(kind), this.overlayLayer, 150, 38)
-    this.makeButton(740, top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 2), top + MODAL.actionOffsetY, '重选发起方', () => this.showDiplomacyActorSelection(kind))
+    this.makeModalActionButton(this.modalActionX(1, 2), top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy())
   }
 
   private confirmDiplomacyAction(kind: DiplomacyCommandKind, actor: StrategyCity, target: StrategyCity | StrategyFaction) {
@@ -4311,15 +4260,15 @@ class KingdomsScene extends Phaser.Scene {
     }
     officers.forEach((officer, index) => {
       const { x, y } = this.modalGridPosition(index, left, top)
-      this.makeButton(x, y, officer.name, () => this.confirmDiplomacyOfficerAction(kind, actor, targetCity, officer), this.overlayLayer, 168, 40)
+      this.makeModalOptionButton(x, y, officer.name, () => this.confirmDiplomacyOfficerAction(kind, actor, targetCity, officer))
       this.overlayLayer.add(this.add.text(x, y + 35, `忠${officer.loyalty} 智${officer.intel} 兵${officerTroops(officer)}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '14px',
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
-    this.makeButton(540, top + MODAL.actionOffsetY, '重选敌城', () => this.showDiplomacyTargetSelection(kind, actor), this.overlayLayer, 150, 38)
-    this.makeButton(740, top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy(), this.overlayLayer, 130, 38)
+    this.makeModalActionButton(this.modalActionX(0, 2), top + MODAL.actionOffsetY, '重选敌城', () => this.showDiplomacyTargetSelection(kind, actor))
+    this.makeModalActionButton(this.modalActionX(1, 2), top + MODAL.actionOffsetY, '取消', () => this.showDiplomacy())
   }
 
   private confirmDiplomacyOfficerAction(kind: 'sabotage' | 'assassination', actor: StrategyCity, targetCity: StrategyCity, officer: StrategyOfficer) {
