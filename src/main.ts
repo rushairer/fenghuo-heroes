@@ -152,7 +152,9 @@ type SiegeState = {
   defenderCityId: CityId
   wallHp: number
   defenderTroops: number
+  defenderMorale: number
   attackerTroops: number
+  surroundTurns: number
   turns: number
   lastAction?: 'assault' | 'surround' | 'fire' | 'challenge' | 'fieldBattle' | 'retreat'
 }
@@ -1439,7 +1441,9 @@ class KingdomsScene extends Phaser.Scene {
       defenderCityId: target.id,
       wallHp: target.defense,
       defenderTroops: target.troops,
+      defenderMorale: Phaser.Math.Clamp(42 + Math.floor(target.defense / 3) + Math.floor(target.troops / 900), 28, 88),
       attackerTroops: this.marchArmy.troops,
+      surroundTurns: 0,
       turns: 1,
     }
     this.showSiege()
@@ -1477,12 +1481,14 @@ class KingdomsScene extends Phaser.Scene {
       ['兵力', `${this.siegeState.attackerTroops}`],
       ['粮草', `${this.marchArmy.food}`],
       ['士气', `${this.marchArmy.morale}`],
+      ['围城', `${this.siegeState.surroundTurns}合`],
     ]
     const defenderRows: [string, string][] = [
       ['城池', city.name],
       ['归属', factionById(city.owner)?.name ?? '-'],
       ['城防', `${this.siegeState.wallHp}/${city.defense}`],
       ['守军', `${this.siegeState.defenderTroops}`],
+      ['士气', `${this.siegeState.defenderMorale}`],
       ['府库', `${city.gold}`],
       ['存粮', `${city.food}`],
     ]
@@ -1540,7 +1546,7 @@ class KingdomsScene extends Phaser.Scene {
     if (!city) return
     const config = {
       assault: { command: '强攻', target: `${city.name}城门与守军`, scope: '攻城正面', effect: '城防下降｜敌我均有兵损｜随军粮 -5' },
-      surround: { command: '围城', target: `${city.name}守城军粮道`, scope: '城外包围', effect: '守军损耗｜我军粮 -7｜士气 -1' },
+      surround: { command: '围城', target: `${city.name}守城军粮道`, scope: '城外包围', effect: '推进围城回合｜敌粮与士气下降｜我军粮 -7' },
       fire: { command: '火计', target: `${city.name}城内粮仓`, scope: '敌城营寨', effect: '消耗情报，成功则烧粮并降城防' },
       challenge: { command: '挑战', target: `${city.name}守城主将`, scope: '阵前单挑', effect: '进入单挑，胜负回写攻城士气和兵力' },
       fieldBattle: { command: '会战', target: `${city.name}守城军`, scope: '城外战场', effect: '进入会战分支，结果回写攻城态势' },
@@ -1589,11 +1595,17 @@ class KingdomsScene extends Phaser.Scene {
       this.marchArmy.food = Math.max(0, this.marchArmy.food - 5)
       message = `强攻城门，城防 -${wallDamage}，守军 -${defenderLoss}，我军 -${attackerLoss}。`
     } else if (action === 'surround') {
-      const defenderLoss = 260 + Math.floor(this.councilState.intel * 3)
+      this.siegeState.surroundTurns += 1
+      const pressure = this.siegeState.surroundTurns
+      const foodLoss = Math.min(city.food, 120 + pressure * 46 + Math.floor(this.councilState.intel * 1.5))
+      const moraleLoss = 6 + pressure * 2 + (city.food <= 260 ? 4 : 0)
+      const defenderLoss = 180 + pressure * 80 + Math.floor(this.councilState.intel * 2) + (city.food <= 260 ? 160 : 0)
+      city.food = Math.max(0, city.food - foodLoss)
       this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
+      this.siegeState.defenderMorale = Math.max(0, this.siegeState.defenderMorale - moraleLoss)
       this.marchArmy.food = Math.max(0, this.marchArmy.food - 7)
       this.marchArmy.morale = Math.max(0, this.marchArmy.morale - 1)
-      message = `围城断援，守军 -${defenderLoss}，我军粮草 -7。`
+      message = `围城第${this.siegeState.surroundTurns}合，敌粮 -${foodLoss}，守军 -${defenderLoss}，守军士气 -${moraleLoss}。`
     } else if (action === 'fire') {
       if (this.councilState.intel < 18) {
         this.marchArmy.food = Math.max(0, this.marchArmy.food - 3)
@@ -1609,7 +1621,11 @@ class KingdomsScene extends Phaser.Scene {
       }
     }
     this.siegeState.turns += 1
-    if (this.siegeState.wallHp <= 0 || this.siegeState.defenderTroops <= Math.max(500, Math.floor(city.troops * 0.18))) {
+    if (
+      this.siegeState.wallHp <= 0
+      || this.siegeState.defenderTroops <= Math.max(500, Math.floor(city.troops * 0.18))
+      || (action === 'surround' && this.siegeState.surroundTurns >= 2 && (this.siegeState.defenderMorale <= 12 || city.food <= 0))
+    ) {
       this.completeSiegeVictory()
       return
     }
@@ -1686,6 +1702,7 @@ class KingdomsScene extends Phaser.Scene {
       ['守城', city.name],
       ['城防', `${this.siegeState.wallHp}/${city.defense}`],
       ['守军', `${this.siegeState.defenderTroops}`],
+      ['士气', `${this.siegeState.defenderMorale}`],
       ['敌势', `${this.campaignClock.enemyThreat}`],
     ]
     this.drawListViewport(620, 434, 520, 98, '会战预估')
