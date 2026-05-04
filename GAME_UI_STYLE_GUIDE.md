@@ -21,6 +21,7 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Footer command bars occupy y 584-706.
 - Modal masks must cover the full canvas with at least 0.48 opacity.
 - Modal panels must not include extra decorative bands unless they carry readable text.
+- Modal action buttons always belong inside the current panel. Secondary and tertiary layers must not place cancel/back/confirm controls outside the panel border.
 - Repeated command choices use a 3-column grid, 168 x 40 buttons, 82 px row pitch.
 - Button labels include fixed shortcut letters only in persistent footer commands.
 

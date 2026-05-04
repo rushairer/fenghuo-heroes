@@ -947,29 +947,36 @@ class KingdomsScene extends Phaser.Scene {
       .map((id) => this.campaignOfficers.find((officer) => officer.id === id))
       .filter((officer): officer is StrategyOfficer => Boolean(officer))
       .map((officer) => `${officer.name} 兵${this.marchArmy?.officerTroops[officer.id] ?? officerTroops(officer)} 粮${this.marchArmy?.officerFood[officer.id] ?? 0} 武${officerWeapons(officer)} 训${officerTraining(officer)}`)
-    this.addLayeredPanel(640, 414, 720, 300)
-    this.overlayLayer.add(this.add.text(640, 338, '远征军', {
+    this.addLayeredPanel(640, 404, 820, 390)
+    this.overlayLayer.add(this.add.text(640, 248, '远征军', {
       fontFamily: 'Georgia, "Times New Roman", serif',
       fontSize: '38px',
       color: '#f8df9d',
     }).setOrigin(0.5))
-    const copy = [
+    const summary = [
       `出发城    ${cityName(this.marchArmy.sourceCityId)}`,
       `目标城    ${target}`,
       `位置      ${position}`,
       `兵粮      兵${this.marchArmy.troops}  粮${this.marchArmy.food}  士气${this.marchArmy.morale}`,
       `主将      ${this.officerName(this.marchArmy.leaderOfficerId)}`,
-      `随军      ${officerLines.length > 0 ? '' : this.marchArmy.officerIds.map((id) => this.officerName(id)).join('、')}`,
-      ...officerLines.map((line) => `          ${line}`),
       `状态      ${marchStatusName(this.marchArmy.status)}  移动${this.marchArmy.movePoints}`,
     ].join('\n')
-    this.overlayLayer.add(this.add.text(398, 382, copy, {
+    this.overlayLayer.add(this.add.text(300, 306, summary, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '22px',
       color: '#f8ecd0',
       lineSpacing: 10,
-      wordWrap: { width: 610 },
+      wordWrap: { width: 350 },
     }))
+    this.overlayLayer.add(this.add.text(716, 306, ['随军', ...(officerLines.length > 0 ? officerLines : this.marchArmy.officerIds.map((id) => this.officerName(id)))].join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f8ecd0',
+      lineSpacing: 12,
+      wordWrap: { width: 340 },
+    }))
+    this.makeButton(540, 594, '路线', () => this.showMarchRoute(), this.overlayLayer, 136, 40)
+    this.makeButton(740, 594, '返回行军', () => this.showCampaign(), this.overlayLayer, 150, 40)
   }
 
   private showMarchRoute() {
@@ -1000,19 +1007,25 @@ class KingdomsScene extends Phaser.Scene {
       `当前位置      ${this.describeMarchPosition(this.marchArmy)}`,
       `下一节点      ${nextNode ? cityName(nextNode) : '已抵达'}`,
       `状态          ${marchStatusName(this.marchArmy.status)}`,
-      this.marchArmy.status === 'ready' ? '未移动前可改目标。' : '远征军已出发，本月不能改线。',
     ].join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '21px',
       color: '#f8ecd0',
       lineSpacing: 10,
     }))
+    this.overlayLayer.add(this.add.text(640, 486, this.marchArmy.status === 'ready' ? '未移动前可改目标。' : '远征军已出发，本月不能改线。', {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+    }).setOrigin(0.5))
     if (this.marchArmy.status === 'ready') {
       targets.forEach((city, index) => {
         const x = 420 + index * 148
         this.makeButton(x, 526, city.id === this.marchArmy?.targetCityId ? `${city.name}✓` : city.name, () => this.confirmMarchRoute(city), this.overlayLayer, 126, 36)
       })
     }
+    this.makeButton(540, 594, '部队', () => this.showMarchArmyStatus(), this.overlayLayer, 136, 40)
+    this.makeButton(740, 594, '返回行军', () => this.showCampaign(), this.overlayLayer, 150, 40)
   }
 
   private confirmMarchRoute(target: StrategyCity) {
@@ -1934,10 +1947,11 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private addLayeredPanel(x: number, y: number, width: number, height: number, layer = this.overlayLayer) {
+    const effectiveHeight = y >= 390 && y <= 424 && height >= 300 ? Math.max(height, 470) : height
     const veil = this.add.rectangle(640, 380, CANVAS_W, CANVAS_H, UI.shadow, 0.68)
-    const shadow = this.add.rectangle(x + 10, y + 12, width, height, 0x000000, 0.34)
-    const panel = this.add.rectangle(x, y, width, height, UI.panel, 0.978).setStrokeStyle(3, UI.border, 0.92)
-    const topShade = this.add.rectangle(x, y - height / 2 + 26, width - 52, 30, 0x2a1b12, 0)
+    const shadow = this.add.rectangle(x + 10, y + 12, width, effectiveHeight, 0x000000, 0.34)
+    const panel = this.add.rectangle(x, y, width, effectiveHeight, UI.panel, 0.978).setStrokeStyle(3, UI.border, 0.92)
+    const topShade = this.add.rectangle(x, y - effectiveHeight / 2 + 26, width - 52, 30, 0x2a1b12, 0)
     layer.add([veil, shadow, panel, topShade])
     return { veil, shadow, panel, topShade }
   }
@@ -1996,16 +2010,17 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '32px',
       color: '#f8df9d',
     })
-    const body = this.add.text(334, 346, [
-      `发起方    ${config.actor}`,
-      `目标      ${config.target}`,
-      `范围      ${config.scope}`,
-      `效果      ${config.effect}`,
-    ].join('\n'), {
+    const bodyLines = [
+      ...modalInfoLines('发起方', config.actor, 28),
+      ...modalInfoLines('目标', config.target, 28),
+      ...modalInfoLines('范围', config.scope, 28),
+      ...modalInfoLines('效果', config.effect, 30),
+    ]
+    const body = this.add.text(334, 346, bodyLines.join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '21px',
+      fontSize: '20px',
       color: '#f8ecd0',
-      lineSpacing: 10,
+      lineSpacing: 8,
       wordWrap: { width: 620 },
     })
     const hint = this.add.text(640, 558, config.hint ?? '确认后消耗政令并执行命令', {
@@ -3646,9 +3661,9 @@ class KingdomsScene extends Phaser.Scene {
     ]
     this.overlayLayer.add(this.add.text(122, 230, lines.join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-      fontSize: '18px',
+      fontSize: '17px',
       color: '#f8ecd0',
-      lineSpacing: 7,
+      lineSpacing: 4,
     }))
     const foodOptions: [string, number][] = [
       ['最低', supplyNeed],
@@ -3657,7 +3672,7 @@ class KingdomsScene extends Phaser.Scene {
     ]
     foodOptions.forEach(([label, amount], index) => {
       const capped = Math.min(this.councilState.supplies, amount)
-      this.makeButton(160 + index * 112, 526, `${label}${capped}`, () => {
+      this.makeButton(160 + index * 112, 532, `${label}${capped}`, () => {
         this.deploymentFood = capped
         this.showDeployment()
       }, this.overlayLayer, 96, 34)
@@ -3679,7 +3694,7 @@ class KingdomsScene extends Phaser.Scene {
       if (!unit || !unitId) return
       const x = 590 + (index % 2) * 294
       const y = 238 + Math.floor(index / 2) * 138
-      this.overlayLayer.add(this.add.rectangle(x, y, 250, 104, 0x21160f, 0.92).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
+      this.overlayLayer.add(this.add.rectangle(x, y, 260, 110, 0x21160f, 0.92).setOrigin(0).setStrokeStyle(1, 0xd4af37, 0.65))
       const key = `portrait-${unit.id}`
       if (this.textures.exists(key)) {
         this.overlayLayer.add(this.add.image(x + 46, y + 52, key).setDisplaySize(64, 78))
@@ -3687,17 +3702,24 @@ class KingdomsScene extends Phaser.Scene {
       const roles = roleLabels(unit.id, this.appointments)
       const selected = this.deploymentOfficerIds.has(officer.id)
       const detail = manifest.get(officer.id)
-      this.makeButton(x + 190, y + 22, selected ? '随军✓' : '留守', () => this.toggleDeploymentOfficer(officer.id), this.overlayLayer, 86, 30)
-      this.overlayLayer.add(this.add.text(x + 92, y + 18, `${unit.name} ${roles}`, {
+      this.overlayLayer.add(this.add.text(x + 92, y + 16, unit.name, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '20px',
+        fontSize: '19px',
         color: '#f8df9d',
       }))
-      this.overlayLayer.add(this.add.text(x + 92, y + 50, `兵 ${officerTroops(officer)}  粮 ${detail?.food ?? 0}  武 ${officerWeapons(officer)}  训 ${officerTraining(officer)}`, {
+      this.overlayLayer.add(this.add.text(x + 92, y + 42, roles || '随军武将', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '17px',
-        color: '#f8ecd0',
+        fontSize: '14px',
+        color: '#d8c092',
+        wordWrap: { width: 148 },
       }))
+      this.overlayLayer.add(this.add.text(x + 92, y + 66, `兵${officerTroops(officer)} 粮${detail?.food ?? 0} 武${officerWeapons(officer)} 训${officerTraining(officer)}`, {
+        fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+        fontSize: '15px',
+        color: '#f8ecd0',
+        wordWrap: { width: 142 },
+      }))
+      this.makeButton(x + 202, y + 82, selected ? '随军✓' : '留守', () => this.toggleDeploymentOfficer(officer.id), this.overlayLayer, 86, 30)
     })
     if (officers.length === 0) {
       this.overlayLayer.add(this.add.text(872, 322, '本城暂无可出战武将。', {
@@ -3711,13 +3733,13 @@ class KingdomsScene extends Phaser.Scene {
 
   private drawDeploymentTargets() {
     const targets = this.availableDeploymentTargets()
-    this.overlayLayer.add(this.add.text(580, 468, '邻接目标', {
+    this.overlayLayer.add(this.add.text(580, 498, '邻接目标', {
       fontFamily: 'Georgia, "Times New Roman", serif',
-      fontSize: '28px',
+      fontSize: '24px',
       color: '#f5d487',
     }))
     if (targets.length === 0) {
-      this.overlayLayer.add(this.add.text(704, 476, '当前城池周边暂无可攻目标。', {
+      this.overlayLayer.add(this.add.text(704, 502, '当前城池周边暂无可攻目标。', {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
         fontSize: '18px',
         color: '#ead7b3',
@@ -3727,13 +3749,13 @@ class KingdomsScene extends Phaser.Scene {
     targets.forEach((city, index) => {
       const x = 690 + index * 156
       const selected = city.id === this.selectedTargetCityId
-      this.makeButton(x, 502, selected ? `${city.name}✓` : city.name, () => {
+      this.makeButton(x, 526, selected ? `${city.name}✓` : city.name, () => {
         this.selectedTargetCityId = city.id
         this.showDeployment()
       }, this.overlayLayer, 136, 36)
-      this.overlayLayer.add(this.add.text(x, 534, `${factionById(city.owner)?.name ?? '群雄'} 兵${city.troops}`, {
+      this.overlayLayer.add(this.add.text(x, 552, `${factionById(city.owner)?.name ?? '群雄'} 兵${city.troops}`, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '14px',
+        fontSize: '13px',
         color: '#ead7b3',
       }).setOrigin(0.5))
     })
@@ -5965,6 +5987,36 @@ function diplomacyName(kind: 'alliance' | 'scout' | 'sabotage' | 'persuade') {
     sabotage: '离间',
     persuade: '劝降',
   }[kind]
+}
+
+function modalInfoLines(label: string, value: string, limit: number) {
+  const chunks = wrapModalValue(value, limit)
+  return chunks.map((chunk, index) => `${index === 0 ? label.padEnd(4, '　') : '　　　　'}${chunk}`)
+}
+
+function wrapModalValue(value: string, limit: number) {
+  const parts = value.split('｜')
+  const lines: string[] = []
+  let line = ''
+  for (const part of parts) {
+    const token = line.length > 0 ? `｜${part}` : part
+    if ((line + token).length <= limit) {
+      line += token
+      continue
+    }
+    if (line) lines.push(line)
+    if (part.length <= limit) {
+      line = part
+      continue
+    }
+    for (let index = 0; index < part.length; index += limit) {
+      const chunk = part.slice(index, index + limit)
+      if (chunk.length === limit) lines.push(chunk)
+      else line = chunk
+    }
+  }
+  if (line) lines.push(line)
+  return lines.length > 0 ? lines : ['-']
 }
 
 const config: Phaser.Types.Core.GameConfig = {
