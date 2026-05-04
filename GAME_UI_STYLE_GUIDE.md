@@ -12,6 +12,7 @@ The game uses a restrained late-Han military dossier style: dark lacquer panels,
 - Modal command layers: full-screen dark mask, centered panel, title row, command grid, one cancel/back action.
 - Confirmation dialogs: dark mask, centered compact panel, structured actor/target/scope/effect rows, confirm/cancel pair.
 - Battle screens: top force summary, board left, status/action panel right, log footer.
+- Battle HUD top bars use three reserved zones: screen title, force summaries, and global actions. Global action buttons must never overlap force bars.
 - Siege screens: left status panels must use compact grouped stat blocks instead of long space-padded text. Attacker and defender data should be separated into fixed label/value columns inside the panel.
 - Field-battle preparation screens: show participating officers, defender status, formation options, and the selected formation effect before entering the tactical board. Formation choices must visibly affect battle stats or result writeback.
 

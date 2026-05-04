@@ -2960,11 +2960,11 @@ class KingdomsScene extends Phaser.Scene {
       '内政｜运输：选择目标',
       `${city.name}太守府发起运输，选择粮草去向`,
       [
-        { label: '远征粮仓', detail: '选择发运量', onSelect: () => this.showTransportAmountSelection('expedition', city) },
+        { label: '远征粮仓', detail: '只可发运粮草', onSelect: () => this.showTransportAmountSelection('expedition', city, 'food') },
         ...destinations.map((destination) => ({
           label: destination.name,
-          detail: '选择发运量',
-          onSelect: () => this.showTransportAmountSelection(destination.id, city),
+          detail: '可运粮/金/兵',
+          onSelect: () => this.showTransportResourceSelection(destination.id, city),
         })),
       ],
       () => this.showCampaign(),
@@ -2976,7 +2976,7 @@ class KingdomsScene extends Phaser.Scene {
     )
   }
 
-  private showTransportAmountSelection(target: TransportTarget, actorCity: StrategyCity) {
+  private showTransportResourceSelection(target: TransportTarget, actorCity: StrategyCity) {
     const city = actorCity
     const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
     const targetName = target === 'expedition' ? '远征粮仓' : targetCity?.name ?? '目标城'
@@ -2985,17 +2985,13 @@ class KingdomsScene extends Phaser.Scene {
     this.syncSelectedCityState()
     this.showCampaign()
     this.showModalGrid(
-      '内政｜运输：选择数量',
-      `${city.name} → ${targetName}，选择本次发运规模`,
-      (['small', 'medium', 'large'] as TransportAmount[]).map((amount) => {
-      const config = transportAmountConfig(amount)
-      const gain = target === 'expedition' ? config.expeditionGain : config.cityGain
-        return {
-          label: config.label,
-          detail: `发粮-${config.sourceFood}｜到粮+${gain}`,
-          onSelect: () => this.confirmTransportTarget(target, city, amount),
-        }
-      }),
+      '内政｜运输：选择资源',
+      `${city.name} → ${targetName}，选择本次运输对象`,
+      (['food', 'gold', 'troops'] as MoveResourceKind[]).map((kind) => ({
+        label: moveResourceName(kind),
+        detail: kind === 'troops' ? `可发${Math.max(0, city.troops - 500)}` : `可发${city[kind]}`,
+        onSelect: () => this.showTransportAmountSelection(target, city, kind),
+      })),
       () => this.showCampaign(),
       '取消',
       [
@@ -3005,9 +3001,40 @@ class KingdomsScene extends Phaser.Scene {
     )
   }
 
-  private confirmTransportTarget(target: TransportTarget, actorCity: StrategyCity, amount: TransportAmount) {
+  private showTransportAmountSelection(target: TransportTarget, actorCity: StrategyCity, kind: MoveResourceKind) {
     const city = actorCity
-    const config = transportAmountConfig(amount)
+    const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
+    const targetName = target === 'expedition' ? '远征粮仓' : targetCity?.name ?? '目标城'
+    this.selectedCityId = city.id
+    this.focusedCityId = targetCity?.id ?? city.id
+    this.syncSelectedCityState()
+    this.showCampaign()
+    this.showModalGrid(
+      '内政｜运输：选择数量',
+      `${city.name} → ${targetName}，选择${moveResourceName(kind)}发运规模`,
+      (['small', 'medium', 'large'] as TransportAmount[]).map((amount) => {
+      const config = target === 'expedition' ? transportAmountConfig(amount) : moveResourceConfig(kind, amount)
+      const sourceAmount = target === 'expedition' ? transportAmountConfig(amount).sourceFood : moveResourceConfig(kind, amount).amount
+      const gain = target === 'expedition' ? transportAmountConfig(amount).expeditionGain : transportCityGain(kind, amount)
+        return {
+          label: config.label,
+          detail: `发${moveResourceName(kind)}-${sourceAmount}｜到${moveResourceName(kind)}+${gain}`,
+          onSelect: () => this.confirmTransportTarget(target, city, amount, kind),
+        }
+      }),
+      () => this.showCampaign(),
+      '取消',
+      [
+        { label: '重选资源', onSelect: () => target === 'expedition' ? this.showTransportTargetSelection(city) : this.showTransportResourceSelection(target, city) },
+        { label: '取消', onSelect: () => this.showCampaign() },
+      ],
+    )
+  }
+
+  private confirmTransportTarget(target: TransportTarget, actorCity: StrategyCity, amount: TransportAmount, kind: MoveResourceKind) {
+    const city = actorCity
+    const foodConfig = transportAmountConfig(amount)
+    const moveConfig = moveResourceConfig(kind, amount)
     this.selectedCityId = city.id
     this.focusedCityId = city.id
     this.syncSelectedCityState()
@@ -3015,10 +3042,11 @@ class KingdomsScene extends Phaser.Scene {
     const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
     const targetName = target === 'expedition' ? '远征粮仓' : targetCity?.name ?? '目标城'
     const scope = target === 'expedition' ? `${city.name}粮仓 → 远征粮仓` : `${city.name} → ${targetName}`
-    const gain = target === 'expedition' ? config.expeditionGain : config.cityGain
+    const sourceAmount = target === 'expedition' ? foodConfig.sourceFood : moveConfig.amount
+    const gain = target === 'expedition' ? foodConfig.expeditionGain : transportCityGain(kind, amount)
     const effect = target === 'expedition'
-      ? `${config.label}｜城池粮 -${config.sourceFood}｜行军粮 +${gain}`
-      : `${config.label}｜发城粮 -${config.sourceFood}｜目标城粮 +${gain}｜路耗 ${config.sourceFood - gain}`
+      ? `${foodConfig.label}｜城池粮 -${sourceAmount}｜行军粮 +${gain}`
+      : `${moveConfig.label}${moveResourceName(kind)}｜发城${moveResourceName(kind)} -${sourceAmount}｜目标城${moveResourceName(kind)} +${gain}｜路耗 ${sourceAmount - gain}`
     this.showCommandConfirm({
       category: '内政',
       command: '运输',
@@ -3026,8 +3054,8 @@ class KingdomsScene extends Phaser.Scene {
       target: targetName,
       scope,
       effect,
-      onConfirm: () => this.transportSupplies(target, city, amount),
-      onCancel: () => this.showTransportAmountSelection(target, city),
+      onConfirm: () => this.transportSupplies(target, city, amount, kind),
+      onCancel: () => this.showTransportAmountSelection(target, city, kind),
     })
   }
 
@@ -3566,18 +3594,15 @@ class KingdomsScene extends Phaser.Scene {
     })
   }
 
-  private transportSupplies(target: TransportTarget, actorCity: StrategyCity, amount: TransportAmount) {
+  private transportSupplies(target: TransportTarget, actorCity: StrategyCity, amount: TransportAmount, kind: MoveResourceKind) {
     const city = actorCity
-    const config = transportAmountConfig(amount)
+    const foodConfig = transportAmountConfig(amount)
+    const moveConfig = moveResourceConfig(kind, amount)
     this.selectedCityId = city.id
     this.focusedCityId = city.id
     this.syncSelectedCityState()
     if (this.councilState.actions <= 0) {
-      this.showCityMessage('本月政令已用尽，无法转运军粮。')
-      return
-    }
-    if (city.food < config.sourceFood) {
-      this.showCityMessage(`${city.name}存粮不足，无法执行${config.label}。`)
+      this.showCityMessage('本月政令已用尽，无法转运物资。')
       return
     }
     const targetCity = target !== 'expedition' ? this.campaignCities.find((item) => item.id === target) : undefined
@@ -3585,18 +3610,34 @@ class KingdomsScene extends Phaser.Scene {
       this.showCityMessage('运输目标无效。')
       return
     }
-    city.food = Math.max(0, city.food - config.sourceFood)
     if (target === 'expedition') {
-      this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + config.expeditionGain, 0, 150)
+      if (kind !== 'food') {
+        this.showCityMessage('远征粮仓只接收粮草。')
+        return
+      }
+      if (city.food < foodConfig.sourceFood) {
+        this.showCityMessage(`${city.name}存粮不足，无法执行${foodConfig.label}。`)
+        return
+      }
+      city.food = Math.max(0, city.food - foodConfig.sourceFood)
+      this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + foodConfig.expeditionGain, 0, 150)
     } else if (targetCity) {
-      targetCity.food = Math.min(5000, targetCity.food + config.cityGain)
+      const available = kind === 'troops' ? Math.max(0, city.troops - 500) : city[kind]
+      if (available < moveConfig.amount) {
+        this.showCityMessage(`${city.name}${moveResourceName(kind)}不足，无法执行${moveConfig.label}。`)
+        return
+      }
+      const gain = transportCityGain(kind, amount)
+      city[kind] = Math.max(kind === 'troops' ? 500 : 0, city[kind] - moveConfig.amount)
+      targetCity[kind] = Math.min(moveResourceCap(kind), targetCity[kind] + gain)
     }
     this.councilState.actions -= 1
-    this.recordMonthlyAction(target === 'expedition' ? `${city.name}${config.label}入远征仓` : `${city.name}${config.label}至${targetCity?.name ?? '邻城'}`)
+    const label = target === 'expedition' ? foodConfig.label : `${moveConfig.label}${moveResourceName(kind)}`
+    this.recordMonthlyAction(target === 'expedition' ? `${city.name}${label}入远征仓` : `${city.name}${label}至${targetCity?.name ?? '邻城'}`)
     this.syncSelectedCityState()
     this.showCityMessage(target === 'expedition'
-      ? `${config.label}入远征仓，行军粮草 +${config.expeditionGain}。`
-      : `${config.label}粮车抵达${targetCity?.name ?? '邻城'}，目标城存粮 +${config.cityGain}。`)
+      ? `${foodConfig.label}入远征仓，行军粮草 +${foodConfig.expeditionGain}。`
+      : `${label}抵达${targetCity?.name ?? '邻城'}，目标城${moveResourceName(kind)} +${transportCityGain(kind, amount)}。`)
   }
 
   private drawCitySelector() {
@@ -6520,6 +6561,12 @@ function transportAmountConfig(amount: TransportAmount) {
     medium: { label: '中运', sourceFood: 240, expeditionGain: 18, cityGain: 220 },
     large: { label: '大运', sourceFood: 360, expeditionGain: 28, cityGain: 330 },
   }[amount]
+}
+
+function transportCityGain(kind: MoveResourceKind, amount: TransportAmount) {
+  if (kind === 'food') return transportAmountConfig(amount).cityGain
+  const source = moveResourceConfig(kind, amount).amount
+  return kind === 'troops' ? Math.floor(source * 0.92) : Math.floor(source * 0.96)
 }
 
 function moveResourceName(kind: MoveResourceKind) {
