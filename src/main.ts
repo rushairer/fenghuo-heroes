@@ -3309,7 +3309,22 @@ class KingdomsScene extends Phaser.Scene {
       this.recordMonthlyAction('统一天下')
       return { lines, victory: true }
     }
+    const enemyCapitals = strategyFactions
+      .filter((f) => f.id !== this.playerFactionId && f.id !== 'neutral')
+      .map((f) => f.capital)
+    const controlledCapitals = enemyCapitals.filter((cId) => {
+      const city = this.campaignCities.find((c) => c.id === cId)
+      return city && city.owner === this.playerFactionId
+    })
+    if (controlledCapitals.length === enemyCapitals.length && enemyCapitals.length > 0) {
+      lines.push(`${this.playerFaction.name}尽夺诸方都城，霸业已成。`)
+      this.recordMonthlyAction('霸业已成')
+      return { lines, victory: true }
+    }
     lines.push(`统一进度：${this.playerFaction.name} ${controlled}/${total} 城，尚余 ${remaining} 城。`)
+    if (controlledCapitals.length > 0) {
+      lines.push(`已夺都城：${controlledCapitals.map((cId) => cityName(cId)).join('、')}（${controlledCapitals.length}/${enemyCapitals.length}）`)
+    }
     return { lines, victory: false }
   }
 
@@ -5752,6 +5767,8 @@ class KingdomsScene extends Phaser.Scene {
     )
   }
 
+  private selectedTransferOfficers = new Set<string>()
+
   private showMoveOfficerSelection(actorCity: StrategyCity, officerId: string, destinationId: CityId) {
     const officers = this.movableOfficersInCity(actorCity.id)
     const destinations = this.controlledNeighborCitiesFrom(actorCity)
@@ -5761,25 +5778,34 @@ class KingdomsScene extends Phaser.Scene {
       this.showHeroMessage('当前没有可调动的武将或目的城。')
       return
     }
+    if (this.selectedTransferOfficers.size === 0) this.selectedTransferOfficers.add(officer.id)
     this.selectedCityId = actorCity.id
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
     this.showCampaign()
+    const selectedOfficers = officers.filter((o) => this.selectedTransferOfficers.has(o.id))
     const moveActions: ModalGridItem[] = [
-      { label: '重选对象', onSelect: () => this.showMoveKindSelection(actorCity) },
-      { label: '取消', onSelect: () => this.showCampaign() },
-      { label: '确认', onSelect: () => this.confirmMoveOfficer(actorCity, officer, destination) },
+      { label: '重选对象', onSelect: () => { this.selectedTransferOfficers.clear(); this.showMoveKindSelection(actorCity) } },
+      { label: '取消', onSelect: () => { this.selectedTransferOfficers.clear(); this.showCampaign() } },
+      { label: `确认(${selectedOfficers.length}将)`, onSelect: () => { this.confirmMoveOfficers(actorCity, selectedOfficers.length > 0 ? selectedOfficers : [officer], destination); this.selectedTransferOfficers.clear() } },
     ]
     if (officers.length > 1) {
-      moveActions.push({ label: '全员', onSelect: () => this.confirmMoveOfficers(actorCity, officers, destination) })
+      moveActions.push({ label: '全选', onSelect: () => { officers.forEach((o) => this.selectedTransferOfficers.add(o.id)); this.showMoveOfficerSelection(actorCity, officer.id, destination.id) } })
     }
     this.showModalChoiceColumns('内政｜调动：调动武将', `${actorCity.name}太守府发起调将`, [
       {
-        title: '选择武将',
+        title: '选择武将（可多选）',
         items: officers.map((item) => ({
-          label: item.name,
-          selected: item.id === officer.id,
-          onSelect: () => this.showMoveOfficerSelection(actorCity, item.id, destination.id),
+          label: this.selectedTransferOfficers.has(item.id) ? `✓${item.name}` : item.name,
+          selected: this.selectedTransferOfficers.has(item.id),
+          onSelect: () => {
+            if (this.selectedTransferOfficers.has(item.id)) {
+              if (this.selectedTransferOfficers.size > 1) this.selectedTransferOfficers.delete(item.id)
+            } else {
+              this.selectedTransferOfficers.add(item.id)
+            }
+            this.showMoveOfficerSelection(actorCity, item.id, destination.id)
+          },
         })),
       },
       {
@@ -5790,26 +5816,7 @@ class KingdomsScene extends Phaser.Scene {
           onSelect: () => this.showMoveOfficerSelection(actorCity, officer.id, item.id),
         })),
       },
-    ], `${officer.name}：${cityName(officer.location)} → ${destination.name}${officers.length > 1 ? `｜全员${officers.length}将可一并调动` : ''}`, moveActions)
-  }
-
-  private confirmMoveOfficer(actorCity: StrategyCity, officer: StrategyOfficer, destination: StrategyCity) {
-    const city = actorCity
-    this.selectedCityId = city.id
-    this.focusedCityId = city.id
-    this.syncSelectedCityState()
-    this.showCampaign()
-    this.showCommandConfirm({
-      category: '内政',
-      command: '调动',
-      actor: `${city.name}太守府`,
-      target: officer.name,
-      scope: `${city.name} → ${destination.name}`,
-      effect: `移动${officer.name}至${destination.name}｜政令 -1`,
-      hint: '确认后调动武将',
-      onConfirm: () => this.executeMoveOfficer(city, officer, destination),
-      onCancel: () => this.showMoveOfficerSelection(city, officer.id, destination.id),
-    })
+    ], `${selectedOfficers.map((o) => o.name).join('、')}：${cityName(actorCity.id)} → ${destination.name}（${selectedOfficers.length}将）`, moveActions)
   }
 
   private confirmMoveOfficers(actorCity: StrategyCity, officers: StrategyOfficer[], destination: StrategyCity) {
@@ -5918,25 +5925,6 @@ class KingdomsScene extends Phaser.Scene {
     this.recordMonthlyAction(`${actorCity.name}${config.label}${moveResourceName(kind)}至${destination.name}`)
     this.syncSelectedCityState()
     this.showCityMessage(`${config.label}${moveResourceName(kind)}已调往${destination.name}。`)
-  }
-
-  private executeMoveOfficer(actorCity: StrategyCity, officer: StrategyOfficer, destination: StrategyCity) {
-    this.selectedCityId = actorCity.id
-    this.focusedCityId = actorCity.id
-    this.syncSelectedCityState()
-    if (this.councilState.actions <= 0) {
-      this.showCityMessage('本月政令已用尽，不能调动。')
-      return
-    }
-    if (!this.controlledNeighborCitiesFrom(actorCity).some((city) => city.id === destination.id)) {
-      this.showCityMessage('目的城不是相邻己方城，无法调动。')
-      return
-    }
-    officer.location = destination.id
-    this.councilState.actions -= 1
-    this.recordMonthlyAction(`${officer.name}移驻${destination.name}`)
-    this.ensureLocalAppointments()
-    this.showHeroMessage(`${officer.name}已移往${destination.name}。`)
   }
 
   private executeMoveOfficers(actorCity: StrategyCity, officers: StrategyOfficer[], destination: StrategyCity) {
@@ -6686,6 +6674,12 @@ class KingdomsScene extends Phaser.Scene {
     this.ensureDiplomacyTarget()
     if (!this.selectedDiplomacyFaction()) {
       this.showDiplomacyMessage('没有可交涉对象，请先切换到邻接敌城的己方城池。')
+      return
+    }
+    const targetFactionId = this.selectedDiplomacyFactionId
+    if (targetFactionId && (kind === 'sabotage' || kind === 'persuade') && this.allianceTerms.has(targetFactionId)) {
+      const turns = this.allianceTerms.get(targetFactionId)!
+      this.showDiplomacyMessage(`与${factionById(targetFactionId)?.ruler ?? '对方'}尚有${turns}月盟约，不可对其使用计策。`)
       return
     }
     if (this.councilState.actions <= 0) {
