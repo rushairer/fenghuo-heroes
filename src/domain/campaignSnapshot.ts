@@ -142,7 +142,7 @@ export function getControlledCityIds(snapshot: CampaignSnapshot, factionId: Snap
 
 export function getLivingFactionIds(snapshot: CampaignSnapshot): StartableFactionId[] {
   const defeated = new Set(snapshot.defeatedFactionIds)
-  return ['cao', 'liu', 'sun', 'yuan', 'dong'].filter((factionId) => !defeated.has(factionId))
+  return (['cao', 'liu', 'sun', 'yuan', 'dong'] as StartableFactionId[]).filter((factionId) => !defeated.has(factionId))
 }
 
 export function isFactionDefeated(snapshot: CampaignSnapshot, factionId: StartableFactionId): boolean {

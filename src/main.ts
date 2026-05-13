@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import './style.css'
+import { createCampaignSnapshot, validateCampaignSnapshot, type CampaignSnapshot, type CampaignSnapshotMeta, type StartableFactionId, type SerializableDiplomacyDebt } from './domain/campaignSnapshot'
 
 type Faction = 'player' | 'enemy'
 type TerrainType = 'plain' | 'forest' | 'hill' | 'water' | 'fort'
@@ -133,6 +134,7 @@ type StrategyCity = {
   land?: number
   irrigation?: number
   disaster?: number
+  publicOrder?: number
 }
 
 type StrategyOfficer = {
@@ -607,6 +609,7 @@ class ProceduralMusic {
 
 class KingdomsScene extends Phaser.Scene {
   private phase: Phase = 'title'
+  private playerFactionId: FactionId = 'liu'
   private units: Unit[] = []
   private selectedUnitId?: string
   private selectedSkillId?: string
@@ -672,10 +675,38 @@ class KingdomsScene extends Phaser.Scene {
     weather: 'clear' as CampaignWeather,
   }
   private appointments = {
-    governor: 'yun',
-    vanguard: 'yun',
-    strategist: 'xuan',
+    governor: 'liu_bei',
+    vanguard: 'liu_bei',
+    strategist: 'zhuge_liang',
   }
+  private appointedOfficer(role: 'governor' | 'vanguard' | 'strategist'): StrategyOfficer | undefined {
+    return this.campaignOfficers.find((o) => o.id === this.appointments[role])
+  }
+
+  private cityGovernanceBonus(cityId: CityId): {
+    productionMultiplier: number
+    taxMultiplier: number
+    recruitMultiplier: number
+    recruitPublicOrderCost: number
+    moraleBonus: number
+    publicOrderBonus: number
+    defenseBonus: number
+  } {
+    const governor = this.campaignOfficers.find((o) => o.id === this.appointments.governor && o.location === cityId)
+    if (!governor) return { productionMultiplier: 1, taxMultiplier: 1, recruitMultiplier: 1, recruitPublicOrderCost: 1, moraleBonus: 0, publicOrderBonus: 0, defenseBonus: 0 }
+    const gov = governor.gov
+    const charm = governor.charm
+    const command = governor.command
+    const productionMultiplier = gov >= 90 ? 1.18 : gov >= 75 ? 1.10 : gov >= 60 ? 1.04 : 0.96
+    const taxMultiplier = gov >= 90 ? 1.12 : gov >= 75 ? 1.06 : gov >= 60 ? 1.02 : 0.96
+    const recruitMultiplier = charm >= 90 ? 1.15 : charm >= 75 ? 1.08 : charm >= 60 ? 1.0 : 0.92
+    const recruitPublicOrderCost = charm >= 90 ? 0.7 : charm >= 75 ? 0.85 : charm >= 60 ? 1.0 : 1.2
+    const moraleBonus = Math.floor((charm - 60) * 0.06)
+    const publicOrderBonus = Math.floor((gov - 60) * 0.04)
+    const defenseBonus = Math.floor((command + governor.war - 120) * 0.04)
+    return { productionMultiplier, taxMultiplier, recruitMultiplier, recruitPublicOrderCost, moraleBonus, publicOrderBonus, defenseBonus }
+  }
+
   private recruitedNeutralIds = new Set<string>()
   private inspectionHeroPage = 0
   private inspectionOfficerId?: string
@@ -911,14 +942,9 @@ class KingdomsScene extends Phaser.Scene {
         lineSpacing: 7,
         wordWrap: { width: 176 },
       }))
-      const available = faction.id === 'liu'
-      this.makeButton(x + 224, y + 108, available ? '开始' : '未开放', () => {
-        if (available) {
-          this.resetCampaignState()
-          this.showCampaign()
-        } else {
-          this.showTitleNotice('势力未开放', '当前版本先以刘备军完成机制复刻，其他势力将在多剧本阶段开放。')
-        }
+      this.makeButton(x + 224, y + 108, '开始', () => {
+        this.resetCampaignState(faction.id)
+        this.showCampaign()
       }, this.overlayLayer, 112, 36)
     })
     this.makeButton(640, 636, '返回标题', () => this.showTitle(), this.overlayLayer, 180, 44)
@@ -1055,26 +1081,30 @@ class KingdomsScene extends Phaser.Scene {
       const disasterPressure = city.disaster ?? 0
       const harvestRate = 0.045 + (city.land ?? 40) / 1600 + (city.irrigation ?? 35) / 2200 - disasterPressure / 1800
       const commerceRate = 0.045 + (city.commerce ?? 35) / 1500 - disasterPressure / 2100
-      const foodGain = Math.max(60, Math.floor((city.food * 0.035 + (city.population ?? 20000) * harvestRate / 18) * taxConfig.goldMultiplier))
-      const goldGain = Math.max(40, Math.floor((city.gold * 0.04 + (city.population ?? 20000) * commerceRate / 25) * taxConfig.goldMultiplier))
-      const enemyGrowth = city.owner === 'liu' ? 1 : this.difficultyConfig().enemyGrowth
+      const bonus = city.owner === this.playerFactionId ? this.cityGovernanceBonus(city.id) : { productionMultiplier: 1, taxMultiplier: 1, recruitMultiplier: 1, recruitPublicOrderCost: 1, moraleBonus: 0, publicOrderBonus: 0, defenseBonus: 0 }
+      const foodGain = Math.max(60, Math.floor((city.food * 0.035 + (city.population ?? 20000) * harvestRate / 18) * taxConfig.goldMultiplier * bonus.productionMultiplier))
+      const goldGain = Math.max(40, Math.floor((city.gold * 0.04 + (city.population ?? 20000) * commerceRate / 25) * taxConfig.goldMultiplier * bonus.taxMultiplier))
+      const enemyGrowth = city.owner === this.playerFactionId ? 1 : this.difficultyConfig().enemyGrowth
       const troopGain = Math.max(120, Math.floor((city.troops * 0.024 + (city.population ?? 20000) / 420) * enemyGrowth))
       city.food = Math.min(5000, city.food + foodGain)
       city.gold = Math.min(3000, city.gold + goldGain)
       city.troops = Math.min(30000, city.troops + troopGain)
       city.population = Math.max(8000, Math.floor((city.population ?? 20000) + Math.max(30, (city.population ?? 20000) * 0.006) - troopGain * 0.22 - disasterPressure * 16))
       city.disaster = Phaser.Math.Clamp(Math.floor(disasterPressure * 0.72), 0, 100)
-      if (city.owner === 'liu') {
+      if (city.owner === this.playerFactionId) {
         liuFoodGain += foodGain
         liuGoldGain += goldGain
-        this.cityState.publicOrder = Phaser.Math.Clamp(this.cityState.publicOrder + taxConfig.publicOrderDelta, 0, 100)
+        this.setCityPublicOrder(city, this.cityPublicOrder(city) + taxConfig.publicOrderDelta + bonus.publicOrderBonus)
       }
     }
     const aiReports = this.runEnemyFactionTurns()
     const diplomacyReports = this.resolveDiplomacyTimers()
     const enemyAfter = this.strongestEnemySummary()
     this.syncSelectedCityState()
-    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + (this.cityState.publicOrder >= 70 ? 2 : -1), 0, 100)
+    const selectedCity = this.selectedCity
+    const selectedPublicOrder = selectedCity ? this.cityPublicOrder(selectedCity) : this.cityState.publicOrder
+    const governorBonus = this.cityGovernanceBonus(this.selectedCityId)
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + (selectedPublicOrder >= 70 ? 2 : -1) + governorBonus.moraleBonus, 0, 100)
     this.councilState.actions = 3
     this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 6 - this.cityState.walls, 0, 100)
     const officerReports = this.advanceOfficerStatuses()
@@ -1093,9 +1123,10 @@ class KingdomsScene extends Phaser.Scene {
       : ['本月命令：未执行城池命令。']
     const strategicLines = this.strategicSituationReport()
     this.monthlyActionLog = []
+    this.saveCampaign()
     this.showMonthReport([
       ...commandLines,
-      `刘备军收入：粮 +${liuFoodGain}，金 +${liuGoldGain}。`,
+      `${this.playerFaction.name}收入：粮 +${liuFoodGain}，金 +${liuGoldGain}。`,
       ...(marchReport ? [marchReport] : []),
       ...(diplomacyReports.length > 0 ? diplomacyReports : ['外交：盟约与债契暂无变化。']),
       ...(officerReports.length > 0 ? officerReports : ['武将状态：暂无伤疲恢复或俘虏变化。']),
@@ -1115,7 +1146,7 @@ class KingdomsScene extends Phaser.Scene {
   private advanceOfficerStatuses() {
     const reports: string[] = []
     this.campaignOfficers.forEach((officer) => {
-      if (officer.faction === 'liu' && officer.status !== 'captured') {
+      if (officer.faction === this.playerFactionId && officer.status !== 'captured') {
         const salary = officerSalary(officer)
         const city = this.campaignCities.find((item) => item.id === officer.location)
         if (city) city.gold = Math.max(0, city.gold - salary)
@@ -1156,17 +1187,17 @@ class KingdomsScene extends Phaser.Scene {
 
   private strategicSituationReport() {
     const total = this.campaignCities.length
-    const controlled = this.countCities('liu')
+    const controlled = this.countCities(this.playerFactionId)
     const remaining = total - controlled
     const enemyFactions = strategyFactions
-      .filter((faction) => faction.id !== 'liu' && this.countCities(faction.id) > 0)
+      .filter((faction) => faction.id !== this.playerFactionId && this.countCities(faction.id) > 0)
       .map((faction) => `${faction.ruler}${this.countCities(faction.id)}城`)
     const fallenFactions = strategyFactions
-      .filter((faction) => faction.id !== 'liu' && faction.id !== 'neutral' && this.countCities(faction.id) === 0)
+      .filter((faction) => faction.id !== this.playerFactionId && faction.id !== 'neutral' && this.countCities(faction.id) === 0)
       .map((faction) => faction.name)
-    const frontiers = this.neighborEnemyCities('liu')
+    const frontiers = this.neighborEnemyCities(this.playerFactionId)
     return [
-      `天下形势：刘备军 ${controlled}/${total} 城，尚余 ${remaining} 城。`,
+      `天下形势：${this.playerFaction.name} ${controlled}/${total} 城，尚余 ${remaining} 城。`,
       enemyFactions.length > 0 ? `割据势力：${enemyFactions.join('、')}。` : '割据势力：诸城已平。',
       frontiers.length > 0 ? `接壤敌境：${frontiers.join('、')}。` : '接壤敌境：暂无。',
       fallenFactions.length > 0 ? `已灭势力：${fallenFactions.join('、')}。` : '已灭势力：暂无。',
@@ -1407,7 +1438,7 @@ class KingdomsScene extends Phaser.Scene {
     if (this.marchArmy.status === 'ready') {
       candidates.slice(0, 4).forEach((city, index) => {
         const x = 346 + index * 146
-        const mark = city.owner === 'liu' ? '途' : '攻'
+        const mark = city.owner === this.playerFactionId ? '途' : '攻'
         this.makeButton(x, 526, `${city.name}${mark}`, () => this.confirmMarchRouteNode(city), this.overlayLayer, 126, 36)
       })
       if (candidates.length === 0) {
@@ -1427,7 +1458,7 @@ class KingdomsScene extends Phaser.Scene {
     if (!this.marchArmy) return
     const routeEnd = this.marchArmy.routePlan.at(-1) ?? this.marchArmy.sourceCityId
     const nextRoute = [...this.marchArmy.routePlan.filter((id) => id !== target.id), target.id]
-    const finalTarget = target.owner !== 'liu'
+    const finalTarget = target.owner !== this.playerFactionId
     this.showCommandConfirm({
       category: '行军',
       command: '路线',
@@ -1679,6 +1710,19 @@ class KingdomsScene extends Phaser.Scene {
     officer.fatigue = Phaser.Math.Clamp((officer.fatigue ?? 0) + 25, 0, 100)
   }
 
+  private captureOfficer(officer: StrategyOfficer, captorFactionId: FactionId, location: CityId) {
+    officer.status = 'captured'
+    officer.captorFactionId = captorFactionId
+    officer.location = location
+    officer.fatigue = 100
+  }
+
+  private retireOfficer(officer: StrategyOfficer) {
+    officer.status = 'wounded'
+    officer.statusTurns = 99
+    officer.fatigue = 100
+  }
+
   private addOfficerMerit(officer: StrategyOfficer, amount: number) {
     officer.merit = Math.max(0, (officer.merit ?? initialOfficerMerit(officer)) + amount)
     officer.salary = Math.max(officer.salary ?? 0, initialOfficerSalary(officer) + Math.floor((officer.merit ?? 0) / 80))
@@ -1803,7 +1847,7 @@ class KingdomsScene extends Phaser.Scene {
     return city.routes
       .map((id) => this.campaignCities.find((item) => item.id === id))
       .filter((item): item is StrategyCity => item !== undefined && !used.has(item.id))
-      .filter((item) => item.owner === 'liu' || item.owner !== this.marchArmy?.factionId)
+      .filter((item) => item.owner === this.playerFactionId || item.owner !== this.marchArmy?.factionId)
   }
 
   private resolveMarchAttack() {
@@ -1906,7 +1950,8 @@ class KingdomsScene extends Phaser.Scene {
     this.markRouteEventUsed('forage')
     this.marchArmy.food = Math.min(120, this.marchArmy.food + gain)
     this.distributeMarchSupply(Math.floor(gain / 2))
-    this.cityState.publicOrder = Math.max(0, this.cityState.publicOrder - 1)
+    const sourceCity = this.campaignCities.find((c) => c.id === this.marchArmy?.sourceCityId)
+    if (sourceCity) this.setCityPublicOrder(sourceCity, this.cityPublicOrder(sourceCity) - 1)
     this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 4, 0, 100)
     const disruption = this.disruptAiSupplyLine()
     this.recordMonthlyAction(`${cityName(this.marchArmy.sourceCityId)}军截粮`)
@@ -1954,7 +1999,8 @@ class KingdomsScene extends Phaser.Scene {
     this.distributeMarchSupply(Math.floor(foodGain / 2))
     this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 1, 0, 100)
     this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + intelGain, 0, 100)
-    this.cityState.publicOrder = Math.max(0, this.cityState.publicOrder - 1)
+    const sourceCity2 = this.campaignCities.find((c) => c.id === this.marchArmy?.sourceCityId)
+    if (sourceCity2) this.setCityPublicOrder(sourceCity2, this.cityPublicOrder(sourceCity2) - 1)
     this.recordMonthlyAction(`${cityName(this.marchArmy.sourceCityId)}军占村补给`)
     this.showCampaignMessage(`远征军占得沿途村落，随军粮 +${foodGain}，情报 +${intelGain}，民心 -1。`)
   }
@@ -2013,11 +2059,18 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     const target = this.campaignCities.find((city) => city.id === this.marchArmy?.targetCityId)
-    if (!target || target.owner === 'liu') {
+    if (!target || target.owner === this.playerFactionId) {
       this.showCampaignMessage('目标城已非敌城，无需攻城。')
       return
     }
     this.marchArmy.status = 'besieging'
+    if (this.alliedFactionIds.has(target.owner)) {
+      this.alliedFactionIds.delete(target.owner)
+      this.allianceTerms.delete(target.owner)
+      this.sabotagedFactionIds.add(target.owner)
+      this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale - 8, 0, 100)
+      this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 12, 0, 100)
+    }
     this.siegeState = {
       attackerArmyId: this.marchArmy.id,
       defenderCityId: target.id,
@@ -2206,14 +2259,27 @@ class KingdomsScene extends Phaser.Scene {
       this.marchArmy.food = Math.max(0, this.marchArmy.food - 7)
       this.marchArmy.morale = Math.max(0, this.marchArmy.morale - 1)
       message = `围城第${this.siegeState.surroundTurns}合，敌粮 -${foodLoss}，守军 -${defenderLoss}，守军士气 -${moraleLoss}。`
+      const breakoutChance = Math.max(5, Math.floor(this.siegeState.defenderMorale * 0.6 + this.siegeState.defenderTroops / 400 - pressure * 12))
+      if (this.siegeState.defenderMorale > 25 && this.siegeState.defenderTroops > 1200 && Phaser.Math.Between(1, 100) <= breakoutChance) {
+        const breakoutLoss = Math.floor(this.marchArmy.troops * (0.12 + pressure * 0.03))
+        this.siegeState.attackerTroops = Math.max(0, this.siegeState.attackerTroops - breakoutLoss)
+        this.marchArmy.troops = this.siegeState.attackerTroops
+        this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 8, 0, 100)
+        this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - Math.floor(breakoutLoss * 0.6))
+        this.siegeState.defenderMorale = Math.max(0, this.siegeState.defenderMorale - 10)
+        this.persistSiegeDamageToCity()
+        message += `\n守军突围！我军措手不及，损兵${breakoutLoss}。`
+      }
     } else if (action === 'fire') {
       if (this.councilState.intel < 18) {
         this.marchArmy.food = Math.max(0, this.marchArmy.food - 3)
         message = '情报不足，火计未成，仅耗粮草。'
       } else {
         const weatherScale = this.campaignClock.weather === 'rain' ? 0.55 : this.campaignClock.weather === 'heat' ? 1.18 : 1
-        const wallDamage = Math.max(2, Math.floor((7 + Math.floor(this.councilState.intel / 12)) * weatherScale))
-        const foodLoss = Math.floor(city.food * 0.18 * weatherScale)
+        const strategist = this.appointedOfficer('strategist')
+        const strategistScale = strategist ? 1 + strategist.intel / 500 : 1
+        const wallDamage = Math.max(2, Math.floor((7 + Math.floor(this.councilState.intel / 12)) * weatherScale * strategistScale))
+        const foodLoss = Math.floor(city.food * 0.18 * weatherScale * strategistScale)
         this.councilState.intel = Math.max(0, this.councilState.intel - 18)
         this.siegeState.wallHp = Math.max(0, this.siegeState.wallHp - wallDamage)
         city.food = Math.max(120, city.food - foodLoss)
@@ -2382,14 +2448,46 @@ class KingdomsScene extends Phaser.Scene {
       this.showSiege('本月攻城令已尽，不能反复攻击。请返回行军整备或执行月令。')
       return
     }
-    const defender = this.defenderForDuel(this.siegeState.defenderCityId)
     const attacker = this.campaignOfficers.find((officer) => officer.id === this.marchArmy?.leaderOfficerId)
-    if (!attacker || !defender) {
-      this.showSiege('敌我主将未列阵，挑战未成。')
+    if (!attacker) {
+      this.showSiege('我军主将未列阵，挑战未成。')
       return
     }
-    this.siegeState.lastAction = 'challenge'
-    this.siegeState.actionsRemaining = Math.max(0, this.siegeState.actionsRemaining - 1)
+    const city = this.campaignCities.find((c) => c.id === this.siegeState?.defenderCityId)
+    if (!city) return
+    const defenders = this.campaignOfficers
+      .filter((officer) => officer.location === city.id && officer.faction === city.owner && this.isOfficerAvailable(officer))
+      .sort((a, b) => b.war - a.war)
+    if (defenders.length === 0) {
+      this.showSiege('城中无可用守将可应战。')
+      return
+    }
+    this.showDuelTargetSelection(attacker, defenders, city)
+  }
+
+  private showDuelTargetSelection(attacker: StrategyOfficer, defenders: StrategyOfficer[], city: StrategyCity) {
+    this.showSiege()
+    this.showModalGrid(
+      '挑战：选择对手',
+      `${attacker.name}（武${attacker.war}）出阵挑战${city.name}守将`,
+      defenders.map((defender) => ({
+        label: defender.name,
+        detail: `武${defender.war} 兵${officerTroops(defender)}`,
+        onSelect: () => this.tryBeginDuel(attacker, defender, city),
+      })),
+      () => this.showSiege(),
+      '取消',
+    )
+  }
+
+  private tryBeginDuel(attacker: StrategyOfficer, defender: StrategyOfficer, _city: StrategyCity) {
+    const refuseChance = attacker.war - defender.war > 20 ? 40 : 10
+    if (Phaser.Math.Between(1, 100) <= refuseChance) {
+      this.showSiege(`${defender.name}惧${attacker.name}武勇，闭门不应战。`)
+      return
+    }
+    this.siegeState!.lastAction = 'challenge'
+    this.siegeState!.actionsRemaining = Math.max(0, this.siegeState!.actionsRemaining - 1)
     this.duelState = {
       attackerOfficerId: attacker.id,
       defenderOfficerId: defender.id,
@@ -2403,15 +2501,6 @@ class KingdomsScene extends Phaser.Scene {
       log: [`${attacker.name}拍马出阵，${defender.name}应声迎战。`],
     }
     this.showDuel()
-  }
-
-  private defenderForDuel(cityId: CityId) {
-    const city = this.campaignCities.find((item) => item.id === cityId)
-    if (!city) return undefined
-    return this.campaignOfficers
-      .filter((officer) => officer.location === cityId && officer.faction === city.owner && this.isOfficerAvailable(officer))
-      .sort((a, b) => b.war - a.war || b.command - a.command)[0]
-      ?? this.campaignOfficers.filter((officer) => officer.faction === city.owner && this.isOfficerAvailable(officer)).sort((a, b) => b.war - a.war)[0]
   }
 
   private showDuel() {
@@ -2636,17 +2725,37 @@ class KingdomsScene extends Phaser.Scene {
       const defenderLoss = 420 + attacker.war * 8
       this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
       this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale + 8, 0, 100)
-      this.woundOfficer(defender, 2)
       this.addOfficerMerit(attacker, 18)
-      this.duelState.log.push(`${defender.name}败退伤疲，守军震动，损兵${defenderLoss}。`)
+      const roll = Phaser.Math.Between(1, 100)
+      const sourceCity = this.campaignCities.find((c) => c.id === this.marchArmy?.sourceCityId)
+      if (roll <= 30 && sourceCity) {
+        this.captureOfficer(defender, this.marchArmy.factionId, sourceCity.id)
+        this.duelState.log.push(`${defender.name}力竭被擒，押送${sourceCity.name}。守军震动，损兵${defenderLoss}。`)
+      } else if (roll <= 40) {
+        this.retireOfficer(defender)
+        this.duelState.log.push(`${defender.name}重伤退阵，短期难以再战。守军震动，损兵${defenderLoss}。`)
+      } else {
+        this.woundOfficer(defender, 2)
+        this.duelState.log.push(`${defender.name}败退伤疲，守军震动，损兵${defenderLoss}。`)
+      }
     } else if (this.duelState.outcome === 'defenderWin') {
       const attackerLoss = 320 + defender.war * 6
       this.siegeState.attackerTroops = Math.max(0, this.siegeState.attackerTroops - attackerLoss)
       this.marchArmy.troops = this.siegeState.attackerTroops
       this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 10, 0, 100)
-      this.woundOfficer(attacker, 2)
       this.addOfficerMerit(defender, 16)
-      this.duelState.log.push(`${attacker.name}失利伤疲退阵，我军损兵${attackerLoss}。`)
+      const city = this.campaignCities.find((c) => c.id === this.siegeState?.defenderCityId)
+      const roll = Phaser.Math.Between(1, 100)
+      if (roll <= 20 && city) {
+        this.captureOfficer(attacker, city.owner, city.id)
+        this.duelState.log.push(`${attacker.name}力竭被擒，押入${city.name}。我军损兵${attackerLoss}。`)
+      } else if (roll <= 28) {
+        this.retireOfficer(attacker)
+        this.duelState.log.push(`${attacker.name}重伤退阵，短期难以再战。我军损兵${attackerLoss}。`)
+      } else {
+        this.woundOfficer(attacker, 2)
+        this.duelState.log.push(`${attacker.name}失利伤疲退阵，我军损兵${attackerLoss}。`)
+      }
     } else if (this.duelState.outcome === 'attackerRetreat') {
       this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 4, 0, 100)
       this.duelState.log.push('我军退回攻城阵地，士气小挫。')
@@ -2815,7 +2924,7 @@ class KingdomsScene extends Phaser.Scene {
       this.showCampaign()
       return
     }
-    const prisoners = this.campaignOfficers.filter((officer) => officer.status === 'captured' && officer.captorFactionId === 'liu' && officer.location === cityId)
+    const prisoners = this.campaignOfficers.filter((officer) => officer.status === 'captured' && officer.captorFactionId === this.playerFactionId && officer.location === cityId)
     this.phase = 'marchMonth'
     this.overlayLayer.removeAll(true)
     this.drawBackdrop()
@@ -2854,14 +2963,14 @@ class KingdomsScene extends Phaser.Scene {
     const officer = this.campaignOfficers.find((item) => item.id === officerId)
     const city = this.campaignCities.find((item) => item.id === cityId)
     if (!officer || !city) return
-    officer.faction = 'liu'
+    officer.faction = this.playerFactionId
     officer.location = cityId
     officer.status = 'normal'
     officer.statusTurns = 0
     officer.captorFactionId = undefined
-    officer.loyalty = Phaser.Math.Clamp(Math.max(48, Math.floor((officer.loyalty + this.councilState.morale + this.cityState.publicOrder) / 3)), 35, 82)
+    officer.loyalty = Phaser.Math.Clamp(Math.max(48, Math.floor((officer.loyalty + this.councilState.morale + this.cityPublicOrder(this.campaignCities.find((c) => c.id === cityId))) / 3)), 35, 82)
     this.recordMonthlyAction(`${city.name}登用俘将${officer.name}`)
-    this.showCampaignMessage(`${officer.name}愿暂归刘备军，留驻${city.name}。`)
+    this.showCampaignMessage(`${officer.name}愿暂归${this.playerFaction.name}，留驻${city.name}。`)
   }
 
   private releasePrisoner(officerId: string, cityId: CityId) {
@@ -2950,7 +3059,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private resolveStrategicSettlement(defeatedCandidateId: FactionId): StrategicSettlement {
     const lines: string[] = []
-    if (defeatedCandidateId !== 'liu' && this.countCities(defeatedCandidateId) === 0) {
+    if (defeatedCandidateId !== this.playerFactionId && this.countCities(defeatedCandidateId) === 0) {
       const defeated = factionById(defeatedCandidateId)
       this.alliedFactionIds.delete(defeatedCandidateId)
       this.allianceTerms.delete(defeatedCandidateId)
@@ -2959,15 +3068,15 @@ class KingdomsScene extends Phaser.Scene {
       lines.push(`${defeated?.name ?? '敌势力'}失去根据地，势力灭亡。`)
       this.recordMonthlyAction(`${defeated?.name ?? '敌势力'}灭亡`)
     }
-    const controlled = this.countCities('liu')
+    const controlled = this.countCities(this.playerFactionId)
     const total = this.campaignCities.length
     const remaining = total - controlled
     if (remaining <= 0) {
-      lines.push(`刘备军尽有${total}城，统一达成。`)
+      lines.push(`${this.playerFaction.name}尽有${total}城，统一达成。`)
       this.recordMonthlyAction('统一天下')
       return { lines, victory: true }
     }
-    lines.push(`统一进度：刘备军 ${controlled}/${total} 城，尚余 ${remaining} 城。`)
+    lines.push(`统一进度：${this.playerFaction.name} ${controlled}/${total} 城，尚余 ${remaining} 城。`)
     return { lines, victory: false }
   }
 
@@ -2984,7 +3093,7 @@ class KingdomsScene extends Phaser.Scene {
       strokeThickness: 5,
     }).setOrigin(0.5))
     const copy = [
-      `${city.name}归入刘备军，最后的割据据点已平定。`,
+      `${city.name}归入${this.playerFaction.name}，最后的割据据点已平定。`,
       `本战缴获：金${seizedGold}｜粮${seizedFood}`,
       ...lines,
       `${this.campaignClock.year}年${this.campaignClock.month}月，天下诸城归于一统。`,
@@ -3003,10 +3112,10 @@ class KingdomsScene extends Phaser.Scene {
 
   private showDomesticCommand() {
     this.showCommandPanel('内政', [
-      ['开发', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '兴修水利，田亩渐丰，城池存粮增加。', '金 -130｜粮 +260｜土地 +4｜水利 +5｜灾害 -4｜民心 +2', { treasury: -130, farms: 1, publicOrder: 2, food: 260, land: 4, irrigation: 5, disaster: -4 })],
+      ['开发', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '兴修水利，田亩渐丰，城池存粮增加。', '金 -130｜粮 +260｜土地 +4｜水利 +5｜灾害 -4｜民心 +2', { treasury: -130, farms: 1, publicOrder: 2, food: 260, land: 4, irrigation: 5, disaster: -4 }, true)],
       ['调动', () => this.showMoveActorSelection()],
       ['情报', () => this.showIntelActorSelection('内政')],
-      ['福利', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜人口 +420｜民心 +6｜灾害 -3｜士气 +2', { treasury: -120, population: 420, publicOrder: 6, disaster: -3, morale: 2 })],
+      ['福利', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '赈济百姓，民心上升。', '金 -120｜人口 +420｜民心 +6｜灾害 -3｜士气 +2', { treasury: -120, population: 420, publicOrder: 6, disaster: -3, morale: 2 }, true)],
       ['任命', () => this.showAppointmentActorSelection()],
       ['税率', () => this.showTaxActorSelection()],
       ['教育', () => this.showEducationActorSelection()],
@@ -3020,7 +3129,7 @@ class KingdomsScene extends Phaser.Scene {
       ['武器', () => this.showMilitaryActorSelection('weapon')],
       ['情报', () => this.showIntelActorSelection('军事')],
       ['人材', () => this.showTalentActorSelection()],
-      ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8｜商业 +1', { treasury: -140, walls: 8, commerce: 1 })],
+      ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8｜商业 +1', { treasury: -140, walls: 8, commerce: 1 }, true)],
       ['训练', () => this.showMilitaryActorSelection('training')],
       ['出征', () => this.showDeploymentActorSelection()],
     ])
@@ -3201,12 +3310,15 @@ class KingdomsScene extends Phaser.Scene {
     city.gold = Math.max(0, city.gold - goldCost)
     if (kind === 'recruit') {
       const scale = recruitScaleConfig(this.recruitScale)
-      officer.troops = Math.min(6000, officerTroops(officer) + scale.troops)
-      city.troops = Math.min(30000, city.troops + scale.troops)
-      this.cityState.publicOrder = Math.max(0, this.cityState.publicOrder - scale.publicOrderCost)
+      const bonus = this.cityGovernanceBonus(city.id)
+      const adjustedTroops = Math.floor(scale.troops * bonus.recruitMultiplier)
+      const adjustedPublicOrderCost = Math.max(1, Math.floor(scale.publicOrderCost * bonus.recruitPublicOrderCost))
+      officer.troops = Math.min(6000, officerTroops(officer) + adjustedTroops)
+      city.troops = Math.min(30000, city.troops + adjustedTroops)
+      this.setCityPublicOrder(city, this.cityPublicOrder(city) - adjustedPublicOrderCost)
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + scale.moraleGain, 0, 100)
-      this.addOfficerMerit(officer, Math.floor(scale.troops / 120))
-      this.addOfficerFatigue(officer, scale.publicOrderCost + 4)
+      this.addOfficerMerit(officer, Math.floor(adjustedTroops / 120))
+      this.addOfficerFatigue(officer, adjustedPublicOrderCost + 4)
     } else if (kind === 'weapon') {
       this.improveOfficerEquipment(officer)
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 2, 0, 100)
@@ -3246,7 +3358,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private showPersonnelCommand() {
     this.showCommandPanel('人事', [
-      ['详表', () => this.showOfficerDetail(this.inspectionOfficerId ?? this.campaignOfficers.find((officer) => officer.faction === 'liu')?.id)],
+      ['详表', () => this.showOfficerDetail(this.inspectionOfficerId ?? this.campaignOfficers.find((officer) => officer.faction === this.playerFactionId)?.id)],
       ['搜索', () => this.showTalentActorSelection()],
       ['登用', () => this.showTalentActorSelection()],
       ['赏赐', () => this.showHeroManagement()],
@@ -3258,7 +3370,10 @@ class KingdomsScene extends Phaser.Scene {
   private showSystemCommand() {
     this.showCommandPanel('机能', [
       ['势力', () => this.showFactionOverview()],
-      ['保存', () => this.showTitleNotice('保存', '保存功能尚未开放。当前可继续进行本局。')],
+      ['保存', () => {
+        const saved = this.saveCampaign()
+        this.showCampaignMessage(saved ? '存档成功。' : '存档失败。')
+      }],
       ['读取', () => this.showContinueStub()],
       ['环境', () => this.showSettingsOverlay()],
       ['标题', () => this.showTitle()],
@@ -3525,7 +3640,37 @@ class KingdomsScene extends Phaser.Scene {
     this.overlayLayer.add(nodes)
   }
 
-  private showCityPolicyActorSelection(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta) {
+  private showCityPolicyOfficerSelection(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta, actorCity: StrategyCity) {
+    const officers = this.officersInCity(actorCity.id)
+    if (officers.length === 0) {
+      this.showCampaignMessage('本城没有可执行命令的武将。')
+      return
+    }
+    this.showCampaign()
+    this.showModalGrid(
+      `${category}｜${command}：选择执行武将`,
+      `${actorCity.name}太守府发起，选择本城武将作为执行人`,
+      officers.map((officer) => ({
+        label: officer.name,
+        detail: `政${officer.gov} 智${officer.intel} 魅${officer.charm}`,
+        onSelect: () => {
+          this.confirmCityPolicy(category, command, target, message, effect, delta, actorCity, () => this.showCityPolicyOfficerSelection(category, command, target, message, effect, delta, actorCity), officer)
+        },
+      })),
+      () => {
+        this.showCampaign()
+        if (category === '军事') this.showMilitaryCommand()
+        else this.showDomesticCommand()
+      },
+      '取消',
+      [
+        { label: '重选发起城', onSelect: () => this.showCityPolicyActorSelection(category, command, target, message, effect, delta) },
+        { label: '取消', onSelect: () => { this.showCampaign(); if (category === '军事') this.showMilitaryCommand(); else this.showDomesticCommand() } },
+      ],
+    )
+  }
+
+  private showCityPolicyActorSelection(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta, needsOfficer = false) {
     const cities = this.controlledCities()
     this.showCampaign()
     this.showModalGrid(
@@ -3538,7 +3683,11 @@ class KingdomsScene extends Phaser.Scene {
         this.selectedCityId = city.id
         this.focusedCityId = city.id
         this.syncSelectedCityState()
-        this.confirmCityPolicy(category, command, target, message, effect, delta, city, () => this.showCityPolicyActorSelection(category, command, target, message, effect, delta))
+        if (needsOfficer) {
+          this.showCityPolicyOfficerSelection(category, command, target, message, effect, delta, city)
+        } else {
+          this.confirmCityPolicy(category, command, target, message, effect, delta, city, () => this.showCityPolicyActorSelection(category, command, target, message, effect, delta, needsOfficer))
+        }
         },
       })),
       () => {
@@ -3567,9 +3716,11 @@ class KingdomsScene extends Phaser.Scene {
     this.focusedCityId = city.id
     this.syncSelectedCityState()
     this.showCampaign()
+    const governor = this.campaignOfficers.find((o) => o.id === this.appointments.governor && o.location === city.id)
+    const govHint = governor ? `太守${governor.name}（政${governor.gov}）治理，月令产出受政务加成。` : '本城未任命太守，月令产出按基准结算。'
     this.showModalGrid(
       `内政｜税率：${city.name}`,
-      '选择下月起执行的税制档位。重税收入高，但月令会持续损伤民心。',
+      govHint,
       (['light', 'normal', 'heavy'] as TaxRate[]).map((rate) => {
       const config = taxRateConfig(rate)
       const selected = (this.cityTaxRates.get(city.id) ?? 'normal') === rate
@@ -3620,21 +3771,22 @@ class KingdomsScene extends Phaser.Scene {
     this.showCityMessage(`${city.name}改行${config.label}，下次月令按新税制结算。`)
   }
 
-  private confirmCityPolicy(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta, actorCity = this.selectedCity, onCancel?: () => void) {
+  private confirmCityPolicy(category: string, command: string, target: string, message: string, effect: string, delta: CityPolicyDelta, actorCity = this.selectedCity, onCancel?: () => void, officer?: StrategyOfficer) {
     const city = actorCity
     if (!city) return
     this.selectedCityId = city.id
     this.focusedCityId = city.id
     this.syncSelectedCityState()
     this.showCampaign()
+    const officerHint = officer ? `｜执行 ${officer.name}（政${officer.gov}）` : ''
     this.showCommandConfirm({
       category,
       command,
       actor: `${city.name}${category === '军事' ? '军府' : '太守府'}`,
       target,
-      scope: `${city.name}城`,
+      scope: `${city.name}城${officerHint}`,
       effect,
-      onConfirm: () => this.applyCityPolicy(message, delta),
+      onConfirm: () => this.applyCityPolicy(message, delta, officer),
       onCancel,
     })
   }
@@ -3708,7 +3860,7 @@ class KingdomsScene extends Phaser.Scene {
   private confirmIntelCommand(category: IntelCommandCategory, actorCity: StrategyCity, targetCity: StrategyCity) {
     this.selectedCityId = actorCity.id
     this.focusedCityId = targetCity.id
-    this.selectedTargetCityId = targetCity.owner !== 'liu' ? targetCity.id : this.selectedTargetCityId
+    this.selectedTargetCityId = targetCity.owner !== this.playerFactionId ? targetCity.id : this.selectedTargetCityId
     this.syncSelectedCityState()
     this.showCampaign()
     this.showCommandConfirm({
@@ -3731,7 +3883,7 @@ class KingdomsScene extends Phaser.Scene {
     }
     this.selectedCityId = actorCity.id
     this.focusedCityId = targetCity.id
-    if (targetCity.owner !== 'liu') this.selectedTargetCityId = targetCity.id
+    if (targetCity.owner !== this.playerFactionId) this.selectedTargetCityId = targetCity.id
     this.councilState.actions -= 1
     this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + (category === '军事' ? 6 : 4), 0, 100)
     this.recordMonthlyAction(`${actorCity.name}${category}情报${targetCity.name}`)
@@ -3999,7 +4151,7 @@ class KingdomsScene extends Phaser.Scene {
     this.makeButton(298, 636, '城池详表', () => this.showCityDetail(this.focusedCityId), this.overlayLayer, 160, 44)
     this.makeButton(480, 636, '势力一览', () => this.showFactionOverview(), this.overlayLayer, 160, 44)
     this.makeButton(640, 636, '返回总览', () => this.showCampaign(), this.overlayLayer, 180, 44)
-    this.makeButton(820, 636, '武将详表', () => this.showOfficerDetail(this.inspectionOfficerId ?? this.campaignOfficers.find((officer) => officer.faction === 'liu')?.id), this.overlayLayer, 160, 44)
+    this.makeButton(820, 636, '武将详表', () => this.showOfficerDetail(this.inspectionOfficerId ?? this.campaignOfficers.find((officer) => officer.faction === this.playerFactionId)?.id), this.overlayLayer, 160, 44)
     this.makeButton(1002, 636, '军事命令', () => this.showMilitaryCommand(), this.overlayLayer, 160, 44)
   }
 
@@ -4007,15 +4159,15 @@ class KingdomsScene extends Phaser.Scene {
     this.drawPanel(82, 140, 330, 430)
     this.drawSectionTitle(112, 170, '城池')
     const lines = [
-      `势力    刘备军`,
-      `主城    成都`,
-      `城池    ${this.countCities('liu')}`,
-      `武将    ${this.countOfficers('liu')}`,
-      `总兵    ${this.sumCityField('liu', 'troops')}`,
-      `总粮    ${this.sumCityField('liu', 'food')}`,
+      `势力    ${this.playerFaction.name}`,
+      `主城    ${cityName(this.playerFaction.capital)}`,
+      `城池    ${this.countCities(this.playerFactionId)}`,
+      `武将    ${this.countOfficers(this.playerFactionId)}`,
+      `总兵    ${this.sumCityField(this.playerFactionId, 'troops')}`,
+      `总粮    ${this.sumCityField(this.playerFactionId, 'food')}`,
       `府库    ${this.cityState.treasury}`,
       `民心    ${this.cityState.publicOrder}`,
-      `邻敌    ${this.neighborEnemyCities('liu').join('、') || '无'}`,
+      `邻敌    ${this.neighborEnemyCities(this.playerFactionId).join('、') || '无'}`,
     ]
     this.overlayLayer.add(this.add.text(118, 230, lines.join('\n'), {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
@@ -4028,7 +4180,7 @@ class KingdomsScene extends Phaser.Scene {
   private drawInspectionHeroes() {
     this.drawPanel(450, 140, 380, 430)
     this.drawSectionTitle(480, 170, '武将')
-    const officers = this.campaignOfficers.filter((officer) => officer.faction === 'liu')
+    const officers = this.campaignOfficers.filter((officer) => officer.faction === this.playerFactionId)
     const pageSize = 4
     const pageData = this.pagedItems(officers, this.inspectionHeroPage, pageSize)
     this.inspectionHeroPage = pageData.page
@@ -4098,7 +4250,7 @@ class KingdomsScene extends Phaser.Scene {
     const faction = factionById(city.owner)
     const officers = this.campaignOfficers.filter((officer) => officer.location === city.id && officer.status !== 'captured')
     const wounded = officers.filter((officer) => officer.status === 'wounded').length
-    const capturedHere = this.campaignOfficers.filter((officer) => officer.location === city.id && officer.status === 'captured' && officer.captorFactionId === 'liu').length
+    const capturedHere = this.campaignOfficers.filter((officer) => officer.location === city.id && officer.status === 'captured' && officer.captorFactionId === this.playerFactionId).length
     const routeNames = city.routes.map((id) => cityName(id)).join('、')
     const hostileRoutes = city.routes
       .map((id) => this.campaignCities.find((item) => item.id === id))
@@ -4162,7 +4314,7 @@ class KingdomsScene extends Phaser.Scene {
     }))
     this.makeButton(412, 636, '返回视察', () => this.showInspection(), this.overlayLayer, 170, 42)
     this.makeButton(640, 636, '设为命令城', () => {
-      if (city.owner === 'liu') {
+      if (city.owner === this.playerFactionId) {
         this.selectedCityId = city.id
         this.focusedCityId = city.id
         this.syncSelectedCityState()
@@ -4174,7 +4326,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private showOfficerDetail(officerId?: string) {
     const officer = this.campaignOfficers.find((item) => item.id === officerId)
-      ?? this.campaignOfficers.filter((item) => item.faction === 'liu').toSorted((a, b) => b.command - a.command)[0]
+      ?? this.campaignOfficers.filter((item) => item.faction === this.playerFactionId).toSorted((a, b) => b.command - a.command)[0]
     if (!officer) {
       this.showInspection()
       return
@@ -4268,7 +4420,7 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private cityAdvice(city: StrategyCity, hostileRouteCount: number) {
-    if (city.owner !== 'liu') return city.defense >= 55 ? '先离间或火计削弱守备。' : '可备粮直取。'
+    if (city.owner !== this.playerFactionId) return city.defense >= 55 ? '先离间或火计削弱守备。' : '可备粮直取。'
     if ((city.disaster ?? 0) >= 35) return '灾害偏高，先开发或福利安民。'
     if ((city.commerce ?? 0) < 30) return '商业薄弱，宜减灾修市积府库。'
     if ((city.land ?? 0) < 35 || (city.irrigation ?? 0) < 35) return '农田水利不足，优先开发。'
@@ -4506,7 +4658,7 @@ class KingdomsScene extends Phaser.Scene {
     actorCity.gold = Math.max(0, actorCity.gold - 20)
     if (Phaser.Math.Between(1, 100) <= this.recruitChance(officer, actorCity)) {
       this.recruitedNeutralIds.add(officer.id)
-      officer.faction = 'liu'
+      officer.faction = this.playerFactionId
       officer.location = actorCity.id
       officer.role = '客将'
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 6, 0, 100)
@@ -4522,8 +4674,8 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private recruitChance(officer: StrategyOfficer, actorCity = this.selectedCity) {
-    const liuBei = this.campaignOfficers.find((item) => item.id === 'liu_bei')
-    const charm = liuBei?.charm ?? 80
+    const ruler = this.campaignOfficers.find((item) => item.faction === this.playerFactionId && item.role === '君主')
+    const charm = ruler?.charm ?? 80
     const locality = actorCity ? this.talentLocalityScore(actorCity, officer) : 0
     const localityBonus = locality === 2 ? 8 : locality === 1 ? 3 : -8
     return Phaser.Math.Clamp(28 + Math.floor(charm / 4) + Math.floor(this.councilState.intel / 10) + Math.floor(this.cityState.publicOrder / 20) + localityBonus - Math.floor(officer.loyalty / 10), 8, 88)
@@ -4656,7 +4808,7 @@ class KingdomsScene extends Phaser.Scene {
     const point = campaignMapPoint(city)
     const selected = city.id === this.selectedCityId
     const focused = city.id === this.focusedCityId
-    const ownCity = city.owner === 'liu'
+    const ownCity = city.owner === this.playerFactionId
     const target = city.id === this.selectedTargetCityId
     const ringColor = selected ? 0xffffff : target ? 0xffd166 : focused ? 0x9fd7ff : ownCity ? 0xf8df9d : 0x7f6a48
     const radius = selected ? 25 : focused || target ? 23 : 20
@@ -4700,8 +4852,8 @@ class KingdomsScene extends Phaser.Scene {
   private shouldShowCityName(city: StrategyCity, selected: boolean, focused: boolean, target: boolean) {
     if (selected || focused || target) return true
     if (this.mapDisplayMode === 'full') return true
-    if (this.mapDisplayMode === 'faction') return city.id === factionById(city.owner)?.capital || city.owner === 'liu'
-    return city.owner === 'liu' || city.id === factionById(city.owner)?.capital || city.troops >= 9000 || city.defense >= 72
+    if (this.mapDisplayMode === 'faction') return city.id === factionById(city.owner)?.capital || city.owner === this.playerFactionId
+    return city.owner === this.playerFactionId || city.id === factionById(city.owner)?.capital || city.troops >= 9000 || city.defense >= 72
   }
 
   private cityLabelOffset(city: StrategyCity, index: number) {
@@ -4724,7 +4876,7 @@ class KingdomsScene extends Phaser.Scene {
     const city = this.campaignCities.find((item) => item.id === cityId)
     if (!city) return
     this.focusedCityId = city.id
-    if (city.owner === 'liu') {
+    if (city.owner === this.playerFactionId) {
       this.selectedCityId = city.id
       this.syncSelectedCityState()
       this.ensureDeploymentTarget()
@@ -4859,10 +5011,10 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f5d487',
     }))
     const commands: [string, string, () => void][] = [
-      ['开发', '金 -120，粮 +300', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '开发田地，粮仓渐实。', '金 -120｜粮 +300', { treasury: -120, food: 300 })],
+      ['开发', '金 -120，粮 +300', () => this.showCityPolicyActorSelection('内政', '开发', '本城田亩', '开发田地，粮仓渐实。', '金 -120｜粮 +300', { treasury: -120, food: 300 }, true)],
       ['调动', '移驻一名武将到邻城', () => this.showMoveActorSelection()],
       ['情报', '查看本城与邻城军情', () => this.showIntelActorSelection('内政')],
-      ['福利', '金 -100，民心 +10，士气 +2', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 })],
+      ['福利', '金 -100，民心 +10，士气 +2', () => this.showCityPolicyActorSelection('内政', '福利', '本城百姓', '开仓赈济，民心渐定。', '金 -100｜民心 +10｜士气 +2', { treasury: -100, publicOrder: 10, morale: 2 }, true)],
       ['任命', '任命太守、先锋、军师', () => this.showAppointmentActorSelection()],
       ['税率', '轻/常/重税，月令结算', () => this.showTaxActorSelection()],
       ['教育', '教育武将或本城吏士', () => this.showEducationActorSelection()],
@@ -4930,15 +5082,21 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private drawCitySelector() {
-    const controlled = this.campaignCities.filter((city) => city.owner === 'liu')
-    this.overlayLayer.add(this.add.text(116, 540, `刘备军城池：${controlled.map((city) => city.name).join('、')}`, {
+    const controlled = this.campaignCities.filter((city) => city.owner === this.playerFactionId)
+    this.overlayLayer.add(this.add.text(116, 540, `${this.playerFaction.name}城池：${controlled.map((city) => city.name).join('、')}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '18px',
       color: '#f4dfb3',
     }))
   }
 
-  private applyCityPolicy(message: string, delta: CityPolicyDelta) {
+  private officerGovBonus(officer?: StrategyOfficer): number {
+    if (!officer) return 1
+    const gov = officer.gov
+    return gov >= 90 ? 1.20 : gov >= 75 ? 1.12 : gov >= 60 ? 1.05 : 0.95
+  }
+
+  private applyCityPolicy(message: string, delta: CityPolicyDelta, officer?: StrategyOfficer) {
     const city = this.selectedCity
     if (!city) return
     if (this.councilState.actions <= 0) {
@@ -4949,23 +5107,26 @@ class KingdomsScene extends Phaser.Scene {
       this.showCityMessage('府库不足，无法施行政令。')
       return
     }
+    const govBonus = this.officerGovBonus(officer)
+    const scale = (value: number) => value >= 0 ? Math.floor(value * govBonus) : value
     city.gold = Phaser.Math.Clamp(city.gold + (delta.treasury ?? 0), 0, 3000)
-    city.food = Phaser.Math.Clamp(city.food + (delta.food ?? 0), 0, 5000)
+    city.food = Phaser.Math.Clamp(city.food + scale(delta.food ?? 0), 0, 5000)
     this.councilState.supplies = Phaser.Math.Clamp(this.councilState.supplies + (delta.supplies ?? 0), 0, 150)
     city.troops = Phaser.Math.Clamp(city.troops + (delta.recruits ?? 0), 0, 30000)
-    city.defense = Phaser.Math.Clamp(city.defense + (delta.walls ?? 0), 0, 100)
-    city.population = Math.max(8000, Math.floor((city.population ?? this.initializeCityEconomy(city).population ?? 20000) + (delta.population ?? 0)))
-    city.commerce = Phaser.Math.Clamp((city.commerce ?? this.initializeCityEconomy(city).commerce ?? 35) + (delta.commerce ?? 0), 0, 100)
-    city.land = Phaser.Math.Clamp((city.land ?? this.initializeCityEconomy(city).land ?? 35) + (delta.land ?? 0), 0, 100)
-    city.irrigation = Phaser.Math.Clamp((city.irrigation ?? this.initializeCityEconomy(city).irrigation ?? 35) + (delta.irrigation ?? 0), 0, 100)
+    city.defense = Phaser.Math.Clamp(city.defense + scale(delta.walls ?? 0), 0, 100)
+    city.population = Math.max(8000, Math.floor((city.population ?? this.initializeCityEconomy(city).population ?? 20000) + scale(delta.population ?? 0)))
+    city.commerce = Phaser.Math.Clamp((city.commerce ?? this.initializeCityEconomy(city).commerce ?? 35) + scale(delta.commerce ?? 0), 0, 100)
+    city.land = Phaser.Math.Clamp((city.land ?? this.initializeCityEconomy(city).land ?? 35) + scale(delta.land ?? 0), 0, 100)
+    city.irrigation = Phaser.Math.Clamp((city.irrigation ?? this.initializeCityEconomy(city).irrigation ?? 35) + scale(delta.irrigation ?? 0), 0, 100)
     city.disaster = Phaser.Math.Clamp((city.disaster ?? 0) + (delta.disaster ?? 0), 0, 100)
-    this.cityState.publicOrder = Phaser.Math.Clamp(this.cityState.publicOrder + (delta.publicOrder ?? 0), 0, 100)
-    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + (delta.morale ?? 0), 0, 100)
+    this.setCityPublicOrder(city, this.cityPublicOrder(city) + scale(delta.publicOrder ?? 0))
+    this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + scale(delta.morale ?? 0), 0, 100)
     this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + (delta.intel ?? 0), 0, 100)
     this.councilState.actions -= 1
-    this.recordMonthlyAction(message.startsWith(city.name) ? message : `${city.name}${message}`)
+    const officerSuffix = officer ? `（${officer.name}政${officer.gov}）` : ''
+    this.recordMonthlyAction(`${message.startsWith(city.name) ? message : `${city.name}${message}`}${officerSuffix}`)
     this.syncSelectedCityState()
-    this.showCityMessage(message)
+    this.showCityMessage(`${message}${officerSuffix}`)
   }
 
   private showCityMessage(message: string) {
@@ -4975,7 +5136,7 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private cycleControlledCity() {
-    const controlled = this.campaignCities.filter((city) => city.owner === 'liu')
+    const controlled = this.campaignCities.filter((city) => city.owner === this.playerFactionId)
     const index = controlled.findIndex((city) => city.id === this.selectedCityId)
     const next = controlled[(index + 1 + controlled.length) % controlled.length]
     if (next) this.selectedCityId = next.id
@@ -4992,6 +5153,7 @@ class KingdomsScene extends Phaser.Scene {
     this.cityState.treasury = city.gold
     this.cityState.recruits = city.troops
     this.cityState.walls = city.defense
+    this.cityState.publicOrder = city.publicOrder ?? this.cityState.publicOrder
   }
 
   private showHeroManagement() {
@@ -5061,9 +5223,9 @@ class KingdomsScene extends Phaser.Scene {
 
   private drawAppointmentPanel() {
     this.overlayLayer.add(this.add.rectangle(182, 510, 916, 84, 0x21160f, 0.96).setOrigin(0).setStrokeStyle(2, 0x8f6c2b, 0.9))
-    const governor = this.officerForUnit(this.appointments.governor)
-    const vanguard = this.officerForUnit(this.appointments.vanguard)
-    const strategist = this.officerForUnit(this.appointments.strategist)
+    const governor = this.appointedOfficer('governor')
+    const vanguard = this.appointedOfficer('vanguard')
+    const strategist = this.appointedOfficer('strategist')
     this.overlayLayer.add(this.add.text(210, 532, `太守：${governor?.name ?? '-'}    先锋：${vanguard?.name ?? '-'}    军师：${strategist?.name ?? '-'}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '22px',
@@ -5174,12 +5336,7 @@ class KingdomsScene extends Phaser.Scene {
     this.selectedCityId = actorCity.id
     this.focusedCityId = actorCity.id
     this.syncSelectedCityState()
-    const unitId = unitIdForOfficerId(officer.id)
-    if (!unitId) {
-      this.showHeroMessage('该武将暂不能映射到战斗单位。')
-      return
-    }
-    this.appointments[role] = unitId
+    this.appointments[role] = officer.id
     this.addOfficerMerit(officer, 8)
     this.addOfficerFatigue(officer, 4)
     this.applyAppointmentEffects()
@@ -5198,13 +5355,18 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private applyAppointmentEffects() {
-    const governor = heroById(this.appointments.governor)
-    const strategist = heroById(this.appointments.strategist)
+    const governor = this.appointedOfficer('governor')
+    const strategist = this.appointedOfficer('strategist')
     if (governor) {
-      this.cityState.publicOrder = Phaser.Math.Clamp(58 + Math.floor((governor.stats.def + governor.stats.res) / 2), 0, 100)
+      const govBonus = Math.floor((governor.gov - 60) * 0.28)
+      const charmBonus = Math.floor((governor.charm - 60) * 0.18)
+      const newOrder = Phaser.Math.Clamp(58 + govBonus + charmBonus, 0, 100)
+      const city = this.campaignCities.find((c) => c.id === governor.location)
+      if (city) this.setCityPublicOrder(city, newOrder)
+      this.cityState.publicOrder = newOrder
     }
     if (strategist) {
-      this.councilState.intel = Phaser.Math.Clamp(16 + strategist.stats.mag + strategist.stats.res, 0, 100)
+      this.councilState.intel = Phaser.Math.Clamp(12 + Math.floor(strategist.intel * 0.82), 0, 100)
     }
   }
 
@@ -5607,7 +5769,7 @@ class KingdomsScene extends Phaser.Scene {
       if (this.textures.exists(key)) {
         this.overlayLayer.add(this.add.image(x + 44, y + 50, key).setDisplaySize(58, 72))
       }
-      const roles = roleLabels(unit.id, this.appointments)
+      const roles = roleLabels(officer.id, this.appointments)
       const selected = this.deploymentOfficerIds.has(officer.id)
       const detail = manifest.get(officer.id)
       this.overlayLayer.add(this.add.text(x + 88, y + 14, unit.name, {
@@ -5751,11 +5913,11 @@ class KingdomsScene extends Phaser.Scene {
     const officerTroops = Object.fromEntries(manifest.map(({ officer, troops }) => [officer.id, troops]))
     const officerFood = Object.fromEntries(manifest.map(({ officer, food }) => [officer.id, food]))
     const officerFatigue = Object.fromEntries(manifest.map(({ officer }) => [officer.id, 0]))
-    const leaderOfficerId = this.officerForUnit(this.appointments.vanguard)?.id ?? officerIds[0] ?? 'liu_bei'
+    const leaderOfficerId = this.appointedOfficer('vanguard')?.id ?? officerIds[0] ?? this.campaignOfficers.find((o) => o.faction === this.playerFactionId && o.role === '君主')?.id ?? officerIds[0] ?? ''
     const armyTroops = manifest.reduce((sum, item) => sum + item.troops, 0)
     this.marchArmy = {
       id: `army-${this.campaignClock.year}-${this.campaignClock.month}-${this.selectedCityId}`,
-      factionId: 'liu',
+      factionId: this.playerFactionId,
       sourceCityId: source.id,
       targetCityId: target.id,
       leaderOfficerId,
@@ -6299,7 +6461,10 @@ class KingdomsScene extends Phaser.Scene {
     const threatPenalty = Math.floor(this.campaignClock.enemyThreat / 12)
     const targetCity = this.availableDeploymentTargets().find((city) => city.owner === this.selectedDiplomacyFactionId)
     const garrisonPenalty = targetCity ? Math.floor(targetCity.troops / 5000) : 0
-    return Phaser.Math.Clamp(base + intelBonus + moraleBonus - threatPenalty - garrisonPenalty, 15, 92)
+    const strategist = this.appointedOfficer('strategist')
+    const strategistBonus = strategist ? Math.floor(strategist.intel / 20) : 0
+    const betrayalPenalty = this.selectedDiplomacyFactionId && this.sabotagedFactionIds.has(this.selectedDiplomacyFactionId) ? 12 : 0
+    return Phaser.Math.Clamp(base + intelBonus + moraleBonus + strategistBonus - threatPenalty - garrisonPenalty - betrayalPenalty, 15, 92)
   }
 
   private showDiplomacyMessage(message: string) {
@@ -6352,7 +6517,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private createBattleUnits() {
     const marchingUnitIds = new Set((this.marchArmy?.officerIds ?? [])
-      .map((officerId) => unitIdForOfficerId(officerId))
+      .map((officerId) => unitIdForOfficerId(officerId, this.playerFactionOfficers()))
       .filter((unitId): unitId is string => unitId !== undefined))
     const playerUnitIds = marchingUnitIds.size > 0
       ? marchingUnitIds
@@ -6450,8 +6615,315 @@ class KingdomsScene extends Phaser.Scene {
     }).setOrigin(0.5))
   }
 
+  private saveKey = 'fenghuo-heroes-save'
+
+  private allMarchArmies(): MarchArmy[] {
+    const armies: MarchArmy[] = []
+    if (this.marchArmy) armies.push(this.marchArmy)
+    armies.push(...this.aiMarchArmies)
+    return armies
+  }
+
+  private defeatedFactionIds(): FactionId[] {
+    return strategyFactions
+      .filter((f) => f.id !== 'neutral' && this.countCities(f.id) === 0)
+      .map((f) => f.id)
+  }
+
+  private serializeAlliances(): Partial<Record<StartableFactionId, StartableFactionId[]>> {
+    const result: Partial<Record<StartableFactionId, StartableFactionId[]>> = {}
+    for (const [factionId, turns] of this.allianceTerms.entries()) {
+      if (turns > 0 && factionId !== 'neutral') {
+        const pfid = this.playerFactionId as StartableFactionId
+        if (!result[pfid]) result[pfid] = []
+        result[pfid]!.push(factionId as StartableFactionId)
+      }
+    }
+    return result
+  }
+
+  private serializeDebts(): SerializableDiplomacyDebt[] {
+    return Array.from(this.diplomacyDebts.entries()).map(([factionId, debt]) => ({
+      factionId,
+      principal: debt.principal,
+      dueYear: debt.dueYear,
+      dueMonth: debt.dueMonth,
+    }))
+  }
+
+  private serializeMarchArmy(army: MarchArmy): {
+    id: string; factionId: FactionId; sourceCityId: CityId; targetCityId?: CityId
+    leaderOfficerId: string; officerIds: string[]; officerTroops: Record<string, number>
+    officerFood: Record<string, number>; officerFatigue: Record<string, number>
+    troops: number; food: number; morale: number
+    position: { kind: 'city' | 'route'; cityId?: CityId; route?: [CityId, CityId]; progress?: number }
+    routePlan: CityId[]; movePoints: number; status: MarchArmy['status']
+  } {
+    return {
+      id: army.id,
+      factionId: army.factionId,
+      sourceCityId: army.sourceCityId,
+      targetCityId: army.targetCityId,
+      leaderOfficerId: army.leaderOfficerId,
+      officerIds: [...army.officerIds],
+      officerTroops: { ...army.officerTroops },
+      officerFood: { ...army.officerFood },
+      officerFatigue: { ...army.officerFatigue },
+      troops: army.troops,
+      food: army.food,
+      morale: army.morale,
+      position: { ...army.position, route: army.position.route ? [...army.position.route] as [CityId, CityId] : undefined },
+      routePlan: [...army.routePlan],
+      movePoints: army.movePoints,
+      status: army.status,
+    }
+  }
+
+  private saveCampaign(): boolean {
+    try {
+      const snapshot = createCampaignSnapshot({
+        meta: {
+          year: this.campaignClock.year,
+          month: this.campaignClock.month,
+          difficulty: this.selectedDifficulty,
+          playerFactionId: this.playerFactionId as StartableFactionId,
+        },
+        cities: this.campaignCities.map((c) => ({
+          id: c.id, owner: c.owner, gold: c.gold, food: c.food, troops: c.troops,
+          defense: c.defense, population: c.population, commerce: c.commerce,
+          land: c.land, irrigation: c.irrigation, disaster: c.disaster,
+        })),
+        officers: this.campaignOfficers.map((o) => ({
+          id: o.id, faction: o.faction, location: o.location, loyalty: o.loyalty,
+          troops: o.troops, weapons: o.weapons, spear: o.spear, bow: o.bow,
+          horse: o.horse, armor: o.armor, training: o.training, status: o.status,
+          statusTurns: o.statusTurns, captorFactionId: o.captorFactionId,
+          merit: o.merit, salary: o.salary, fatigue: o.fatigue,
+        })),
+        marchArmies: this.allMarchArmies().map((a) => this.serializeMarchArmy(a)),
+        defeatedFactionIds: this.defeatedFactionIds(),
+        alliances: this.serializeAlliances(),
+        debts: this.serializeDebts(),
+      })
+      localStorage.setItem(this.saveKey, JSON.stringify(snapshot))
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  private loadCampaign(): boolean {
+    try {
+      const raw = localStorage.getItem(this.saveKey)
+      if (!raw) return false
+      const snapshot: CampaignSnapshot = JSON.parse(raw)
+      const errors = validateCampaignSnapshot(snapshot)
+      if (errors.length > 0) return false
+
+      this.playerFactionId = snapshot.meta.playerFactionId
+      this.selectedDifficulty = snapshot.meta.difficulty
+      this.campaignClock.year = snapshot.meta.year
+      this.campaignClock.month = snapshot.meta.month
+      this.syncCampaignModeToMonth()
+      this.campaignClock.weather = 'clear'
+
+      this.campaignCities = strategyCities.map((base) => {
+        const saved = snapshot.cities.find((c) => c.id === base.id)
+        if (!saved) return { ...base, routes: [...base.routes] }
+        return {
+          ...base,
+          owner: saved.owner as FactionId,
+          gold: saved.gold,
+          food: saved.food,
+          troops: saved.troops,
+          defense: saved.defense,
+          population: saved.population,
+          commerce: saved.commerce,
+          land: saved.land,
+          irrigation: saved.irrigation,
+          disaster: saved.disaster,
+          routes: [...base.routes],
+        }
+      })
+
+      this.campaignOfficers = strategyOfficers.map((base) => {
+        const saved = snapshot.officers.find((o) => o.id === base.id)
+        if (!saved) return { ...base }
+        return {
+          ...base,
+          faction: saved.faction as FactionId,
+          location: saved.location as CityId,
+          loyalty: saved.loyalty,
+          troops: saved.troops ?? base.troops,
+          weapons: saved.weapons ?? base.weapons,
+          spear: saved.spear ?? base.spear,
+          bow: saved.bow ?? base.bow,
+          horse: saved.horse ?? base.horse,
+          armor: saved.armor ?? base.armor,
+          training: saved.training ?? base.training,
+          status: (saved.status ?? 'normal') as OfficerStatus,
+          statusTurns: saved.statusTurns ?? 0,
+          captorFactionId: saved.captorFactionId as FactionId | undefined,
+          merit: saved.merit ?? base.merit,
+          salary: saved.salary ?? base.salary,
+          fatigue: saved.fatigue ?? 0,
+        }
+      })
+
+      this.marchArmy = undefined
+      this.aiMarchArmies = []
+      for (const savedArmy of snapshot.marchArmies) {
+        const army: MarchArmy = {
+          id: savedArmy.id,
+          factionId: savedArmy.factionId as FactionId,
+          sourceCityId: savedArmy.sourceCityId as CityId,
+          targetCityId: savedArmy.targetCityId as CityId | undefined,
+          leaderOfficerId: savedArmy.leaderOfficerId,
+          officerIds: [...savedArmy.officerIds],
+          officerTroops: { ...savedArmy.officerTroops },
+          officerFood: { ...savedArmy.officerFood },
+          officerFatigue: { ...savedArmy.officerFatigue },
+          troops: savedArmy.troops,
+          food: savedArmy.food,
+          morale: savedArmy.morale,
+          position: { kind: savedArmy.position.kind, cityId: savedArmy.position.cityId as CityId | undefined, route: savedArmy.position.route ? [...savedArmy.position.route] as [CityId, CityId] : undefined, progress: savedArmy.position.progress },
+          routePlan: savedArmy.routePlan.map((id) => id as CityId),
+          movePoints: savedArmy.movePoints,
+          status: savedArmy.status,
+        }
+        if (army.factionId === this.playerFactionId) {
+          this.marchArmy = army
+        } else {
+          this.aiMarchArmies.push(army)
+        }
+      }
+
+      this.diplomacyDebts = new Map<FactionId, DiplomacyDebt>()
+      for (const debt of snapshot.debts) {
+        this.diplomacyDebts.set(debt.factionId as FactionId, { factionId: debt.factionId as FactionId, principal: debt.principal, dueYear: debt.dueYear, dueMonth: debt.dueMonth })
+      }
+
+      this.allianceTerms = new Map<FactionId, number>()
+      this.alliedFactionIds = new Set<FactionId>()
+      const pfid = this.playerFactionId as StartableFactionId
+      const allies = snapshot.alliances[pfid]
+      if (allies) {
+        for (const allyId of allies) {
+          this.allianceTerms.set(allyId, 4)
+          this.alliedFactionIds.add(allyId)
+        }
+      }
+
+      this.siegeState = undefined
+      this.duelState = undefined
+      this.selectedDiplomacyFactionId = 'neutral'
+      this.alliedFactionIds = new Set<FactionId>(this.allianceTerms.keys())
+      this.sabotagedFactionIds = new Set<FactionId>()
+      this.cityTaxRates = new Map<CityId, TaxRate>()
+      this.monthlyActionLog = []
+      this.usedRouteEvents = new Set<string>()
+      this.deploymentOfficerIds = new Set<string>()
+      this.deploymentTroopAllocations = new Map<string, number>()
+      this.deploymentFoodAllocations = new Map<string, number>()
+      this.deploymentFood = undefined
+      this.fieldBattleFormation = 'balanced'
+      this.recruitedNeutralIds = new Set<string>()
+      this.mapDisplayMode = 'compact'
+
+      const faction = strategyFactions.find((f) => f.id === this.playerFactionId) ?? strategyFactions[1]
+      this.selectedCityId = faction.capital
+      this.focusedCityId = faction.capital
+      this.councilState = { supplies: 80, morale: 55, intel: 20, actions: 3, trained: false, scouted: false, persuaded: false, alliance: 0, sabotage: false }
+
+      const capital = this.campaignCities.find((c) => c.id === faction.capital)
+      this.cityState = {
+        name: capital?.name ?? faction.capital,
+        publicOrder: 62,
+        treasury: capital?.gold ?? 800,
+        recruits: capital?.troops ?? 6000,
+        farms: 1,
+        walls: capital?.defense ?? 60,
+      }
+
+      const ruler = this.campaignOfficers.find((o) => o.faction === this.playerFactionId && o.role === '君主')
+      const strategist = this.campaignOfficers.find((o) => o.faction === this.playerFactionId && (o.role === '军师' || o.role === '谋臣' || o.role === '都督'))
+      const fallback = this.campaignOfficers.find((o) => o.faction === this.playerFactionId)
+      this.appointments = {
+        governor: ruler?.id ?? fallback?.id ?? '',
+        vanguard: ruler?.id ?? fallback?.id ?? '',
+        strategist: strategist?.id ?? ruler?.id ?? fallback?.id ?? '',
+      }
+
+      this.syncSelectedCityState()
+      this.ensureLocalAppointments()
+      this.music.start()
+      this.showCampaign()
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  private hasSavedCampaign(): boolean {
+    try {
+      return localStorage.getItem(this.saveKey) !== null
+    } catch {
+      return false
+    }
+  }
+
+  private getSaveMeta(): CampaignSnapshotMeta | undefined {
+    try {
+      const raw = localStorage.getItem(this.saveKey)
+      if (!raw) return undefined
+      const snapshot: CampaignSnapshot = JSON.parse(raw)
+      return snapshot.meta
+    } catch {
+      return undefined
+    }
+  }
+
   private showContinueStub() {
-    this.showTitleNotice('继续游戏', '存档系统尚未开放。当前版本请从“开始游戏”进入。')
+    if (!this.hasSavedCampaign()) {
+      this.showTitleNotice('继续游戏', '暂无存档。请从”开始游戏”进入新一局。')
+      return
+    }
+    const meta = this.getSaveMeta()
+    if (!meta) {
+      this.showTitleNotice('继续游戏', '存档读取失败，请重新开始。')
+      return
+    }
+    const faction = strategyFactions.find((f) => f.id === meta.playerFactionId)
+    const saveDate = new Date(meta.savedAt)
+    const dateStr = `${saveDate.getMonth() + 1}/${saveDate.getDate()} ${saveDate.getHours()}:${String(saveDate.getMinutes()).padStart(2, '0')}`
+    const layered = this.addLayeredPanel(640, 420, 660, 260)
+    const heading = this.add.text(640, 342, '继续游戏', {
+      fontFamily: 'Georgia, “Times New Roman”, serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5)
+    const body = this.add.text(640, 414, [
+      `势力：${faction?.name ?? '未知'}`,
+      `年份：${meta.year}年 ${meta.month}月`,
+      `难度：${meta.difficulty === 'easy' ? '初级' : meta.difficulty === 'hard' ? '上级' : '标准'}`,
+      `保存：${dateStr}`,
+    ].join('\n'), {
+      fontFamily: 'Arial, “Microsoft YaHei”, sans-serif',
+      fontSize: '21px',
+      color: '#f8ecd0',
+      align: 'center',
+      lineSpacing: 8,
+    }).setOrigin(0.5)
+    const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), heading, body]
+    this.overlayLayer.add([heading, body])
+    const loadBtn = this.makeButton(580, 510, '继续', () => {
+      nodes.forEach((node) => node.destroy())
+      this.loadCampaign()
+    }, this.overlayLayer, 140, 40)
+    const cancelBtn = this.makeButton(700, 510, '取消', () => {
+      nodes.forEach((node) => node.destroy())
+    }, this.overlayLayer, 140, 40)
+    nodes.push(loadBtn, cancelBtn)
   }
 
   private showSettingsOverlay() {
@@ -6693,7 +7165,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private playerFormationPosition(unit: Unit, fallback: GridPosition) {
     const order = this.marchArmy?.officerIds
-      .map((officerId) => unitIdForOfficerId(officerId))
+      .map((officerId) => unitIdForOfficerId(officerId, this.playerFactionOfficers()))
       .filter((unitId): unitId is string => unitId !== undefined) ?? []
     const index = Math.max(0, order.indexOf(unit.id))
     const formations: Record<FieldBattleFormation, GridPosition[]> = {
@@ -6719,12 +7191,13 @@ class KingdomsScene extends Phaser.Scene {
     }
   }
 
-  private resetCampaignState() {
+  private resetCampaignState(factionId: FactionId = 'liu') {
+    this.playerFactionId = factionId
     this.resetCouncilState()
     this.campaignCities = strategyCities.map((city) => this.initializeCityEconomy({ ...city, routes: [...city.routes] }))
     this.campaignOfficers = strategyOfficers.map((officer) => ({
       ...officer,
-      troops: initialOfficerTroops(officer),
+      troops: initialOfficerTroops(officer, factionId),
       weapons: initialOfficerWeapons(officer),
       spear: initialOfficerEquipment(officer).spear,
       bow: initialOfficerEquipment(officer).bow,
@@ -6738,9 +7211,10 @@ class KingdomsScene extends Phaser.Scene {
       salary: initialOfficerSalary(officer),
       fatigue: 0,
     }))
-    this.selectedCityId = 'chengdu'
-    this.focusedCityId = 'chengdu'
-    this.selectedTargetCityId = 'hanzhong'
+    const faction = strategyFactions.find((f) => f.id === factionId) ?? strategyFactions[1]
+    this.selectedCityId = faction.capital
+    this.focusedCityId = faction.capital
+    this.selectedTargetCityId = undefined
     this.selectedDiplomacyFactionId = 'neutral'
     this.alliedFactionIds = new Set<FactionId>()
     this.allianceTerms = new Map<FactionId, number>()
@@ -6758,13 +7232,14 @@ class KingdomsScene extends Phaser.Scene {
     this.fieldBattleFormation = 'balanced'
     const scenario = this.scenarioConfig()
     const difficulty = this.difficultyConfig()
+    const capital = this.campaignCities.find((c) => c.id === faction.capital)
     this.cityState = {
-      name: '成都',
+      name: capital?.name ?? faction.capital,
       publicOrder: 62,
-      treasury: 850,
-      recruits: 7600,
+      treasury: capital?.gold ?? 800,
+      recruits: capital?.troops ?? 6000,
       farms: 1,
-      walls: 72,
+      walls: capital?.defense ?? 60,
     }
     this.campaignClock = {
       year: scenario.year,
@@ -6773,10 +7248,13 @@ class KingdomsScene extends Phaser.Scene {
       enemyThreat: difficulty.threat,
       weather: 'clear',
     }
+    const ruler = this.campaignOfficers.find((o) => o.faction === factionId && o.role === '君主')
+    const strategist = this.campaignOfficers.find((o) => o.faction === factionId && (o.role === '军师' || o.role === '谋臣' || o.role === '都督'))
+    const fallbackOfficer = this.campaignOfficers.find((o) => o.faction === factionId)
     this.appointments = {
-      governor: 'yun',
-      vanguard: 'yun',
-      strategist: 'xuan',
+      governor: ruler?.id ?? fallbackOfficer?.id ?? '',
+      vanguard: ruler?.id ?? fallbackOfficer?.id ?? '',
+      strategist: strategist?.id ?? ruler?.id ?? fallbackOfficer?.id ?? '',
     }
     this.recruitedNeutralIds = new Set<string>()
     this.syncSelectedCityState()
@@ -6792,7 +7270,23 @@ class KingdomsScene extends Phaser.Scene {
       land: city.land ?? Phaser.Math.Clamp(Math.floor(city.food / 24 + scale / 4), 20, 100),
       irrigation: city.irrigation ?? Phaser.Math.Clamp(Math.floor(city.defense * 0.45 + city.food / 70), 16, 100),
       disaster: city.disaster ?? 0,
+      publicOrder: city.publicOrder ?? (city.owner === this.playerFactionId ? 62 : 50),
     }
+  }
+
+  private cityPublicOrder(city: StrategyCity | undefined): number {
+    return city?.publicOrder ?? this.cityState.publicOrder
+  }
+
+  private setCityPublicOrder(city: StrategyCity, value: number) {
+    city.publicOrder = Phaser.Math.Clamp(value, 0, 100)
+    if (city.id === this.selectedCityId) {
+      this.cityState.publicOrder = city.publicOrder
+    }
+  }
+
+  private get playerFaction(): StrategyFaction {
+    return strategyFactions.find((f) => f.id === this.playerFactionId) ?? strategyFactions[1]
   }
 
   private get selectedCity() {
@@ -6816,7 +7310,7 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private officersInCity(cityId: CityId) {
-    return this.campaignOfficers.filter((officer) => officer.faction === 'liu' && officer.location === cityId && !this.isOfficerOnMarch(officer.id) && this.isOfficerAvailable(officer))
+    return this.campaignOfficers.filter((officer) => officer.faction === this.playerFactionId && officer.location === cityId && !this.isOfficerOnMarch(officer.id) && this.isOfficerAvailable(officer))
   }
 
   private movableOfficersInCity(cityId: CityId) {
@@ -6830,8 +7324,13 @@ class KingdomsScene extends Phaser.Scene {
       || city.gold >= moveResourceConfig('gold', 'small').amount
   }
 
+  private playerFactionOfficers() {
+    return this.campaignOfficers.filter((o) => o.faction === this.playerFactionId)
+  }
+
   private currentCityUnits() {
-    const localUnitIds = new Set(this.currentCityOfficers().map((officer) => unitIdForOfficerId(officer.id)).filter((id): id is string => id !== undefined))
+    const pfo = this.playerFactionOfficers()
+    const localUnitIds = new Set(this.currentCityOfficers().map((officer) => unitIdForOfficerId(officer.id, pfo)).filter((id): id is string => id !== undefined))
     return baseUnits.filter((unit) => unit.faction === 'player' && localUnitIds.has(unit.id))
   }
 
@@ -6840,7 +7339,7 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private deployableOfficersInCity(cityId: CityId) {
-    return this.officersInCity(cityId).filter((officer) => unitIdForOfficerId(officer.id))
+    return this.officersInCity(cityId)
   }
 
   private ensureDeploymentSelection() {
@@ -6985,22 +7484,23 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private officerForUnit(unitId: string) {
-    const officerId = officerIdForUnitId(unitId)
+    const officerId = officerIdForUnitId(unitId, this.playerFactionOfficers())
     return this.campaignOfficers.find((officer) => officer.id === officerId)
   }
 
   private controlledNeighborCitiesFrom(city: StrategyCity) {
     return city.routes
       .map((routeId) => this.campaignCities.find((item) => item.id === routeId))
-      .filter((item): item is StrategyCity => item !== undefined && item.owner === 'liu')
+      .filter((item): item is StrategyCity => item !== undefined && item.owner === this.playerFactionId)
   }
 
   private ensureLocalAppointments() {
-    const units = this.currentCityUnits()
-    if (units.length === 0) return
+    const officers = this.currentCityOfficers()
+    if (officers.length === 0) return
     for (const role of Object.keys(this.appointments) as (keyof typeof this.appointments)[]) {
-      if (!units.some((unit) => unit.id === this.appointments[role])) {
-        this.appointments[role] = units[0].id
+      const currentOfficer = this.appointedOfficer(role)
+      if (!currentOfficer || currentOfficer.location !== this.selectedCityId || !officers.some((o) => o.id === currentOfficer.id)) {
+        this.appointments[role] = officers[0].id
       }
     }
     this.applyAppointmentEffects()
@@ -7013,13 +7513,13 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private controlledCities() {
-    return this.campaignCities.filter((city) => city.owner === 'liu')
+    return this.campaignCities.filter((city) => city.owner === this.playerFactionId)
   }
 
   private diplomacyTargetsFrom(city: StrategyCity) {
     return city.routes
       .map((routeId) => this.campaignCities.find((item) => item.id === routeId))
-      .filter((item): item is StrategyCity => item !== undefined && item.owner !== 'liu')
+      .filter((item): item is StrategyCity => item !== undefined && item.owner !== this.playerFactionId)
   }
 
   private diplomacyFactionTargetsFrom(city: StrategyCity) {
@@ -7126,10 +7626,11 @@ class KingdomsScene extends Phaser.Scene {
   private runEnemyFactionTurns() {
     const reports: string[] = []
     reports.push(...this.advanceAiMarchArmies())
-    for (const faction of strategyFactions.filter((item) => item.id !== 'liu' && item.id !== 'neutral')) {
-      if (this.aiMarchArmies.some((army) => army.factionId === faction.id)) continue
+    for (const faction of strategyFactions.filter((item) => item.id !== this.playerFactionId && item.id !== 'neutral')) {
       const cities = this.campaignCities.filter((city) => city.owner === faction.id)
       if (cities.length === 0) continue
+      this.aiGovernFaction(faction, cities, reports)
+      if (this.aiMarchArmies.some((army) => army.factionId === faction.id)) continue
       const strongest = cities.toSorted((a, b) => b.troops - a.troops)[0]
       const neighbors = strongest.routes
         .map((routeId) => this.campaignCities.find((city) => city.id === routeId))
@@ -7142,7 +7643,7 @@ class KingdomsScene extends Phaser.Scene {
         reports.push(`${faction.name}在${strongest.name}练兵。`)
         continue
       }
-      if (target.owner === 'liu' && this.alliedFactionIds.has(faction.id)) {
+      if (target.owner === this.playerFactionId && this.alliedFactionIds.has(faction.id)) {
         strongest.troops = Math.min(30000, strongest.troops + 260)
         reports.push(`${faction.name}顾及盟约，在${strongest.name}暂缓进犯。`)
         continue
@@ -7157,7 +7658,68 @@ class KingdomsScene extends Phaser.Scene {
         reports.push(`${faction.name}屯兵${strongest.name}，窥伺${target.name}。`)
       }
     }
-    return reports
+    return reports.slice(0, 6)
+  }
+
+  private aiGovernFaction(faction: StrategyFaction, cities: StrategyCity[], reports: string[]) {
+    const trait = faction.trait
+    for (const city of cities) {
+      const borderNeighbor = city.routes.some((r) => {
+        const n = this.campaignCities.find((c) => c.id === r)
+        return n && n.owner !== faction.id
+      })
+      const recruitAmount = trait === '屯田强军' ? 380 : trait === '仁德聚众' ? 320 : trait === '江东水师' ? 340 : trait === '河北名门' ? 360 : 300
+      if (city.troops < 6000) {
+        city.troops = Math.min(30000, city.troops + recruitAmount)
+      }
+      const foodGain = Math.floor(80 + city.population! * 0.003)
+      const goldGain = Math.floor(50 + city.population! * 0.002)
+      city.food = Math.min(5000, city.food + foodGain)
+      city.gold = Math.min(3000, city.gold + goldGain)
+      if (borderNeighbor && city.defense < 65) {
+        city.defense = Math.min(100, city.defense + 3)
+      }
+      if (city.publicOrder !== undefined && city.publicOrder < 45) {
+        city.publicOrder = Math.min(100, (city.publicOrder ?? 50) + 4)
+        city.gold = Math.max(0, city.gold - 40)
+      }
+    }
+    const totalTroops = cities.reduce((sum, c) => sum + c.troops, 0)
+    if (totalTroops > 18000 && cities.length >= 2) {
+      const weakest = cities.toSorted((a, b) => a.troops - b.troops)[0]
+      const strongest = cities.toSorted((a, b) => b.troops - a.troops)[0]
+      if (strongest.troops > weakest.troops * 2 && strongest.troops > 6000) {
+        const transfer = Math.floor(strongest.troops * 0.15)
+        strongest.troops -= transfer
+        weakest.troops = Math.min(30000, weakest.troops + transfer)
+      }
+    }
+    this.aiAttemptDiplomacy(faction, cities, reports)
+  }
+
+  private aiAttemptDiplomacy(faction: StrategyFaction, cities: StrategyCity[], reports: string[]) {
+    const playerBorderCities = cities.filter((c) => c.routes.some((r) => {
+      const n = this.campaignCities.find((cc) => cc.id === r)
+      return n && n.owner === this.playerFactionId
+    }))
+    if (playerBorderCities.length > 0 && Phaser.Math.Between(1, 100) <= 22) {
+      const borderCity = playerBorderCities[Phaser.Math.Between(0, playerBorderCities.length - 1)]
+      const playerCity = borderCity.routes
+        .map((r) => this.campaignCities.find((c) => c.id === r))
+        .find((c) => c && c.owner === this.playerFactionId)
+      if (playerCity) {
+        playerCity.troops = Math.max(600, Math.floor(playerCity.troops * 0.92))
+        playerCity.defense = Math.max(15, playerCity.defense - 2)
+        reports.push(`${faction.ruler}遣细作潜入${playerCity.name}，守军略有动摇。`)
+      }
+    }
+    if (Phaser.Math.Between(1, 100) <= 12) {
+      const otherFactions = strategyFactions.filter((f) => f.id !== faction.id && f.id !== this.playerFactionId && f.id !== 'neutral' && this.countCities(f.id) > 0)
+      if (otherFactions.length > 0) {
+        const ally = otherFactions[Phaser.Math.Between(0, otherFactions.length - 1)]
+        reports.push(`${faction.ruler}与${ally.ruler}互通使节，暗中结好。`)
+      }
+    }
   }
 
   private createAiMarchArmy(faction: StrategyFaction, source: StrategyCity, target: StrategyCity): MarchArmy {
@@ -7310,7 +7872,7 @@ class KingdomsScene extends Phaser.Scene {
       city.gold -= loss
       city.commerce = Phaser.Math.Clamp((city.commerce ?? 35) - 3, 0, 100)
       city.disaster = Phaser.Math.Clamp((city.disaster ?? 0) + 8, 0, 100)
-      this.cityState.publicOrder = Phaser.Math.Clamp(this.cityState.publicOrder - 6, 0, 100)
+      this.setCityPublicOrder(city, this.cityPublicOrder(city) - 6)
       this.syncSelectedCityState()
       return `${city.name}盗贼滋扰，金 -${loss}，商业 -3，灾害 +8，民心 -6。`
     }
@@ -7324,7 +7886,7 @@ class KingdomsScene extends Phaser.Scene {
 
   private strongestEnemySummary() {
     const summaries = strategyFactions
-      .filter((faction) => faction.id !== 'liu' && faction.id !== 'neutral')
+      .filter((faction) => faction.id !== this.playerFactionId && faction.id !== 'neutral')
       .map((faction) => ({
         name: faction.name,
         troops: this.sumCityField(faction.id, 'troops'),
@@ -7812,7 +8374,7 @@ class KingdomsScene extends Phaser.Scene {
     const copy = overrideCopy ?? (inSiege
       ? `会战结果已回写攻城态势。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}  击破：${this.roundKills}`
       : victory
-      ? `敌军主将已败，${target?.name ?? '目标城'}归入刘备军。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}  击破：${this.roundKills}`
+      ? `敌军主将已败，${target?.name ?? '目标城'}归入${this.playerFaction.name}。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}  击破：${this.roundKills}`
       : `我方军势受挫，粮道失守。\n残兵：我军 ${playerForce.total}｜敌军 ${enemyForce.total}\n${battleReport}\n阵数：${this.turn}`)
     this.addLayeredPanel(640, 382, 660, 328)
     this.overlayLayer.add(this.add.text(640, 306, title, {
@@ -7927,7 +8489,7 @@ class KingdomsScene extends Phaser.Scene {
       const seizedGold = Math.floor(target.gold * 0.22)
       const seizedFood = Math.floor(target.food * 0.22)
       const targetRemain = Math.max(500, Math.floor(target.troops * Math.max(0.12, enemyRemainRatio * 0.35)))
-      target.owner = 'liu'
+      target.owner = this.playerFactionId
       target.troops = targetRemain
       target.defense = Math.max(20, Math.floor(target.defense * 0.72))
       target.gold = Math.max(180, target.gold - seizedGold)
@@ -8049,22 +8611,36 @@ function heroById(id: string) {
   return baseUnits.find((unit) => unit.id === id)
 }
 
-function unitIdForOfficerId(officerId: string) {
-  return {
+function unitIdForOfficerId(officerId: string, playerFactionOfficers?: StrategyOfficer[]) {
+  const staticMap: Record<string, string> = {
     liu_bei: 'yun',
     guan_yu: 'lan',
     zhuge_liang: 'xuan',
     zhang_fei: 'qing',
-  }[officerId]
+  }
+  if (staticMap[officerId]) return staticMap[officerId]
+  if (playerFactionOfficers) {
+    const unitIds = ['yun', 'lan', 'xuan', 'qing']
+    const index = playerFactionOfficers.findIndex((o) => o.id === officerId)
+    return index >= 0 && index < unitIds.length ? unitIds[index] : undefined
+  }
+  return undefined
 }
 
-function officerIdForUnitId(unitId: string) {
-  return {
+function officerIdForUnitId(unitId: string, playerFactionOfficers?: StrategyOfficer[]) {
+  const staticMap: Record<string, string> = {
     yun: 'liu_bei',
     lan: 'guan_yu',
     xuan: 'zhuge_liang',
     qing: 'zhang_fei',
-  }[unitId]
+  }
+  if (staticMap[unitId]) return staticMap[unitId]
+  if (playerFactionOfficers) {
+    const unitIds = ['yun', 'lan', 'xuan', 'qing']
+    const index = unitIds.indexOf(unitId)
+    return index >= 0 && index < playerFactionOfficers.length ? playerFactionOfficers[index].id : undefined
+  }
+  return undefined
 }
 
 function factionById(id: FactionId) {
@@ -8131,14 +8707,9 @@ function officerStatusName(officer: StrategyOfficer) {
   return '正常'
 }
 
-function initialOfficerTroops(officer: StrategyOfficer) {
-  if (officer.faction !== 'liu') return Math.max(600, Math.floor(officer.command * 28))
-  return {
-    liu_bei: 1400,
-    guan_yu: 1800,
-    zhang_fei: 1700,
-    zhuge_liang: 900,
-  }[officer.id] ?? Math.max(700, Math.floor(officer.command * 22))
+function initialOfficerTroops(officer: StrategyOfficer, playerFactionId: FactionId = 'liu') {
+  if (officer.faction !== playerFactionId) return Math.max(600, Math.floor(officer.command * 28))
+  return Math.max(700, Math.floor(officer.command * 22))
 }
 
 function initialOfficerWeapons(officer: StrategyOfficer) {
@@ -8283,11 +8854,11 @@ function diplomacyCommandMeta(kind: DiplomacyCommandKind) {
   }[kind] as { command: string; targetKind: 'faction' | 'city' }
 }
 
-function roleLabels(unitId: string, appointments: { governor: string; vanguard: string; strategist: string }) {
+function roleLabels(officerId: string, appointments: { governor: string; vanguard: string; strategist: string }) {
   const labels = []
-  if (appointments.governor === unitId) labels.push('太守')
-  if (appointments.vanguard === unitId) labels.push('先锋')
-  if (appointments.strategist === unitId) labels.push('军师')
+  if (appointments.governor === officerId) labels.push('太守')
+  if (appointments.vanguard === officerId) labels.push('先锋')
+  if (appointments.strategist === officerId) labels.push('军师')
   return labels.length > 0 ? `｜${labels.join('/')}` : ''
 }
 
