@@ -676,6 +676,7 @@ class KingdomsScene extends Phaser.Scene {
   private mapDisplayMode: MapDisplayMode = 'compact'
   private recruitScale: RecruitScale = 'medium'
   private selectedWeaponCategory: keyof OfficerEquipment = 'spear'
+  private selectedTrainingFocus: keyof OfficerEquipment | 'general' = 'general'
   private trainingMode: TrainingMode = 'single'
   private talentScope: TalentScope = 'nearby'
   private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
@@ -2338,9 +2339,17 @@ class KingdomsScene extends Phaser.Scene {
     this.siegeState.actionsRemaining = Math.max(0, this.siegeState.actionsRemaining - 1)
     let message = ''
     if (action === 'assault') {
-      const wallDamage = 10 + Math.floor(this.marchArmy.morale / 18)
-      const defenderLoss = 480 + Math.floor(this.marchArmy.troops / 18)
-      const attackerLoss = 300 + Math.floor(this.siegeState.defenderTroops / 38)
+      const leader = this.campaignOfficers.find((o) => o.id === this.marchArmy?.leaderOfficerId)
+      const leaderBonus = leader ? Math.floor((leader.war + leader.command - 100) * 0.08) : 0
+      const eq = leader ? officerEquipment(leader) : { spear: 0, bow: 0, horse: 0, armor: 0 }
+      const equipBonus = Math.floor(eq.spear * 1.2 + eq.bow * 0.6)
+      const defender = this.campaignOfficers
+        .filter((o) => o.location === city.id && o.faction === city.owner && (o.status ?? 'normal') === 'normal')
+        .sort((a, b) => b.war + b.command - a.war - a.command)[0]
+      const defenderReduce = defender ? Math.floor((defender.war + defender.command - 100) * 0.06) : 0
+      const wallDamage = Math.max(4, 10 + Math.floor(this.marchArmy.morale / 18) + leaderBonus + equipBonus)
+      const defenderLoss = Math.max(200, 480 + Math.floor(this.marchArmy.troops / 18) + leaderBonus * 8 - defenderReduce * 6)
+      const attackerLoss = Math.max(150, 300 + Math.floor(this.siegeState.defenderTroops / 38) - leaderBonus * 4 + defenderReduce * 5)
       this.siegeState.wallHp = Math.max(0, this.siegeState.wallHp - wallDamage)
       this.siegeState.defenderTroops = Math.max(0, this.siegeState.defenderTroops - defenderLoss)
       this.siegeState.attackerTroops = Math.max(0, this.siegeState.attackerTroops - attackerLoss)
@@ -2390,6 +2399,12 @@ class KingdomsScene extends Phaser.Scene {
     }
     this.persistSiegeDamageToCity()
     this.siegeState.turns += 1
+    const reinforcementReport = this.checkSiegeReinforcements(city)
+    if (reinforcementReport) message += `\n${reinforcementReport}`
+    if (this.siegeState.defenderMorale <= 18 && this.siegeState.surroundTurns >= 2 && action === 'surround') {
+      this.showSiegeSurrenderOption(city, message)
+      return
+    }
     if (
       this.siegeState.wallHp <= 0
       || this.siegeState.defenderTroops <= Math.max(500, Math.floor(this.siegeState.defenderInitialTroops * 0.18))
@@ -2403,6 +2418,49 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     this.showSiege(message)
+  }
+
+  private checkSiegeReinforcements(defenderCity: StrategyCity): string {
+    if (!this.siegeState || Phaser.Math.Between(1, 100) > 18) return ''
+    const alliedCities = defenderCity.routes
+      .map((r) => this.campaignCities.find((c) => c.id === r))
+      .filter((c): c is StrategyCity => c !== undefined && c.owner === defenderCity.owner && c.troops > 2000)
+    if (alliedCities.length === 0) return ''
+    const source = alliedCities[Phaser.Math.Between(0, alliedCities.length - 1)]
+    const reinforce = Math.min(source.troops, Math.floor(800 + Math.random() * 1200))
+    source.troops = Math.max(600, source.troops - reinforce)
+    this.siegeState.defenderTroops += reinforce
+    this.siegeState.defenderMorale = Phaser.Math.Clamp(this.siegeState.defenderMorale + 8, 0, 100)
+    return `${source.name}援军${reinforce}兵抵达${defenderCity.name}，守军士气上升。`
+  }
+
+  private showSiegeSurrenderOption(city: StrategyCity, message: string) {
+    this.showSiege(message)
+    const layered = this.addLayeredPanel(640, 400, 560, 200)
+    const heading = this.add.text(640, 340, '守军请降', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '32px',
+      color: '#f8df9d',
+    }).setOrigin(0.5)
+    const body = this.add.text(640, 395, `${city.name}守军士气崩溃，愿开城投降。\n接受可免攻城损耗，拒绝则继续围攻。`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '20px',
+      color: '#f8ecd0',
+      align: 'center',
+      lineSpacing: 8,
+    }).setOrigin(0.5)
+    const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), heading, body]
+    this.overlayLayer.add([heading, body])
+    const accept = this.makeButton(560, 460, '接受投降', () => {
+      nodes.forEach((n) => n.destroy())
+      this.siegeState!.defenderTroops = Math.floor(this.siegeState!.defenderTroops * 0.2)
+      this.completeSiegeVictory()
+    }, this.overlayLayer, 150, 40)
+    const reject = this.makeButton(720, 460, '拒绝', () => {
+      nodes.forEach((n) => n.destroy())
+      this.showSiege('拒绝投降，继续围攻。')
+    }, this.overlayLayer, 150, 40)
+    nodes.push(accept, reject)
   }
 
   private persistSiegeDamageToCity() {
@@ -3259,9 +3317,34 @@ class KingdomsScene extends Phaser.Scene {
       ['情报', () => this.showIntelActorSelection('军事')],
       ['人材', () => this.showTalentActorSelection()],
       ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8｜商业 +1', { treasury: -140, walls: 8, commerce: 1 }, true)],
-      ['训练', () => this.showMilitaryActorSelection('training')],
+      ['训练', () => this.showTrainingFocusSelection()],
       ['出征', () => this.showDeploymentActorSelection()],
     ])
+  }
+
+  private showTrainingFocusSelection() {
+    const focuses: { key: keyof OfficerEquipment | 'general'; label: string; desc: string }[] = [
+      { key: 'general', label: '综合训练', desc: '训练+12，士气+3' },
+      { key: 'spear', label: '枪术特训', desc: '训练+8，枪+1，攻击提升' },
+      { key: 'bow', label: '弓术特训', desc: '训练+8，弓+1，远程提升' },
+      { key: 'horse', label: '骑术特训', desc: '训练+8，马+1，机动提升' },
+      { key: 'armor', label: '甲术特训', desc: '训练+8，甲+1，防御提升' },
+    ]
+    this.showCampaign()
+    this.showModalGrid(
+      '军事｜训练：选择方向',
+      '选择训练方向，再指定武将',
+      focuses.map((f) => ({
+        label: f.label,
+        detail: f.desc,
+        onSelect: () => {
+          this.selectedTrainingFocus = f.key
+          this.showMilitaryActorSelection('training')
+        },
+      })),
+      () => this.showMilitaryCommand(),
+      '取消',
+    )
   }
 
   private showWeaponCategorySelection() {
@@ -3501,7 +3584,18 @@ class KingdomsScene extends Phaser.Scene {
       this.addOfficerMerit(officer, 5)
       this.addOfficerFatigue(officer, 3)
     } else {
-      officer.training = Math.min(100, officerTraining(officer) + 12)
+      const focus = this.selectedTrainingFocus
+      if (focus === 'general') {
+        officer.training = Math.min(100, officerTraining(officer) + 12)
+      } else {
+        officer.training = Math.min(100, officerTraining(officer) + 8)
+        const current = officerEquipment(officer)
+        const newValue = Math.min(5, current[focus] + 1)
+        if (focus === 'spear') officer.spear = newValue
+        if (focus === 'bow') officer.bow = newValue
+        if (focus === 'horse') officer.horse = newValue
+        if (focus === 'armor') officer.armor = newValue
+      }
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 3, 0, 100)
       this.councilState.intel = Phaser.Math.Clamp(this.councilState.intel + 2, 0, 100)
       this.addOfficerMerit(officer, 6)
