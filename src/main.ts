@@ -566,13 +566,14 @@ class ProceduralMusic {
   private gain?: GainNode
   private timer?: number
   private step = 0
+  private volume = 0.035
 
   start() {
     if (this.context) return
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     this.context = new AudioContextClass()
     this.gain = this.context.createGain()
-    this.gain.gain.value = 0.035
+    this.gain.gain.value = this.volume
     this.gain.connect(this.context.destination)
     const melody = [196, 247, 294, 330, 294, 247, 220, 196]
     const bass = [98, 98, 123, 123, 147, 147, 110, 110]
@@ -589,6 +590,15 @@ class ProceduralMusic {
     this.timer = undefined
     this.context?.close()
     this.context = undefined
+  }
+
+  setVolume(v: number) {
+    this.volume = v
+    if (this.gain) this.gain.gain.value = v
+  }
+
+  getVolume(): number {
+    return this.volume
   }
 
   private playTone(frequency: number, duration: number, type: OscillatorType, volume = 1) {
@@ -1124,6 +1134,7 @@ class KingdomsScene extends Phaser.Scene {
       ? [`本月命令：${this.monthlyActionLog.join('；')}。`]
       : ['本月命令：未执行城池命令。']
     const strategicLines = this.strategicSituationReport()
+    const citySummaryLines = this.monthlyCitySummary()
     this.monthlyActionLog = []
     this.saveCampaign()
     this.showMonthReport([
@@ -1133,6 +1144,7 @@ class KingdomsScene extends Phaser.Scene {
       ...(diplomacyReports.length > 0 ? diplomacyReports : ['外交：盟约与债契暂无变化。']),
       ...(officerReports.length > 0 ? officerReports : ['武将状态：暂无伤疲恢复或俘虏变化。']),
       ...strategicLines,
+      ...citySummaryLines,
       `天候：${campaignWeatherName(this.campaignClock.weather)}。${campaignWeatherEffect(this.campaignClock.weather)}`,
       `${enemyAfter.name}整备最盛：总兵 ${enemyBefore.troops} → ${enemyAfter.troops}。`,
       ...(aiReports.length > 0 ? aiReports.slice(0, 4) : ['诸势力暂未有大规模行动。']),
@@ -1205,6 +1217,17 @@ class KingdomsScene extends Phaser.Scene {
       frontiers.length > 0 ? `接壤敌境：${frontiers.join('、')}。` : '接壤敌境：暂无。',
       fallenFactions.length > 0 ? `已灭势力：${fallenFactions.join('、')}。` : '已灭势力：暂无。',
     ]
+  }
+
+  private monthlyCitySummary(): string[] {
+    const cities = this.campaignCities.filter((c) => c.owner === this.playerFactionId)
+    if (cities.length === 0) return ['城池：暂无领地。']
+    const lines = cities.map((c) => {
+      const officers = this.campaignOfficers.filter((o) => o.faction === this.playerFactionId && o.location === c.id && (o.status ?? 'normal') !== 'captured')
+      const po = this.cityPublicOrder(c)
+      return `${c.name} 兵${c.troops} 粮${c.food} 金${c.gold} 防${c.defense} 民${po} 将${officers.length}`
+    })
+    return [`领地（${cities.length}城）：`, ...lines]
   }
 
   private resolveDiplomacyTimers() {
@@ -7018,7 +7041,55 @@ class KingdomsScene extends Phaser.Scene {
   }
 
   private showSettingsOverlay() {
-    this.showTitleNotice('环境设定', '当前可用设置：音乐随开始游戏自动播放。音量、文字速度和存档位将在机能菜单中继续补齐。')
+    const layered = this.addLayeredPanel(640, 400, 660, 300)
+    const heading = this.add.text(640, 310, '环境设定', {
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontSize: '34px',
+      color: '#f8df9d',
+    }).setOrigin(0.5)
+    const nodes: Phaser.GameObjects.GameObject[] = [...Object.values(layered), heading]
+    this.overlayLayer.add(heading)
+    const volumeLevels = [0, 0.015, 0.035, 0.06, 0.1]
+    const volumeLabels = ['静音', '低', '中', '高', '最大']
+    const currentVol = this.music.getVolume()
+    let currentIdx = volumeLevels.findIndex((v) => Math.abs(v - currentVol) < 0.005)
+    if (currentIdx < 0) currentIdx = 2
+    const volText = this.add.text(640, 380, `音量：${volumeLabels[currentIdx]}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '22px',
+      color: '#f8ecd0',
+    }).setOrigin(0.5)
+    nodes.push(volText)
+    this.overlayLayer.add(volText)
+    const volDown = this.makeButton(520, 380, '◀', () => {
+      currentIdx = Math.max(0, currentIdx - 1)
+      this.music.setVolume(volumeLevels[currentIdx])
+      volText.setText(`音量：${volumeLabels[currentIdx]}`)
+    }, this.overlayLayer, 60, 36, 20)
+    const volUp = this.makeButton(760, 380, '▶', () => {
+      currentIdx = Math.min(volumeLevels.length - 1, currentIdx + 1)
+      this.music.setVolume(volumeLevels[currentIdx])
+      volText.setText(`音量：${volumeLabels[currentIdx]}`)
+    }, this.overlayLayer, 60, 36, 20)
+    nodes.push(volDown, volUp)
+    const keybindText = this.add.text(640, 440, [
+      '快捷键：',
+      'D 内政  F 外交  M 军事  N 月令',
+      'V 势力  P 人事  S 机能  K 地图模式',
+      '行军：A 部队  R 路线  G 移动  X 攻击',
+    ].join('\n'), {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '18px',
+      color: '#ead7b3',
+      align: 'center',
+      lineSpacing: 6,
+    }).setOrigin(0.5)
+    nodes.push(keybindText)
+    this.overlayLayer.add(keybindText)
+    const close = this.makeButton(640, 538, '关闭', () => {
+      nodes.forEach((node) => node.destroy())
+    }, this.overlayLayer, 140, 40)
+    nodes.push(close)
   }
 
   private showTitleNotice(title: string, message: string) {
