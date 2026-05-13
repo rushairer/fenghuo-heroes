@@ -1059,15 +1059,16 @@ class KingdomsScene extends Phaser.Scene {
     const owner = target ? factionById(target.owner) : undefined
     const officers = target ? this.campaignOfficers.filter((officer) => officer.location === target.id && officer.faction === target.owner && officer.status !== 'captured') : []
     const odds = target && source ? Math.floor((source.troops / Math.max(1, target.troops + target.defense * 60)) * 100) : 0
+    const intel = this.councilState.intel
     const copy = [
       `出发      ${source?.name ?? '-'}`,
       `目标      ${target?.name ?? '未定'}（${target?.region ?? '-'}）`,
       `归属      ${owner?.name ?? '-'}`,
-      `守军      ${target?.troops ?? 0}`,
-      `城防      ${target?.defense ?? 0}`,
-      `粮草      ${target?.food ?? 0}`,
-      `府库      ${target?.gold ?? 0}`,
-      `守将      ${officers.map((officer) => officer.name).join('、') || owner?.ruler || '郡中守将'}`,
+      `守军      ${target ? this.fuzzyNumber(target.troops, intel) : '-'}`,
+      `城防      ${target ? this.fuzzyNumber(target.defense, intel) : '-'}`,
+      `粮草      ${target ? this.fuzzyNumber(target.food, intel) : '-'}`,
+      `府库      ${target ? this.fuzzyNumber(target.gold, intel) : '-'}`,
+      `守将      ${intel >= 40 ? (officers.map((officer) => officer.name).join('、') || owner?.ruler || '郡中守将') : '不详'}`,
       `邻接      ${target?.routes.map((id) => cityName(id)).join('、') ?? '-'}`,
       `胜算      ${odds >= 150 ? '上风' : odds >= 95 ? '可战' : '艰难'}`,
     ].join('\n')
@@ -4005,22 +4006,36 @@ class KingdomsScene extends Phaser.Scene {
     this.showIntelReport(category, actorCity, targetCity)
   }
 
+  private fuzzyNumber(value: number, intel: number): string {
+    if (intel >= 60) return `${value}`
+    if (intel >= 35) {
+      const spread = Math.max(100, Math.floor(value * 0.18))
+      return `${Math.max(0, value - spread)}~${value + spread}`
+    }
+    if (value >= 8000) return '极多'
+    if (value >= 4000) return '众多'
+    if (value >= 2000) return '较多'
+    if (value >= 800) return '一些'
+    return '少量'
+  }
+
   private showIntelReport(category: IntelCommandCategory, actorCity: StrategyCity, targetCity: StrategyCity) {
     this.showCampaign()
     const owner = factionById(targetCity.owner)
     const officers = this.campaignOfficers.filter((officer) => officer.location === targetCity.id && officer.faction === targetCity.owner)
     const neighbors = targetCity.routes.map((id) => this.campaignCities.find((item) => item.id === id)).filter((item): item is StrategyCity => Boolean(item))
+    const intel = this.councilState.intel
     const lines = [
       `发起      ${actorCity.name}`,
       `目标      ${targetCity.name}（${targetCity.region}）`,
       `归属      ${owner?.name ?? '-'}`,
-      `守军      ${targetCity.troops}`,
-      `城防      ${targetCity.defense}`,
-      `粮草      ${targetCity.food}`,
-      `府库      ${targetCity.gold}`,
-      `守将      ${officers.map((officer) => officer.name).join('、') || owner?.ruler || '郡中守将'}`,
+      `守军      ${this.fuzzyNumber(targetCity.troops, intel)}`,
+      `城防      ${this.fuzzyNumber(targetCity.defense, intel)}`,
+      `粮草      ${this.fuzzyNumber(targetCity.food, intel)}`,
+      `府库      ${this.fuzzyNumber(targetCity.gold, intel)}`,
+      `守将      ${intel >= 40 ? (officers.map((officer) => officer.name).join('、') || owner?.ruler || '郡中守将') : '不详'}`,
       `邻接      ${neighbors.map((city) => city.name).join('、') || '-'}`,
-      `情报      ${this.councilState.intel}`,
+      `情报      ${intel}`,
     ]
     this.showModalReport(`${category}情报`, undefined, lines, '返回', () => category === '军事' ? this.showMilitaryCommand() : this.showDomesticCommand())
   }
@@ -7794,32 +7809,35 @@ class KingdomsScene extends Phaser.Scene {
       if (cities.length === 0) continue
       this.aiGovernFaction(faction, cities, reports)
       if (this.aiMarchArmies.some((army) => army.factionId === faction.id)) continue
-      const strongest = cities.toSorted((a, b) => b.troops - a.troops)[0]
-      const neighbors = strongest.routes
-        .map((routeId) => this.campaignCities.find((city) => city.id === routeId))
-        .filter((city): city is StrategyCity => city !== undefined)
-      const target = neighbors
-        .filter((city) => city.owner !== faction.id)
-        .toSorted((a, b) => a.troops + a.defense * 60 - (b.troops + b.defense * 60))[0]
-      if (!target) {
+      const allTargets: { source: StrategyCity; target: StrategyCity; score: number }[] = []
+      for (const city of cities) {
+        if (city.troops < 4000) continue
+        const neighbors = city.routes
+          .map((routeId) => this.campaignCities.find((c) => c.id === routeId))
+          .filter((c): c is StrategyCity => c !== undefined && c.owner !== faction.id)
+        for (const neighbor of neighbors) {
+          if (neighbor.owner === this.playerFactionId && this.alliedFactionIds.has(faction.id)) continue
+          const strengthRatio = city.troops / Math.max(1, neighbor.troops + neighbor.defense * 50)
+          if (strengthRatio < 1.05) continue
+          let score = strengthRatio * 100
+          if (neighbor.owner === 'neutral') score += 30
+          if (neighbor.owner === this.playerFactionId) score -= 15
+          score -= neighbor.defense * 0.8
+          allTargets.push({ source: city, target: neighbor, score })
+        }
+      }
+      if (allTargets.length === 0) {
+        const strongest = cities.toSorted((a, b) => b.troops - a.troops)[0]
         strongest.troops = Math.min(30000, strongest.troops + 420)
-        reports.push(`${faction.name}在${strongest.name}练兵。`)
+        strongest.food = Math.min(5000, strongest.food + 120)
+        reports.push(`${faction.name}在${strongest.name}整军备战。`)
         continue
       }
-      if (target.owner === this.playerFactionId && this.alliedFactionIds.has(faction.id)) {
-        strongest.troops = Math.min(30000, strongest.troops + 260)
-        reports.push(`${faction.name}顾及盟约，在${strongest.name}暂缓进犯。`)
-        continue
-      }
-      if (strongest.troops > target.troops * 1.18 && strongest.troops > 5200) {
-        const army = this.createAiMarchArmy(faction, strongest, target)
-        this.aiMarchArmies.push(army)
-        reports.push(`${faction.name}自${strongest.name}发兵，向${target.name}进军。`)
-      } else {
-        strongest.troops = Math.min(30000, strongest.troops + 520)
-        strongest.food = Math.min(5000, strongest.food + 180)
-        reports.push(`${faction.name}屯兵${strongest.name}，窥伺${target.name}。`)
-      }
+      allTargets.sort((a, b) => b.score - a.score)
+      const best = allTargets[0]
+      const army = this.createAiMarchArmy(faction, best.source, best.target)
+      this.aiMarchArmies.push(army)
+      reports.push(`${faction.name}自${best.source.name}发兵，向${best.target.name}进军。`)
     }
     return reports.slice(0, 6)
   }
