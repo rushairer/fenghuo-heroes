@@ -1241,9 +1241,23 @@ class KingdomsScene extends Phaser.Scene {
     const lines = cities.map((c) => {
       const officers = this.campaignOfficers.filter((o) => o.faction === this.playerFactionId && o.location === c.id && (o.status ?? 'normal') !== 'captured')
       const po = this.cityPublicOrder(c)
-      return `${c.name} 兵${c.troops} 粮${c.food} 金${c.gold} 防${c.defense} 民${po} 将${officers.length}`
+      const governor = officers.find((o) => o.role === '君主')
+      const bonus = this.cityGovernanceBonus(c.id)
+      const govTag = governor ? `${governor.name}政${governor.gov}` : '无太守'
+      const prodTag = bonus.productionMultiplier > 1 ? `产+${Math.floor((bonus.productionMultiplier - 1) * 100)}%` : bonus.productionMultiplier < 1 ? `产${Math.floor((bonus.productionMultiplier - 1) * 100)}%` : ''
+      return `${c.name} 兵${c.troops} 粮${c.food} 金${c.gold} 防${c.defense} 民${po} 将${officers.length}｜${govTag}${prodTag}`
     })
-    return [`领地（${cities.length}城）：`, ...lines]
+    const alliances = Array.from(this.allianceTerms.entries()).map(([fid, t]) => `${factionById(fid)?.ruler ?? fid}盟${t}月`).join('、')
+    const creditLine = strategyFactions
+      .filter((f) => f.id !== this.playerFactionId && f.id !== 'neutral' && this.countCities(f.id) > 0)
+      .map((f) => `${f.ruler}${this.getDiplomaticCredit(f.id)}`)
+      .join(' ')
+    return [
+      `领地（${cities.length}城）：`,
+      ...lines,
+      alliances ? `邦交：${alliances}` : '邦交：暂无盟约',
+      `信用：${creditLine}`,
+    ]
   }
 
   private resolveDiplomacyTimers() {
@@ -2001,15 +2015,16 @@ class KingdomsScene extends Phaser.Scene {
     const index = this.aiMarchArmies.findIndex((item) => this.aiArmyUsesRoute(item, route))
     const army = this.aiMarchArmies[index]
     if (!army) return ''
-    const foodLoss = Math.min(10, army.food)
-    const troopLoss = army.food <= 6 ? Math.min(220, Math.max(0, army.troops - 320)) : 0
-    army.food = Math.max(0, army.food - 10)
-    army.morale = Phaser.Math.Clamp(army.morale - 5, 0, 100)
+    const foodLoss = Math.min(14, army.food)
+    const troopLoss = army.food <= 8 ? Math.min(320, Math.max(0, army.troops - 320)) : 0
+    const moraleLoss = 8
+    army.food = Math.max(0, army.food - foodLoss)
+    army.morale = Phaser.Math.Clamp(army.morale - moraleLoss, 0, 100)
     if (troopLoss > 0) army.troops = Math.max(260, army.troops - troopLoss)
     if (army.food <= 0 && army.morale <= 18) army.status = 'routed'
     const routed = army.status === 'routed' ? '，其军粮尽溃散' : ''
     if (army.status === 'routed') this.aiMarchArmies.splice(index, 1)
-    return ` ${this.aiArmyName(army)}粮线受损，敌粮 -${foodLoss}，士气 -5${troopLoss > 0 ? `，折兵${troopLoss}` : ''}${routed}。`
+    return ` ${this.aiArmyName(army)}粮线受损，敌粮 -${foodLoss}，士气 -${moraleLoss}${troopLoss > 0 ? `，折兵${troopLoss}` : ''}${routed}。`
   }
 
   private confirmMarchForage() {
@@ -6715,8 +6730,20 @@ class KingdomsScene extends Phaser.Scene {
       this.sabotagedFactionIds.add(faction.id)
       if (targetCity) targetCity.troops = Math.max(800, Math.floor(targetCity.troops * 0.86))
       this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat - 14, 0, 100)
+      let defectionReport = ''
+      if (targetCity) {
+        const lowLoyaltyOfficers = this.campaignOfficers.filter((o) => o.location === targetCity.id && o.faction === targetCity.owner && o.loyalty < 50 && o.role !== '君主' && (o.status ?? 'normal') === 'normal')
+        for (const officer of lowLoyaltyOfficers) {
+          const defectionChance = Math.floor(25 + (50 - officer.loyalty) * 0.8 + this.councilState.intel * 0.15)
+          if (Phaser.Math.Between(1, 100) <= defectionChance) {
+            officer.faction = this.playerFactionId
+            officer.loyalty = Phaser.Math.Clamp(officer.loyalty + 20, 40, 75)
+            defectionReport += `${officer.name}倒戈来投。`
+          }
+        }
+      }
       this.recordMonthlyAction(`离间${faction.ruler}军`)
-      this.showDiplomacyMessage(`离间${faction.ruler}军奏效，${targetCity?.name ?? '目标城'}兵力动摇，敌势 -14。`)
+      this.showDiplomacyMessage(`离间${faction.ruler}军奏效，${targetCity?.name ?? '目标城'}兵力动摇，敌势 -14。${defectionReport}`)
       return
     }
     this.councilState.persuaded = true
