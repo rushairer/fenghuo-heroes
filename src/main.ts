@@ -3473,6 +3473,19 @@ class KingdomsScene extends Phaser.Scene {
       city.manpower = Math.max(0, mp - adjustedTroops)
       this.setCityPublicOrder(city, this.cityPublicOrder(city) - adjustedPublicOrderCost)
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + scale.moraleGain, 0, 100)
+      const po = this.cityPublicOrder(city)
+      const loyaltyPenalty = officer.loyalty < 60 ? 15 : 0
+      const poPenalty = po < 40 ? 20 : po < 55 ? 8 : 0
+      const desertionChance = loyaltyPenalty + poPenalty
+      if (desertionChance > 0 && Phaser.Math.Between(1, 100) <= desertionChance) {
+        const desertions = Math.floor(adjustedTroops * Phaser.Math.Between(15, 35) / 100)
+        officer.troops = Math.max(0, officerTroops(officer) - desertions)
+        city.troops = Math.max(0, city.troops - desertions)
+        this.addOfficerMerit(officer, Math.floor(adjustedTroops / 120))
+        this.addOfficerFatigue(officer, adjustedPublicOrderCost + 4)
+        this.showCampaignMessage(`${officer.name}募兵${adjustedTroops}，但有${desertions}人逃散。${po < 40 ? '民心过低，逃兵严重。' : officer.loyalty < 60 ? '忠诚不足，部曲不稳。' : ''}`)
+        return
+      }
       this.addOfficerMerit(officer, Math.floor(adjustedTroops / 120))
       this.addOfficerFatigue(officer, adjustedPublicOrderCost + 4)
     } else if (kind === 'weapon') {
@@ -7838,10 +7851,13 @@ class KingdomsScene extends Phaser.Scene {
       const cities = this.campaignCities.filter((city) => city.owner === faction.id)
       if (cities.length === 0) continue
       this.aiGovernFaction(faction, cities, reports)
-      if (this.aiMarchArmies.some((army) => army.factionId === faction.id)) continue
+      const existingArmies = this.aiMarchArmies.filter((army) => army.factionId === faction.id)
+      const maxArmies = cities.length >= 6 ? 3 : cities.length >= 3 ? 2 : 1
+      if (existingArmies.length >= maxArmies) continue
+      const usedSources = new Set(existingArmies.map((a) => a.sourceCityId))
       const allTargets: { source: StrategyCity; target: StrategyCity; score: number }[] = []
       for (const city of cities) {
-        if (city.troops < 4000) continue
+        if (city.troops < 4000 || usedSources.has(city.id)) continue
         const neighbors = city.routes
           .map((routeId) => this.campaignCities.find((c) => c.id === routeId))
           .filter((c): c is StrategyCity => c !== undefined && c.owner !== faction.id)
@@ -7864,10 +7880,13 @@ class KingdomsScene extends Phaser.Scene {
         continue
       }
       allTargets.sort((a, b) => b.score - a.score)
-      const best = allTargets[0]
-      const army = this.createAiMarchArmy(faction, best.source, best.target)
-      this.aiMarchArmies.push(army)
-      reports.push(`${faction.name}自${best.source.name}发兵，向${best.target.name}进军。`)
+      const slots = maxArmies - existingArmies.length
+      const launches = allTargets.slice(0, slots)
+      for (const best of launches) {
+        const army = this.createAiMarchArmy(faction, best.source, best.target)
+        this.aiMarchArmies.push(army)
+        reports.push(`${faction.name}自${best.source.name}发兵，向${best.target.name}进军。`)
+      }
     }
     return reports.slice(0, 6)
   }
@@ -8652,10 +8671,27 @@ class KingdomsScene extends Phaser.Scene {
     attackerOfficers.forEach((officer) => {
       this.addOfficerMerit(officer, victory ? 12 : 5)
       this.addOfficerFatigue(officer, victory ? 12 : 18)
+      if (!victory) {
+        const roll = Phaser.Math.Between(1, 100)
+        if (roll <= 12 && defenderCity) {
+          this.captureOfficer(officer, defenderCity.owner, defenderCity.id)
+        } else if (roll <= 18) {
+          this.retireOfficer(officer)
+        }
+      }
     })
     defenderOfficers.forEach((officer) => {
       this.addOfficerMerit(officer, victory ? 4 : 10)
       this.addOfficerFatigue(officer, 14)
+      if (victory) {
+        const roll = Phaser.Math.Between(1, 100)
+        const sourceCity = this.campaignCities.find((c) => c.id === this.marchArmy?.sourceCityId)
+        if (roll <= 18 && sourceCity) {
+          this.captureOfficer(officer, this.marchArmy!.factionId, sourceCity.id)
+        } else if (roll <= 24) {
+          this.retireOfficer(officer)
+        }
+      }
     })
     this.marchArmy.troops = this.siegeState.attackerTroops
     this.marchArmy.food = Math.max(0, this.marchArmy.food - 5)
