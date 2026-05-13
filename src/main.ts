@@ -650,6 +650,7 @@ class KingdomsScene extends Phaser.Scene {
   private diplomacyDebts = new Map<FactionId, DiplomacyDebt>()
   private cityTaxRates = new Map<CityId, TaxRate>()
   private sabotagedFactionIds = new Set<FactionId>()
+  private factionSuccessionCount = new Map<FactionId, number>()
   private monthlyActionLog: string[] = []
   private marchArmy?: MarchArmy
   private aiMarchArmies: MarchArmy[] = []
@@ -1098,6 +1099,7 @@ class KingdomsScene extends Phaser.Scene {
       }
     }
     const aiReports = this.runEnemyFactionTurns()
+    const destructionReports = this.checkFactionDestruction()
     const diplomacyReports = this.resolveDiplomacyTimers()
     const enemyAfter = this.strongestEnemySummary()
     this.syncSelectedCityState()
@@ -1134,6 +1136,7 @@ class KingdomsScene extends Phaser.Scene {
       `天候：${campaignWeatherName(this.campaignClock.weather)}。${campaignWeatherEffect(this.campaignClock.weather)}`,
       `${enemyAfter.name}整备最盛：总兵 ${enemyBefore.troops} → ${enemyAfter.troops}。`,
       ...(aiReports.length > 0 ? aiReports.slice(0, 4) : ['诸势力暂未有大规模行动。']),
+      ...(destructionReports.length > 0 ? destructionReports : []),
       eventText,
       `新月份：${campaignModeName(this.campaignClock.mode)}，政令恢复为 ${this.councilState.actions}，当前城池 ${this.selectedCity?.name ?? '-'}。`,
     ])
@@ -1721,6 +1724,65 @@ class KingdomsScene extends Phaser.Scene {
     officer.status = 'wounded'
     officer.statusTurns = 99
     officer.fatigue = 100
+  }
+
+  private checkRulerDeath(officer: StrategyOfficer): string[] {
+    const reports: string[] = []
+    if (officer.role !== '君主') return reports
+    const factionId = officer.faction
+    const faction = factionById(factionId)
+    if (!faction) return reports
+    const cities = this.campaignCities.filter((c) => c.owner === factionId)
+    if (cities.length === 0) {
+      reports.push(`${faction.name}已无城池，${officer.name}退阵后势力瓦解。`)
+      return reports
+    }
+    const currentCount = this.factionSuccessionCount.get(factionId) ?? 0
+    const successor = this.campaignOfficers
+      .filter((o) => o.faction === factionId && o.id !== officer.id && o.role !== '君主' && (o.status ?? 'normal') === 'normal')
+      .sort((a, b) => b.command + b.charm - a.command - a.charm)[0]
+    if (successor && currentCount < 3) {
+      successor.role = '君主'
+      successor.loyalty = 100
+      this.factionSuccessionCount.set(factionId, currentCount + 1)
+      reports.push(`${faction.name}${officer.name}退阵，${successor.name}继位为新君主。`)
+    } else {
+      const remainingOfficers = this.campaignOfficers.filter((o) => o.faction === factionId && (o.status ?? 'normal') !== 'captured')
+      if (remainingOfficers.length === 0 || currentCount >= 3) {
+        for (const city of cities) {
+          const strongestNeighbor = city.routes
+            .map((r) => this.campaignCities.find((c) => c.id === r))
+            .filter((c): c is StrategyCity => c !== undefined && c.owner !== factionId && c.owner !== 'neutral')
+            .sort((a, b) => b.troops - a.troops)[0]
+          if (strongestNeighbor) {
+            city.owner = strongestNeighbor.owner
+            city.troops = Math.floor(city.troops * 0.4)
+          } else {
+            city.owner = 'neutral'
+            city.troops = Math.floor(city.troops * 0.3)
+          }
+        }
+        reports.push(`${faction.name}因无继位者而灭亡，城池归入邻近势力。`)
+      }
+    }
+    return reports
+  }
+
+  private checkFactionDestruction(): string[] {
+    const reports: string[] = []
+    for (const faction of strategyFactions.filter((f) => f.id !== 'neutral' && f.id !== this.playerFactionId)) {
+      const cities = this.campaignCities.filter((c) => c.owner === faction.id)
+      if (cities.length > 0) continue
+      const officers = this.campaignOfficers.filter((o) => o.faction === faction.id && (o.status ?? 'normal') !== 'captured')
+      if (officers.length === 0) continue
+      for (const officer of officers) {
+        officer.faction = 'neutral'
+        officer.status = 'normal'
+        officer.statusTurns = 0
+      }
+      reports.push(`${faction.name}势力消散，残余武将流落四方。`)
+    }
+    return reports
   }
 
   private addOfficerMerit(officer: StrategyOfficer, amount: number) {
@@ -2591,6 +2653,12 @@ class KingdomsScene extends Phaser.Scene {
       fontSize: '20px',
       color: '#f8ecd0',
     }))
+    const eq = officerEquipment(officer)
+    this.overlayLayer.add(this.add.text(x + 30, y + 144, `枪${eq.spear} 弓${eq.bow} 马${eq.horse} 甲${eq.armor}`, {
+      fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
+      fontSize: '16px',
+      color: '#c9b07a',
+    }))
     this.drawMeter(x + 30, y + 160, 330, 16, hp, 100, 0xc94b3b, '体力')
     this.drawMeter(x + 30, y + 202, 330, 16, stamina, 100, 0xd4af37, '气力')
     this.drawMeter(x + 30, y + 244, 330, 16, spirit, 100, 0x5fb3d1, '斗志')
@@ -2673,23 +2741,42 @@ class KingdomsScene extends Phaser.Scene {
   private defenderDuelAction(officer: StrategyOfficer): DuelAction {
     if (!this.duelState) return 'attack'
     if (this.duelState.defenderHp < 34) return 'guard'
-    if (this.duelState.defenderStamina >= 58 && this.duelState.defenderSpirit >= 48 && (officer.war >= 84 || this.duelState.attackerHp < 46)) return 'special'
-    if (this.duelState.defenderStamina < 30 || this.duelState.defenderSpirit < 32) return 'focus'
-    if (this.duelState.attackerSpirit >= 54 && this.duelState.defenderStamina >= 42) return 'evade'
-    return officer.war >= 86 || this.duelState.attackerHp < 42 ? 'attack' : 'guard'
+    return this.duelDefenderAction(officer, this.duelState.defenderStamina, this.duelState.defenderSpirit)
   }
 
   private duelPower(officer: StrategyOfficer, action: DuelAction, stamina: number, spirit: number) {
     if (action === 'focus' || action === 'retreat') return Math.max(4, Math.floor(officer.war / 9))
     const base = action === 'special' ? 22 : action === 'attack' ? 13 : action === 'evade' ? 5 : 7
-    return base + Math.floor(officer.war / 7) + Math.floor(officer.command / 18) + Math.floor(stamina / 18) + Math.floor(spirit / 22)
+    const equipment = officerEquipment(officer)
+    const weaponBonus = Math.floor(equipment.spear * 1.5) + Math.floor(equipment.bow * 0.8) + Math.floor(equipment.armor * 1.2)
+    return base + Math.floor(officer.war / 7) + Math.floor(officer.command / 18) + Math.floor(stamina / 18) + Math.floor(spirit / 22) + weaponBonus
   }
 
   private duelEvadeRate(officer: StrategyOfficer, stamina: number) {
-    const evadeScore = officer.command + stamina
+    const equipment = officerEquipment(officer)
+    const evadeScore = officer.command + stamina + equipment.horse * 3
     if (evadeScore >= 150) return 0.18
     if (evadeScore >= 118) return 0.34
     return 0.58
+  }
+
+  private duelDefenderAction(officer: StrategyOfficer, stamina: number, spirit: number): DuelAction {
+    const aggression = officer.war > officer.intel * 1.3 ? 'aggressive' : officer.intel > officer.war * 1.2 ? 'cautious' : 'balanced'
+    if (stamina < 25) return 'focus'
+    if (spirit > 75 && stamina > 50) return 'special'
+    if (aggression === 'aggressive') {
+      if (stamina > 40) return Phaser.Math.Between(1, 100) <= 60 ? 'attack' : 'special'
+      return 'guard'
+    }
+    if (aggression === 'cautious') {
+      if (spirit > 60 && stamina > 55) return 'attack'
+      return Phaser.Math.Between(1, 100) <= 45 ? 'evade' : 'guard'
+    }
+    const roll = Phaser.Math.Between(1, 100)
+    if (roll <= 40) return 'attack'
+    if (roll <= 65) return 'guard'
+    if (roll <= 85) return 'evade'
+    return 'focus'
   }
 
   private duelStaminaDelta(action: DuelAction) {
@@ -2731,9 +2818,11 @@ class KingdomsScene extends Phaser.Scene {
       if (roll <= 30 && sourceCity) {
         this.captureOfficer(defender, this.marchArmy.factionId, sourceCity.id)
         this.duelState.log.push(`${defender.name}力竭被擒，押送${sourceCity.name}。守军震动，损兵${defenderLoss}。`)
+        this.duelState.log.push(...this.checkRulerDeath(defender))
       } else if (roll <= 40) {
         this.retireOfficer(defender)
         this.duelState.log.push(`${defender.name}重伤退阵，短期难以再战。守军震动，损兵${defenderLoss}。`)
+        this.duelState.log.push(...this.checkRulerDeath(defender))
       } else {
         this.woundOfficer(defender, 2)
         this.duelState.log.push(`${defender.name}败退伤疲，守军震动，损兵${defenderLoss}。`)
@@ -2749,9 +2838,11 @@ class KingdomsScene extends Phaser.Scene {
       if (roll <= 20 && city) {
         this.captureOfficer(attacker, city.owner, city.id)
         this.duelState.log.push(`${attacker.name}力竭被擒，押入${city.name}。我军损兵${attackerLoss}。`)
+        this.duelState.log.push(...this.checkRulerDeath(attacker))
       } else if (roll <= 28) {
         this.retireOfficer(attacker)
         this.duelState.log.push(`${attacker.name}重伤退阵，短期难以再战。我军损兵${attackerLoss}。`)
+        this.duelState.log.push(...this.checkRulerDeath(attacker))
       } else {
         this.woundOfficer(attacker, 2)
         this.duelState.log.push(`${attacker.name}失利伤疲退阵，我军损兵${attackerLoss}。`)
@@ -7221,6 +7312,7 @@ class KingdomsScene extends Phaser.Scene {
     this.diplomacyDebts = new Map<FactionId, DiplomacyDebt>()
     this.cityTaxRates = new Map<CityId, TaxRate>()
     this.sabotagedFactionIds = new Set<FactionId>()
+    this.factionSuccessionCount = new Map<FactionId, number>()
     this.monthlyActionLog = []
     this.marchArmy = undefined
     this.aiMarchArmies = []
