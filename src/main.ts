@@ -2792,10 +2792,12 @@ class KingdomsScene extends Phaser.Scene {
       color: '#f8ecd0',
     }))
     const eq = officerEquipment(officer)
-    this.overlayLayer.add(this.add.text(x + 30, y + 144, `枪${eq.spear} 弓${eq.bow} 马${eq.horse} 甲${eq.armor}`, {
+    const fatigue = officer.fatigue ?? 0
+    const fatigueColor = fatigue >= 70 ? '#c94b3b' : fatigue >= 40 ? '#d4af37' : '#ead7b3'
+    this.overlayLayer.add(this.add.text(x + 30, y + 144, `枪${eq.spear} 弓${eq.bow} 马${eq.horse} 甲${eq.armor}  疲${fatigue}`, {
       fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
       fontSize: '16px',
-      color: '#c9b07a',
+      color: fatigueColor,
     }))
     this.drawMeter(x + 30, y + 160, 330, 16, hp, 100, 0xc94b3b, '体力')
     this.drawMeter(x + 30, y + 202, 330, 16, stamina, 100, 0xd4af37, '气力')
@@ -2887,7 +2889,9 @@ class KingdomsScene extends Phaser.Scene {
     const base = action === 'special' ? 22 : action === 'attack' ? 13 : action === 'evade' ? 5 : 7
     const equipment = officerEquipment(officer)
     const weaponBonus = Math.floor(equipment.spear * 1.5) + Math.floor(equipment.bow * 0.8) + Math.floor(equipment.armor * 1.2)
-    return base + Math.floor(officer.war / 7) + Math.floor(officer.command / 18) + Math.floor(stamina / 18) + Math.floor(spirit / 22) + weaponBonus
+    const fatigue = officer.fatigue ?? 0
+    const fatiguePenalty = fatigue >= 70 ? Math.floor(fatigue * 0.12) : fatigue >= 40 ? Math.floor(fatigue * 0.05) : 0
+    return Math.max(4, base + Math.floor(officer.war / 7) + Math.floor(officer.command / 18) + Math.floor(stamina / 18) + Math.floor(spirit / 22) + weaponBonus - fatiguePenalty)
   }
 
   private duelEvadeRate(officer: StrategyOfficer, stamina: number) {
@@ -5238,6 +5242,7 @@ class KingdomsScene extends Phaser.Scene {
       ['政令', `${this.councilState.actions}`],
       ['民心', `${this.cityState.publicOrder}`],
       ['税率', taxRateConfig(this.cityTaxRates.get(this.selectedCityId) ?? 'normal').label],
+      ['天候', campaignWeatherName(this.campaignClock.weather)],
       ['敌势', `${this.campaignClock.enemyThreat}`],
       ['军行', this.marchArmy ? `${this.marchArmy.targetCityId ? cityName(this.marchArmy.targetCityId) : '目标'}${marchStatusName(this.marchArmy.status)}` : '无'],
     ]
@@ -8072,6 +8077,23 @@ class KingdomsScene extends Phaser.Scene {
       }
     }
     const totalTroops = cities.reduce((sum, c) => sum + c.troops, 0)
+    if (this.marchArmy && this.marchArmy.factionId === this.playerFactionId && this.marchArmy.targetCityId) {
+      const targetNearAi = cities.some((c) => c.id === this.marchArmy!.targetCityId || c.routes.includes(this.marchArmy!.targetCityId!))
+      if (targetNearAi) {
+        const borderCity = cities.find((c) => c.id === this.marchArmy!.targetCityId) ?? cities.find((c) => c.routes.includes(this.marchArmy!.targetCityId!))
+        if (borderCity && borderCity.troops < 8000) {
+          const interior = cities.filter((c) => c.id !== borderCity.id && c.troops > 4000).toSorted((a, b) => b.troops - a.troops)[0]
+          if (interior) {
+            const reinforce = Math.min(interior.troops - 2000, Math.floor(borderCity.troops * 0.4))
+            if (reinforce > 500) {
+              interior.troops -= reinforce
+              borderCity.troops = Math.min(30000, borderCity.troops + reinforce)
+              reports.push(`${faction.name}向${borderCity.name}增兵${reinforce}以御来犯。`)
+            }
+          }
+        }
+      }
+    }
     if (totalTroops > 18000 && cities.length >= 2) {
       const weakest = cities.toSorted((a, b) => a.troops - b.troops)[0]
       const strongest = cities.toSorted((a, b) => b.troops - a.troops)[0]
