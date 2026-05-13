@@ -135,6 +135,7 @@ type StrategyCity = {
   irrigation?: number
   disaster?: number
   publicOrder?: number
+  manpower?: number
 }
 
 type StrategyOfficer = {
@@ -674,6 +675,7 @@ class KingdomsScene extends Phaser.Scene {
   private fieldBattleFormation: FieldBattleFormation = 'balanced'
   private mapDisplayMode: MapDisplayMode = 'compact'
   private recruitScale: RecruitScale = 'medium'
+  private selectedWeaponCategory: keyof OfficerEquipment = 'spear'
   private trainingMode: TrainingMode = 'single'
   private talentScope: TalentScope = 'nearby'
   private selectedScenarioId: (typeof scenarioOptions)[number]['id'] = 'heroes_190'
@@ -1103,6 +1105,8 @@ class KingdomsScene extends Phaser.Scene {
       city.troops = Math.min(30000, city.troops + troopGain)
       city.population = Math.max(8000, Math.floor((city.population ?? 20000) + Math.max(30, (city.population ?? 20000) * 0.006) - troopGain * 0.22 - disasterPressure * 16))
       city.disaster = Phaser.Math.Clamp(Math.floor(disasterPressure * 0.72), 0, 100)
+      const maxManpower = Math.max(1200, Math.floor((city.population ?? 20000) * 0.18))
+      city.manpower = Math.min(maxManpower, (city.manpower ?? maxManpower) + Math.floor(maxManpower * 0.12))
       if (city.owner === this.playerFactionId) {
         liuFoodGain += foodGain
         liuGoldGain += goldGain
@@ -2164,13 +2168,23 @@ class KingdomsScene extends Phaser.Scene {
       defenderInitialDefense: target.defense,
       defenderTroops: target.troops,
       defenderInitialTroops: target.troops,
-      defenderMorale: Phaser.Math.Clamp(42 + Math.floor(target.defense / 3) + Math.floor(target.troops / 900), 28, 88),
+      defenderMorale: this.calculateDefenderMorale(target),
       attackerTroops: this.marchArmy.troops,
       actionsRemaining: 1,
       surroundTurns: 0,
       turns: 1,
     }
     this.showSiege()
+  }
+
+  private calculateDefenderMorale(target: StrategyCity): number {
+    const baseMorale = 42 + Math.floor(target.defense / 3) + Math.floor(target.troops / 900)
+    const governor = this.campaignOfficers.find((o) => o.location === target.id && o.faction === target.owner && o.role === '君主' && (o.status ?? 'normal') === 'normal')
+    const defender = governor ?? this.campaignOfficers
+      .filter((o) => o.location === target.id && o.faction === target.owner && (o.status ?? 'normal') === 'normal')
+      .sort((a, b) => b.war + b.command - a.war - a.command)[0]
+    const officerBonus = defender ? Math.floor((defender.war + defender.command - 100) * 0.12) : 0
+    return Phaser.Math.Clamp(baseMorale + officerBonus, 28, 92)
   }
 
   private showSiege(message?: string) {
@@ -3241,7 +3255,7 @@ class KingdomsScene extends Phaser.Scene {
   private showMilitaryCommand() {
     this.showCommandPanel('军事', [
       ['征兵', () => this.showMilitaryActorSelection('recruit')],
-      ['武器', () => this.showMilitaryActorSelection('weapon')],
+      ['武器', () => this.showWeaponCategorySelection()],
       ['情报', () => this.showIntelActorSelection('军事')],
       ['人材', () => this.showTalentActorSelection()],
       ['防卫', () => this.showCityPolicyActorSelection('军事', '防卫', '本城城防', '修缮城垣箭楼，城防上升。', '金 -140｜城防 +8｜商业 +1', { treasury: -140, walls: 8, commerce: 1 }, true)],
@@ -3250,7 +3264,29 @@ class KingdomsScene extends Phaser.Scene {
     ])
   }
 
-  private showMilitaryActorSelection(kind: MilitaryAllocationKind) {
+  private showWeaponCategorySelection() {
+    const weaponCategories: { key: keyof OfficerEquipment; label: string; desc: string; goldCost: number }[] = [
+      { key: 'spear', label: '长兵', desc: '提升近战攻击力', goldCost: 120 },
+      { key: 'bow', label: '弓弩', desc: '提升远程攻击力', goldCost: 130 },
+      { key: 'horse', label: '马匹', desc: '提升机动力和回避', goldCost: 150 },
+      { key: 'armor', label: '甲胄', desc: '提升防御力', goldCost: 140 },
+    ]
+    this.showCampaign()
+    this.showModalGrid(
+      '军事｜武器：选择类型',
+      '选择要采购的装备类型，再指定武将',
+      weaponCategories.map((cat) => ({
+        label: cat.label,
+        detail: `${cat.desc}｜金 -${cat.goldCost}`,
+        onSelect: () => this.showMilitaryActorSelection('weapon', cat.key),
+      })),
+      () => this.showMilitaryCommand(),
+      '取消',
+    )
+  }
+
+  private showMilitaryActorSelection(kind: MilitaryAllocationKind, weaponCategory?: keyof OfficerEquipment) {
+    if (weaponCategory) this.selectedWeaponCategory = weaponCategory
     const meta = militaryAllocationMeta(kind)
     const cities = this.controlledCities().filter((city) => this.officersInCity(city.id).length > 0)
     this.showCampaign()
@@ -3417,7 +3453,8 @@ class KingdomsScene extends Phaser.Scene {
       return
     }
     const meta = militaryAllocationMeta(kind)
-    const goldCost = kind === 'recruit' ? recruitScaleConfig(this.recruitScale).goldCost : meta.goldCost
+    const weaponCosts: Record<keyof OfficerEquipment, number> = { spear: 120, bow: 130, horse: 150, armor: 140 }
+    const goldCost = kind === 'recruit' ? recruitScaleConfig(this.recruitScale).goldCost : kind === 'weapon' ? weaponCosts[this.selectedWeaponCategory] : meta.goldCost
     if (city.gold < goldCost) {
       this.showCampaignMessage('府库不足，无法执行军事命令。')
       return
@@ -3426,16 +3463,27 @@ class KingdomsScene extends Phaser.Scene {
     if (kind === 'recruit') {
       const scale = recruitScaleConfig(this.recruitScale)
       const bonus = this.cityGovernanceBonus(city.id)
-      const adjustedTroops = Math.floor(scale.troops * bonus.recruitMultiplier)
+      const mp = city.manpower ?? Math.max(1200, Math.floor((city.population ?? 20000) * 0.18))
+      const mpRatio = mp / Math.max(1, Math.max(1200, Math.floor((city.population ?? 20000) * 0.18)))
+      const mpEfficiency = mpRatio >= 0.6 ? 1 : mpRatio >= 0.3 ? 0.7 : 0.4
+      const adjustedTroops = Math.floor(scale.troops * bonus.recruitMultiplier * mpEfficiency)
       const adjustedPublicOrderCost = Math.max(1, Math.floor(scale.publicOrderCost * bonus.recruitPublicOrderCost))
       officer.troops = Math.min(6000, officerTroops(officer) + adjustedTroops)
       city.troops = Math.min(30000, city.troops + adjustedTroops)
+      city.manpower = Math.max(0, mp - adjustedTroops)
       this.setCityPublicOrder(city, this.cityPublicOrder(city) - adjustedPublicOrderCost)
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + scale.moraleGain, 0, 100)
       this.addOfficerMerit(officer, Math.floor(adjustedTroops / 120))
       this.addOfficerFatigue(officer, adjustedPublicOrderCost + 4)
     } else if (kind === 'weapon') {
-      this.improveOfficerEquipment(officer)
+      const cat = this.selectedWeaponCategory
+      const current = officerEquipment(officer)
+      const newValue = Math.min(5, current[cat] + 1)
+      if (cat === 'spear') officer.spear = newValue
+      if (cat === 'bow') officer.bow = newValue
+      if (cat === 'horse') officer.horse = newValue
+      if (cat === 'armor') officer.armor = newValue
+      officer.weapons = Math.min(5, Math.max(officerWeapons(officer) + 1, newValue))
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 2, 0, 100)
       this.addOfficerMerit(officer, 5)
       this.addOfficerFatigue(officer, 3)
@@ -3450,25 +3498,6 @@ class KingdomsScene extends Phaser.Scene {
     this.recordMonthlyAction(`${city.name}${meta.command}${officer.name}`)
     this.syncSelectedCityState()
     this.showCampaignMessage(`${officer.name}${meta.resultText(officer)}。`)
-  }
-
-  private improveOfficerEquipment(officer: StrategyOfficer) {
-    const equipment = officerEquipment(officer)
-    const priorities: (keyof OfficerEquipment)[] = officer.war >= officer.command && officer.war >= officer.intel
-      ? ['spear', 'armor', 'horse', 'bow']
-      : officer.command >= officer.intel
-        ? ['horse', 'spear', 'armor', 'bow']
-        : ['bow', 'armor', 'spear', 'horse']
-    const target = priorities
-      .filter((key) => equipment[key] < 5)
-      .toSorted((a, b) => equipment[a] - equipment[b])[0] ?? 'spear'
-    const next = Math.min(5, equipment[target] + 1)
-    if (target === 'spear') officer.spear = next
-    if (target === 'bow') officer.bow = next
-    if (target === 'horse') officer.horse = next
-    if (target === 'armor') officer.armor = next
-    const upgraded = officerEquipment(officer)
-    officer.weapons = Math.min(5, Math.max(officerWeapons(officer) + 1, upgraded.spear, upgraded.bow, upgraded.horse, upgraded.armor))
   }
 
   private showPersonnelCommand() {
@@ -7449,6 +7478,7 @@ class KingdomsScene extends Phaser.Scene {
       irrigation: city.irrigation ?? Phaser.Math.Clamp(Math.floor(city.defense * 0.45 + city.food / 70), 16, 100),
       disaster: city.disaster ?? 0,
       publicOrder: city.publicOrder ?? (city.owner === this.playerFactionId ? 62 : 50),
+      manpower: city.manpower ?? Math.max(1200, Math.floor((city.population ?? 20000) * 0.18)),
     }
   }
 
