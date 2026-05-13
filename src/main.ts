@@ -662,6 +662,16 @@ class KingdomsScene extends Phaser.Scene {
   private cityTaxRates = new Map<CityId, TaxRate>()
   private sabotagedFactionIds = new Set<FactionId>()
   private factionSuccessionCount = new Map<FactionId, number>()
+  private diplomaticCredit = new Map<FactionId, number>()
+
+  private getDiplomaticCredit(factionId: FactionId): number {
+    return this.diplomaticCredit.get(factionId) ?? 50
+  }
+
+  private modifyDiplomaticCredit(factionId: FactionId, delta: number) {
+    const current = this.getDiplomaticCredit(factionId)
+    this.diplomaticCredit.set(factionId, Phaser.Math.Clamp(current + delta, 0, 100))
+  }
   private monthlyActionLog: string[] = []
   private marchArmy?: MarchArmy
   private aiMarchArmies: MarchArmy[] = []
@@ -2101,7 +2111,20 @@ class KingdomsScene extends Phaser.Scene {
       this.showCampaignMessage('当前没有远征军需要撤退。')
       return
     }
-    const message = `${cityName(this.marchArmy.sourceCityId)}军撤回本城，士气略降。`
+    const retreatLoss = Math.floor(this.marchArmy.troops * Phaser.Math.Between(8, 18) / 100)
+    const foodCost = Math.min(this.marchArmy.food, 8)
+    this.marchArmy.troops = Math.max(400, this.marchArmy.troops - retreatLoss)
+    this.marchArmy.food = Math.max(0, this.marchArmy.food - foodCost)
+    this.marchArmy.morale = Phaser.Math.Clamp(this.marchArmy.morale - 10, 0, 100)
+    const pursuit = this.aiMarchArmies.filter((a) => a.factionId !== this.playerFactionId && a.status !== 'routed')
+    let pursuitReport = ''
+    if (pursuit.length > 0 && Phaser.Math.Between(1, 100) <= 35) {
+      const pursuer = pursuit[0]
+      const pursuitLoss = Math.floor(this.marchArmy.troops * Phaser.Math.Between(6, 14) / 100)
+      this.marchArmy.troops = Math.max(300, this.marchArmy.troops - pursuitLoss)
+      pursuitReport = `途中遭${this.aiArmyName(pursuer)}追击，再损${pursuitLoss}兵。`
+    }
+    const message = `${cityName(this.marchArmy.sourceCityId)}军撤回本城，损兵${retreatLoss}，耗粮${foodCost}。${pursuitReport}`
     this.releaseMarchArmyOfficers(this.marchArmy.sourceCityId)
     this.marchArmy = undefined
     this.councilState.morale = Math.max(0, this.councilState.morale - 4)
@@ -2161,6 +2184,10 @@ class KingdomsScene extends Phaser.Scene {
       this.sabotagedFactionIds.add(target.owner)
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale - 8, 0, 100)
       this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat + 12, 0, 100)
+      this.modifyDiplomaticCredit(target.owner, -40)
+      for (const f of strategyFactions.filter((f) => f.id !== this.playerFactionId && f.id !== 'neutral' && f.id !== target.owner)) {
+        this.modifyDiplomaticCredit(f.id, -12)
+      }
     }
     this.siegeState = {
       attackerArmyId: this.marchArmy.id,
@@ -4725,35 +4752,42 @@ class KingdomsScene extends Phaser.Scene {
     this.drawPanel(94, 142, 1092, 420)
     const columns = [
       ['势力', 124],
-      ['君主', 276],
-      ['城池', 410],
-      ['武将', 498],
-      ['总兵', 592],
-      ['总粮', 728],
-      ['特性', 860],
+      ['君主', 240],
+      ['城池', 360],
+      ['武将', 430],
+      ['总兵', 510],
+      ['总粮', 640],
+      ['信用', 760],
+      ['邦交', 860],
     ] as const
     columns.forEach(([label, x]) => {
       this.overlayLayer.add(this.add.text(x, 170, label, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '21px',
+        fontSize: '19px',
         color: '#f5d487',
       }))
     })
     strategyFactions.filter((faction) => faction.id !== 'neutral').forEach((faction, index) => {
       const y = 220 + index * 60
       this.overlayLayer.add(this.add.rectangle(120, y - 12, 1010, 44, 0x21160f, index % 2 === 0 ? 0.88 : 0.72).setOrigin(0).setStrokeStyle(1, faction.color, 0.7))
+      const credit = this.getDiplomaticCredit(faction.id)
+      const alliance = this.allianceTerms.get(faction.id)
+      const status = faction.id === this.playerFactionId ? '己方' : alliance ? `盟${alliance}月` : this.sabotagedFactionIds.has(faction.id) ? '交恶' : '中立'
+      const cities = this.countCities(faction.id)
+      const alive = cities > 0 || this.campaignOfficers.some((o) => o.faction === faction.id && (o.status ?? 'normal') !== 'captured')
       const values = [
-        [faction.name, 134, 132],
-        [faction.ruler, 286, 104],
-        [String(this.countCities(faction.id)), 424, 54],
-        [String(this.countOfficers(faction.id)), 512, 54],
-        [String(this.sumCityField(faction.id, 'troops')), 594, 104],
-        [String(this.sumCityField(faction.id, 'food')), 730, 104],
-        [faction.trait, 862, 240],
+        [alive ? faction.name : `${faction.name}(灭)`, 134, 100],
+        [faction.ruler, 250, 84],
+        [String(cities), 374, 40],
+        [String(this.countOfficers(faction.id)), 444, 40],
+        [String(this.sumCityField(faction.id, 'troops')), 512, 104],
+        [String(this.sumCityField(faction.id, 'food')), 642, 104],
+        [`${credit}`, 770, 50],
+        [status, 862, 100],
       ] as const
       values.forEach(([value, x, width]) => this.overlayLayer.add(this.add.text(x, y, value, {
         fontFamily: 'Arial, "Microsoft YaHei", sans-serif',
-        fontSize: '20px',
+        fontSize: '19px',
         color: '#f8ecd0',
         wordWrap: { width },
       })))
@@ -6663,8 +6697,9 @@ class KingdomsScene extends Phaser.Scene {
       this.councilState.alliance = this.allianceTerms.size
       this.councilState.morale = Phaser.Math.Clamp(this.councilState.morale + 10, 0, 100)
       this.campaignClock.enemyThreat = Phaser.Math.Clamp(this.campaignClock.enemyThreat - 8, 0, 100)
+      this.modifyDiplomaticCredit(faction.id, 15)
       this.recordMonthlyAction(`与${faction.ruler}同盟`)
-      this.showDiplomacyMessage(`与${faction.ruler}暂结${months}月盟约，士气 +10，敌势 -8。`)
+      this.showDiplomacyMessage(`与${faction.ruler}暂结${months}月盟约，士气 +10，敌势 -8，信用 +15。`)
       return
     }
     if (kind === 'scout') {
@@ -6729,7 +6764,8 @@ class KingdomsScene extends Phaser.Scene {
     const strategist = this.appointedOfficer('strategist')
     const strategistBonus = strategist ? Math.floor(strategist.intel / 20) : 0
     const betrayalPenalty = this.selectedDiplomacyFactionId && this.sabotagedFactionIds.has(this.selectedDiplomacyFactionId) ? 12 : 0
-    return Phaser.Math.Clamp(base + intelBonus + moraleBonus + strategistBonus - threatPenalty - garrisonPenalty - betrayalPenalty, 15, 92)
+    const creditBonus = this.selectedDiplomacyFactionId ? Math.floor((this.getDiplomaticCredit(this.selectedDiplomacyFactionId) - 50) / 10) : 0
+    return Phaser.Math.Clamp(base + intelBonus + moraleBonus + strategistBonus + creditBonus - threatPenalty - garrisonPenalty - betrayalPenalty, 15, 92)
   }
 
   private showDiplomacyMessage(message: string) {
