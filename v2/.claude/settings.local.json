@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "WebFetch(domain:zaixianwan.app)",
+      "WebSearch",
+      "WebFetch(domain:baike.baidu.com)"
+    ]
+  }
+}
