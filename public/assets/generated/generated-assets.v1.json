@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "assets": {
+    "title.main": {
+      "output": "assets/title/hd/title-main-hd-v1.webp",
+      "mime": "image/webp",
+      "parts": [
+        "assets/generated/title-main-hd-v1.part01.b64",
+        "assets/generated/title-main-hd-v1.part02.b64",
+        "assets/generated/title-main-hd-v1.part03.b64",
+        "assets/generated/title-main-hd-v1.part04.b64",
+        "assets/generated/title-main-hd-v1.part05.b64",
+        "assets/generated/title-main-hd-v1.part06.b64",
+        "assets/generated/title-main-hd-v1.part07.b64",
+        "assets/generated/title-main-hd-v1.part08.b64"
+      ],
+      "sourceGenId": "f0e1fab6-5f93-49da-8455-1239d7f118b7",
+      "runtimeSize": { "width": 640, "height": 448 },
+      "note": "Connector-compatible source representation. Build materializes the concatenated base64 into the runtime WebP."
+    }
+  }
+}
