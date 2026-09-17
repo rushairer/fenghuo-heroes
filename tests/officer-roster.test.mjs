@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { openingOfficerRows } from '../src/game/officer-roster.js'
+import { openingOfficerListForCity, openingOfficerRows, officerStatusProjection } from '../src/game/officer-roster.js'
 import { GameStore } from '../src/game/store.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
@@ -27,4 +27,31 @@ test('later scenarios do not fabricate an officer status list',()=>{
   const store=new GameStore(new MemoryStorage())
   store.newGame({scenarioYear:200,humanFactions:['liu']})
   assert.deepEqual(openingOfficerRows(store),[])
+})
+
+test('country-status drilldown uses opening faction roster without pretending city placement is verified',()=>{
+  const store={
+    state:{
+      cities:{test_city:{owner:'liu'}},
+      openingRosters:{liu:{ruler:'劉備',officers:['關羽','張飛']}},
+    },
+  }
+  const projection=openingOfficerListForCity(store,'test_city')
+  assert.equal(projection.factionId,'liu')
+  assert.equal(projection.cityAssignmentVerified,false)
+  assert.equal(projection.evidence,'opening-faction-roster')
+  assert.deepEqual(projection.rows.map((row)=>row.name),['劉備','關羽','張飛'])
+})
+
+test('officer status leaves unverified character attributes empty',()=>{
+  assert.deepEqual(officerStatusProjection({name:'劉備',role:'君主'}),{
+    name:'劉備',
+    role:'君主',
+    level:null,
+    force:null,
+    intelligence:null,
+    virtue:null,
+    loyalty:null,
+    evidence:'name-role-only',
+  })
 })
