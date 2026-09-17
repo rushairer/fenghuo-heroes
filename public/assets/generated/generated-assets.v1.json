@@ -32,8 +32,8 @@
       ],
       "sourceGenId": "97109680-a41d-441a-a5b5-34a31e317fbe",
       "runtimeSize": { "width": 512, "height": 512 },
-      "byteLength": 22675,
-      "sha256": "dd2a9b6e715edca5b5682b61a5820bc8281252784521f45d7ccf8149bd7e9303",
+      "byteLength": 22676,
+      "sha256": "d4a15c3f20e49be814752d1a1b1bdc1b66e7745187cbcd2d89c2f68e5dc17566",
       "note": "Image 2.5 sandy terrain source cropped square, resized to 512x512 and edge-blended into a repeat-friendly runtime tile."
     }
   }
