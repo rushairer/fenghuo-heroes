@@ -49,22 +49,31 @@ export class TitleScene {
   draw() {
     const r = this.app.r
     const titleImage = this.app.assets?.get('title.main')
-    if (!titleImage || !r.drawImageCover(titleImage, 0, 0, r.W, r.H)) drawTitleComposition(r)
+    const hdArt = Boolean(titleImage && r.drawImageCover(titleImage, 0, 0, r.W, r.H))
+    if (!hdArt) drawTitleComposition(r)
 
-    // HD artwork is background/character art only. Interactive text stays
-    // code-native so keyboard state, localisation and accessibility do not get
-    // baked into generated pixels.
+    // Image 2.5 provides only visual chrome/background. Interactive labels remain
+    // code-native. The production title image contains an empty ornamental frame,
+    // so avoid drawing a second frame over it when HD art is active.
     if (this.phase === 'splash') {
       if (this.blink < 820) {
-        r.fillRect(87, 197, 132, 17, 'rgba(32,12,14,.68)')
-        r.text('PUSH START BUTTON', 153, 202, 7, '#fff0c9', 'center')
+        if (hdArt) r.shadowText('PUSH START BUTTON', 164, 173, 7, '#fff0c9', 'center')
+        else {
+          r.fillRect(87, 197, 132, 17, 'rgba(32,12,14,.68)')
+          r.text('PUSH START BUTTON', 153, 202, 7, '#fff0c9', 'center')
+        }
       }
     } else {
-      const height = this.hasSave ? 39 : 25
-      r.panel(103, 171, 111, height, 'rgba(8,5,5,.92)', '#b47722', this.app.assets?.get('title.menuFrame'))
       const opts = this.hasSave ? ['START', 'CONTINUE'] : ['START']
+      if (!hdArt) {
+        const height = this.hasSave ? 39 : 25
+        r.panel(103, 171, 111, height, 'rgba(8,5,5,.92)', '#b47722', this.app.assets?.get('title.menuFrame'))
+      }
+      const centerX=hdArt?165:158
+      const firstY=hdArt?(this.hasSave?164:171):177
+      const step=hdArt?16:14
       opts.forEach((value, index) => {
-        r.text(`${index === this.selection ? '▶' : '　'}${value}`, 158, 177 + index * 14, 8.5, index === this.selection ? COLORS.cyan : '#eee2c2', 'center')
+        r.shadowText(`${index === this.selection ? '▶' : '　'}${value}`, centerX, firstY + index * step, 8.5, index === this.selection ? COLORS.cyan : '#eee2c2', 'center')
       })
     }
 
