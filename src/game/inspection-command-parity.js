@@ -11,6 +11,14 @@ const action = (id,label) => Object.freeze({
   structureEvidence:'manual-and-zh-rom-community',
   effectEvidence:'unverified-formula',
 })
+const intel = Object.freeze({
+  id:'intel',
+  label:'情報',
+  kind:'browser',
+  structureEvidence:'jp-manual-and-zh-rom-community',
+  effectEvidence:'read-only-country-status',
+  usage:'repeatable',
+})
 const end = Object.freeze({
   id:'end',
   label:'結束',
@@ -23,7 +31,7 @@ export const INSPECTION_COMMAND_SCHEMA = Object.freeze({
   domestic:Object.freeze([
     action('develop','開發'),
     action('transfer','調動'),
-    action('intel','情報'),
+    intel,
     action('welfare','福利'),
     action('appoint','任命'),
     action('tax','稅率'),
@@ -45,7 +53,7 @@ export const INSPECTION_COMMAND_SCHEMA = Object.freeze({
         action('fire','火計'),
       ]),
     }),
-    action('intel','情報'),
+    intel,
     action('borrow','借款'),
     action('repay','還款'),
     end,
@@ -53,7 +61,7 @@ export const INSPECTION_COMMAND_SCHEMA = Object.freeze({
   military:Object.freeze([
     action('recruit','徵兵'),
     action('weapons','武器'),
-    action('intel','情報'),
+    intel,
     action('talent','人材'),
     action('defense','防衛'),
     action('train','訓練'),
