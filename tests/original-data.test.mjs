@@ -12,6 +12,9 @@ import {
   ZH_ROM_SCENARIOS,
   scenarioEvidence,
 } from '../src/game/original-data.js'
+import { GameStore } from '../src/game/store.js'
+
+class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
 
 test('canonical original city roster contains the 40 MD city slots',()=>{
   assert.equal(ORIGINAL_CITY_NAMES.length,40)
@@ -48,4 +51,18 @@ test('189 Chinese-ROM selectable aliases remain stable and Yuan Shu is not in th
 test('189 Liu Bei and Sun Jian initial subordinate rosters are protected facts',()=>{
   assert.deepEqual(ORIGINAL_189_RULERS.find((entry)=>entry.ruler==='劉備')?.officers,['關羽','張飛'])
   assert.deepEqual(ORIGINAL_189_RULERS.find((entry)=>entry.ruler==='孫堅')?.officers,['程普','黃蓋','朱治','韓當'])
+})
+
+test('189 opening rosters are carried into runtime state',()=>{
+  const store=new GameStore(new MemoryStorage())
+  store.newGame({scenarioYear:189,humanFactions:['liu']})
+  assert.deepEqual(store.state.openingRosters.liu.officers,['關羽','張飛'])
+  assert.deepEqual(store.state.openingRosters.cao.officers,['曹仁','曹洪','夏候惇','夏候淵'])
+  assert.equal(store.state.openingRosters.yuan_shu.zhCommunitySelectable,false)
+})
+
+test('later-scenario runtime does not invent opening rosters',()=>{
+  const store=new GameStore(new MemoryStorage())
+  store.newGame({scenarioYear:200,humanFactions:['liu']})
+  assert.deepEqual(store.state.openingRosters,{})
 })
