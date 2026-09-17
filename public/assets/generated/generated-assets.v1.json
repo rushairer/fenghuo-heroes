@@ -139,6 +139,36 @@
       "byteLength": 2666,
       "sha256": "1bb39753a50241369ac5ac0fd2f2e981d456dd8ef79d2c10e154debd3f36739b",
       "note": "Image 2.5 HD asset-atlas Yuan Shao marching flag crop, background cleaned and centered on transparent runtime canvas."
+    },
+    "map.flags.dong": {
+      "output": "assets/map/flags/army-flag-dongzhuo-v1.webp",
+      "mime": "image/webp",
+      "parts": ["assets/generated/army-flag-dongzhuo-v1.b64"],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 128, "height": 128 },
+      "byteLength": 2974,
+      "sha256": "512027afea3215e8a0ca34f4328048f8cb6f0f7915a606b9baa2f47990b62dfb",
+      "note": "Image 2.5 HD asset-atlas Dong Zhuo marching flag, recalibrated crop with neighboring flag excluded."
+    },
+    "map.flags.liu_biao": {
+      "output": "assets/map/flags/army-flag-liubiao-v1.webp",
+      "mime": "image/webp",
+      "parts": ["assets/generated/army-flag-liubiao-v1.b64"],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 128, "height": 128 },
+      "byteLength": 2692,
+      "sha256": "99c6af42683a5608b0c948eb92e568956489d712fa491a42f1f00168155f93d3",
+      "note": "Image 2.5 HD asset-atlas Liu Biao marching flag, narrow recalibrated crop excluding the adjacent Ma Teng pole."
+    },
+    "map.flags.ma": {
+      "output": "assets/map/flags/army-flag-mateng-v1.webp",
+      "mime": "image/webp",
+      "parts": ["assets/generated/army-flag-mateng-v1.b64"],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 128, "height": 128 },
+      "byteLength": 2898,
+      "sha256": "8b023db4f1041462b8c09db4490473f69e0c3202789bfaeab5f4ffcaff904acf",
+      "note": "Image 2.5 HD asset-atlas Ma Teng marching flag crop from the right edge of the production atlas."
     }
   }
 }
