@@ -56,9 +56,9 @@
       "pointer": { "src": "assets/ui/cursors/ui-cursor-pointer-v1.webp", "status": "planned" }
     },
     "icons": {
-      "food": { "src": "assets/ui/icons/ui-icon-food-v1.webp", "status": "planned" },
-      "gold": { "src": "assets/ui/icons/ui-icon-gold-v1.webp", "status": "planned" },
-      "troops": { "src": "assets/ui/icons/ui-icon-troops-v1.webp", "status": "planned" }
+      "food": { "src": "assets/ui/icons/ui-icon-food-v1.webp", "status": "ready" },
+      "gold": { "src": "assets/ui/icons/ui-icon-gold-v1.webp", "status": "ready" },
+      "troops": { "src": "assets/ui/icons/ui-icon-troops-v1.webp", "status": "ready" }
     }
   },
   "portraits": {
