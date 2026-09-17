@@ -43,7 +43,7 @@ export class StrategyScene extends ParityStrategyScene {
 
     const r = this.app.r
     const rows = openingOfficerRows(this.app.store)
-    r.panel(18,20,284,170,'#020202','#b07118')
+    r.panel(18,20,284,170,'#020202','#b07118',this.app.assets?.get('ui.panels.large'))
     const tabs=['統治國一覽','全體地圖','武將狀態']
     tabs.forEach((title,index)=>r.text(title,66+index*94,30,8,index===this.infoTab?COLORS.cyan:'#777','center'))
     r.line(28,45,292,45,'#7b4e12',1)
@@ -73,8 +73,6 @@ export class StrategyScene extends ParityStrategyScene {
     const state=this.app.store.state
     const camera=cameraFor(state.cursor)
 
-    // Original captures show a textured earth-tone atlas rather than a modern
-    // debug grid. Keep world coordinates/camera independent from this renderer.
     r.fillRect(0,0,MAP_VIEW_W,MAP_VIEW_H,'#b48855')
     for(const dot of this.mapSpeckles){
       const p=toScreen(dot,camera)
@@ -100,9 +98,6 @@ export class StrategyScene extends ParityStrategyScene {
       this.drawForest(p.x,p.y)
     }
 
-    // The original strategic map is free-movement terrain. Do not draw the
-    // temporary runtime adjacency graph as visible roads; it is an engineering
-    // scaffold, not an original-game map feature.
     for(const city of CITIES){
       const wp=cityWorldPoint(city)
       if(!isVisible(wp,camera,18))continue
@@ -115,7 +110,7 @@ export class StrategyScene extends ParityStrategyScene {
       if(!isVisible(wp,camera,14))continue
       const p=toScreen(wp,camera)
       const faction=FACTION_BY_ID[army.faction]
-      this.drawArmyFlag(p.x,p.y,faction?.color??'#888',army.starving)
+      this.drawArmyFlag(p.x,p.y,faction?.color??'#888',army.starving,army.faction)
     }
 
     if(this.view==='march-route'&&this.marchRoute.length>1){
@@ -212,6 +207,8 @@ export class StrategyScene extends ParityStrategyScene {
     const S=r.S
     const runtime=this.app.store.state.cities[city.id]
     const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
+    const image=this.app.assets?.get(`map.cities.${runtime.owner}`)??this.app.assets?.get('map.cities.neutral')
+    if(image&&r.drawImageStretch(image,x-12,y-16,24,24))return
     c.save()
     c.translate(x*S,y*S)
     c.fillStyle='#3b291d'
@@ -241,10 +238,17 @@ export class StrategyScene extends ParityStrategyScene {
     c.restore()
   }
 
-  drawArmyFlag(x,y,color,starving=false) {
+  drawArmyFlag(x,y,color,starving=false,factionId=null) {
     const r=this.app.r
     const c=r.ctx
     const S=r.S
+    const base=this.app.assets?.get(`map.flags.${factionId}`)
+    if(base){
+      r.drawImageStretch(base,x-10,y-14,20,20)
+      const overlay=starving?this.app.assets?.get('map.flags.lowFood'):null
+      if(overlay)r.drawImageStretch(overlay,x-10,y-14,20,20)
+      return
+    }
     c.save()
     c.translate(x*S,y*S)
     c.fillStyle='#332016'
