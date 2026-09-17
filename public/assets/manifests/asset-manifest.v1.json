@@ -1,0 +1,75 @@
+{
+  "version": "1.0.0",
+  "policy": {
+    "fallback": "canvas",
+    "loadOnlyReady": true
+  },
+  "title": {
+    "main": { "src": "assets/title/hd/title-main-hd-v1.webp", "status": "planned" },
+    "menuFrame": { "src": "assets/title/slices/title-menu-frame-v1.webp", "status": "planned" },
+    "rightBorder": { "src": "assets/title/slices/title-border-right-v1.webp", "status": "planned" }
+  },
+  "map": {
+    "terrain": {
+      "sandBase": { "src": "assets/map/terrain/map-terrain-sand-base-v1.webp", "status": "planned" },
+      "mountainA": { "src": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp", "status": "planned" },
+      "mountainB": { "src": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp", "status": "planned" },
+      "riverA": { "src": "assets/map/terrain/map-terrain-river-segment-a-v1.webp", "status": "planned" },
+      "forestA": { "src": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp", "status": "planned" }
+    },
+    "cities": {
+      "neutral": { "src": "assets/map/cities/city-fort-neutral-v1.webp", "status": "planned" },
+      "liu": { "src": "assets/map/cities/city-fort-liubei-v1.webp", "status": "planned" },
+      "cao": { "src": "assets/map/cities/city-fort-caocao-v1.webp", "status": "planned" },
+      "sun": { "src": "assets/map/cities/city-fort-sunjian-v1.webp", "status": "planned" },
+      "yuan": { "src": "assets/map/cities/city-fort-yuanshao-v1.webp", "status": "planned" },
+      "dong": { "src": "assets/map/cities/city-fort-dongzhuo-v1.webp", "status": "planned" },
+      "liu_biao": { "src": "assets/map/cities/city-fort-liubiao-v1.webp", "status": "planned" },
+      "ma": { "src": "assets/map/cities/city-fort-mateng-v1.webp", "status": "planned" }
+    },
+    "villages": {
+      "neutral": { "src": "assets/map/villages/village-neutral-v1.webp", "status": "planned" }
+    },
+    "flags": {
+      "liu": { "src": "assets/map/flags/army-flag-liubei-v1.webp", "status": "planned" },
+      "cao": { "src": "assets/map/flags/army-flag-caocao-v1.webp", "status": "planned" },
+      "sun": { "src": "assets/map/flags/army-flag-sunjian-v1.webp", "status": "planned" },
+      "yuan": { "src": "assets/map/flags/army-flag-yuanshao-v1.webp", "status": "planned" },
+      "dong": { "src": "assets/map/flags/army-flag-dongzhuo-v1.webp", "status": "planned" },
+      "liu_biao": { "src": "assets/map/flags/army-flag-liubiao-v1.webp", "status": "planned" },
+      "ma": { "src": "assets/map/flags/army-flag-mateng-v1.webp", "status": "planned" },
+      "selected": { "src": "assets/map/flags/army-flag-selected-v1.webp", "status": "planned" },
+      "lowFood": { "src": "assets/map/flags/army-flag-low-food-v1.webp", "status": "planned" }
+    }
+  },
+  "ui": {
+    "panels": {
+      "large": { "src": "assets/ui/panels/ui-panel-black-gold-a-v1.webp", "status": "planned" },
+      "small": { "src": "assets/ui/panels/ui-panel-black-gold-b-v1.webp", "status": "planned" }
+    },
+    "frames": {
+      "small": { "src": "assets/ui/frames/ui-frame-small-v1.webp", "status": "planned" },
+      "large": { "src": "assets/ui/frames/ui-frame-large-v1.webp", "status": "planned" }
+    },
+    "cursors": {
+      "box": { "src": "assets/ui/cursors/ui-cursor-box-v1.webp", "status": "planned" },
+      "pointer": { "src": "assets/ui/cursors/ui-cursor-pointer-v1.webp", "status": "planned" }
+    },
+    "icons": {
+      "food": { "src": "assets/ui/icons/ui-icon-food-v1.webp", "status": "planned" },
+      "gold": { "src": "assets/ui/icons/ui-icon-gold-v1.webp", "status": "planned" },
+      "troops": { "src": "assets/ui/icons/ui-icon-troops-v1.webp", "status": "planned" }
+    }
+  },
+  "portraits": {
+    "rulers": {
+      "liu": { "src": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp", "status": "planned" },
+      "cao": { "src": "assets/portraits/rulers/portrait-ruler-caocao-v1.webp", "status": "planned" },
+      "sun": { "src": "assets/portraits/rulers/portrait-ruler-sunjian-v1.webp", "status": "planned" },
+      "yuan": { "src": "assets/portraits/rulers/portrait-ruler-yuanshao-v1.webp", "status": "planned" },
+      "dong": { "src": "assets/portraits/rulers/portrait-ruler-dongzhuo-v1.webp", "status": "planned" },
+      "liu_biao": { "src": "assets/portraits/rulers/portrait-ruler-liubiao-v1.webp", "status": "planned" },
+      "ma": { "src": "assets/portraits/rulers/portrait-ruler-mateng-v1.webp", "status": "planned" }
+    }
+  }
+}
