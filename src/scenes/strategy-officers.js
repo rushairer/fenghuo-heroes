@@ -59,16 +59,21 @@ export class StrategyScene extends InfoStrategyScene {
       return
     }
     if(b==='B'){
-      this.view='map'
+      const returnView=this.infoReturnView??'map'
+      this.view=returnView
+      if(returnView==='commands'){
+        this.infoReturnView='map'
+        this.infoCommandBrowse=false
+      }
       this.app.audio.cancel()
       return
     }
     // Manual evidence assigns selection to C on this list. A is intentionally
     // left unused rather than acting as a modern secondary confirm button.
     if(b!=='C')return
-    // During the command phase this information screen stays read-only. Do not
-    // let a status drilldown bypass the existing command target restrictions.
-    if(this.stage!=='survey'){this.app.audio.alert();return}
+    // The documented 情報 command is a repeatable status browser even during
+    // the command phase. Ordinary command-phase overview access remains read-only.
+    if(this.stage!=='survey'&&!this.infoCommandBrowse){this.app.audio.alert();return}
     const row=rows[this.countryOverviewCursor]
     if(!row){this.app.audio.alert();return}
     this.targetCity=row.cityId
@@ -78,7 +83,8 @@ export class StrategyScene extends InfoStrategyScene {
   }
 
   updateCityStatus(b) {
-    if(this.stage!=='survey')return super.updateCityStatus(b)
+    const browseOnly=this.stage==='survey'||this.infoCommandBrowse
+    if(!browseOnly)return super.updateCityStatus(b)
     if(b==='B'){
       this.view=this.cityStatusReturnView==='info'?'info':'map'
       this.app.audio.cancel()
@@ -178,7 +184,7 @@ export class StrategyScene extends InfoStrategyScene {
       r.text(row.ruler,145,y,7,color)
       r.text(row.troops??'—',258,y,7,color,'right')
     })
-    const footer=this.stage==='survey'?'↑↓ 捲動　C 國狀態　B 返回':'↑↓ 捲動　B 返回'
+    const footer=(this.stage==='survey'||this.infoCommandBrowse)?'↑↓ 捲動　C 國狀態　B 返回':'↑↓ 捲動　B 返回'
     r.text(footer,160,178,6,'#887f6d','center')
   }
 
@@ -196,7 +202,7 @@ export class StrategyScene extends InfoStrategyScene {
       r.text(label,75+col*101,91+row*15,7,'#9e947e')
       r.text(value??'—',139+col*101,91+row*15,7,'#eee2c3','right')
     })
-    const footer=this.stage==='command'?'C 繼續選命令　B 返回':'C 武將一覽　B 返回'
+    const footer=(this.stage==='command'&&!this.infoCommandBrowse)?'C 繼續選命令　B 返回':'C 武將一覽　B 返回'
     r.text(footer,160,148,6,'#847b69','center')
   }
 
