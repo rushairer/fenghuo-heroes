@@ -6,6 +6,7 @@ import {
   inspectionCommandById,
   inspectionCommandItems,
   inspectionCommandPath,
+  isInspectionConfirmButton,
 } from '../src/game/inspection-command-parity.js'
 
 test('Chinese target inspection categories preserve the three documented groups',()=>{
@@ -75,4 +76,10 @@ test('information is a repeatable read-only country-status browser in all three 
     assert.equal(intel.usage,'repeatable')
     assert.equal(intel.effectEvidence,'read-only-country-status')
   }
+})
+
+
+test('inspection menus use C as the original confirm button',()=>{
+  assert.equal(isInspectionConfirmButton('C'),true)
+  for(const button of ['A','B','START','UP','DOWN'])assert.equal(isInspectionConfirmButton(button),false)
 })
