@@ -28,7 +28,7 @@
       "ma": { "src": "assets/map/cities/city-fort-mateng-v1.webp", "status": "planned" }
     },
     "villages": {
-      "neutral": { "src": "assets/map/villages/village-neutral-v1.webp", "status": "planned" }
+      "neutral": { "src": "assets/map/villages/village-neutral-v1.webp", "status": "ready" }
     },
     "flags": {
       "liu": { "src": "assets/map/flags/army-flag-liubei-v1.webp", "status": "ready" },
