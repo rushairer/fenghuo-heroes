@@ -96,6 +96,19 @@
       "byteLength": 4794,
       "sha256": "0e19fa9169bcae6037dd921f2b7cab36db86fee7d8de0af08c22b468d08e2e3c",
       "note": "Image 2.5 HD asset-atlas neutral fort crop, background flood-cleaned, trimmed, resized and centered on a transparent 256x256 WebP runtime canvas."
+    },
+    "map.flags.liu": {
+      "output": "assets/map/flags/army-flag-liubei-v1.webp",
+      "mime": "image/webp",
+      "parts": [
+        "assets/generated/army-flag-base-v1.part01.b64",
+        "assets/generated/army-flag-base-v1.part02.b64"
+      ],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 128, "height": 128 },
+      "byteLength": 2992,
+      "sha256": "f06526531c154be76139dea3ffb7b7ff0138ea599ca8f99a5cda854e9c8bdd94",
+      "note": "Image 2.5 HD asset-atlas Liu Bei marching flag crop, background flood-cleaned, trimmed and centered on a transparent 128x128 WebP runtime canvas."
     }
   }
 }

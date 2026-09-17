@@ -98,6 +98,19 @@
       "integrity": { "byteLength": 4794, "sha256": "0e19fa9169bcae6037dd921f2b7cab36db86fee7d8de0af08c22b468d08e2e3c" },
       "forbiddenBakedUI": ["text", "city label", "HUD"]
     },
+    "map.flags.liu": {
+      "target": "assets/map/flags/army-flag-liubei-v1.webp",
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "sourceRole": "Image 2.5 HD asset-atlas crop containing the Liu Bei marching flag",
+      "crop": { "x": 1158, "y": 242, "width": 52, "height": 78 },
+      "nativeTarget": { "width": 1536, "height": 1024 },
+      "runtimeTarget": { "width": 128, "height": 128 },
+      "minimumRuntime": { "width": 128, "height": 128 },
+      "transparentPreferred": true,
+      "preprocess": "crop flag only; flood-clear atlas background; trim alpha bounds; resize within 112x112; center on 128x128 transparent canvas; WebP q80",
+      "integrity": { "byteLength": 2992, "sha256": "f06526531c154be76139dea3ffb7b7ff0138ea599ca8f99a5cda854e9c8bdd94" },
+      "forbiddenBakedUI": ["player label", "HUD", "status text"]
+    },
     "portraits.rulers.liu": {
       "target": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp",
       "nativeTarget": { "width": 1024, "height": 1024 },
