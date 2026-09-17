@@ -2,7 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor } from '../game/country-overview.js'
 import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
-import { openingOfficerListForCity, officerStatusProjection } from '../game/officer-roster.js'
+import { OFFICER_STATUS_FIELDS, openingOfficerListForCity, officerStatusProjection } from '../game/officer-roster.js'
 import { StrategyScene as InfoStrategyScene } from './strategy-info.js'
 
 const OFFICER_PAGE_SIZE=8
@@ -237,21 +237,29 @@ export class StrategyScene extends InfoStrategyScene {
   drawOfficerStatus() {
     const r=this.app.r
     const row=this.officerStatusRow
-    r.panel(55,31,210,158,'#020202','#b07118',this.app.assets?.get('ui.panels.large'))
+    r.panel(34,26,252,166,'#020202','#b07118',this.app.assets?.get('ui.panels.large'))
     if(!row){
       r.text('武將資料尚未建立',160,89,9,'#d9cba8','center')
-      r.text('B 返回',160,174,6,'#887f6d','center')
+      r.text('B 返回',160,178,6,'#887f6d','center')
       return
     }
-    r.text(row.name,160,42,15,'#efd27d','center','top',SERIF,'700')
-    r.text(row.role,160,65,7,row.role==='君主'?COLORS.cyan:'#d9cba8','center')
-    const fields=[['等級',row.level],['武力',row.force],['知力',row.intelligence],['德',row.virtue],['忠誠',row.loyalty]]
-    fields.forEach(([label,value],index)=>{
-      const y=84+index*15
-      r.text(label,92,y,7,'#9e947e')
-      r.text(value??'未校準',219,y,7,value==null?'#8f8674':'#eee2c3','right')
+    r.text(row.name,160,36,15,'#efd27d','center','top',SERIF,'700')
+    r.text(row.role,160,56,7,row.role==='君主'?COLORS.cyan:'#d9cba8','center')
+    r.line(47,68,273,68,'#72501b',.7)
+
+    const columns=[OFFICER_STATUS_FIELDS.slice(0,8),OFFICER_STATUS_FIELDS.slice(8)]
+    columns.forEach((fields,col)=>{
+      const labelX=49+col*121
+      const valueX=151+col*121
+      fields.forEach((field,index)=>{
+        const y=75+index*10.5
+        const value=row[field.id]
+        r.text(field.label,labelX,y,6.1,'#9e947e')
+        r.text(value??'—',valueX,y,6.5,value==null?'#8f8674':'#eee2c3','right')
+      })
     })
-    r.text('姓名／身份来自已验证开局名册；属性等待中文版实机校准',160,163,5.2,'#8c8474','center')
-    r.text('B 返回武將一覽',160,176,6,'#887f6d','center')
+
+    r.text('原版欄位已核對 · 中文版數值未校準',160,163,5.2,'#8c8474','center')
+    r.text('B 返回武將一覽',160,178,6,'#887f6d','center')
   }
 }

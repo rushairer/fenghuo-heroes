@@ -1,3 +1,21 @@
+export const OFFICER_STATUS_FIELDS = Object.freeze([
+  Object.freeze({ id:'level', label:'等級' }),
+  Object.freeze({ id:'rank', label:'官位' }),
+  Object.freeze({ id:'civilExperience', label:'文官值' }),
+  Object.freeze({ id:'militaryExperience', label:'武官值' }),
+  Object.freeze({ id:'stamina', label:'體力' }),
+  Object.freeze({ id:'force', label:'武力' }),
+  Object.freeze({ id:'intelligence', label:'知力' }),
+  Object.freeze({ id:'virtue', label:'德' }),
+  Object.freeze({ id:'loyalty', label:'忠誠度' }),
+  Object.freeze({ id:'command', label:'統率力' }),
+  Object.freeze({ id:'mobility', label:'機動力' }),
+  Object.freeze({ id:'troops', label:'兵力' }),
+  Object.freeze({ id:'morale', label:'士氣' }),
+  Object.freeze({ id:'attack', label:'攻擊力' }),
+  Object.freeze({ id:'weapon', label:'武器' }),
+])
+
 export function openingOfficerRows(store, factionId = store?.humanFaction) {
   const roster = store?.state?.openingRosters?.[factionId]
   if (!roster) return []
@@ -32,18 +50,17 @@ export function openingOfficerListForCity(store, cityId) {
   })
 }
 
-// Until the Chinese-ROM character table is transcribed field by field, never
-// fill status attributes from history books or another Three Kingdoms game.
+// The Japanese retail manual documents the complete status-field vocabulary and
+// ordering. Chinese-ROM per-officer values have not yet been transcribed, so the
+// projection exposes the verified schema while deliberately leaving every value
+// empty instead of borrowing numbers from history books or another game.
 export function officerStatusProjection(row) {
   if (!row) return null
+  const status = Object.fromEntries(OFFICER_STATUS_FIELDS.map((field)=>[field.id,null]))
   return Object.freeze({
     name:row.name,
     role:row.role,
-    level:null,
-    force:null,
-    intelligence:null,
-    virtue:null,
-    loyalty:null,
-    evidence:'name-role-only',
+    ...status,
+    evidence:'name-role-only; status-schema-jp-manual',
   })
 }

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { openingOfficerListForCity, openingOfficerRows, officerStatusProjection } from '../src/game/officer-roster.js'
+import { OFFICER_STATUS_FIELDS, openingOfficerListForCity, openingOfficerRows, officerStatusProjection } from '../src/game/officer-roster.js'
 import { GameStore } from '../src/game/store.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
@@ -43,15 +43,48 @@ test('country-status drilldown uses opening faction roster without pretending ci
   assert.deepEqual(projection.rows.map((row)=>row.name),['劉備','關羽','張飛'])
 })
 
-test('officer status leaves unverified character attributes empty',()=>{
+test('manual-backed officer status schema preserves all fifteen original fields',()=>{
+  assert.deepEqual(
+    OFFICER_STATUS_FIELDS.map(({id,label})=>[id,label]),
+    [
+      ['level','等級'],
+      ['rank','官位'],
+      ['civilExperience','文官值'],
+      ['militaryExperience','武官值'],
+      ['stamina','體力'],
+      ['force','武力'],
+      ['intelligence','知力'],
+      ['virtue','德'],
+      ['loyalty','忠誠度'],
+      ['command','統率力'],
+      ['mobility','機動力'],
+      ['troops','兵力'],
+      ['morale','士氣'],
+      ['attack','攻擊力'],
+      ['weapon','武器'],
+    ],
+  )
+})
+
+test('officer status leaves unverified Chinese-ROM character values empty',()=>{
   assert.deepEqual(officerStatusProjection({name:'劉備',role:'君主'}),{
     name:'劉備',
     role:'君主',
     level:null,
+    rank:null,
+    civilExperience:null,
+    militaryExperience:null,
+    stamina:null,
     force:null,
     intelligence:null,
     virtue:null,
     loyalty:null,
-    evidence:'name-role-only',
+    command:null,
+    mobility:null,
+    troops:null,
+    morale:null,
+    attack:null,
+    weapon:null,
+    evidence:'name-role-only; status-schema-jp-manual',
   })
 })
