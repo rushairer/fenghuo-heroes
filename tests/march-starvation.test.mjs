@@ -6,7 +6,8 @@ function storeWithFood(food){
   return {
     state:{
       cities:{},
-      marchingArmies:[{
+      nextArmyId:2,
+      armies:[{
         id:'test-army',
         faction:'liu',
         x:500,
@@ -25,6 +26,7 @@ function storeWithFood(food){
         routeIndex:0,
         starving:false,
         starvingDaysTotal:0,
+        status:'marching',
       }],
     },
   }
@@ -33,7 +35,7 @@ function storeWithFood(food){
 test('army ending a fully fed turn at zero food is not marked starving',()=>{
   const store=storeWithFood(6) // 100 troops + 1 officer => 2 food/day × 3 days.
   const [event]=executeMarchTurn(store,3)
-  const army=store.state.marchingArmies[0]
+  const army=store.state.armies[0]
   assert.equal(event.steps,3)
   assert.equal(event.foodConsumed,6)
   assert.equal(event.starvingDays,0)
@@ -45,7 +47,7 @@ test('army ending a fully fed turn at zero food is not marked starving',()=>{
 test('army records only days whose full daily ration could not be paid',()=>{
   const store=storeWithFood(5)
   const [event]=executeMarchTurn(store,3)
-  const army=store.state.marchingArmies[0]
+  const army=store.state.armies[0]
   assert.equal(event.foodConsumed,5)
   assert.equal(event.starvingDays,1)
   assert.equal(army.food,0)
@@ -57,7 +59,7 @@ test('army records only days whose full daily ration could not be paid',()=>{
 test('starvation day totals accumulate across march turns without inventing attrition',()=>{
   const store=storeWithFood(1)
   executeMarchTurn(store,2)
-  const army=store.state.marchingArmies[0]
+  const army=store.state.armies[0]
   assert.equal(army.lastTurnStarvingDays,2)
   assert.equal(army.starvingDaysTotal,2)
   // No soldier-loss formula has been verified yet, so accounting must not mutate troops.
