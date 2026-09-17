@@ -1,0 +1,88 @@
+export const INSPECTION_CATEGORY_SCHEMA = Object.freeze([
+  Object.freeze({ id:'domestic', label:'內政' }),
+  Object.freeze({ id:'diplomacy', label:'外交' }),
+  Object.freeze({ id:'military', label:'軍備' }),
+])
+
+const action = (id,label) => Object.freeze({
+  id,
+  label,
+  kind:'action',
+  structureEvidence:'manual-and-zh-rom-community',
+  effectEvidence:'unverified-formula',
+})
+const end = Object.freeze({
+  id:'end',
+  label:'結束',
+  kind:'end',
+  structureEvidence:'jp-manual',
+  effectEvidence:'turn-control',
+})
+
+export const INSPECTION_COMMAND_SCHEMA = Object.freeze({
+  domestic:Object.freeze([
+    action('develop','開發'),
+    action('transfer','調動'),
+    action('intel','情報'),
+    action('welfare','福利'),
+    action('appoint','任命'),
+    action('tax','稅率'),
+    action('educate','教育'),
+    action('transport','運輸'),
+    end,
+  ]),
+  diplomacy:Object.freeze([
+    action('ally','同盟'),
+    Object.freeze({
+      id:'strategy',
+      label:'計策',
+      kind:'submenu',
+      structureEvidence:'manual-and-zh-rom-community',
+      effectEvidence:'n/a',
+      children:Object.freeze([
+        action('alienate','離間'),
+        action('assassinate','暗殺'),
+        action('fire','火計'),
+      ]),
+    }),
+    action('intel','情報'),
+    action('borrow','借款'),
+    action('repay','還款'),
+    end,
+  ]),
+  military:Object.freeze([
+    action('recruit','徵兵'),
+    action('weapons','武器'),
+    action('intel','情報'),
+    action('talent','人材'),
+    action('defense','防衛'),
+    action('train','訓練'),
+    end,
+  ]),
+})
+
+export function inspectionCommandItems(category, submenuId=null) {
+  const items=INSPECTION_COMMAND_SCHEMA[category]??Object.freeze([])
+  if(!submenuId)return items
+  const submenu=items.find((item)=>item.id===submenuId&&item.kind==='submenu')
+  return submenu?.children??Object.freeze([])
+}
+
+export function inspectionCommandPath(category, submenuId=null) {
+  const categoryLabel=INSPECTION_CATEGORY_SCHEMA.find((item)=>item.id===category)?.label??category
+  if(!submenuId)return Object.freeze([categoryLabel])
+  const submenu=(INSPECTION_COMMAND_SCHEMA[category]??[]).find((item)=>item.id===submenuId)
+  return Object.freeze([categoryLabel,submenu?.label??submenuId])
+}
+
+export function inspectionCommandById(category,id) {
+  const top=INSPECTION_COMMAND_SCHEMA[category]??[]
+  for(const item of top){
+    if(item.id===id)return item
+    if(item.kind==='submenu'){
+      const child=item.children.find((candidate)=>candidate.id===id)
+      if(child)return child
+    }
+  }
+  return null
+}
