@@ -1,4 +1,5 @@
 import { CITIES, CITY_BY_ID } from './data.js'
+import { ORIGINAL_189_RULERS } from './original-data.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 
 const SAVE_KEY = 'fenghuo-heroes.cleanroom.v4'
@@ -14,6 +15,13 @@ const baseCities = () => Object.fromEntries(CITIES.map((c) => [c.id, {
   defense: 40,
   training: 35,
 }]))
+const openingRosters = (year) => year === 189
+  ? Object.fromEntries(ORIGINAL_189_RULERS.map((item) => [item.id, {
+      ruler: item.ruler,
+      officers: [...item.officers],
+      zhCommunitySelectable: item.zhCommunitySelectable,
+    }]))
+  : {}
 
 export class GameStore {
   constructor(storage = null) { this.storage = storage; this.state = null; this.pendingConflict = null }
@@ -22,7 +30,7 @@ export class GameStore {
     const humans = [...(options.humanFactions ?? ['liu'])]
     const primary = humans[0] ?? 'liu'
     const first = CITIES.find((c) => c.owner === primary)?.id ?? 'xuchang'
-    this.state = { scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(CITY_BY_ID[first]), inspectionCategories:{}, cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
+    this.state = { scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(CITY_BY_ID[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
     this.pendingConflict = null
     this.save()
     return this.state
@@ -44,6 +52,6 @@ export class GameStore {
   finishCurrentTurn(){this.assertState();const previousMode=this.mode,previousFaction=this.humanFaction;if(!this.isLastHumanTurn){this.state.activeHumanIndex+=1;this.addLog(`${this.state.year}年${this.state.month}月：輪到 ${this.humanFaction}。`);this.save();return{monthAdvanced:false,previousMode,previousFaction,nextFaction:this.humanFaction}}this.state.activeHumanIndex=0;this.state.month+=1;if(this.state.month>12){this.state.month=1;this.state.year+=1}this.state.inspectionCategories={};this.addLog(`${this.state.year}年${this.state.month}月 ${this.mode==='inspection'?'視察情況':'行軍'}`);this.save();return{monthAdvanced:true,previousMode,previousFaction,nextFaction:this.humanFaction}}
   advanceMonth(){this.assertState();this.state.activeHumanIndex=this.state.humanFactions.length-1;return this.finishCurrentTurn()}
   save(){if(this.state&&this.storage?.setItem)this.storage.setItem(SAVE_KEY,JSON.stringify(this.state))}
-  load(){if(!this.storage?.getItem)return false;const raw=this.storage.getItem(SAVE_KEY);if(!raw)return false;try{this.state=JSON.parse(raw);if(!this.state.inspectionCategories)this.state.inspectionCategories={};if(!Number.isInteger(this.state.activeHumanIndex))this.state.activeHumanIndex=0;this.pendingConflict=null;return Boolean(this.state?.cities&&this.state?.humanFactions)}catch{this.storage.removeItem?.(SAVE_KEY);return false}}
+  load(){if(!this.storage?.getItem)return false;const raw=this.storage.getItem(SAVE_KEY);if(!raw)return false;try{this.state=JSON.parse(raw);if(!this.state.inspectionCategories)this.state.inspectionCategories={};if(!this.state.openingRosters)this.state.openingRosters=openingRosters(this.state.scenarioYear);if(!Number.isInteger(this.state.activeHumanIndex))this.state.activeHumanIndex=0;this.pendingConflict=null;return Boolean(this.state?.cities&&this.state?.humanFactions)}catch{this.storage.removeItem?.(SAVE_KEY);return false}}
   clearSave(){this.state=null;this.pendingConflict=null;this.storage?.removeItem?.(SAVE_KEY)}
 }
