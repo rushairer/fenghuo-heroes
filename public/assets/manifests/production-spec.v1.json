@@ -74,10 +74,16 @@
     },
     "map.terrain.forestA": {
       "target": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp",
-      "nativeTarget": { "width": 1024, "height": 1024 },
+      "sourceGenId": "4d431137-a279-4330-a30f-51b57d3fd9f0",
+      "sourceRole": "Image 2.5 transparent HD asset-atlas crop containing a standalone forest cluster",
+      "crop": { "x": 1190, "y": 10, "width": 335, "height": 208 },
+      "nativeTarget": { "width": 1536, "height": 1024 },
+      "runtimeTarget": { "width": 256, "height": 256 },
       "minimumRuntime": { "width": 256, "height": 256 },
       "transparentPreferred": true,
-      "forbiddenBakedUI": ["text", "city", "flag"]
+      "preprocess": "crop forest cluster from transparent atlas; zero alpha <=8; trim alpha bounds; resize within 224x224; center on 256x256 transparent canvas; WebP q62",
+      "integrity": { "byteLength": 14042, "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c" },
+      "forbiddenBakedUI": ["text", "city", "flag", "river", "HUD"]
     },
     "portraits.rulers.liu": {
       "target": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp",
