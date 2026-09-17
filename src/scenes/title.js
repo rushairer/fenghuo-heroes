@@ -61,7 +61,7 @@ export class TitleScene {
       }
     } else {
       const height = this.hasSave ? 39 : 25
-      r.panel(103, 171, 111, height, 'rgba(8,5,5,.92)', '#b47722')
+      r.panel(103, 171, 111, height, 'rgba(8,5,5,.92)', '#b47722', this.app.assets?.get('title.menuFrame'))
       const opts = this.hasSave ? ['START', 'CONTINUE'] : ['START']
       opts.forEach((value, index) => {
         r.text(`${index === this.selection ? '▶' : '　'}${value}`, 158, 177 + index * 14, 8.5, index === this.selection ? COLORS.cyan : '#eee2c2', 'center')
