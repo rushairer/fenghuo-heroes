@@ -128,6 +128,7 @@ export class DuelScene{
 
   draw(){
     const r=this.app.r,c=r.ctx
+    const smallPanel=this.app.assets?.get('ui.panels.small')
     r.clear('#221510')
     const grad=c.createLinearGradient(0,0,0,224*r.S);grad.addColorStop(0,'#aa6a42');grad.addColorStop(.5,'#cf9b62');grad.addColorStop(1,'#806b3d');c.fillStyle=grad;c.fillRect(0,0,320*r.S,224*r.S)
     r.fillRect(0,38,320,104,'#6e4d31');r.fillRect(0,142,320,82,'#927c49');r.fillRect(20,84,280,47,'#49392f')
@@ -142,7 +143,7 @@ export class DuelScene{
     r.fillRect(0,190,320,34,'rgba(10,8,6,.82)')
     r.text(this.autoMode&&!this.modeSelect?'自動一騎討ち中':'← → 移動　B+↑/↓ 上下段攻擊　B 中段　C 防禦　A 命令',160,197,6.2,'#eadbb9','center')
     if(this.message)r.text(this.message,160,211,6.5,this.enemyRage>0?'#ff9d72':'#cfc19f','center')
-    if(this.commandOpen){r.panel(108,61,104,88,'#000','#a96e16');r.text('命令',160,69,9,'#f0d57f','center');DUEL_COMMANDS.forEach((cmd,i)=>r.text(`${i===this.commandIndex?'▶':'　'}${cmd}`,126,88+i*14,8,i===this.commandIndex?COLORS.cyan:'#ddd0ad'))}
+    if(this.commandOpen){r.panel(108,61,104,88,'#000','#a96e16',smallPanel);r.text('命令',160,69,9,'#f0d57f','center');DUEL_COMMANDS.forEach((cmd,i)=>r.text(`${i===this.commandIndex?'▶':'　'}${cmd}`,126,88+i*14,8,i===this.commandIndex?COLORS.cyan:'#ddd0ad'))}
     if(this.modeSelect)this.drawModeSelect()
     if(this.result)r.shadowText(this.result,160,102,34,this.result==='勝'?'#ffe36a':'#da6558','center','middle')
     r.scanlines(.018)
@@ -150,7 +151,8 @@ export class DuelScene{
 
   drawModeSelect(){
     const r=this.app.r
-    r.panel(94,66,132,85,'#000','#a96e16')
+    const smallPanel=this.app.assets?.get('ui.panels.small')
+    r.panel(94,66,132,85,'#000','#a96e16',smallPanel)
     r.text('一騎討ち',160,75,10,'#f0d57f','center','top',SERIF,'700')
     DUEL_MODES.forEach((mode,i)=>r.text(`${i===this.modeIndex?'▶':'　'}${mode.label}`,126,98+i*19,9,i===this.modeIndex?COLORS.cyan:'#ddd0ad'))
     r.text('C / A 決定　B 返回',160,139,6,'#918775','center')
