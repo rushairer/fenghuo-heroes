@@ -1,7 +1,7 @@
 export const SCENARIOS = Object.freeze([
-  { id:'189', year:189, name:'桃園結義' },
-  { id:'200', year:200, name:'群星亂舞' },
-  { id:'215', year:215, name:'三國鼎立前夜' }
+  { id:'189', year:189, name:'桃園結義', selectableRulerCount:7 },
+  { id:'200', year:200, name:'群星亂舞', selectableRulerCount:9 },
+  { id:'215', year:215, name:'三國鼎立', selectableRulerCount:10 }
 ])
 export const DIFFICULTIES = Object.freeze([{id:'easy',label:'初級'},{id:'normal',label:'中級'},{id:'hard',label:'上級'}])
 export const FACTIONS = Object.freeze([
