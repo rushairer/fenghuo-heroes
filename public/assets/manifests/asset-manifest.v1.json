@@ -32,9 +32,9 @@
     },
     "flags": {
       "liu": { "src": "assets/map/flags/army-flag-liubei-v1.webp", "status": "ready" },
-      "cao": { "src": "assets/map/flags/army-flag-caocao-v1.webp", "status": "planned" },
-      "sun": { "src": "assets/map/flags/army-flag-sunjian-v1.webp", "status": "planned" },
-      "yuan": { "src": "assets/map/flags/army-flag-yuanshao-v1.webp", "status": "planned" },
+      "cao": { "src": "assets/map/flags/army-flag-caocao-v1.webp", "status": "ready" },
+      "sun": { "src": "assets/map/flags/army-flag-sunjian-v1.webp", "status": "ready" },
+      "yuan": { "src": "assets/map/flags/army-flag-yuanshao-v1.webp", "status": "ready" },
       "dong": { "src": "assets/map/flags/army-flag-dongzhuo-v1.webp", "status": "planned" },
       "liu_biao": { "src": "assets/map/flags/army-flag-liubiao-v1.webp", "status": "planned" },
       "ma": { "src": "assets/map/flags/army-flag-mateng-v1.webp", "status": "planned" },
