@@ -31,7 +31,7 @@
       "neutral": { "src": "assets/map/villages/village-neutral-v1.webp", "status": "planned" }
     },
     "flags": {
-      "liu": { "src": "assets/map/flags/army-flag-liubei-v1.webp", "status": "planned" },
+      "liu": { "src": "assets/map/flags/army-flag-liubei-v1.webp", "status": "ready" },
       "cao": { "src": "assets/map/flags/army-flag-caocao-v1.webp", "status": "planned" },
       "sun": { "src": "assets/map/flags/army-flag-sunjian-v1.webp", "status": "planned" },
       "yuan": { "src": "assets/map/flags/army-flag-yuanshao-v1.webp", "status": "planned" },
