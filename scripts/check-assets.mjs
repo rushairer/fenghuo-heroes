@@ -103,6 +103,12 @@ for(const entry of entries){
     }
     const minimum=spec?.minimumRuntime
     if(minimum&&(dimensions.width<minimum.width||dimensions.height<minimum.height))failures.push(`${entry.key}: ${dimensions.width}x${dimensions.height} is smaller than minimum ${minimum.width}x${minimum.height}`)
+    const integrity=spec?.integrity
+    if(integrity?.byteLength!==undefined&&bytes.length!==integrity.byteLength)failures.push(`${entry.key}: runtime byteLength expected ${integrity.byteLength}, got ${bytes.length}`)
+    if(integrity?.sha256){
+      const hash=createHash('sha256').update(bytes).digest('hex')
+      if(hash!==integrity.sha256)failures.push(`${entry.key}: runtime sha256 mismatch ${hash}`)
+    }
   }
 }
 
