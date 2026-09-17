@@ -55,9 +55,14 @@
     },
     "map.terrain.mountainB": {
       "target": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp",
-      "nativeTarget": { "width": 1024, "height": 1024 },
+      "sourceGenId": "aa621b8b-fd6a-4422-9530-ecf7febe6ced",
+      "sourceRole": "Image 2.5 transparent secondary mountain range for alternating strategy-map stamps",
+      "nativeTarget": { "width": 1536, "height": 1024 },
+      "runtimeTarget": { "width": 256, "height": 256 },
       "minimumRuntime": { "width": 256, "height": 256 },
       "transparentPreferred": true,
+      "preprocess": "trim alpha using >8 threshold; resize alpha bounds within 224x224; center on 256x256 transparent canvas; WebP q55",
+      "integrity": { "byteLength": 8324, "sha256": "3d5bfb76b3001f416a3ccbf519b1b47b13ce9a4f686283ebb42db69d9d702e8b" },
       "forbiddenBakedUI": ["text", "city", "flag"]
     },
     "map.terrain.riverA": {
