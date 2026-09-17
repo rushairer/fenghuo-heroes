@@ -50,6 +50,7 @@
       "minimumRuntime": { "width": 256, "height": 256 },
       "transparentPreferred": true,
       "preprocess": "trim alpha bounds; resize within 448x448; center on 512x512 transparent canvas; WebP q82",
+      "integrity": { "byteLength": 35333, "sha256": "7baced082ee5c0a594d13c3576ca5d482e15c81ed03e990d7c86c7a8b96f17a5" },
       "forbiddenBakedUI": ["text", "city", "flag"]
     },
     "map.terrain.mountainB": {
