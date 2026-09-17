@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { SCENARIOS } from '../src/game/data.js'
+import { FACTIONS, SCENARIOS } from '../src/game/data.js'
 import { ORIGINAL_189_PLAYABLE_RULERS, ORIGINAL_189_RULERS, ORIGINAL_CITY_NAMES, ORIGINAL_SCENARIOS, originalScenario } from '../src/game/facts.js'
 import { GameStore } from '../src/game/store.js'
 
@@ -12,9 +12,10 @@ test('original scenario years and selectable ruler counts are evidence-backed',(
   assert.deepEqual(SCENARIOS.map((s)=>s.selectableRulerCount),[7,7,3])
 })
 
-test('189 selectable rulers match the documented seven',()=>{
+test('189 selectable rulers match the documented seven and setup order',()=>{
   assert.deepEqual(ORIGINAL_189_PLAYABLE_RULERS,['劉備','袁紹','曹操','董卓','馬騰','劉表','孫堅'])
   assert.deepEqual(originalScenario(189).playableRulers,['劉備','曹操','孫堅','袁紹','董卓','劉表','馬騰'])
+  assert.deepEqual(FACTIONS.slice(0,7).map((f)=>f.ruler),originalScenario(189).playableRulers)
 })
 
 test('canonical original city roster contains exactly forty unique names',()=>{
