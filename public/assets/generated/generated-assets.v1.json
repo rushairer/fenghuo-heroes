@@ -52,6 +52,20 @@
       "byteLength": 35333,
       "sha256": "7baced082ee5c0a594d13c3576ca5d482e15c81ed03e990d7c86c7a8b96f17a5",
       "note": "Image 2.5 transparent mountain cluster trimmed to alpha bounds, resized within 448x448 and centered on a 512x512 transparent WebP runtime canvas. Verified by CI integrity gate."
+    },
+    "map.terrain.mountainB": {
+      "output": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp",
+      "mime": "image/webp",
+      "parts": [
+        "assets/generated/map-terrain-mountain-cluster-b-v1.part01.b64",
+        "assets/generated/map-terrain-mountain-cluster-b-v1.part02.b64",
+        "assets/generated/map-terrain-mountain-cluster-b-v1.part03.b64"
+      ],
+      "sourceGenId": "aa621b8b-fd6a-4422-9530-ecf7febe6ced",
+      "runtimeSize": { "width": 256, "height": 256 },
+      "byteLength": 8324,
+      "sha256": "3d5bfb76b3001f416a3ccbf519b1b47b13ce9a4f686283ebb42db69d9d702e8b",
+      "note": "Image 2.5 secondary transparent mountain range. Three connector-safe source chunks are materialized into the verified runtime WebP during build."
     }
   }
 }
