@@ -48,11 +48,12 @@ export class TitleScene {
 
   draw() {
     const r = this.app.r
-    drawTitleComposition(r)
+    const titleImage = this.app.assets?.get('title.main')
+    if (!titleImage || !r.drawImageCover(titleImage, 0, 0, r.W, r.H)) drawTitleComposition(r)
 
-    // Observed original captures devote the title screen to the five overlapping
-    // portraits. Do not cover them with the large invented two-line logo that
-    // the old web prototype used.
+    // HD artwork is background/character art only. Interactive text stays
+    // code-native so keyboard state, localisation and accessibility do not get
+    // baked into generated pixels.
     if (this.phase === 'splash') {
       if (this.blink < 820) {
         r.fillRect(87, 197, 132, 17, 'rgba(32,12,14,.68)')
