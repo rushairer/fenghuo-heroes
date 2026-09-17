@@ -33,3 +33,47 @@ test('country overview window follows cursor without exceeding page size',()=>{
   assert.equal(last.end,40)
   assert.ok(last.rows.some((row)=>row.number===40))
 })
+
+
+test('country overview uses manual-backed industry officer rule and tax fields',()=>{
+  const store=new GameStore(new MemoryStorage())
+  store.newGame({scenarioYear:189,humanFactions:['liu']})
+  const rows=countryOverviewRows(store)
+  const own=rows.find((row)=>row.owner==='liu')
+  assert.ok(own)
+  assert.equal(own.visible,true)
+  assert.equal(typeof own.industry,'number')
+  assert.equal(typeof own.rule,'number')
+  assert.equal(own.officerCount,null)
+  assert.equal(own.taxRate,null)
+  assert.equal('ruler' in own,false)
+  assert.equal('troops' in own,false)
+})
+
+test('ordinary overview hides enemy governance fields while 情報 can reveal them',()=>{
+  const store=new GameStore(new MemoryStorage())
+  store.newGame({scenarioYear:189,humanFactions:['liu']})
+  const normal=countryOverviewRows(store)
+  const enemy=normal.find((row)=>row.owner!=='liu'&&row.owner!=='neutral')
+  assert.ok(enemy)
+  assert.equal(enemy.visible,false)
+  assert.equal(enemy.industry,null)
+  assert.equal(enemy.rule,null)
+
+  const intel=countryOverviewRows(store,{revealAll:true})
+  const revealed=intel.find((row)=>row.cityId===enemy.cityId)
+  assert.equal(revealed.visible,true)
+  assert.equal(typeof revealed.industry,'number')
+  assert.equal(typeof revealed.rule,'number')
+})
+
+test('verified officer-count and tax-rate slots remain available without fabricating defaults',()=>{
+  const store=new GameStore(new MemoryStorage())
+  store.newGame({scenarioYear:189,humanFactions:['liu']})
+  const city=Object.values(store.state.cities).find((runtime)=>runtime.owner==='liu')
+  city.officerCount=3
+  city.taxRate=44
+  const row=countryOverviewRows(store).find((candidate)=>candidate.cityId===city.id)
+  assert.equal(row.officerCount,3)
+  assert.equal(row.taxRate,44)
+})
