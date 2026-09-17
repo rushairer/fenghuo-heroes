@@ -1,12 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { SCENARIOS } from '../src/game/data.js'
 import {
+  JP_MANUAL_SCENARIOS,
   ORIGINAL_189_RULERS,
   ORIGINAL_189_SELECTABLE_IDS,
   ORIGINAL_189_SELECTABLE_RULERS,
   ORIGINAL_CITY_NAMES,
   ORIGINAL_SCENARIOS,
+  ZH_189_SELECTABLE_IDS,
+  ZH_189_SELECTABLE_RULERS,
+  ZH_ROM_SCENARIOS,
+  scenarioEvidence,
 } from '../src/game/original-data.js'
 
 test('canonical original city roster contains the 40 MD city slots',()=>{
@@ -15,19 +19,30 @@ test('canonical original city roster contains the 40 MD city slots',()=>{
   assert.deepEqual(ORIGINAL_CITY_NAMES.slice(-10),['漢中','江州','宛溫','姑藏','西都','襄武','成都','武陽','雲南','不韋'])
 })
 
-test('scenario metadata matches 189 / 200 / 215 and verified ruler counts',()=>{
-  assert.deepEqual(ORIGINAL_SCENARIOS.map(({year,name,selectableRulerCount})=>[year,name,selectableRulerCount]),[
-    [189,'桃園結義',7],[200,'群星亂舞',9],[215,'三國鼎立',10],
+test('Japanese manual scenario counts remain separate from Chinese-ROM reports',()=>{
+  assert.deepEqual(JP_MANUAL_SCENARIOS.map(({year,selectableRulerCount})=>[year,selectableRulerCount]),[
+    [189,8],[200,9],[215,10],
   ])
-  assert.deepEqual(SCENARIOS.map(({year,name,selectableRulerCount})=>[year,name,selectableRulerCount]),[
-    [189,'桃園結義',7],[200,'群星亂舞',9],[215,'三國鼎立',10],
+  assert.deepEqual(ZH_ROM_SCENARIOS.map(({year,selectableRulerCount})=>[year,selectableRulerCount]),[
+    [189,7],[200,7],[215,3],
   ])
+  assert.equal(ORIGINAL_SCENARIOS,JP_MANUAL_SCENARIOS)
+  assert.equal(scenarioEvidence(215,'jp').selectableRulerCount,10)
+  assert.equal(scenarioEvidence(215,'zh-rom').selectableRulerCount,3)
 })
 
-test('189 selectable rulers are the original seven and Yuan Shu remains AI-only',()=>{
-  assert.deepEqual(ORIGINAL_189_SELECTABLE_RULERS,['劉備','袁紹','曹操','董卓','馬騰','劉表','孫堅'])
-  assert.equal(ORIGINAL_189_SELECTABLE_IDS.length,7)
-  assert.equal(ORIGINAL_189_RULERS.find((entry)=>entry.ruler==='袁術')?.selectable,false)
+test('Chinese-ROM scenario ruler lists are explicit instead of inferred from history',()=>{
+  assert.deepEqual(scenarioEvidence(189).playableRulers,['劉備','曹操','孫堅','袁紹','董卓','劉表','馬騰'])
+  assert.deepEqual(scenarioEvidence(200).playableRulers,['劉備','曹操','孫權','袁紹','劉表','馬騰','劉璋'])
+  assert.deepEqual(scenarioEvidence(215).playableRulers,['劉備','曹操','孫權'])
+})
+
+test('189 Chinese-ROM selectable aliases remain stable and Yuan Shu is not in that list',()=>{
+  assert.deepEqual(ZH_189_SELECTABLE_RULERS,['劉備','袁紹','曹操','董卓','馬騰','劉表','孫堅'])
+  assert.equal(ZH_189_SELECTABLE_IDS.length,7)
+  assert.equal(ORIGINAL_189_SELECTABLE_RULERS,ZH_189_SELECTABLE_RULERS)
+  assert.equal(ORIGINAL_189_SELECTABLE_IDS,ZH_189_SELECTABLE_IDS)
+  assert.equal(ORIGINAL_189_RULERS.find((entry)=>entry.ruler==='袁術')?.zhCommunitySelectable,false)
 })
 
 test('189 Liu Bei and Sun Jian initial subordinate rosters are protected facts',()=>{
