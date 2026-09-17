@@ -1,38 +1,37 @@
-# 原作研究日志
+# Original-game research log
 
-## 已确认的高置信结构
+## High-confidence facts already driving code
 
-公开资料交叉确认：
+- Mega Drive title released by Sega in 1991.
+- Strategy/simulation game with 1–3 human-controlled rulers.
+- Initial setup exposes three scenarios: 189, 200 and 215.
+- Difficulty has three levels.
+- Setup also exposes animation display and text-speed options.
+- The campaign alternates odd-month "inspection" and even-month "march" play.
+- Inspection commands are grouped into domestic, diplomacy and military.
+- Public manual material describes a main screen with access to owned-territory status and an overall map.
+- Battle flow includes marching armies, attacking cities and transport units, siege/battle screens and a manually controlled duel.
+- Public catalog material states that the goal spans 40 castles/cities.
 
-- 1991 年 SEGA / Mega Drive 策略模拟游戏。
-- 主循环明确分为「视察情况」与「行军」两面。
-- 单数月执行视察，双数月执行行军。
-- 视察包含内政 / 外交 / 军事三类。
-- 行军允许选择武将出城、设置路线并在大地图移动、攻击城池。
-- 自由行军可形成补给与截击玩法；公开玩家资料反复提到截粮、占村。
-- 单挑为可手动操作的一对一动作战斗，而非纯数值结算。
+## Evidence queue
 
-主要公开入口：
+1. Official Hong Kong / Traditional Chinese manual scan: use for exact terminology and page anatomy.
+2. Japanese initial-settings screenshot: use for measurable screen geometry where HK screenshot is unavailable.
+3. Manual map page: use to replace current 40-city scaffold coordinates/topology.
+4. Long-form emulator recordings: use only for timing and observable state transitions, not for copying assets.
+5. Community recollections: use as leads only until corroborated by manual or reproducible footage.
 
-- https://acg.gamer.com.tw/acgDetail.php?s=48215
-- https://www.mega-drive.net/games/sgsrjp.htm
-- https://gmerago.com/forum.php?mod=viewthread&tid=4372
-- https://endlessfight.org/discuz/forum.php?mod=viewthread&tid=1251
+## Known facts requiring stronger calibration
 
-## 仍需实机/录屏逐帧验证
+- Exact Chinese title-screen text and title-art timing.
+- Initial ownership for all three scenarios.
+- City labels and road topology in the official Chinese version.
+- Exact resource labels/ranges and command cost formulas.
+- Free-march speed, route editing, supply consumption and interception.
+- Siege formation behavior.
+- Duel hit boxes, weapon reach, damage and AI.
+- Succession / ruler-death rules.
 
-- 中文版标题、剧本、君主选择的真实布局与全部可选项。
-- 原版到底包含 40、50 或其它数量的城池/村庄；公开二手资料存在冲突，不能直接采用。
-- 每个内政 / 外交 / 军事指令的输入字段、消耗、概率、动画和月令消耗。
-- 行军的连续空间/离散节点规则、移动速度、改令与遭遇判定。
-- 攻城、野战、阵形、撤退、俘虏的完整状态机。
-- 单挑按键、受击、武器、投降/说服、体力阈值与 AI 行为。
-- 君主继位次数与势力灭亡细则。
+## Rule for future implementation
 
-## 研究原则
-
-任何公开攻略、论坛回忆都只算线索，不直接进入“原版事实”。进入 parity 数据表前至少满足其一：
-
-1. 原版实机/模拟器录屏可重复观察；
-2. 原版说明书可直接支持；
-3. 两个以上独立高质量来源一致，并标注仍待实机确认。
+No mechanic moves from "plausible" to "parity fact" because it appeared in the previous repository. It must have a manual/screenshot/recording evidence reference.
