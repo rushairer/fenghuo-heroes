@@ -1,8 +1,11 @@
-export const SCENARIOS = Object.freeze([
-  { id:'189', year:189, name:'桃園結義', selectableRulerCount:7 },
-  { id:'200', year:200, name:'群星亂舞', selectableRulerCount:9 },
-  { id:'215', year:215, name:'三國鼎立', selectableRulerCount:10 }
-])
+import { ORIGINAL_SCENARIOS } from './facts.js'
+
+export const SCENARIOS = Object.freeze(ORIGINAL_SCENARIOS.map((scenario)=>Object.freeze({
+  id:scenario.id,
+  year:scenario.year,
+  name:scenario.communityLabel,
+  selectableRulerCount:scenario.playableRulers.length,
+})))
 export const DIFFICULTIES = Object.freeze([{id:'easy',label:'初級'},{id:'normal',label:'中級'},{id:'hard',label:'上級'}])
 export const FACTIONS = Object.freeze([
   {id:'liu',ruler:'劉備',label:'劉備軍',color:'#22b7cf'},{id:'cao',ruler:'曹操',label:'曹操軍',color:'#5b86d8'},{id:'dong',ruler:'董卓',label:'董卓軍',color:'#a455b8'},{id:'yuan',ruler:'袁紹',label:'袁紹軍',color:'#d7a847'},{id:'sun',ruler:'孫堅',label:'孫堅軍',color:'#d85848'},{id:'liu_biao',ruler:'劉表',label:'劉表軍',color:'#58a56b'},{id:'ma',ruler:'馬騰',label:'馬騰軍',color:'#6ec2a3'},{id:'neutral',ruler:'群雄',label:'群雄',color:'#8c8c8c'}
