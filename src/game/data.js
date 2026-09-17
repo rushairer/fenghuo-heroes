@@ -1,4 +1,5 @@
 import { TARGET_SCENARIOS } from './scenario-target.js'
+import { INSPECTION_CATEGORY_SCHEMA } from './inspection-command-parity.js'
 
 // `SCENARIOS` is the runtime target profile. Edition-neutral / Japanese manual
 // facts live in original-data.js and must not be silently mixed into this UI.
@@ -23,5 +24,4 @@ const edgePairs=[['xiangping','beiping'],['beiping','jicheng'],['jicheng','nanpi
 const neighbors=Object.fromEntries(C.map(([id])=>[id,[]]));for(const[a,b]of edgePairs){neighbors[a].push(b);neighbors[b].push(a)}
 export const CITIES=Object.freeze(C.map(([id,name,x,y,owner])=>({id,name,x,y,owner,neighbors:Object.freeze(neighbors[id])})))
 export const CITY_BY_ID=Object.fromEntries(CITIES.map((c)=>[c.id,c]))
-export const COMMANDS=Object.freeze({domestic:[['develop','開發'],['transfer','調動'],['intel','情報'],['welfare','福利'],['appoint','任命'],['tax','稅率'],['educate','教育'],['transport','運輸']],diplomacy:[['ally','同盟'],['alienate','離間'],['assassinate','暗殺'],['fire','火計'],['intel','情報'],['borrow','借款'],['repay','還款']],military:[['recruit','徵兵'],['weapons','武器'],['intel','情報'],['talent','人材'],['defense','防衛'],['train','訓練']]})
-export const CATEGORY_LABELS=Object.freeze({domestic:'內政',diplomacy:'外交',military:'軍備'})
+export const CATEGORY_LABELS=Object.freeze(Object.fromEntries(INSPECTION_CATEGORY_SCHEMA.map(({id,label})=>[id,label])))
