@@ -5,18 +5,45 @@
 // evidence streams separate until a repeatable Chinese-ROM capture/manual page
 // resolves the difference. Never average or silently merge them.
 
-export const ORIGINAL_CITY_NAMES = Object.freeze([
+// Chinese-ROM RAM-address/cheat-table order. This sequence is useful for memory
+// layout and field research, but must NOT be presented as the game's visible
+// country-number order merely because it contains all 40 cities.
+export const ZH_ROM_RAM_CITY_ORDER = Object.freeze([
   '襄平','薊縣','代縣','信都','臨淄','下邳','濮陽','會稽','壽春','建安',
   '南昌','番禺','晉陽','洛陽','安城','新野','江夏','江陵','臨湘','合浦',
   '平陽','臨晉','長安','許昌','西城','襄陽','永安','且蘭','龍編','臨涇',
   '漢中','江州','宛溫','姑藏','西都','襄武','成都','武陽','雲南','不韋',
 ])
 
-// The RAM-address source prints city #5 as 「臨溜」. Independent officer tables
-// identify the same slot as 「臨淄」, so the normalized display name is 臨淄
-// while retaining the raw source spelling for auditability.
+// Independent long-running Chinese-ROM 189 officer/exploration guides number
+// these city slots explicitly 01..40. Preserve this order separately instead of
+// silently replacing the RAM order above.
+export const ZH_ROM_NUMBERED_GUIDE_CITY_ORDER = Object.freeze([
+  '襄平','蘇縣','代縣','晉陽','平陽','臨晉','信都','濮陽','臨淄','洛陽',
+  '長安','許昌','下邳','壽春','安城','新野','襄陽','西城','江夏','江陵',
+  '永安','江州','會稽','建安','南昌','臨湘','番禺','漢中','成都','武陽',
+  '臨涇','襄武','西都','故藏','合浦','且蘭','雲南','宛溫','不韋','龍編',
+])
+
+// Known source-text disagreements. Do not normalize these away at ingestion;
+// keep both spellings available until a direct Chinese-ROM capture resolves the
+// exact on-screen label.
+export const ZH_ROM_CITY_NAME_VARIANTS = Object.freeze([
+  Object.freeze({ ram:'薊縣', numberedGuide:'蘇縣', status:'unresolved' }),
+  Object.freeze({ ram:'姑藏', numberedGuide:'故藏', status:'unresolved' }),
+  Object.freeze({ ramSource:'臨溜', normalizedRam:'臨淄', status:'cross-source-normalized' }),
+])
+
+// Legacy alias retained for existing callers. It means RAM-address order, not a
+// proven visible country-number order. New evidence-sensitive code should use a
+// source-qualified constant above.
+export const ORIGINAL_CITY_NAMES = ZH_ROM_RAM_CITY_ORDER
+
+// The RAM-address source prints one city as 「臨溜」. Independent officer tables
+// identify the same RAM slot as 「臨淄」, so the normalized RAM display value is
+// 臨淄 while retaining the raw source spelling for auditability.
 export const ORIGINAL_CITY_SOURCE_VARIANTS = Object.freeze({
-  5: Object.freeze({ normalized: '臨淄', source: '臨溜' }),
+  5: Object.freeze({ normalized:'臨淄', source:'臨溜' }),
 })
 
 // Directly indexed from the Japanese Mega Drive manual scan. These counts are
