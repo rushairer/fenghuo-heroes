@@ -109,6 +109,36 @@
       "byteLength": 2992,
       "sha256": "f06526531c154be76139dea3ffb7b7ff0138ea599ca8f99a5cda854e9c8bdd94",
       "note": "Image 2.5 HD asset-atlas Liu Bei marching flag crop, background flood-cleaned, trimmed and centered on a transparent 128x128 WebP runtime canvas."
+    },
+    "map.flags.cao": {
+      "output": "assets/map/flags/army-flag-caocao-v1.webp",
+      "mime": "image/webp",
+      "parts": ["assets/generated/army-flag-caocao-v1.b64"],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 128, "height": 128 },
+      "byteLength": 2732,
+      "sha256": "9c8f0f2b357bbec7980637d73ec3e7bcad554ff939180458662b15780508bc30",
+      "note": "Image 2.5 HD asset-atlas Cao Cao marching flag crop, background cleaned and centered on transparent runtime canvas."
+    },
+    "map.flags.sun": {
+      "output": "assets/map/flags/army-flag-sunjian-v1.webp",
+      "mime": "image/webp",
+      "parts": ["assets/generated/army-flag-sunjian-v1.b64"],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 128, "height": 128 },
+      "byteLength": 2756,
+      "sha256": "27224f03616f9d4e5c3b6e8cb7e6e9f7ff3d5c51546495684c839b92291d2e3f",
+      "note": "Image 2.5 HD asset-atlas Sun Jian marching flag crop, background cleaned and centered on transparent runtime canvas."
+    },
+    "map.flags.yuan": {
+      "output": "assets/map/flags/army-flag-yuanshao-v1.webp",
+      "mime": "image/webp",
+      "parts": ["assets/generated/army-flag-yuanshao-v1.b64"],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 128, "height": 128 },
+      "byteLength": 2666,
+      "sha256": "1bb39753a50241369ac5ac0fd2f2e981d456dd8ef79d2c10e154debd3f36739b",
+      "note": "Image 2.5 HD asset-atlas Yuan Shao marching flag crop, background cleaned and centered on transparent runtime canvas."
     }
   }
 }
