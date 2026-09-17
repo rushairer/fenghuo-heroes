@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "generator": {
+    "provider": "OpenAI Image 2.5",
+    "policy": "clean-room-hd-remaster"
+  },
+  "assets": {
+    "title.main": {
+      "target": "assets/title/hd/title-main-hd-v1.webp",
+      "sourceGenId": "c7dd6917-7f5e-4425-9062-5cf94f86ffd6",
+      "sourceRole": "concept-to-production crop",
+      "crop": { "x": 180, "y": 105, "width": 1000, "height": 700 },
+      "nativeTarget": { "width": 1600, "height": 1120, "aspect": "10:7" },
+      "minimumRuntime": { "width": 640, "height": 448 },
+      "forbiddenBakedUI": ["START", "CONTINUE", "PUSH START", "menu", "HUD", "interactive labels"],
+      "notes": "Crop selected to keep the five-warrior composition while excluding generated menu and calligraphy areas. Interactive labels remain code-native."
+    },
+    "title.menuFrame": {
+      "target": "assets/title/slices/title-menu-frame-v1.webp",
+      "nativeTarget": { "width": 1024, "height": 512 },
+      "transparentPreferred": true,
+      "minimumRuntime": { "width": 256, "height": 128 },
+      "forbiddenBakedUI": ["START", "CONTINUE", "text", "cursor"],
+      "notes": "Ornate black-and-gold frame only; inner copy and selected state are code-native."
+    },
+    "ui.frames.large": {
+      "target": "assets/ui/frames/ui-frame-large-v1.webp",
+      "nativeTarget": { "width": 1024, "height": 1024 },
+      "transparentPreferred": true,
+      "minimumRuntime": { "width": 256, "height": 256 },
+      "nineSlice": { "left": 48, "top": 48, "right": 48, "bottom": 48 }
+    },
+    "map.terrain.sandBase": {
+      "target": "assets/map/terrain/map-terrain-sand-base-v1.webp",
+      "nativeTarget": { "width": 2048, "height": 1434 },
+      "tileablePreferred": true,
+      "forbiddenBakedUI": ["city labels", "flags", "roads", "HUD", "text"]
+    },
+    "portraits.rulers.liu": {
+      "target": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp",
+      "nativeTarget": { "width": 1024, "height": 1024 },
+      "transparentPreferred": true,
+      "minimumRuntime": { "width": 512, "height": 512 }
+    }
+  }
+}
