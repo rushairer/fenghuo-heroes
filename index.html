@@ -1,13 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>三国志列传：群英新篇</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#08080b" />
+    <meta name="description" content="《三国志列传：乱世群英》玩法研究与 clean-room Web 复刻工程。" />
+    <title>乱世群英 · Clean-room Web Replica</title>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <main id="app">
+      <canvas id="game" width="320" height="224" tabindex="0" aria-label="乱世群英复刻游戏画布"></canvas>
+    </main>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>
