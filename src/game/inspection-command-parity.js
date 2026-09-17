@@ -19,6 +19,13 @@ const intel = Object.freeze({
   effectEvidence:'read-only-country-status',
   usage:'repeatable',
 })
+const tax = Object.freeze({
+  id:'tax',
+  label:'稅率',
+  kind:'configuration',
+  structureEvidence:'jp-manual-and-zh-rom-community',
+  effectEvidence:'persistent-rate-only; settlement-formula-unverified',
+})
 const end = Object.freeze({
   id:'end',
   label:'結束',
@@ -34,7 +41,7 @@ export const INSPECTION_COMMAND_SCHEMA = Object.freeze({
     intel,
     action('welfare','福利'),
     action('appoint','任命'),
-    action('tax','稅率'),
+    tax,
     action('educate','教育'),
     action('transport','運輸'),
     end,
