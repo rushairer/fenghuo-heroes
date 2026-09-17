@@ -48,12 +48,12 @@
       "small": { "src": "assets/ui/panels/ui-panel-black-gold-b-v1.webp", "status": "ready" }
     },
     "frames": {
-      "small": { "src": "assets/ui/frames/ui-frame-small-v1.webp", "status": "planned" },
+      "small": { "src": "assets/ui/frames/ui-frame-small-v1.webp", "status": "ready" },
       "large": { "src": "assets/ui/frames/ui-frame-large-v1.webp", "status": "ready" }
     },
     "cursors": {
       "box": { "src": "assets/ui/cursors/ui-cursor-box-v1.webp", "status": "ready" },
-      "pointer": { "src": "assets/ui/cursors/ui-cursor-pointer-v1.webp", "status": "planned" }
+      "pointer": { "src": "assets/ui/cursors/ui-cursor-pointer-v1.webp", "status": "ready" }
     },
     "icons": {
       "food": { "src": "assets/ui/icons/ui-icon-food-v1.webp", "status": "ready" },
