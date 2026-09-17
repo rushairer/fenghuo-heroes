@@ -15,7 +15,7 @@
       "mountainA": { "src": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp", "status": "ready" },
       "mountainB": { "src": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp", "status": "ready" },
       "riverA": { "src": "assets/map/terrain/map-terrain-river-segment-a-v1.webp", "status": "planned" },
-      "forestA": { "src": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp", "status": "planned" }
+      "forestA": { "src": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp", "status": "ready" }
     },
     "cities": {
       "neutral": { "src": "assets/map/cities/city-fort-neutral-v1.webp", "status": "planned" },

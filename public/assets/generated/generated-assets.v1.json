@@ -66,6 +66,23 @@
       "byteLength": 8324,
       "sha256": "3d5bfb76b3001f416a3ccbf519b1b47b13ce9a4f686283ebb42db69d9d702e8b",
       "note": "Image 2.5 secondary transparent mountain range. Three connector-safe source chunks are materialized into the verified runtime WebP during build."
+    },
+    "map.terrain.forestA": {
+      "output": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp",
+      "mime": "image/webp",
+      "parts": [
+        "assets/generated/map-terrain-forest-cluster-a-v1.part01.b64",
+        "assets/generated/map-terrain-forest-cluster-a-v1.part02.b64",
+        "assets/generated/map-terrain-forest-cluster-a-v1.part03.b64",
+        "assets/generated/map-terrain-forest-cluster-a-v1.part04.b64",
+        "assets/generated/map-terrain-forest-cluster-a-v1.part05.b64",
+        "assets/generated/map-terrain-forest-cluster-a-v1.part06.b64"
+      ],
+      "sourceGenId": "4d431137-a279-4330-a30f-51b57d3fd9f0",
+      "runtimeSize": { "width": 256, "height": 256 },
+      "byteLength": 14042,
+      "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c",
+      "note": "Image 2.5 forest cluster cropped from the transparent HD production atlas, alpha-cleaned, resized within 224x224 and centered on a 256x256 transparent WebP canvas."
     }
   }
 }
