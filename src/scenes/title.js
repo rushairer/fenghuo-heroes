@@ -49,6 +49,7 @@ export class TitleScene {
   draw() {
     const r = this.app.r
     const titleImage = this.app.assets?.get('title.main')
+    const pointer = this.app.assets?.get('ui.cursors.pointer')
     const hdArt = Boolean(titleImage && r.drawImageCover(titleImage, 0, 0, r.W, r.H))
     if (!hdArt) drawTitleComposition(r)
 
@@ -73,7 +74,10 @@ export class TitleScene {
       const firstY=hdArt?(this.hasSave?164:171):177
       const step=hdArt?16:14
       opts.forEach((value, index) => {
-        r.shadowText(`${index === this.selection ? '▶' : '　'}${value}`, centerX, firstY + index * step, 8.5, index === this.selection ? COLORS.cyan : '#eee2c2', 'center')
+        const selected=index===this.selection
+        const y=firstY+index*step
+        if(selected&&pointer)r.drawImageCentered(pointer,centerX-34,y+4,12,12)
+        r.shadowText(`${selected&&!pointer?'▶ ':''}${value}`,centerX,y,8.5,selected?COLORS.cyan:'#eee2c2','center')
       })
     }
 
