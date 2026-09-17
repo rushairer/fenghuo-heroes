@@ -83,6 +83,19 @@
       "byteLength": 14042,
       "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c",
       "note": "Image 2.5 forest cluster cropped from the transparent HD production atlas, alpha-cleaned, resized within 224x224 and centered on a 256x256 transparent WebP canvas."
+    },
+    "map.cities.neutral": {
+      "output": "assets/map/cities/city-fort-neutral-v1.webp",
+      "mime": "image/webp",
+      "parts": [
+        "assets/generated/city-fort-neutral-v1.part01.b64",
+        "assets/generated/city-fort-neutral-v1.part02.b64"
+      ],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 256, "height": 256 },
+      "byteLength": 4794,
+      "sha256": "0e19fa9169bcae6037dd921f2b7cab36db86fee7d8de0af08c22b468d08e2e3c",
+      "note": "Image 2.5 HD asset-atlas neutral fort crop, background flood-cleaned, trimmed, resized and centered on a transparent 256x256 WebP runtime canvas."
     }
   }
 }

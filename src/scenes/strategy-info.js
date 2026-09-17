@@ -217,7 +217,7 @@ export class StrategyScene extends ParityStrategyScene {
     const S=r.S
     const runtime=this.app.store.state.cities[city.id]
     const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
-    const image=this.app.assets?.get(`map.cities.${runtime.owner}`)??this.app.assets?.get('map.cities.neutral')
+    const image=this.app.assets?.get(`map.cities.${runtime.owner}`)??(runtime.owner==='neutral'?this.app.assets?.get('map.cities.neutral'):null)
     if(image&&r.drawImageStretch(image,x-12,y-16,24,24))return
     c.save()
     c.translate(x*S,y*S)
