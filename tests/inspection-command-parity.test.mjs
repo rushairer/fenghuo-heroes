@@ -32,7 +32,7 @@ test('diplomacy exposes strategy as a submenu instead of flattening its three ta
     [
       ['ally','同盟','action'],
       ['strategy','計策','submenu'],
-      ['intel','情報','action'],
+      ['intel','情報','browser'],
       ['borrow','借款','action'],
       ['repay','還款','action'],
       ['end','結束','end'],
@@ -66,4 +66,13 @@ test('menu evidence does not pretend prototype effect formulas are verified',()=
     visit(INSPECTION_COMMAND_SCHEMA[category])
   }
   assert.equal(inspectionCommandById('diplomacy','fire').label,'火計')
+})
+
+test('information is a repeatable read-only country-status browser in all three groups',()=>{
+  for(const category of ['domestic','diplomacy','military']){
+    const intel=inspectionCommandById(category,'intel')
+    assert.equal(intel.kind,'browser')
+    assert.equal(intel.usage,'repeatable')
+    assert.equal(intel.effectEvidence,'read-only-country-status')
+  }
 })
