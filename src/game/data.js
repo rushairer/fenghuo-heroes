@@ -1,8 +1,8 @@
-export const SCENARIOS = Object.freeze([
-  { id:'189', year:189, name:'桃園結義', selectableRulerCount:7 },
-  { id:'200', year:200, name:'群星亂舞', selectableRulerCount:9 },
-  { id:'215', year:215, name:'三國鼎立', selectableRulerCount:10 }
-])
+import { TARGET_SCENARIOS } from './scenario-target.js'
+
+// `SCENARIOS` is the runtime target profile. Edition-neutral / Japanese manual
+// facts live in original-data.js and must not be silently mixed into this UI.
+export const SCENARIOS = TARGET_SCENARIOS
 export const DIFFICULTIES = Object.freeze([{id:'easy',label:'初級'},{id:'normal',label:'中級'},{id:'hard',label:'上級'}])
 // The first seven entries intentionally follow the documented Chinese-ROM 189
 // setup-screen order. Runtime lookup is ID-based, so this does not change city
