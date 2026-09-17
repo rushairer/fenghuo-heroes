@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CITIES, SCENARIOS } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
+import { WORLD_H, WORLD_W, cameraFor, cityWorldPoint, toScreen } from '../src/game/world.js'
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
 test('reference map scaffold has 40 cities',()=>assert.equal(CITIES.length,40))
 test('initial settings expose 189/200/215 scenarios',()=>assert.deepEqual(SCENARIOS.map((s)=>s.year),[189,200,215]))
@@ -12,3 +13,5 @@ test('inspection mutates city state',()=>{const s=new GameStore(new MemoryStorag
 test('march creates enemy conflict after inspection turn',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['cao']});s.finishCurrentTurn();const c=s.planMarch('xuchang','xinye');assert.ok(c);assert.equal(c.target,'xinye')})
 test('resolving conflict finishes only the active human turn',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['cao','liu']});s.finishCurrentTurn();s.finishCurrentTurn();assert.equal(s.state.month,2);assert.equal(s.humanFaction,'cao');s.planMarch('xuchang','xinye');s.resolveConflict(false);assert.equal(s.state.month,2);assert.equal(s.humanFaction,'liu')})
 test('save/load retains parity setup and command lock state',()=>{const mem=new MemoryStorage();const a=new GameStore(mem);a.newGame({scenarioYear:215,difficulty:'hard',animation:false,textSpeed:'fast',humanFactions:['sun','liu']});a.lockInspectionCategory('military');const b=new GameStore(mem);assert.equal(b.load(),true);assert.equal(b.state.scenarioYear,215);assert.deepEqual(b.state.humanFactions,['sun','liu']);assert.equal(b.inspectionCategoryForActive(),'military')})
+test('strategy world is larger than the 320x176 viewport and camera follows cursor',()=>{assert.equal(WORLD_W,640);assert.equal(WORLD_H,448);const city=CITIES.find((c)=>c.id==='xiangping');const wp=cityWorldPoint(city);assert.deepEqual(wp,{x:568,y:86});const cam=cameraFor(wp);assert.equal(cam.x,320);const sp=toScreen(wp,cam);assert.ok(sp.x>=0&&sp.x<=320);assert.ok(sp.y>=0&&sp.y<=176)})
+test('new games store cursor in world coordinates',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['yuan']});const first=CITIES.find((c)=>c.owner==='yuan');const wp=cityWorldPoint(first);assert.deepEqual(s.state.cursor,wp);assert.equal(s.cityAt(wp.x,wp.y,12)?.id,first.id)})

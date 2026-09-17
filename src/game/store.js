@@ -1,8 +1,19 @@
 import { CITIES, CITY_BY_ID } from './data.js'
+import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 
-const SAVE_KEY = 'fenghuo-heroes.cleanroom.v3'
+const SAVE_KEY = 'fenghuo-heroes.cleanroom.v4'
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
-const baseCities = () => Object.fromEntries(CITIES.map((c) => [c.id, { id:c.id, owner:c.owner, gold:300+((c.x*7+c.y*3)%700), food:500+((c.x*11+c.y*5)%1100), troops:2500+((c.x*73+c.y*37)%9500), development:40+((c.x+c.y)%80), rule:80, defense:40, training:35 }]))
+const baseCities = () => Object.fromEntries(CITIES.map((c) => [c.id, {
+  id: c.id,
+  owner: c.owner,
+  gold: 300 + ((c.x * 7 + c.y * 3) % 700),
+  food: 500 + ((c.x * 11 + c.y * 5) % 1100),
+  troops: 2500 + ((c.x * 73 + c.y * 37) % 9500),
+  development: 40 + ((c.x + c.y) % 80),
+  rule: 80,
+  defense: 40,
+  training: 35,
+}]))
 
 export class GameStore {
   constructor(storage = null) { this.storage = storage; this.state = null; this.pendingConflict = null }
@@ -11,7 +22,7 @@ export class GameStore {
     const humans = [...(options.humanFactions ?? ['liu'])]
     const primary = humans[0] ?? 'liu'
     const first = CITIES.find((c) => c.owner === primary)?.id ?? 'xuchang'
-    this.state = { scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:{x:CITY_BY_ID[first].x,y:CITY_BY_ID[first].y}, inspectionCategories:{}, cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
+    this.state = { scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(CITY_BY_ID[first]), inspectionCategories:{}, cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
     this.pendingConflict = null
     this.save()
     return this.state
@@ -22,8 +33,8 @@ export class GameStore {
   assertState(){if(!this.state)throw new Error('Game not initialized')}
   hasGame(){return Boolean(this.state)}
   addLog(msg){this.assertState();this.state.log.unshift(msg);this.state.log=this.state.log.slice(0,8)}
-  cityAt(x,y,tolerance=7){return CITIES.find((c)=>Math.abs(c.x-x)<=tolerance&&Math.abs(c.y-y)<=tolerance)??null}
-  setCursor(x,y){this.assertState();this.state.cursor.x=clamp(x,8,311);this.state.cursor.y=clamp(y,8,173)}
+  cityAt(x,y,tolerance=7){return CITIES.find((c)=>{const p=cityWorldPoint(c);return Math.abs(p.x-x)<=tolerance&&Math.abs(p.y-y)<=tolerance})??null}
+  setCursor(x,y){this.assertState();this.state.cursor.x=clamp(x,8,WORLD_W-8);this.state.cursor.y=clamp(y,8,WORLD_H-8)}
   setActiveCity(id){this.assertState();this.state.activeCity=id}
   inspectionCategoryForActive(){this.assertState();return this.state.inspectionCategories?.[this.humanFaction]??null}
   lockInspectionCategory(category){this.assertState();if(this.mode!=='inspection')return false;if(!this.state.inspectionCategories)this.state.inspectionCategories={};const current=this.state.inspectionCategories[this.humanFaction];if(current&&current!==category)return false;this.state.inspectionCategories[this.humanFaction]=category;this.save();return true}
