@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { FACTIONS } from '../src/game/data.js'
 import {
   JP_MANUAL_SCENARIOS,
   ORIGINAL_189_RULERS,
@@ -38,6 +39,10 @@ test('Chinese-ROM scenario ruler lists are explicit instead of inferred from his
   assert.deepEqual(scenarioEvidence(189).playableRulers,['劉備','曹操','孫堅','袁紹','董卓','劉表','馬騰'])
   assert.deepEqual(scenarioEvidence(200).playableRulers,['劉備','曹操','孫權','袁紹','劉表','馬騰','劉璋'])
   assert.deepEqual(scenarioEvidence(215).playableRulers,['劉備','曹操','孫權'])
+})
+
+test('189 setup order follows the Chinese-ROM target profile',()=>{
+  assert.deepEqual(FACTIONS.slice(0,7).map((f)=>f.ruler),scenarioEvidence(189).playableRulers)
 })
 
 test('189 Chinese-ROM selectable aliases remain stable and Yuan Shu is not in that list',()=>{
