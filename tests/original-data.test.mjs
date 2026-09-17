@@ -10,6 +10,9 @@ import {
   ORIGINAL_SCENARIOS,
   ZH_189_SELECTABLE_IDS,
   ZH_189_SELECTABLE_RULERS,
+  ZH_ROM_CITY_NAME_VARIANTS,
+  ZH_ROM_NUMBERED_GUIDE_CITY_ORDER,
+  ZH_ROM_RAM_CITY_ORDER,
   ZH_ROM_SCENARIOS,
   scenarioEvidence,
 } from '../src/game/original-data.js'
@@ -17,10 +20,28 @@ import { GameStore } from '../src/game/store.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
 
-test('canonical original city roster contains the 40 MD city slots',()=>{
-  assert.equal(ORIGINAL_CITY_NAMES.length,40)
-  assert.deepEqual(ORIGINAL_CITY_NAMES.slice(0,10),['襄平','薊縣','代縣','信都','臨淄','下邳','濮陽','會稽','壽春','建安'])
-  assert.deepEqual(ORIGINAL_CITY_NAMES.slice(-10),['漢中','江州','宛溫','姑藏','西都','襄武','成都','武陽','雲南','不韋'])
+test('Chinese-ROM RAM city roster contains forty slots and legacy alias stays explicit',()=>{
+  assert.equal(ZH_ROM_RAM_CITY_ORDER.length,40)
+  assert.equal(ORIGINAL_CITY_NAMES,ZH_ROM_RAM_CITY_ORDER)
+  assert.deepEqual(ZH_ROM_RAM_CITY_ORDER.slice(0,10),['襄平','薊縣','代縣','信都','臨淄','下邳','濮陽','會稽','壽春','建安'])
+  assert.deepEqual(ZH_ROM_RAM_CITY_ORDER.slice(-10),['漢中','江州','宛溫','姑藏','西都','襄武','成都','武陽','雲南','不韋'])
+})
+
+test('numbered 189 guide city order remains separate from RAM-address order',()=>{
+  assert.equal(ZH_ROM_NUMBERED_GUIDE_CITY_ORDER.length,40)
+  assert.deepEqual(ZH_ROM_NUMBERED_GUIDE_CITY_ORDER.slice(0,10),['襄平','蘇縣','代縣','晉陽','平陽','臨晉','信都','濮陽','臨淄','洛陽'])
+  assert.deepEqual(ZH_ROM_NUMBERED_GUIDE_CITY_ORDER.slice(-10),['臨涇','襄武','西都','故藏','合浦','且蘭','雲南','宛溫','不韋','龍編'])
+  assert.notDeepEqual(ZH_ROM_NUMBERED_GUIDE_CITY_ORDER,ZH_ROM_RAM_CITY_ORDER)
+})
+
+test('independent Chinese-ROM city sources agree on the city set modulo unresolved spellings',()=>{
+  const normalize=(name)=>name==='蘇縣'?'薊縣':name==='故藏'?'姑藏':name
+  const ram=[...ZH_ROM_RAM_CITY_ORDER].sort()
+  const numbered=ZH_ROM_NUMBERED_GUIDE_CITY_ORDER.map(normalize).sort()
+  assert.deepEqual(numbered,ram)
+  assert.deepEqual(ZH_ROM_CITY_NAME_VARIANTS.slice(0,2).map(({ram,numberedGuide})=>[ram,numberedGuide]),[
+    ['薊縣','蘇縣'],['姑藏','故藏'],
+  ])
 })
 
 test('Japanese manual scenario counts remain separate from Chinese-ROM reports',()=>{
