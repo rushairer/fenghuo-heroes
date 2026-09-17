@@ -1,44 +1,17 @@
+export const SCENARIOS = Object.freeze([
+  { id:'189', year:189, name:'桃園結義' },
+  { id:'200', year:200, name:'群星亂舞' },
+  { id:'215', year:215, name:'三國鼎立前夜' }
+])
+export const DIFFICULTIES = Object.freeze([{id:'easy',label:'初級'},{id:'normal',label:'中級'},{id:'hard',label:'上級'}])
 export const FACTIONS = Object.freeze([
-  { id: 'cao', ruler: '曹操', label: '曹操军', color: '#5376b7' },
-  { id: 'liu', ruler: '刘备', label: '刘备军', color: '#5e9258' },
-  { id: 'sun', ruler: '孙坚', label: '孙坚军', color: '#b55b44' },
-  { id: 'yuan', ruler: '袁绍', label: '袁绍军', color: '#b68c50' },
-  { id: 'dong', ruler: '董卓', label: '董卓军', color: '#7f5b8d' },
-  { id: 'ma', ruler: '马腾', label: '马腾军', color: '#4e8b86' }
+  {id:'liu',ruler:'劉備',label:'劉備軍',color:'#22b7cf'},{id:'cao',ruler:'曹操',label:'曹操軍',color:'#5b86d8'},{id:'dong',ruler:'董卓',label:'董卓軍',color:'#a455b8'},{id:'yuan',ruler:'袁紹',label:'袁紹軍',color:'#d7a847'},{id:'sun',ruler:'孫堅',label:'孫堅軍',color:'#d85848'},{id:'liu_biao',ruler:'劉表',label:'劉表軍',color:'#58a56b'},{id:'ma',ruler:'馬騰',label:'馬騰軍',color:'#6ec2a3'},{id:'neutral',ruler:'群雄',label:'群雄',color:'#8c8c8c'}
 ])
-
-export const FACTION_BY_ID = Object.fromEntries(FACTIONS.map((item) => [item.id, item]))
-
-export const CITIES = Object.freeze([
-  { id: 'beiping', name: '北平', x: 210, y: 45, neighbors: ['ye'], owner: 'yuan', gold: 430, food: 780, troops: 7200 },
-  { id: 'ye', name: '邺', x: 181, y: 59, neighbors: ['beiping', 'luoyang', 'xuchang'], owner: 'yuan', gold: 680, food: 930, troops: 9800 },
-  { id: 'xiliang', name: '西凉', x: 42, y: 58, neighbors: ['chang_an'], owner: 'ma', gold: 360, food: 820, troops: 8000 },
-  { id: 'chang_an', name: '长安', x: 77, y: 79, neighbors: ['xiliang', 'luoyang', 'hanzhong'], owner: 'dong', gold: 770, food: 940, troops: 12000 },
-  { id: 'luoyang', name: '洛阳', x: 124, y: 72, neighbors: ['chang_an', 'ye', 'xuchang', 'xiangyang'], owner: 'dong', gold: 920, food: 1020, troops: 13500 },
-  { id: 'xuchang', name: '许昌', x: 151, y: 91, neighbors: ['ye', 'luoyang', 'xiangyang', 'lujiang'], owner: 'cao', gold: 720, food: 980, troops: 11000 },
-  { id: 'hanzhong', name: '汉中', x: 81, y: 111, neighbors: ['chang_an', 'chengdu', 'xiangyang'], owner: 'liu', gold: 360, food: 760, troops: 6500 },
-  { id: 'chengdu', name: '成都', x: 53, y: 143, neighbors: ['hanzhong', 'jiangling'], owner: 'liu', gold: 640, food: 1160, troops: 9400 },
-  { id: 'xiangyang', name: '襄阳', x: 122, y: 119, neighbors: ['luoyang', 'xuchang', 'hanzhong', 'jiangling', 'lujiang'], owner: 'liu', gold: 520, food: 900, troops: 8200 },
-  { id: 'jiangling', name: '江陵', x: 109, y: 147, neighbors: ['chengdu', 'xiangyang', 'jianye'], owner: 'liu', gold: 420, food: 850, troops: 7000 },
-  { id: 'lujiang', name: '庐江', x: 174, y: 126, neighbors: ['xuchang', 'xiangyang', 'jianye'], owner: 'sun', gold: 480, food: 790, troops: 7600 },
-  { id: 'jianye', name: '建业', x: 204, y: 146, neighbors: ['jiangling', 'lujiang'], owner: 'sun', gold: 690, food: 1040, troops: 9800 }
-])
-
-export const CITY_BY_ID = Object.fromEntries(CITIES.map((item) => [item.id, item]))
-
-export const COMMANDS = Object.freeze({
-  domestic: [
-    ['develop', '开发'], ['transfer', '调动'], ['intel', '情报'], ['welfare', '福利'],
-    ['appoint', '任命'], ['tax', '税率'], ['educate', '教育'], ['transport', '运输']
-  ],
-  diplomacy: [
-    ['ally', '同盟'], ['alienate', '离间'], ['assassinate', '暗杀'], ['fire', '火计'],
-    ['intel', '情报'], ['borrow', '借款'], ['repay', '还款']
-  ],
-  military: [
-    ['recruit', '征兵'], ['weapons', '武器'], ['intel', '情报'], ['talent', '人材'],
-    ['defense', '防卫'], ['train', '训练']
-  ]
-})
-
-export const CATEGORY_LABELS = Object.freeze({ domestic: '内 政', diplomacy: '外 交', military: '军 事' })
+export const FACTION_BY_ID=Object.fromEntries(FACTIONS.map((f)=>[f.id,f]))
+const C=[['xiangping','襄平',284,43,'yuan'],['beiping','北平',251,48,'yuan'],['jicheng','薊',226,52,'yuan'],['nanpi','南皮',211,69,'yuan'],['ye','鄴',186,72,'yuan'],['pingyuan','平原',220,83,'yuan'],['beihai','北海',249,91,'neutral'],['xiapi','下邳',239,111,'neutral'],['xiaopei','小沛',211,103,'neutral'],['shouchun','壽春',215,124,'neutral'],['xuchang','許昌',177,102,'cao'],['chenliu','陳留',187,89,'cao'],['luoyang','洛陽',151,86,'dong'],['hongnong','弘農',126,86,'dong'],['changan','長安',103,83,'dong'],['tianshui','天水',74,75,'ma'],['xiliang','西涼',45,67,'ma'],['wuwei','武威',29,52,'ma'],['hanzhong','漢中',95,113,'neutral'],['shangyong','上庸',118,119,'neutral'],['xinye','新野',151,118,'liu_biao'],['xiangyang','襄陽',151,134,'liu_biao'],['jiangxia','江夏',185,139,'liu_biao'],['jiangling','江陵',145,154,'liu_biao'],['changsha','長沙',174,170,'neutral'],['wuling','武陵',137,174,'neutral'],['guiyang','桂陽',168,190,'neutral'],['lingling','零陵',136,195,'neutral'],['lujiang','廬江',211,145,'sun'],['jianye','建業',244,146,'sun'],['wujun','吳',260,158,'sun'],['kuaiji','會稽',278,170,'sun'],['chai_sang','柴桑',211,163,'sun'],['yuzhang','豫章',205,180,'sun'],['chengdu','成都',70,151,'liu'],['zitong','梓潼',73,127,'liu'],['jiangzhou','江州',84,173,'liu'],['yong_an','永安',106,158,'liu'],['jianning','建寧',72,196,'neutral'],['yunnan','雲南',43,201,'neutral']]
+const edgePairs=[['xiangping','beiping'],['beiping','jicheng'],['jicheng','nanpi'],['nanpi','ye'],['nanpi','pingyuan'],['pingyuan','beihai'],['pingyuan','xiaopei'],['beihai','xiapi'],['xiapi','xiaopei'],['xiapi','shouchun'],['ye','chenliu'],['ye','luoyang'],['chenliu','xuchang'],['chenliu','xiaopei'],['xuchang','luoyang'],['xuchang','xinye'],['xuchang','shouchun'],['luoyang','hongnong'],['hongnong','changan'],['changan','tianshui'],['tianshui','xiliang'],['xiliang','wuwei'],['changan','hanzhong'],['hanzhong','zitong'],['hanzhong','shangyong'],['shangyong','xinye'],['xinye','xiangyang'],['xiangyang','jiangxia'],['xiangyang','jiangling'],['jiangxia','lujiang'],['jiangxia','chai_sang'],['jiangling','wuling'],['jiangling','yong_an'],['jiangling','changsha'],['lujiang','shouchun'],['lujiang','jianye'],['jianye','wujun'],['wujun','kuaiji'],['chai_sang','yuzhang'],['chai_sang','lujiang'],['changsha','guiyang'],['changsha','wuling'],['guiyang','lingling'],['wuling','lingling'],['chengdu','zitong'],['chengdu','jiangzhou'],['chengdu','yong_an'],['jiangzhou','yong_an'],['jiangzhou','jianning'],['jianning','yunnan']]
+const neighbors=Object.fromEntries(C.map(([id])=>[id,[]]));for(const[a,b]of edgePairs){neighbors[a].push(b);neighbors[b].push(a)}
+export const CITIES=Object.freeze(C.map(([id,name,x,y,owner])=>({id,name,x,y,owner,neighbors:Object.freeze(neighbors[id])})))
+export const CITY_BY_ID=Object.fromEntries(CITIES.map((c)=>[c.id,c]))
+export const COMMANDS=Object.freeze({domestic:[['develop','開發'],['transfer','調動'],['intel','情報'],['welfare','福利'],['appoint','任命'],['tax','稅率'],['educate','教育'],['transport','運輸']],diplomacy:[['ally','同盟'],['alienate','離間'],['assassinate','暗殺'],['fire','火計'],['intel','情報'],['borrow','借款'],['repay','還款']],military:[['recruit','徵兵'],['weapons','武器'],['intel','情報'],['talent','人材'],['defense','防衛'],['train','訓練']]})
+export const CATEGORY_LABELS=Object.freeze({domestic:'內政',diplomacy:'外交',military:'軍備'})

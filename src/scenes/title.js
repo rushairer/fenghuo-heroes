@@ -1,46 +1,7 @@
-import { COLORS, H, W } from '../game/constants.js'
-
-export class TitleScene {
-  constructor(app) {
-    this.app = app
-    this.selection = 0
-    this.hasSave = app.store.load()
-  }
-
-  update(_dt, input) {
-    const key = input.consume()
-    if (!key) return
-    const count = this.hasSave ? 2 : 1
-    if (key === 'ArrowUp') this.selection = (this.selection - 1 + count) % count
-    if (key === 'ArrowDown') this.selection = (this.selection + 1) % count
-    if (key === 'z' || key === 'Z' || key === 'Enter') {
-      if (this.selection === 1 && this.hasSave) this.app.go('strategy')
-      else this.app.go('scenario')
-    }
-  }
-
-  draw() {
-    const r = this.app.r
-    const c = r.ctx
-    r.clear('#111015')
-    c.fillStyle = '#1b2130'
-    c.beginPath(); c.moveTo(24,55); c.lineTo(94,18); c.lineTo(126,68); c.fill()
-    c.beginPath(); c.moveTo(112,66); c.lineTo(180,23); c.lineTo(220,75); c.fill()
-    c.beginPath(); c.moveTo(194,70); c.lineTo(284,35); c.lineTo(306,88); c.fill()
-    c.fillStyle = '#242018'
-    c.beginPath(); c.moveTo(8,126); c.lineTo(86,70); c.lineTo(135,131); c.fill()
-    c.beginPath(); c.moveTo(128,126); c.lineTo(206,72); c.lineTo(257,135); c.fill()
-    c.globalAlpha = 0.25; c.strokeStyle = '#6f643c'
-    for (let x = 8; x < W; x += 26) { c.beginPath(); c.moveTo(x,8); c.lineTo(x - 30,125); c.stroke() }
-    for (let y = 18; y < 126; y += 20) { c.beginPath(); c.moveTo(0,y); c.lineTo(W,y + 5); c.stroke() }
-    c.globalAlpha = 1
-    r.shadowText('三 国 志 列 传', W / 2, 52, 18, '#d5c08a', 'center', 'middle')
-    r.shadowText('乱 世 群 英', W / 2, 84, 31, '#e6cb6a', 'center', 'middle')
-    r.text('CLEAN-ROOM WEB REPLICA', W / 2, 108, 7, '#8f856b', 'center', 'middle')
-    r.panel(92, 132, 136, 55, COLORS.ink, 0.9)
-    const options = this.hasSave ? ['开始游戏', '继续游戏'] : ['开始游戏']
-    options.forEach((label, index) => r.text(`${index === this.selection ? '▶' : ' '} ${label}`, W / 2, 143 + index * 18, 11, index === this.selection ? '#ffe08a' : '#d7caa6', 'center'))
-    r.text('方向键选择  Z / Enter 确定', W / 2, 201, 7, '#776f5d', 'center', 'middle')
-    r.scanlines()
-  }
+import { COLORS, SERIF } from '../game/constants.js'
+import { mdButton } from '../game/input.js'
+export class TitleScene{
+  constructor(app){this.app=app;this.hasSave=app.store.load();this.selection=0;this.blink=0}
+  update(dt,input){this.blink=(this.blink+dt)%1200;const key=input.consume();if(!key)return;const b=mdButton(key);if(b==='HD'){this.app.toggleHd();return}const count=this.hasSave?2:1;if(b==='UP'){this.selection=(this.selection-1+count)%count;this.app.audio.move()}if(b==='DOWN'){this.selection=(this.selection+1)%count;this.app.audio.move()}if(b==='A'||b==='START'){this.app.audio.confirm();if(this.selection===1&&this.hasSave)this.app.go('strategy');else this.app.go('setup')}}
+  draw(){const r=this.app.r,c=r.ctx;r.clear('#aa5b5d');const grad=c.createLinearGradient(0,0,0,r.H*r.S);grad.addColorStop(0,'#d06c73');grad.addColorStop(.48,'#b55d63');grad.addColorStop(1,'#7e3437');c.fillStyle=grad;c.fillRect(0,0,r.W*r.S,r.H*r.S);r.portraitBust(55,104,1.32,'#d79c73',true,1);r.portraitBust(137,94,1.18,'#c98b63',false,2);r.portraitBust(232,77,1.12,'#bb7a58',true,3);r.portraitBust(248,151,1.52,'#dfa376',false,4);r.portraitBust(88,164,1.38,'#c48765',false,0);r.ornateFrame(3,3,314,218);r.shadowText('三國志列傳',159,22,14,'#fff0c9','center','middle',SERIF,'800');r.shadowText('亂世群英',160,48,25,'#ffd15a','center','middle',SERIF,'900');r.panel(104,166,112,this.hasSave?39:25,'#050505','#6f390d');const opts=this.hasSave?['開始遊戲','繼續遊戲']:['開始遊戲'];opts.forEach((v,i)=>r.text(`${i===this.selection?'▶':'　'}${v}`,160,172+i*14,9,i===this.selection?'#25e8ed':'#eee2c2','center'));if(this.blink<820)r.text('PRESS START / Z',160,208,6,'#f5e8bf','center');r.scanlines(.025)}
 }
