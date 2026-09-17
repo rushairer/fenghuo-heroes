@@ -15,8 +15,24 @@ export function makeRenderer(canvas) {
   function text(value,x,y,size=8,color=COLORS.white,align='left',baseline='top',family=FONT,weight='500'){ctx.font=`${weight} ${Math.round(size*S)}px ${family}`;ctx.textAlign=align;ctx.textBaseline=baseline;ctx.fillStyle=color;ctx.fillText(String(value),X(x),Y(y))}
   function shadowText(value,x,y,size=8,color=COLORS.white,align='left',baseline='top',family=SERIF,weight='700'){text(value,x+.75,y+.75,size,'#000',align,baseline,family,weight);text(value,x,y,size,color,align,baseline,family,weight)}
   function imageSize(image){return {w:image?.naturalWidth??image?.width??0,h:image?.naturalHeight??image?.height??0}}
-  function drawImageStretch(image,x,y,w,h,alpha=1){const size=imageSize(image);if(!size.w||!size.h)return false;ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.drawImage(image,X(x),Y(y),X(w),Y(h));ctx.restore();return true}
-  function drawImageCentered(image,cx,cy,w,h,alpha=1){return drawImageStretch(image,cx-w/2,cy-h/2,w,h,alpha)}
+  function drawImageStretch(image,x,y,w,h,alpha=1,flipX=false){
+    const size=imageSize(image)
+    if(!size.w||!size.h)return false
+    const dx=X(x),dy=Y(y),dw=X(w),dh=Y(h)
+    ctx.save()
+    ctx.globalAlpha=alpha
+    ctx.imageSmoothingEnabled=true
+    if(flipX){
+      ctx.translate(dx+dw,dy)
+      ctx.scale(-1,1)
+      ctx.drawImage(image,0,0,dw,dh)
+    }else{
+      ctx.drawImage(image,dx,dy,dw,dh)
+    }
+    ctx.restore()
+    return true
+  }
+  function drawImageCentered(image,cx,cy,w,h,alpha=1,flipX=false){return drawImageStretch(image,cx-w/2,cy-h/2,w,h,alpha,flipX)}
   function drawImageCover(image,x=0,y=0,w=LOGICAL_W,h=LOGICAL_H,alpha=1){
     const {w:iw,h:ih}=imageSize(image)
     if(!iw||!ih)return false
