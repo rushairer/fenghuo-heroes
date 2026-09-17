@@ -8,7 +8,14 @@ export const SCENARIOS = Object.freeze(ORIGINAL_SCENARIOS.map((scenario)=>Object
 })))
 export const DIFFICULTIES = Object.freeze([{id:'easy',label:'初級'},{id:'normal',label:'中級'},{id:'hard',label:'上級'}])
 export const FACTIONS = Object.freeze([
-  {id:'liu',ruler:'劉備',label:'劉備軍',color:'#22b7cf'},{id:'cao',ruler:'曹操',label:'曹操軍',color:'#5b86d8'},{id:'dong',ruler:'董卓',label:'董卓軍',color:'#a455b8'},{id:'yuan',ruler:'袁紹',label:'袁紹軍',color:'#d7a847'},{id:'sun',ruler:'孫堅',label:'孫堅軍',color:'#d85848'},{id:'liu_biao',ruler:'劉表',label:'劉表軍',color:'#58a56b'},{id:'ma',ruler:'馬騰',label:'馬騰軍',color:'#6ec2a3'},{id:'neutral',ruler:'群雄',label:'群雄',color:'#8c8c8c'}
+  {id:'liu',ruler:'劉備',label:'劉備軍',color:'#22b7cf'},
+  {id:'cao',ruler:'曹操',label:'曹操軍',color:'#5b86d8'},
+  {id:'sun',ruler:'孫堅',label:'孫堅軍',color:'#d85848'},
+  {id:'yuan',ruler:'袁紹',label:'袁紹軍',color:'#d7a847'},
+  {id:'dong',ruler:'董卓',label:'董卓軍',color:'#a455b8'},
+  {id:'liu_biao',ruler:'劉表',label:'劉表軍',color:'#58a56b'},
+  {id:'ma',ruler:'馬騰',label:'馬騰軍',color:'#6ec2a3'},
+  {id:'neutral',ruler:'群雄',label:'群雄',color:'#8c8c8c'}
 ])
 export const FACTION_BY_ID=Object.fromEntries(FACTIONS.map((f)=>[f.id,f]))
 const C=[['xiangping','襄平',284,43,'yuan'],['beiping','北平',251,48,'yuan'],['jicheng','薊',226,52,'yuan'],['nanpi','南皮',211,69,'yuan'],['ye','鄴',186,72,'yuan'],['pingyuan','平原',220,83,'yuan'],['beihai','北海',249,91,'neutral'],['xiapi','下邳',239,111,'neutral'],['xiaopei','小沛',211,103,'neutral'],['shouchun','壽春',215,124,'neutral'],['xuchang','許昌',177,102,'cao'],['chenliu','陳留',187,89,'cao'],['luoyang','洛陽',151,86,'dong'],['hongnong','弘農',126,86,'dong'],['changan','長安',103,83,'dong'],['tianshui','天水',74,75,'ma'],['xiliang','西涼',45,67,'ma'],['wuwei','武威',29,52,'ma'],['hanzhong','漢中',95,113,'neutral'],['shangyong','上庸',118,119,'neutral'],['xinye','新野',151,118,'liu_biao'],['xiangyang','襄陽',151,134,'liu_biao'],['jiangxia','江夏',185,139,'liu_biao'],['jiangling','江陵',145,154,'liu_biao'],['changsha','長沙',174,170,'neutral'],['wuling','武陵',137,174,'neutral'],['guiyang','桂陽',168,190,'neutral'],['lingling','零陵',136,195,'neutral'],['lujiang','廬江',211,145,'sun'],['jianye','建業',244,146,'sun'],['wujun','吳',260,158,'sun'],['kuaiji','會稽',278,170,'sun'],['chai_sang','柴桑',211,163,'sun'],['yuzhang','豫章',205,180,'sun'],['chengdu','成都',70,151,'liu'],['zitong','梓潼',73,127,'liu'],['jiangzhou','江州',84,173,'liu'],['yong_an','永安',106,158,'liu'],['jianning','建寧',72,196,'neutral'],['yunnan','雲南',43,201,'neutral']]
