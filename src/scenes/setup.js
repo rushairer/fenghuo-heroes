@@ -124,6 +124,11 @@ export class SetupScene {
 
   draw() {
     const r = this.app.r
+    const selectorImage = this.app.assets?.get('ui.cursors.box')
+    const focusFrame = (x, y, w, h) => {
+      if (!selectorImage || !r.drawImageStretch(selectorImage, x, y, w, h)) r.selector(x, y, w, h, true)
+    }
+
     r.clear('#000')
     r.ornateFrame(7, 7, 306, 210, this.app.assets?.get('ui.frames.large'))
     r.text('請 設 定 初 期 條 件', 160, 15, 15, '#f3efe4', 'center', 'top', SERIF, '600')
@@ -141,7 +146,7 @@ export class SetupScene {
     DIFFICULTIES.forEach((difficulty, i) => r.text(difficulty.label, 118, 69 + i * 28, 12, i === this.difficulty ? COLORS.cyan : '#555', 'center'))
     ;['看', '不看'].forEach((value, i) => r.text(value, 190, 78 + i * 35, 12, i === this.animation ? COLORS.cyan : '#555', 'center'))
     SPEEDS.forEach((value, i) => r.text(value[1], 261, 67 + i * 27, 11, i === this.speed ? COLORS.cyan : '#555', 'center'))
-    if (this.focus < 4) r.selector(xs[this.focus] - 33, 40, this.focus === 3 ? 82 : 66, 96, true)
+    if (this.focus < 4) focusFrame(xs[this.focus] - 33, 40, this.focus === 3 ? 82 : 66, 96)
 
     r.line(9, 141, 311, 141, COLORS.red, 2)
     const scenario = this.currentScenario()
@@ -153,7 +158,7 @@ export class SetupScene {
       const selected = this.rulers.has(i)
       const focused = this.focus === 4 && this.rulerCursor === i
       r.text(option.ruler, rulerXs[i], 174, 9.5, selected ? COLORS.cyan : '#666', 'center')
-      if (focused) r.selector(rulerXs[i] - 17, 169, 34, 18, true)
+      if (focused) focusFrame(rulerXs[i] - 17, 169, 34, 18)
     })
     r.text(this.message, 160, 197, 6, runtimeScenarioSupported(scenario.year) ? '#a99d82' : '#d58a6b', 'center')
     r.text('方向鍵選擇 · C 決定 · B 返回 · START 開始', 160, 207, 5.5, '#756d5c', 'center')
