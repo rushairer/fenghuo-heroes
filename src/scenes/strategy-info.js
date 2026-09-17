@@ -2,6 +2,7 @@ import { COLORS } from '../game/constants.js'
 import { CITIES, FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
+import { mountainStampStyle } from '../game/terrain-style.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, isVisible, toScreen, worldPoint } from '../game/world.js'
 import { StrategyScene as ParityStrategyScene } from './strategy-parity.js'
 
@@ -90,7 +91,7 @@ export class StrategyScene extends ParityStrategyScene {
 
     MOUNTAIN_REFS.forEach((ref,index)=>{
       const wp=worldPoint({x:ref[0],y:ref[1]})
-      if(!isVisible(wp,camera,16))return
+      if(!isVisible(wp,camera,18))return
       const p=toScreen(wp,camera)
       this.drawMountain(p.x,p.y,index)
     })
@@ -153,9 +154,10 @@ export class StrategyScene extends ParityStrategyScene {
 
   drawMountain(x,y,index=0) {
     const r=this.app.r
-    const assetKey=index%2===0?'map.terrain.mountainA':'map.terrain.mountainB'
-    const image=this.app.assets?.get(assetKey)??this.app.assets?.get('map.terrain.mountainA')
-    if(image&&r.drawImageCentered(image,x,y-2,28,24))return
+    const hasMountainB=Boolean(this.app.assets?.get('map.terrain.mountainB'))
+    const style=mountainStampStyle(index,hasMountainB)
+    const image=this.app.assets?.get(style.assetKey)??this.app.assets?.get('map.terrain.mountainA')
+    if(image&&r.drawImageCentered(image,x,y+style.offsetY,style.width,style.height,style.alpha,style.mirror))return
     const c=r.ctx
     const S=r.S
     c.save()
