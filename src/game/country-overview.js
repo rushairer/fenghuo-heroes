@@ -1,22 +1,25 @@
-import { CITIES, FACTION_BY_ID } from './data.js'
+import { CITIES } from './data.js'
 
 export const COUNTRY_OVERVIEW_PAGE_SIZE=10
 
-export function countryOverviewRows(store) {
+export function countryOverviewRows(store,{revealAll=false}={}) {
   const state=store?.state
   if(!state?.cities)return []
+  const humanFaction=store?.humanFaction??null
   return CITIES.map((city,index)=>{
     const runtime=state.cities[city.id]??{}
-    const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
+    const owner=runtime.owner??'neutral'
+    const visible=revealAll||owner===humanFaction
     return Object.freeze({
       number:index+1,
       cityId:city.id,
       name:city.name,
-      owner:runtime.owner??'neutral',
-      ruler:faction?.ruler??'',
-      troops:runtime.troops??null,
-      gold:runtime.gold??null,
-      food:runtime.food??null,
+      owner,
+      visible,
+      industry:visible?(runtime.development??null):null,
+      officerCount:visible?(runtime.officerCount??null):null,
+      rule:visible?(runtime.rule??null):null,
+      taxRate:visible?(runtime.taxRate??null):null,
     })
   })
 }

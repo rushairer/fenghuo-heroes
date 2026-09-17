@@ -37,7 +37,7 @@ export class StrategyScene extends InfoStrategyScene {
     const state=this.app.store.state
     const current=this.app.store.cityAt(state.cursor.x,state.cursor.y,12)
     if(!current)return
-    const rows=countryOverviewRows(this.app.store)
+    const rows=countryOverviewRows(this.app.store,{revealAll:this.infoCommandBrowse})
     const index=rows.findIndex((row)=>row.cityId===current.id)
     if(index>=0)this.countryOverviewCursor=index
   }
@@ -47,7 +47,7 @@ export class StrategyScene extends InfoStrategyScene {
     if(!key)return
     const b=mdButton(key)
     if(b==='HD')return this.app.toggleHd()
-    const rows=countryOverviewRows(this.app.store)
+    const rows=countryOverviewRows(this.app.store,{revealAll:this.infoCommandBrowse})
     if(b==='UP'&&rows.length){
       this.countryOverviewCursor=moveCountryOverviewCursor(this.countryOverviewCursor,-1,rows.length)
       this.app.audio.move()
@@ -162,15 +162,17 @@ export class StrategyScene extends InfoStrategyScene {
 
   drawCountryOverview() {
     const r=this.app.r
-    const rows=countryOverviewRows(this.app.store)
+    const rows=countryOverviewRows(this.app.store,{revealAll:this.infoCommandBrowse})
     const page=countryOverviewWindow(rows,this.countryOverviewCursor,COUNTRY_OVERVIEW_PAGE_SIZE)
     const pointer=this.app.assets?.get('ui.cursors.pointer')
     r.panel(24,18,272,174,'#020202','#b07118',this.app.assets?.get('ui.panels.large'))
     r.text('統治國一覽',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(37,44,283,44,'#72501b',.7)
     r.text('國',51,50,6,'#8f8674')
-    r.text('君主',147,50,6,'#8f8674')
-    r.text('兵',250,50,6,'#8f8674','right')
+    r.text('產值',149,50,5.7,'#8f8674','right')
+    r.text('將',180,50,5.7,'#8f8674','right')
+    r.text('統治',220,50,5.7,'#8f8674','right')
+    r.text('稅率',261,50,5.7,'#8f8674','right')
     page.rows.forEach((row,index)=>{
       const absolute=page.start+index
       const active=absolute===this.countryOverviewCursor
@@ -178,11 +180,14 @@ export class StrategyScene extends InfoStrategyScene {
       if(active){
         if(!pointer||!r.drawImageCentered(pointer,39,y+4,8,8))r.text('▶',34,y,6.5,COLORS.cyan)
       }
+      const faction=FACTION_BY_ID[row.owner]??FACTION_BY_ID.neutral
       const color=active?COLORS.cyan:'#e8dfc8'
       r.text(String(row.number).padStart(2,'0'),48,y,6,color)
-      r.text(row.name,70,y,7.2,color)
-      r.text(row.ruler,145,y,7,color)
-      r.text(row.troops??'—',258,y,7,color,'right')
+      r.text(row.name,70,y,7.2,active?COLORS.cyan:(faction?.color??color))
+      r.text(row.industry??'—',149,y,6.5,color,'right')
+      r.text(row.officerCount??'—',180,y,6.5,color,'right')
+      r.text(row.rule??'—',220,y,6.5,color,'right')
+      r.text(row.taxRate==null?'—':`${row.taxRate}%`,261,y,6.5,color,'right')
     })
     const footer=(this.stage==='survey'||this.infoCommandBrowse)?'↑↓ 捲動　C 國狀態　B 返回':'↑↓ 捲動　B 返回'
     r.text(footer,160,178,6,'#887f6d','center')
