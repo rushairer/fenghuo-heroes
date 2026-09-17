@@ -94,3 +94,7 @@ export function inspectionCommandById(category,id) {
   }
   return null
 }
+
+export function isInspectionConfirmButton(button) {
+  return button==='C'
+}
