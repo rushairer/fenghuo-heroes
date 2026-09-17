@@ -49,10 +49,10 @@
     },
     "frames": {
       "small": { "src": "assets/ui/frames/ui-frame-small-v1.webp", "status": "planned" },
-      "large": { "src": "assets/ui/frames/ui-frame-large-v1.webp", "status": "planned" }
+      "large": { "src": "assets/ui/frames/ui-frame-large-v1.webp", "status": "ready" }
     },
     "cursors": {
-      "box": { "src": "assets/ui/cursors/ui-cursor-box-v1.webp", "status": "planned" },
+      "box": { "src": "assets/ui/cursors/ui-cursor-box-v1.webp", "status": "ready" },
       "pointer": { "src": "assets/ui/cursors/ui-cursor-pointer-v1.webp", "status": "planned" }
     },
     "icons": {
