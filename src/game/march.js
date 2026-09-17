@@ -4,7 +4,8 @@ import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
 export function ensureMarchState(store) {
-  store.assertState()
+  store.assertState?.()
+  if (!store?.state) throw new Error('行軍狀態不存在。')
   if (!Array.isArray(store.state.armies)) store.state.armies = []
   if (!Number.isInteger(store.state.nextArmyId)) store.state.nextArmyId = 1
   return store.state.armies
@@ -71,6 +72,9 @@ export function queueMarch(store, {
     officerNames: names,
     dailyFood: dailyFoodFor(nTroops, nOfficers),
     starving: false,
+    lastTurnFoodConsumed: 0,
+    lastTurnStarvingDays: 0,
+    starvingDaysTotal: 0,
     status: 'marching',
   }
   ensureMarchState(store).push(army)
@@ -97,29 +101,59 @@ export function rerouteArmy(store, armyId, route) {
   return army
 }
 
-export function advanceMarchArmies(store, days = 30) {
-  const moved = []
+export function executeMarchTurn(store, days = 30) {
+  const events = []
+  const maxDays = Math.max(0, Math.floor(days))
+
   for (const army of ensureMarchState(store)) {
     if (army.status !== 'marching') continue
-    let usedDays = 0
-    while (usedDays < days && army.routeIndex < army.route.length - 1) {
-      usedDays++
-      if (army.food >= army.dailyFood) army.food -= army.dailyFood
-      else {
+
+    const ration = dailyFoodFor(army.troops, army.officerCount)
+    army.dailyFood = ration
+    let steps = 0
+    let foodConsumed = 0
+    let starvingDays = 0
+
+    while (steps < maxDays && army.routeIndex < army.route.length - 1) {
+      steps++
+      if (army.food >= ration) {
+        army.food -= ration
+        foodConsumed += ration
+      } else {
+        foodConsumed += Math.max(0, army.food)
         army.food = 0
-        army.starving = true
+        starvingDays++
       }
+
       army.routeIndex++
       const point = army.route[army.routeIndex]
       army.x = point.x
       army.y = point.y
     }
+
+    army.lastTurnFoodConsumed = foodConsumed
+    army.lastTurnStarvingDays = starvingDays
+    army.starvingDaysTotal = Math.max(0, Math.floor(army.starvingDaysTotal ?? 0)) + starvingDays
+    army.starving = starvingDays > 0
     if (army.routeIndex >= army.route.length - 1) army.status = 'waiting'
-    moved.push(army.id)
+
+    events.push({
+      armyId: army.id,
+      steps,
+      foodConsumed,
+      starvingDays,
+      status: army.status,
+    })
   }
-  if (moved.length) store.addLog(`行軍部隊移動：${moved.length}隊。`)
+
+  return events
+}
+
+export function advanceMarchArmies(store, days = 30) {
+  const events = executeMarchTurn(store, days)
+  if (events.length) store.addLog(`行軍部隊移動：${events.length}隊。`)
   store.save()
-  return moved
+  return events.map((event) => event.armyId)
 }
 
 export function enemyCityNearArmy(store, armyId, tolerance = 24) {
