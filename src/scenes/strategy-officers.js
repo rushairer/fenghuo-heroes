@@ -1,4 +1,5 @@
 import { COLORS, SERIF } from '../game/constants.js'
+import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor } from '../game/country-overview.js'
 import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { openingOfficerListForCity, officerStatusProjection } from '../game/officer-roster.js'
@@ -12,18 +13,71 @@ export class StrategyScene extends InfoStrategyScene {
     this.officerListCity=null
     this.officerListCursor=0
     this.officerStatusRow=null
+    this.countryOverviewCursor=0
+    this.cityStatusReturnView='map'
   }
 
   update(dt,input) {
     if(this.view==='officer-list')return this.updateOfficerList(input)
     if(this.view==='officer-status')return this.updateOfficerStatus(input)
+    if(this.view==='info'&&this.infoTab===0)return this.updateCountryOverview(input)
     return super.update(dt,input)
+  }
+
+  updateMap(b) {
+    if(b==='A')this.syncCountryOverviewCursorToMap()
+    if(this.stage==='survey'&&b==='C'){
+      const state=this.app.store.state
+      if(this.app.store.cityAt(state.cursor.x,state.cursor.y,12))this.cityStatusReturnView='map'
+    }
+    return super.updateMap(b)
+  }
+
+  syncCountryOverviewCursorToMap() {
+    const state=this.app.store.state
+    const current=this.app.store.cityAt(state.cursor.x,state.cursor.y,12)
+    if(!current)return
+    const rows=countryOverviewRows(this.app.store)
+    const index=rows.findIndex((row)=>row.cityId===current.id)
+    if(index>=0)this.countryOverviewCursor=index
+  }
+
+  updateCountryOverview(input) {
+    const key=input.consume()
+    if(!key)return
+    const b=mdButton(key)
+    if(b==='HD')return this.app.toggleHd()
+    const rows=countryOverviewRows(this.app.store)
+    if(b==='UP'&&rows.length){
+      this.countryOverviewCursor=moveCountryOverviewCursor(this.countryOverviewCursor,-1,rows.length)
+      this.app.audio.move()
+      return
+    }
+    if(b==='DOWN'&&rows.length){
+      this.countryOverviewCursor=moveCountryOverviewCursor(this.countryOverviewCursor,1,rows.length)
+      this.app.audio.move()
+      return
+    }
+    if(b==='B'){
+      this.view='map'
+      this.app.audio.cancel()
+      return
+    }
+    // Manual evidence assigns selection to C on this list. A is intentionally
+    // left unused rather than acting as a modern secondary confirm button.
+    if(b!=='C')return
+    const row=rows[this.countryOverviewCursor]
+    if(!row){this.app.audio.alert();return}
+    this.targetCity=row.cityId
+    this.cityStatusReturnView='info'
+    this.view='city-status'
+    this.app.audio.confirm()
   }
 
   updateCityStatus(b) {
     if(this.stage!=='survey')return super.updateCityStatus(b)
     if(b==='B'){
-      this.view='map'
+      this.view=this.cityStatusReturnView==='info'?'info':'map'
       this.app.audio.cancel()
       return
     }
@@ -90,6 +144,38 @@ export class StrategyScene extends InfoStrategyScene {
     super.draw()
     if(this.view==='officer-list')this.drawOfficerList()
     if(this.view==='officer-status')this.drawOfficerStatus()
+  }
+
+  drawInfo() {
+    if(this.infoTab===0)return this.drawCountryOverview()
+    return super.drawInfo()
+  }
+
+  drawCountryOverview() {
+    const r=this.app.r
+    const rows=countryOverviewRows(this.app.store)
+    const page=countryOverviewWindow(rows,this.countryOverviewCursor,COUNTRY_OVERVIEW_PAGE_SIZE)
+    const pointer=this.app.assets?.get('ui.cursors.pointer')
+    r.panel(24,18,272,174,'#020202','#b07118',this.app.assets?.get('ui.panels.large'))
+    r.text('統治國一覽',160,27,11,'#efd27d','center','top',SERIF,'700')
+    r.line(37,44,283,44,'#72501b',.7)
+    r.text('國',51,50,6,'#8f8674')
+    r.text('君主',147,50,6,'#8f8674')
+    r.text('兵',250,50,6,'#8f8674','right')
+    page.rows.forEach((row,index)=>{
+      const absolute=page.start+index
+      const active=absolute===this.countryOverviewCursor
+      const y=61+index*10.8
+      if(active){
+        if(!pointer||!r.drawImageCentered(pointer,39,y+4,8,8))r.text('▶',34,y,6.5,COLORS.cyan)
+      }
+      const color=active?COLORS.cyan:'#e8dfc8'
+      r.text(String(row.number).padStart(2,'0'),48,y,6,color)
+      r.text(row.name,70,y,7.2,color)
+      r.text(row.ruler,145,y,7,color)
+      r.text(row.troops??'—',258,y,7,color,'right')
+    })
+    r.text('↑↓ 捲動　C 國狀態　B 返回',160,178,6,'#887f6d','center')
   }
 
   drawCityStatus() {
