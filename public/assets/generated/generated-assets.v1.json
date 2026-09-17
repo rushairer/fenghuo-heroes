@@ -35,6 +35,23 @@
       "byteLength": 22676,
       "sha256": "d4a15c3f20e49be814752d1a1b1bdc1b66e7745187cbcd2d89c2f68e5dc17566",
       "note": "Image 2.5 sandy terrain source cropped square, resized to 512x512 and edge-blended into a repeat-friendly runtime tile."
+    },
+    "map.terrain.mountainA": {
+      "output": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp",
+      "mime": "image/webp",
+      "parts": [
+        "assets/generated/map-terrain-mountain-cluster-a-v1.part01.b64",
+        "assets/generated/map-terrain-mountain-cluster-a-v1.part02.b64",
+        "assets/generated/map-terrain-mountain-cluster-a-v1.part03.b64",
+        "assets/generated/map-terrain-mountain-cluster-a-v1.part04.b64",
+        "assets/generated/map-terrain-mountain-cluster-a-v1.part05.b64",
+        "assets/generated/map-terrain-mountain-cluster-a-v1.part06.b64"
+      ],
+      "sourceGenId": "1a1fdfe6-1d77-4d2e-9545-813e555fbd19",
+      "runtimeSize": { "width": 512, "height": 512 },
+      "byteLength": 35333,
+      "sha256": "7baced082ee5c0a594d13c3576ca5d482e15c81ed03e990d7c86c7a8b96f17a5",
+      "note": "Image 2.5 transparent mountain cluster trimmed to alpha bounds, resized within 448x448 and centered on a 512x512 transparent WebP runtime canvas. Verified by CI integrity gate."
     }
   }
 }
