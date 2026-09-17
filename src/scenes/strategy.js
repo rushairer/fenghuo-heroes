@@ -1,85 +1,28 @@
 import { COLORS } from '../game/constants.js'
 import { CATEGORY_LABELS, CITIES, CITY_BY_ID, COMMANDS, FACTION_BY_ID } from '../game/data.js'
-
-const CATEGORIES = ['domestic', 'diplomacy', 'military']
-
-export class StrategyScene {
-  constructor(app) {
-    this.app = app
-    if (!app.store.hasGame() && !app.store.load()) { app.go('title'); return }
-    const index = CITIES.findIndex((city) => city.id === app.store.state.activeCity)
-    this.cityIndex = index >= 0 ? index : 0; this.view = 'map'; this.menuIndex = 0; this.category = 'domestic'; this.message = ''; this.marchTargets = []
-  }
-  update(_dt, input) {
-    const key = input.consume(); if (!key || !this.app.store.hasGame()) return
-    const normalized = key.length === 1 ? key.toLowerCase() : key
-    if (this.view === 'message') { if (['z','x','Enter','Escape'].includes(normalized)) { this.view = 'map'; this.menuIndex = 0 } return }
-    if (this.view === 'category') {
-      if (normalized === 'ArrowUp') this.moveMenu(-1, CATEGORIES.length); else if (normalized === 'ArrowDown') this.moveMenu(1, CATEGORIES.length)
-      else if (normalized === 'z' || normalized === 'Enter') { this.category = CATEGORIES[this.menuIndex]; this.view = 'commands'; this.menuIndex = 0 }
-      else if (normalized === 'x' || normalized === 'Escape') this.back(); return
-    }
-    if (this.view === 'commands') {
-      const items = COMMANDS[this.category]
-      if (normalized === 'ArrowUp') this.moveMenu(-1, items.length); else if (normalized === 'ArrowDown') this.moveMenu(1, items.length)
-      else if (normalized === 'z' || normalized === 'Enter') this.executeCommand(); else if (normalized === 'x' || normalized === 'Escape') { this.view = 'category'; this.menuIndex = 0 } return
-    }
-    if (this.view === 'marchTarget') {
-      if (normalized === 'ArrowLeft' || normalized === 'ArrowUp') this.moveMenu(-1, this.marchTargets.length); else if (normalized === 'ArrowRight' || normalized === 'ArrowDown') this.moveMenu(1, this.marchTargets.length)
-      else if (normalized === 'z' || normalized === 'Enter') this.confirmMarch(); else if (normalized === 'x' || normalized === 'Escape') this.back(); return
-    }
-    if (normalized === 'ArrowLeft' || normalized === 'ArrowUp') this.moveCity(-1); else if (normalized === 'ArrowRight' || normalized === 'ArrowDown') this.moveCity(1)
-    else if (normalized === 'z' || normalized === 'Enter') this.confirmMap(); else if (normalized === 'c') { this.app.store.advanceMonth(); this.ensureOwnedSelection() }
-    else if (normalized === 'x' || normalized === 'Escape') { this.app.store.save(); this.app.go('title') }
-  }
-  moveCity(delta) { this.cityIndex = (this.cityIndex + delta + CITIES.length) % CITIES.length; this.app.store.setActiveCity(CITIES[this.cityIndex].id) }
-  moveMenu(delta, count) { if (count) this.menuIndex = (this.menuIndex + delta + count) % count }
-  back() { this.view = 'map'; this.menuIndex = 0 }
-  showMessage(message) { this.message = message; this.view = 'message' }
-  confirmMap() {
-    const city = CITIES[this.cityIndex]; const runtime = this.app.store.state.cities[city.id]
-    if (runtime.owner !== this.app.store.state.humanFaction) return this.showMessage('此城不属于本势力。')
-    if (this.app.store.mode === 'inspection') { this.view = 'category'; this.menuIndex = 0 } else { this.marchTargets = [...city.neighbors]; this.view = 'marchTarget'; this.menuIndex = 0 }
-  }
-  executeCommand() { const city = CITIES[this.cityIndex]; const item = COMMANDS[this.category][this.menuIndex]; if (item) this.showMessage(this.app.store.executeInspection(item[0], city.id)) }
-  confirmMarch() {
-    const source = CITIES[this.cityIndex]; const target = this.marchTargets[this.menuIndex]; if (!target) return
-    try { const conflict = this.app.store.planMarch(source.id, target); if (conflict) this.app.go('duel'); else { this.back(); this.ensureOwnedSelection() } }
-    catch (error) { this.showMessage(error instanceof Error ? error.message : '行军失败。') }
-  }
-  ensureOwnedSelection() {
-    const selected = CITIES[this.cityIndex]
-    if (selected && this.app.store.state.cities[selected.id].owner === this.app.store.state.humanFaction) return
-    const next = CITIES.findIndex((city) => this.app.store.state.cities[city.id].owner === this.app.store.state.humanFaction); this.cityIndex = Math.max(0, next)
-  }
-  draw() {
-    if (!this.app.store.hasGame()) return
-    const r = this.app.r; r.clear(COLORS.black); this.drawHeader(); this.drawMap(); this.drawIntel(); this.drawFooter()
-    if (this.view === 'category') this.drawCategoryMenu(); if (this.view === 'commands') this.drawCommandMenu(); if (this.view === 'marchTarget') this.drawMarchMenu(); if (this.view === 'message') this.drawMessage(); r.scanlines(0.06)
-  }
-  drawHeader() {
-    const r = this.app.r; const state = this.app.store.state; const faction = FACTION_BY_ID[state.humanFaction]
-    r.panel(4,3,312,19,COLORS.ink); r.text(`${state.year}年 ${state.month}月`,9,8,8,'#e9d697'); r.text(this.app.store.mode === 'inspection' ? '视察情况' : '行 军',111,8,8,this.app.store.mode === 'inspection' ? '#9fd090' : '#e0a070'); r.text(faction.label,309,8,8,faction.color,'right')
-  }
-  drawMap() {
-    const r = this.app.r; const c = r.ctx; r.panel(4,24,226,150,'#131820'); c.fillStyle = COLORS.mapWater; c.fillRect(8,28,218,142); c.fillStyle = COLORS.mapLand
-    c.beginPath(); c.moveTo(18,57); c.lineTo(66,32); c.lineTo(122,38); c.lineTo(184,31); c.lineTo(220,55); c.lineTo(212,103); c.lineTo(222,151); c.lineTo(176,167); c.lineTo(120,158); c.lineTo(70,169); c.lineTo(25,142); c.lineTo(12,96); c.closePath(); c.fill()
-    c.strokeStyle = COLORS.mapRoad; c.globalAlpha = .46; c.lineWidth = 1; const edges = new Set()
-    for (const city of CITIES) for (const neighborId of city.neighbors) { const edge = [city.id,neighborId].sort().join(':'); if (edges.has(edge)) continue; edges.add(edge); const neighbor = CITY_BY_ID[neighborId]; c.beginPath(); c.moveTo(city.x,city.y); c.lineTo(neighbor.x,neighbor.y); c.stroke() }
-    c.globalAlpha = 1
-    if (this.view === 'marchTarget') { const source = CITIES[this.cityIndex]; const target = CITY_BY_ID[this.marchTargets[this.menuIndex]]; if (source && target) { c.strokeStyle='#ffe08a'; c.lineWidth=2; c.beginPath(); c.moveTo(source.x,source.y); c.lineTo(target.x,target.y); c.stroke(); c.strokeRect(target.x-6,target.y-6,12,12) } }
-    CITIES.forEach((city,index) => { const runtime=this.app.store.state.cities[city.id]; const faction=FACTION_BY_ID[runtime.owner]; const selected=index===this.cityIndex; c.fillStyle=faction.color; const size=selected?9:7; c.fillRect(city.x-Math.floor(size/2),city.y-Math.floor(size/2),size,size); c.strokeStyle=selected?'#ffe08a':'#080808'; c.lineWidth=selected?2:1; c.strokeRect(city.x-Math.floor(size/2)-.5,city.y-Math.floor(size/2)-.5,size+1,size+1); r.text(city.name,city.x,city.y+6,6,selected?'#ffe08a':'#e6dcc0','center') })
-  }
-  drawIntel() {
-    const r=this.app.r; const city=CITIES[this.cityIndex]; const runtime=this.app.store.state.cities[city.id]; const faction=FACTION_BY_ID[runtime.owner]
-    r.panel(232,24,84,150,COLORS.panel); r.shadowText(city.name,274,34,12,'#f0d27b','center'); r.text(faction.label,239,53,7,faction.color); r.text(`兵 ${runtime.troops}`,239,69,7,'#d8ccb0'); r.text(`金 ${runtime.gold}`,239,82,7,'#d8ccb0'); r.text(`粮 ${runtime.food}`,239,95,7,'#d8ccb0'); r.text(`开发 ${runtime.development}`,239,108,7,'#aaa087'); r.text(`民心 ${runtime.morale}`,239,121,7,'#aaa087'); r.text(`城防 ${runtime.defense}`,239,134,7,'#aaa087'); r.wrapText(city.neighbors.map((id)=>CITY_BY_ID[id].name).join('·'),239,150,70,8,6,'#756e60')
-  }
-  drawFooter() {
-    const r=this.app.r; r.panel(4,176,312,44,COLORS.ink); r.text(this.app.store.state.log[0]??'',10,183,7,'#b9ad91')
-    const hint=this.view==='map'?(this.app.store.mode==='inspection'?'方向键选城  Z视察  C结束本月  X标题':'方向键选城  Z选择行军路线  C结束本月  X标题'):'方向键选择  Z确定  X返回'; r.text(hint,10,204,7,'#746d5e')
-  }
-  drawCategoryMenu() { const r=this.app.r; r.panel(91,59,138,88,'#101018'); r.text('本月想做什么？',160,66,8,'#d7caa6','center'); CATEGORIES.forEach((category,index)=>r.text(`${index===this.menuIndex?'▶':' '} ${CATEGORY_LABELS[category]}`,111,87+index*17,9,index===this.menuIndex?'#ffe08a':'#c5b899')) }
-  drawCommandMenu() { const r=this.app.r; const items=COMMANDS[this.category]; r.panel(101,45,118,34+items.length*15,'#101018'); r.text(CATEGORY_LABELS[this.category],160,53,9,'#e4cd7d','center'); items.forEach((item,index)=>r.text(`${index===this.menuIndex?'▶':' '} ${item[1]}`,119,70+index*15,8,index===this.menuIndex?'#ffe08a':'#c5b899')) }
-  drawMarchMenu() { const r=this.app.r; const source=CITIES[this.cityIndex]; const target=CITY_BY_ID[this.marchTargets[this.menuIndex]]; r.panel(67,67,186,65,'#101018'); r.text(`从 ${source.name} 行军`,160,76,9,'#e4cd7d','center'); r.text(target?`▶ ${target.name}`:'无可用路线',160,95,11,'#ffe08a','center'); r.text('← → 切换相邻城池',160,114,7,'#7f7767','center') }
-  drawMessage() { const r=this.app.r; r.panel(40,76,240,64,'#0d0d13'); r.wrapText(this.message,160,88,212,10,8,'#e9ddbd','center'); r.text('Z / X 关闭',160,124,7,'#756e60','center') }
+import { mdButton } from '../game/input.js'
+const CATEGORIES=['domestic','diplomacy','military']
+const cursorStep=4
+export class StrategyScene{
+  constructor(app){this.app=app;if(!app.store.hasGame()&&!app.store.load()){app.go('title');return}this.view='map';this.menuIndex=0;this.category='domestic';this.message='';this.targetCity=null;this.infoTab=0;this.marchFrom=null;this.marchTargets=[];this.marchIndex=0}
+  update(_dt,input){const key=input.consume();if(!key||!this.app.store.hasGame())return;const b=mdButton(key);if(b==='HD'){this.app.toggleHd();return}if(this.view==='message'){if(['A','B','C','START'].includes(b)){this.view='map';this.app.audio.confirm()}return}if(this.view==='category'){this.updateCategory(b);return}if(this.view==='target'){this.updateTarget(b);return}if(this.view==='commands'){this.updateCommands(b);return}if(this.view==='march-dest'){this.updateMarchDest(b);return}if(this.view==='info'){this.updateInfo(b);return}this.updateMap(b)}
+  moveCursor(dx,dy){const s=this.app.store.state;this.app.store.setCursor(s.cursor.x+dx*cursorStep,s.cursor.y+dy*cursorStep);this.app.audio.move()}
+  updateMap(b){const store=this.app.store;const s=store.state;if(b==='LEFT')this.moveCursor(-1,0);if(b==='RIGHT')this.moveCursor(1,0);if(b==='UP')this.moveCursor(0,-1);if(b==='DOWN')this.moveCursor(0,1);if(b==='A'){this.infoTab=0;this.view='info';this.app.audio.confirm();return}if(b==='B'){this.app.audio.cancel();this.app.go('title');return}if(b==='START'){store.advanceMonth();this.snapCursorToOwnedCity();this.app.audio.confirm();return}if(b==='C'){const city=store.cityAt(s.cursor.x,s.cursor.y,8);if(store.mode==='inspection'){if(city){this.message='視察命令要先在地圖空白處按 C，選擇內政／外交／軍備。';this.view='message';this.app.audio.alert()}else{this.view='category';this.menuIndex=0;this.app.audio.confirm()}}else{if(!city||s.cities[city.id].owner!==store.humanFaction){this.message='行軍時請把方框移到本國城池後按 C。';this.view='message';this.app.audio.alert()}else{this.marchFrom=city.id;this.marchTargets=[...city.neighbors];this.marchIndex=0;this.view='march-dest';this.app.audio.confirm()}}}}
+  updateCategory(b){if(b==='UP'){this.menuIndex=(this.menuIndex+2)%3;this.app.audio.move()}if(b==='DOWN'){this.menuIndex=(this.menuIndex+1)%3;this.app.audio.move()}if(b==='B'){this.view='map';this.app.audio.cancel()}if(b==='A'||b==='C'){this.category=CATEGORIES[this.menuIndex];this.view='target';this.menuIndex=0;this.app.audio.confirm()}}
+  updateTarget(b){if(b==='LEFT')this.moveCursor(-1,0);if(b==='RIGHT')this.moveCursor(1,0);if(b==='UP')this.moveCursor(0,-1);if(b==='DOWN')this.moveCursor(0,1);if(b==='B'){this.view='category';this.menuIndex=0;this.app.audio.cancel()}if(b==='C'||b==='A'){const s=this.app.store.state;const city=this.app.store.cityAt(s.cursor.x,s.cursor.y,8);if(!city||s.cities[city.id].owner!==this.app.store.humanFaction){this.message='請選擇本國城池。';this.view='message';this.app.audio.alert();return}this.targetCity=city.id;this.view='commands';this.menuIndex=0;this.app.audio.confirm()}}
+  updateCommands(b){const items=COMMANDS[this.category];if(b==='UP'){this.menuIndex=(this.menuIndex-1+items.length)%items.length;this.app.audio.move()}if(b==='DOWN'){this.menuIndex=(this.menuIndex+1)%items.length;this.app.audio.move()}if(b==='B'){this.view='target';this.menuIndex=0;this.app.audio.cancel()}if(b==='A'||b==='C'){const item=items[this.menuIndex];this.message=this.app.store.executeInspection(item[0],this.targetCity);this.view='message';this.app.audio.confirm()}}
+  updateMarchDest(b){if(b==='LEFT'||b==='UP'){this.marchIndex=(this.marchIndex-1+this.marchTargets.length)%this.marchTargets.length;this.app.audio.move()}if(b==='RIGHT'||b==='DOWN'){this.marchIndex=(this.marchIndex+1)%this.marchTargets.length;this.app.audio.move()}if(b==='B'){this.view='map';this.app.audio.cancel()}if(b==='A'||b==='C'){const target=this.marchTargets[this.marchIndex];try{const conflict=this.app.store.planMarch(this.marchFrom,target);this.app.audio.confirm();if(conflict)this.app.go('siege');else{this.view='map';this.snapCursorToOwnedCity()}}catch(error){this.message=error instanceof Error?error.message:'行軍失敗';this.view='message';this.app.audio.alert()}}}
+  updateInfo(b){if(b==='LEFT'){this.infoTab=(this.infoTab+2)%3;this.app.audio.move()}if(b==='RIGHT'){this.infoTab=(this.infoTab+1)%3;this.app.audio.move()}if(b==='B'||b==='A'){this.view='map';this.app.audio.cancel()}}
+  snapCursorToOwnedCity(){const store=this.app.store;const city=CITIES.find((c)=>store.state.cities[c.id].owner===store.humanFaction);if(city)store.setCursor(city.x,city.y)}
+  draw(){if(!this.app.store.hasGame())return;const r=this.app.r;r.clear('#000');r.ornateFrame(2,2,316,220);this.drawHeader();this.drawMap();this.drawStatus();this.drawBottom();if(this.view==='category')this.drawCategory();if(this.view==='target')this.drawTargetHint();if(this.view==='commands')this.drawCommands();if(this.view==='march-dest')this.drawMarch();if(this.view==='message')this.drawMessage();if(this.view==='info')this.drawInfo();r.scanlines(.02)}
+  drawHeader(){const r=this.app.r,s=this.app.store.state,f=FACTION_BY_ID[this.app.store.humanFaction];r.panel(8,8,304,21,'#050505','#7a4b0a');r.text(`${s.year}年 ${s.month}月`,14,14,8,'#efe0b8');r.text(this.app.store.mode==='inspection'?'視 察 情 況':'行　軍',160,13,10,this.app.store.mode==='inspection'?COLORS.cyan:'#f5a35f','center');r.text(f?.ruler??'',305,14,8,f?.color??'#fff','right')}
+  drawMap(){const r=this.app.r,c=r.ctx;r.panel(8,31,230,151,'#06131c','#6a4e18');r.fillRect(12,35,222,143,COLORS.water);c.fillStyle=COLORS.land;c.beginPath();c.moveTo(22*r.S,52*r.S);c.bezierCurveTo(75*r.S,30*r.S,133*r.S,37*r.S,184*r.S,38*r.S);c.bezierCurveTo(224*r.S,42*r.S,234*r.S,72*r.S,219*r.S,103*r.S);c.bezierCurveTo(235*r.S,137*r.S,205*r.S,170*r.S,163*r.S,174*r.S);c.bezierCurveTo(115*r.S,180*r.S,90*r.S,170*r.S,51*r.S,177*r.S);c.bezierCurveTo(21*r.S,164*r.S,12*r.S,126*r.S,18*r.S,91*r.S);c.closePath();c.fill();const seen=new Set();for(const city of CITIES)for(const n of city.neighbors){const k=[city.id,n].sort().join(':');if(seen.has(k))continue;seen.add(k);const other=CITY_BY_ID[n];r.line(city.x,city.y,other.x,other.y,COLORS.road,.6,.6)}if(this.view==='march-dest'){const a=CITY_BY_ID[this.marchFrom],b=CITY_BY_ID[this.marchTargets[this.marchIndex]];if(a&&b){r.line(a.x,a.y,b.x,b.y,'#fff08a',1.5,1);r.strokeRect(b.x-5,b.y-5,10,10,'#fff08a',1.2)}}for(const city of CITIES){const rt=this.app.store.state.cities[city.id],f=FACTION_BY_ID[rt.owner]??FACTION_BY_ID.neutral;r.fillRect(city.x-2.5,city.y-2.5,5,5,f.color);r.strokeRect(city.x-3,city.y-3,6,6,'#1a0d07',.5);if(['luoyang','changan','xuchang','chengdu','jianye','xiangyang','ye','beiping','xiliang'].includes(city.id))r.text(city.name,city.x,city.y+4,5,'#f3e8cc','center')}const p=this.app.store.state.cursor;r.strokeRect(p.x-6,p.y-6,12,12,COLORS.cursor,1.3);r.strokeRect(p.x-4,p.y-4,8,8,'#3d2b0f',.6)}
+  drawStatus(){const r=this.app.r,s=this.app.store.state,p=s.cursor,city=this.app.store.cityAt(p.x,p.y,8);r.panel(241,31,71,151,'#080808','#6a4e18');r.text('情報',276,38,9,'#eacb6a','center');if(!city){r.text('空白地',276,59,8,'#777','center');r.wrapText(this.app.store.mode==='inspection'?'在空白處按 C 叫出命令選單。':'把方框移到本國城池按 C 下達行軍。',248,78,57,10,7,'#b2a990','left');return}const rt=s.cities[city.id],f=FACTION_BY_ID[rt.owner]??FACTION_BY_ID.neutral;r.text(city.name,276,56,12,'#f1deb0','center');r.text(f.label,248,74,7,f.color);r.text(`兵 ${rt.troops}`,248,88,7,'#ddd0ac');r.text(`金 ${rt.gold}`,248,100,7,'#ddd0ac');r.text(`米 ${rt.food}`,248,112,7,'#ddd0ac');r.text(`產值 ${rt.development}`,248,124,7,'#aaa087');r.text(`統治 ${rt.rule}`,248,136,7,'#aaa087');r.text(`防衛 ${rt.defense}`,248,148,7,'#aaa087');r.text(`訓練 ${rt.training}`,248,160,7,'#aaa087')}
+  drawBottom(){const r=this.app.r,s=this.app.store.state;r.panel(8,185,304,31,'#050505','#6a4e18');r.text(s.log[0]??'',14,191,7,'#e0d4b2');const hint=this.view==='map'?(this.app.store.mode==='inspection'?'A情報 · C命令 · START結束本月 · B標題':'A情報 · C行軍 · START結束本月 · B標題'):'方向鍵選擇 · A/C確定 · B返回';r.text(hint,14,205,6,'#847b69')}
+  drawCategory(){const r=this.app.r;r.panel(100,70,120,74,'#000','#9b6514');r.text('命令',160,77,8,'#e7d28d','center');CATEGORIES.forEach((k,i)=>r.text(`${i===this.menuIndex?'▶':'　'}${CATEGORY_LABELS[k]}`,124,94+i*15,9,i===this.menuIndex?COLORS.cyan:'#e9e0c8'))}
+  drawTargetHint(){const r=this.app.r;r.panel(78,187,164,25,'#000','#9b6514');r.text(`${CATEGORY_LABELS[this.category]}：把方框移到本國城池按 C`,160,195,7,COLORS.cyan,'center')}
+  drawCommands(){const r=this.app.r,items=COMMANDS[this.category];const h=24+items.length*14;r.panel(95,48,130,h,'#000','#9b6514');r.text(`${CITY_BY_ID[this.targetCity]?.name??''} · ${CATEGORY_LABELS[this.category]}`,160,55,8,'#e8cc73','center');items.forEach((it,i)=>r.text(`${i===this.menuIndex?'▶':'　'}${it[1]}`,117,70+i*14,8,i===this.menuIndex?COLORS.cyan:'#e8dfc8'))}
+  drawMarch(){const r=this.app.r,target=CITY_BY_ID[this.marchTargets[this.marchIndex]];r.panel(85,187,150,25,'#000','#9b6514');r.text(`行軍目的地：${target?.name??'—'}  ← →`,160,195,8,COLORS.cyan,'center')}
+  drawMessage(){const r=this.app.r;r.panel(45,83,230,57,'#000','#b07118');r.wrapText(this.message,160,95,202,11,8,'#f0e4c5','center');r.text('A / B / C 關閉',160,126,6,'#8a806e','center')}
+  drawInfo(){const r=this.app.r,s=this.app.store.state;r.panel(24,42,272,132,'#020202','#b07118');const tabs=['統治國一覽','全體地圖','武將狀態'];tabs.forEach((t,i)=>r.text(t,73+i*88,51,8,i===this.infoTab?COLORS.cyan:'#777','center'));r.line(33,65,287,65,'#7b4e12',1);if(this.infoTab===0){const list=CITIES.filter((c)=>s.cities[c.id].owner===this.app.store.humanFaction).slice(0,12);list.forEach((c,i)=>{const rt=s.cities[c.id];r.text(`${c.name.padEnd(3,'　')} 兵${rt.troops} 金${rt.gold} 米${rt.food}`,42,74+i*8,6.5,'#e8dfc8')})}else if(this.infoTab===1){r.text(`全國 40 城 · 我方 ${CITIES.filter((c)=>s.cities[c.id].owner===this.app.store.humanFaction).length} 城`,160,91,9,'#e8dfc8','center');r.text('詳細地形與村莊仍在逐屏校準中',160,113,7,'#9e9582','center')}else{r.text('武將資料表：姓名 / 等級 / 武力 / 智力 / 忠誠',160,89,7,'#e8dfc8','center');r.text('等待由中文版說明書與實機畫面校準',160,111,7,'#9e9582','center')}r.text('← → 切換 · A/B 返回',160,155,6,'#887f6d','center')}
 }
