@@ -1,27 +1,10 @@
-import { COLORS, H, W } from '../game/constants.js'
+import { COLORS } from '../game/constants.js'
 import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
-
-export class DuelScene {
-  constructor(app) {
-    this.app = app; this.playerX = 75; this.enemyX = 245; this.playerHp = 100; this.enemyHp = 100; this.attackCooldown = 0; this.enemyCooldown = 0; this.resultTimer = 0; this.result = null
-    this.conflict = app.store.pendingConflict
-    if (!this.conflict) app.go('strategy')
-  }
-  update(dt, input) {
-    if (this.result) { this.resultTimer += dt; if (this.resultTimer > 900) this.app.go('strategy'); return }
-    this.attackCooldown = Math.max(0,this.attackCooldown-dt); this.enemyCooldown = Math.max(0,this.enemyCooldown-dt)
-    if (input.isDown('ArrowLeft')) this.playerX = Math.max(25,this.playerX-.09*dt); if (input.isDown('ArrowRight')) this.playerX = Math.min(this.enemyX-18,this.playerX+.09*dt)
-    let key=input.consume(); while(key){ const n=key.length===1?key.toLowerCase():key; if((n==='z'||n==='Enter')&&this.attackCooldown<=0){ this.attackCooldown=320; if(this.enemyX-this.playerX<44)this.enemyHp=Math.max(0,this.enemyHp-12)} key=input.consume() }
-    const distance=this.enemyX-this.playerX; if(distance>34)this.enemyX-=.036*dt; if(distance<24)this.enemyX+=.05*dt; this.enemyX=Math.max(this.playerX+18,Math.min(290,this.enemyX))
-    if(distance<38&&this.enemyCooldown<=0){this.enemyCooldown=760;this.playerHp=Math.max(0,this.playerHp-8)}
-    if(this.enemyHp<=0)this.finish(true);else if(this.playerHp<=0)this.finish(false)
-  }
-  finish(attackerWon){if(this.result)return;this.result=attackerWon?'胜':'败';this.app.store.resolveConflict(attackerWon)}
-  draw(){
-    const conflict=this.conflict;const r=this.app.r;const c=r.ctx;r.clear('#17120d');c.fillStyle='#3c2a19';c.fillRect(0,33,W,123);c.fillStyle='#8a6a3c';c.fillRect(0,156,W,68);c.fillStyle='#1d2630'
-    c.beginPath();c.moveTo(0,108);c.lineTo(64,61);c.lineTo(122,113);c.fill();c.beginPath();c.moveTo(83,108);c.lineTo(160,52);c.lineTo(224,113);c.fill();c.beginPath();c.moveTo(190,108);c.lineTo(276,63);c.lineTo(320,112);c.fill();c.fillStyle='rgba(21,21,21,.65)';for(let x=0;x<W;x+=11)c.fillRect(x,145+(x%22===0?-3:0),7,11)
-    r.panel(4,4,312,29,COLORS.ink);if(conflict){r.shadowText(`${CITY_BY_ID[conflict.target].name} · 单挑`,160,9,10,'#e5cf80','center');r.text(FACTION_BY_ID[conflict.attacker].label,9,22,6,'#b8ad93');r.text(FACTION_BY_ID[conflict.defender].label,311,22,6,'#b8ad93','right');this.drawFighter(this.playerX,151,FACTION_BY_ID[conflict.attacker].color,false);this.drawFighter(this.enemyX,151,FACTION_BY_ID[conflict.defender].color,true)}
-    r.text(`我方 ${String(this.playerHp).padStart(3)}     敌方 ${String(this.enemyHp).padStart(3)}`,160,39,7,'#f1e2b8','center');r.text('← → 移动   Z 攻击   保持距离寻找出手机会',160,H-15,7,'#796f5d','center','middle');if(this.result)r.shadowText(this.result,W/2,93,32,this.result==='胜'?'#ffe08a':'#d06a5f','center','middle');r.scanlines(.07)
-  }
-  drawFighter(x,y,color,flip){const c=this.app.r.ctx;c.fillStyle='#704226';c.fillRect(Math.round(x-15),y+7,30,12);c.strokeStyle='#17100b';c.strokeRect(Math.round(x-15)+.5,y+7.5,29,11);c.fillStyle=color;c.fillRect(Math.round(x-6),y-10,12,18);c.fillStyle='#d7b07e';c.fillRect(Math.round(x-4),y-18,8,8);c.fillStyle='#d9d0b2';const wx=flip?x-29:x+4;c.fillRect(Math.round(wx),y-5,25,2)}
+import { mdButton } from '../game/input.js'
+export class DuelScene{
+  constructor(app){this.app=app;this.c=app.store.pendingConflict;if(!this.c){app.go('strategy');return}this.px=78;this.ex=242;this.php=100;this.ehp=100;this.attackCd=0;this.enemyCd=0;this.guard=false;this.result=null;this.timer=0}
+  update(dt,input){if(this.result){this.timer+=dt;if(this.timer>950)this.app.go('strategy');return}this.attackCd=Math.max(0,this.attackCd-dt);this.enemyCd=Math.max(0,this.enemyCd-dt);if(input.isDown('ArrowLeft'))this.px=Math.max(28,this.px-.06*dt);if(input.isDown('ArrowRight'))this.px=Math.min(this.ex-22,this.px+.06*dt);this.guard=input.isDown('x')||input.isDown('X');let key=input.consume();while(key){const b=mdButton(key);if(b==='HD'){this.app.toggleHd()}if(b==='A'&&this.attackCd<=0){this.attackCd=300;this.app.audio.confirm();if(this.ex-this.px<48)this.ehp=Math.max(0,this.ehp-14)}key=input.consume()}const d=this.ex-this.px;if(d>40)this.ex-=.025*dt;else if(d<27)this.ex+=.035*dt;this.ex=Math.max(this.px+22,Math.min(292,this.ex));if(d<43&&this.enemyCd<=0){this.enemyCd=720;const dmg=this.guard?3:9;this.php=Math.max(0,this.php-dmg);this.app.audio.alert()}if(this.ehp<=0)this.finish(true);else if(this.php<=0)this.finish(false)}
+  finish(win){if(this.result)return;this.result=win?'勝':'敗';this.app.store.resolveConflict(win)}
+  draw(){const r=this.app.r,c=r.ctx;r.clear('#221510');const grad=c.createLinearGradient(0,0,0,224*r.S);grad.addColorStop(0,'#a96a43');grad.addColorStop(.5,'#c18a55');grad.addColorStop(1,'#6f5a33');c.fillStyle=grad;c.fillRect(0,0,320*r.S,224*r.S);r.ornateFrame(2,2,316,220);r.fillRect(5,38,310,105,'#6d4c2f');r.fillRect(5,143,310,76,'#8c7846');r.fillRect(20,84,280,47,'#46382f');for(let x=24;x<300;x+=20)r.fillRect(x,74,12,14,'#514238');r.fillRect(134,93,52,38,'#251c18');r.panel(8,8,304,26,'#050505','#7c5014');r.text(`${CITY_BY_ID[this.c?.target]?.name??''} · 一騎討ち`,160,13,10,'#f1d477','center');r.text(`我方 ${String(this.php).padStart(3)}      敵方 ${String(this.ehp).padStart(3)}`,160,26,6.5,'#e8dec4','center');const af=FACTION_BY_ID[this.c?.attacker],df=FACTION_BY_ID[this.c?.defender];this.fighter(this.px,160,af?.color??'#587cc7',false);this.fighter(this.ex,160,df?.color??'#b75f52',true);r.text('← → 移動　Z(A)攻擊　X(B)防禦',160,205,7,'#3b2b1c','center');if(this.result)r.shadowText(this.result,160,102,34,this.result==='勝'?'#ffe36a':'#da6558','center','middle');r.scanlines(.02)}
+  fighter(x,y,color,flip){const r=this.app.r,c=r.ctx;c.save();c.translate(x*r.S,y*r.S);c.scale(flip?-1:1,1);c.fillStyle='#3b2418';c.fillRect(-16*r.S,2*r.S,32*r.S,8*r.S);c.fillStyle=color;c.fillRect(-8*r.S,-27*r.S,16*r.S,25*r.S);c.fillStyle='#d6a274';c.fillRect(-5*r.S,-37*r.S,10*r.S,10*r.S);c.fillStyle='#1e1714';c.fillRect(-7*r.S,-42*r.S,14*r.S,6*r.S);c.fillStyle='#d8d0b0';c.fillRect(6*r.S,-18*r.S,34*r.S,2*r.S);c.fillStyle='#40251a';c.fillRect(-13*r.S,-2*r.S,4*r.S,22*r.S);c.fillRect(9*r.S,-2*r.S,4*r.S,22*r.S);c.restore()}
 }
