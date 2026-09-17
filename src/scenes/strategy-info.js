@@ -137,6 +137,8 @@ export class StrategyScene extends ParityStrategyScene {
     const r=this.app.r
     const c=r.ctx
     const S=r.S
+    const water=this.app.assets?.get('map.terrain.riverA')
+    const pattern=water?c.createPattern(water,'repeat'):null
     const drawPath=()=>{
       c.beginPath()
       c.moveTo(205*S,-12*S)
@@ -150,8 +152,8 @@ export class StrategyScene extends ParityStrategyScene {
     c.lineJoin='round'
     drawPath();c.strokeStyle='#6f5837';c.lineWidth=23*S;c.stroke()
     drawPath();c.strokeStyle='#082d92';c.lineWidth=19*S;c.stroke()
-    drawPath();c.strokeStyle='#064ac0';c.lineWidth=13*S;c.stroke()
-    drawPath();c.strokeStyle='#0d63d7';c.lineWidth=4*S;c.globalAlpha=.55;c.stroke()
+    drawPath();c.strokeStyle=pattern??'#064ac0';c.lineWidth=13*S;c.stroke()
+    drawPath();c.strokeStyle=pattern?'#b8e7ef':'#0d63d7';c.lineWidth=3*S;c.globalAlpha=pattern?.24:.55;c.stroke()
     c.restore()
   }
 

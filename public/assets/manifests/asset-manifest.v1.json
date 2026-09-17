@@ -14,7 +14,7 @@
       "sandBase": { "src": "assets/map/terrain/map-terrain-sand-base-v1.webp", "status": "ready" },
       "mountainA": { "src": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp", "status": "ready" },
       "mountainB": { "src": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp", "status": "ready" },
-      "riverA": { "src": "assets/map/terrain/map-terrain-river-segment-a-v1.webp", "status": "planned" },
+      "riverA": { "src": "assets/map/terrain/map-terrain-river-segment-a-v1.webp", "status": "ready" },
       "forestA": { "src": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp", "status": "ready" }
     },
     "cities": {
