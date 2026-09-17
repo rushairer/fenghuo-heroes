@@ -2,12 +2,14 @@
 
 ## Safe B-button contract
 
-`B` is a cancel/back button inside menus. On the root strategy map it no longer exits to the title screen. This is enforced twice:
+`B` is a cancel/back button inside menus. On the root strategy map it never exits to the title screen. This is deliberately enforced at multiple layers:
 
-1. `StrategyScene.updateMap()` consumes root-map B without navigation.
-2. `App.go('title')` blocks accidental title navigation while an active strategy scene owns a live game, unless a future explicit quit flow passes `force: true`.
+1. base `strategy.js` consumes root-map B without navigation;
+2. `strategy-march.js` independently does the same for the even-month march root;
+3. the parity/final StrategyScene inheritance keeps the same contract;
+4. `App.go('title')` blocks accidental title navigation while an active strategy scene owns a live game, unless a future explicit quit flow passes `force: true`.
 
-This prevents a single accidental B press from interrupting an active game.
+Automated tests execute root B against the base strategy class, march class, and final exported strategy class in both odd- and even-month modes. This prevents a single accidental B press from interrupting an active game even if the inheritance chain changes later.
 
 ## March-order sequence
 

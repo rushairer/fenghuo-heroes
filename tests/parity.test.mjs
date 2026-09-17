@@ -1,11 +1,42 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { MAX_FOOD_DAYS, foodForDays, maxFoodDaysForStock, shouldBlockTitleNavigation } from '../src/game/parity.js'
+import { StrategyScene as BaseStrategyScene } from '../src/scenes/strategy.js'
+import { StrategyScene as MarchStrategyScene } from '../src/scenes/strategy-march.js'
+import { StrategyScene as FinalStrategyScene } from '../src/scenes/strategy-full-map.js'
 
 test('root strategy map cannot jump to title without an explicit forced exit',()=>{
   assert.equal(shouldBlockTitleNavigation({hasGame:true,fromStrategy:true}),true)
   assert.equal(shouldBlockTitleNavigation({hasGame:true,fromStrategy:true,force:true}),false)
   assert.equal(shouldBlockTitleNavigation({hasGame:false,fromStrategy:true}),false)
+})
+
+
+
+function rootBEvents(Scene,stage) {
+  const events=[]
+  const scene=Object.create(Scene.prototype)
+  scene.stage=stage
+  scene.app={
+    store:{state:{}},
+    audio:{cancel(){events.push('cancel')}},
+    go(name){events.push(`go:${name}`)},
+  }
+  scene.updateMap('B')
+  return events
+}
+
+test('base strategy root B only cancels and never navigates',()=>{
+  assert.deepEqual(rootBEvents(BaseStrategyScene,'survey'),['cancel'])
+})
+
+test('march strategy root B only cancels and never navigates',()=>{
+  assert.deepEqual(rootBEvents(MarchStrategyScene,'march'),['cancel'])
+})
+
+test('final strategy scene keeps root B safe in both odd and even month modes',()=>{
+  assert.deepEqual(rootBEvents(FinalStrategyScene,'survey'),['cancel'])
+  assert.deepEqual(rootBEvents(FinalStrategyScene,'march'),['cancel'])
 })
 
 test('march grain is selected in days and derived from the manual daily formula',()=>{
