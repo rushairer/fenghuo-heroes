@@ -32,9 +32,13 @@
     },
     "map.terrain.sandBase": {
       "target": "assets/map/terrain/map-terrain-sand-base-v1.webp",
+      "sourceGenId": "97109680-a41d-441a-a5b5-34a31e317fbe",
+      "sourceRole": "Image 2.5 text-free sandy strategy-map terrain texture",
       "nativeTarget": { "width": 2048, "height": 1434 },
+      "runtimeTarget": { "width": 512, "height": 512 },
       "minimumRuntime": { "width": 512, "height": 512 },
       "tileablePreferred": true,
+      "preprocess": "center-square crop; 512x512 Lanczos resize; 48px opposite-edge blend; WebP q48",
       "forbiddenBakedUI": ["city labels", "flags", "roads", "HUD", "text"]
     },
     "map.terrain.mountainA": {
