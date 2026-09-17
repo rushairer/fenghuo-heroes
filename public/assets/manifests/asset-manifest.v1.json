@@ -45,7 +45,7 @@
   "ui": {
     "panels": {
       "large": { "src": "assets/ui/panels/ui-panel-black-gold-a-v1.webp", "status": "ready" },
-      "small": { "src": "assets/ui/panels/ui-panel-black-gold-b-v1.webp", "status": "planned" }
+      "small": { "src": "assets/ui/panels/ui-panel-black-gold-b-v1.webp", "status": "ready" }
     },
     "frames": {
       "small": { "src": "assets/ui/frames/ui-frame-small-v1.webp", "status": "planned" },
