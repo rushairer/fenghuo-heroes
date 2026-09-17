@@ -30,6 +30,42 @@
       "minimumRuntime": { "width": 256, "height": 256 },
       "nineSlice": { "left": 48, "top": 48, "right": 48, "bottom": 48 }
     },
+    "ui.icons.food": {
+      "target": "assets/ui/icons/ui-icon-food-v1.webp",
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "sourceRole": "Image 2.5 HD asset-atlas food sack icon crop",
+      "nativeTarget": { "width": 1536, "height": 1024 },
+      "runtimeTarget": { "width": 128, "height": 128 },
+      "minimumRuntime": { "width": 128, "height": 128 },
+      "transparentPreferred": true,
+      "preprocess": "crop icon only; flood-clear atlas background; trim alpha bounds; center on transparent 128x128 canvas; WebP q82",
+      "integrity": { "byteLength": 1744, "sha256": "497accec5466aed7bbbb45933602c9f0719d3118baedaa2845a24b3e642591e9" },
+      "forbiddenBakedUI": ["text", "label", "HUD"]
+    },
+    "ui.icons.gold": {
+      "target": "assets/ui/icons/ui-icon-gold-v1.webp",
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "sourceRole": "Image 2.5 HD asset-atlas gold ingot icon crop",
+      "nativeTarget": { "width": 1536, "height": 1024 },
+      "runtimeTarget": { "width": 128, "height": 128 },
+      "minimumRuntime": { "width": 128, "height": 128 },
+      "transparentPreferred": true,
+      "preprocess": "crop icon only; flood-clear atlas background; trim alpha bounds; center on transparent 128x128 canvas; WebP q82",
+      "integrity": { "byteLength": 1774, "sha256": "2789eb47560e895073f5858e251930b24e16197e4e89cc82c0dffec792536265" },
+      "forbiddenBakedUI": ["text", "label", "HUD"]
+    },
+    "ui.icons.troops": {
+      "target": "assets/ui/icons/ui-icon-troops-v1.webp",
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "sourceRole": "Image 2.5 HD asset-atlas troop formation icon crop",
+      "nativeTarget": { "width": 1536, "height": 1024 },
+      "runtimeTarget": { "width": 128, "height": 128 },
+      "minimumRuntime": { "width": 128, "height": 128 },
+      "transparentPreferred": true,
+      "preprocess": "crop icon only; flood-clear atlas background; trim alpha bounds; center on transparent 128x128 canvas; WebP q82",
+      "integrity": { "byteLength": 2146, "sha256": "5400ed09183dee06d5a3f258f8e7d90e208123cd8904455d7e72a271497d94a8" },
+      "forbiddenBakedUI": ["text", "label", "HUD"]
+    },
     "map.terrain.sandBase": {
       "target": "assets/map/terrain/map-terrain-sand-base-v1.webp",
       "sourceGenId": "97109680-a41d-441a-a5b5-34a31e317fbe",
@@ -81,7 +117,7 @@
       "runtimeTarget": { "width": 256, "height": 256 },
       "minimumRuntime": { "width": 256, "height": 256 },
       "transparentPreferred": true,
-      "preprocess": "crop forest cluster from transparent atlas; zero alpha <=8; trim alpha bounds; resize within 224x224; center on 256x256 transparent canvas; WebP q62",
+      "preprocess": "crop forest cluster from transparent atlas; zero alpha <=8; trim alpha bounds; resize within 224x224; center on 256x256 transparent WebP canvas; WebP q62",
       "integrity": { "byteLength": 14042, "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c" },
       "forbiddenBakedUI": ["text", "city", "flag", "river", "HUD"]
     },
