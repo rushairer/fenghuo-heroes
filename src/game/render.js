@@ -19,6 +19,14 @@ export function makeRenderer(canvas) {
   function selector(x,y,w,h,active=true){strokeRect(x,y,w,h,active?COLORS.cyan:COLORS.gold2,active?1.5:1)}
   function wrapText(value,x,y,maxWidth,lineHeight=10,size=8,color=COLORS.white,align='left',family=FONT){const chars=[...String(value)];let lineText='';let yy=y;ctx.font=`500 ${Math.round(size*S)}px ${family}`;for(const ch of chars){const next=lineText+ch;if(ctx.measureText(next).width>X(maxWidth)&&lineText){text(lineText,x,yy,size,color,align,'top',family);lineText=ch;yy+=lineHeight}else lineText=next}if(lineText)text(lineText,x,yy,size,color,align,'top',family)}
   function scanlines(alpha=.035){ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#000';for(let y=1;y<HD_H;y+=8)ctx.fillRect(0,y,HD_W,2);ctx.restore()}
+  function drawImageCover(image,x=0,y=0,w=LOGICAL_W,h=LOGICAL_H,alpha=1){
+    const iw=image?.naturalWidth??image?.width??0, ih=image?.naturalHeight??image?.height??0
+    if(!iw||!ih)return false
+    const targetW=X(w),targetH=Y(h),targetRatio=targetW/targetH,imageRatio=iw/ih
+    let sx=0,sy=0,sw=iw,sh=ih
+    if(imageRatio>targetRatio){sw=ih*targetRatio;sx=(iw-sw)/2}else{sh=iw/targetRatio;sy=(ih-sh)/2}
+    ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.drawImage(image,sx,sy,sw,sh,X(x),Y(y),targetW,targetH);ctx.restore();return true
+  }
   function portraitBust(cx,baseY,scale,tone,flip=false,kind=0){ctx.save();ctx.translate(X(cx),Y(baseY));ctx.scale(flip?-1:1,1);const s=S*scale;ctx.fillStyle=tone;ctx.strokeStyle='#1b0a07';ctx.lineWidth=Math.max(2,s*.7);ctx.beginPath();ctx.ellipse(0,-30*s/S,17*s/S,22*s/S,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#22130c';ctx.beginPath();ctx.moveTo(-17*s/S,-42*s/S);ctx.quadraticCurveTo(0,-58*s/S,19*s/S,-40*s/S);ctx.lineTo(15*s/S,-34*s/S);ctx.quadraticCurveTo(0,-45*s/S,-16*s/S,-34*s/S);ctx.closePath();ctx.fill();if(kind%2===0){ctx.fillStyle='#23120d';ctx.beginPath();ctx.moveTo(-10*s/S,-15*s/S);ctx.quadraticCurveTo(0,8*s/S,11*s/S,-15*s/S);ctx.quadraticCurveTo(7*s/S,18*s/S,0,28*s/S);ctx.quadraticCurveTo(-7*s/S,18*s/S,-10*s/S,-15*s/S);ctx.fill()}ctx.fillStyle=kind%3===0?'#5f1914':'#2f2730';ctx.beginPath();ctx.moveTo(-24*s/S,-7*s/S);ctx.lineTo(24*s/S,-7*s/S);ctx.lineTo(34*s/S,37*s/S);ctx.lineTo(-34*s/S,37*s/S);ctx.closePath();ctx.fill();ctx.restore()}
-  return {ctx,S,clear,fillRect,strokeRect,line,text,shadowText,panel,ornateFrame,selector,wrapText,scanlines,portraitBust,W:LOGICAL_W,H:LOGICAL_H}
+  return {ctx,S,clear,fillRect,strokeRect,line,text,shadowText,panel,ornateFrame,selector,wrapText,scanlines,drawImageCover,portraitBust,W:LOGICAL_W,H:LOGICAL_H}
 }
