@@ -125,7 +125,7 @@ export class SetupScene {
   draw() {
     const r = this.app.r
     r.clear('#000')
-    r.ornateFrame(7, 7, 306, 210)
+    r.ornateFrame(7, 7, 306, 210, this.app.assets?.get('ui.frames.large'))
     r.text('請 設 定 初 期 條 件', 160, 15, 15, '#f3efe4', 'center', 'top', SERIF, '600')
     r.line(10, 35, 310, 35, COLORS.red, 2)
 
