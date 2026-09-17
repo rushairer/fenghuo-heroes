@@ -18,6 +18,8 @@ const FOREST_REFS = Object.freeze([
   [285,27],[302,36],[266,71],[288,109],[227,151],[188,155],[39,111],[66,154],[113,188],[249,190],[181,117],[26,187],
 ])
 
+const ARMY_SELECTED_VIEWS = new Set(['army-menu','march-route','march-route-prompt'])
+
 export class StrategyScene extends ParityStrategyScene {
   constructor(app) {
     super(app)
@@ -114,7 +116,8 @@ export class StrategyScene extends ParityStrategyScene {
       if(!isVisible(wp,camera,14))continue
       const p=toScreen(wp,camera)
       const faction=FACTION_BY_ID[army.faction]
-      this.drawArmyFlag(p.x,p.y,faction?.color??'#888',army.starving,army.faction)
+      const selected=this.marchArmyId===army.id&&ARMY_SELECTED_VIEWS.has(this.view)
+      this.drawArmyFlag(p.x,p.y,faction?.color??'#888',army.starving,army.faction,selected)
     }
 
     if(this.view==='march-route'&&this.marchRoute.length>1){
@@ -248,15 +251,19 @@ export class StrategyScene extends ParityStrategyScene {
     c.restore()
   }
 
-  drawArmyFlag(x,y,color,starving=false,factionId=null) {
+  drawArmyFlag(x,y,color,starving=false,factionId=null,selected=false) {
     const r=this.app.r
     const c=r.ctx
     const S=r.S
     const base=this.app.assets?.get(`map.flags.${factionId}`)
-    if(base){
-      r.drawImageStretch(base,x-10,y-14,20,20)
-      const overlay=starving?this.app.assets?.get('map.flags.lowFood'):null
-      if(overlay)r.drawImageStretch(overlay,x-10,y-14,20,20)
+    const selectedFlag=selected?this.app.assets?.get('map.flags.selected'):null
+    const lowFoodFlag=starving?this.app.assets?.get('map.flags.lowFood'):null
+    const image=lowFoodFlag??selectedFlag??base
+    if(image){
+      r.drawImageStretch(image,x-10,y-14,20,20)
+      if((starving||selected)&&!lowFoodFlag&&!selectedFlag){
+        r.strokeRect(x-11,y-15,22,22,starving?'#ff765f':COLORS.cyan,1)
+      }
       return
     }
     c.save()
@@ -272,8 +279,8 @@ export class StrategyScene extends ParityStrategyScene {
     c.lineTo(2*S,-4*S)
     c.closePath()
     c.fill()
-    c.strokeStyle=starving?'#ff765f':'#2a1c13'
-    c.lineWidth=(starving?1.1:.5)*S
+    c.strokeStyle=starving?'#ff765f':selected?COLORS.cyan:'#2a1c13'
+    c.lineWidth=(starving||selected?1.1:.5)*S
     c.strokeRect(-5*S,-10*S,16*S,16*S)
     c.restore()
   }
