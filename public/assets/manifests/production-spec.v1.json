@@ -85,6 +85,19 @@
       "integrity": { "byteLength": 14042, "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c" },
       "forbiddenBakedUI": ["text", "city", "flag", "river", "HUD"]
     },
+    "map.cities.neutral": {
+      "target": "assets/map/cities/city-fort-neutral-v1.webp",
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "sourceRole": "Image 2.5 HD asset-atlas crop containing the neutral city fort",
+      "crop": { "x": 418, "y": 248, "width": 72, "height": 94 },
+      "nativeTarget": { "width": 1536, "height": 1024 },
+      "runtimeTarget": { "width": 256, "height": 256 },
+      "minimumRuntime": { "width": 256, "height": 256 },
+      "transparentPreferred": true,
+      "preprocess": "crop neutral fort; flood-clear atlas background from four corners; trim alpha bounds; resize within 200x200; center on 256x256 transparent canvas; WebP q82",
+      "integrity": { "byteLength": 4794, "sha256": "0e19fa9169bcae6037dd921f2b7cab36db86fee7d8de0af08c22b468d08e2e3c" },
+      "forbiddenBakedUI": ["text", "city label", "HUD"]
+    },
     "portraits.rulers.liu": {
       "target": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp",
       "nativeTarget": { "width": 1024, "height": 1024 },
