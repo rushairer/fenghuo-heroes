@@ -16,6 +16,7 @@ export function makeRenderer(canvas) {
   function shadowText(value,x,y,size=8,color=COLORS.white,align='left',baseline='top',family=SERIF,weight='700'){text(value,x+.75,y+.75,size,'#000',align,baseline,family,weight);text(value,x,y,size,color,align,baseline,family,weight)}
   function imageSize(image){return {w:image?.naturalWidth??image?.width??0,h:image?.naturalHeight??image?.height??0}}
   function drawImageStretch(image,x,y,w,h,alpha=1){const size=imageSize(image);if(!size.w||!size.h)return false;ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.drawImage(image,X(x),Y(y),X(w),Y(h));ctx.restore();return true}
+  function drawImageCentered(image,cx,cy,w,h,alpha=1){return drawImageStretch(image,cx-w/2,cy-h/2,w,h,alpha)}
   function drawImageCover(image,x=0,y=0,w=LOGICAL_W,h=LOGICAL_H,alpha=1){
     const {w:iw,h:ih}=imageSize(image)
     if(!iw||!ih)return false
@@ -23,6 +24,24 @@ export function makeRenderer(canvas) {
     let sx=0,sy=0,sw=iw,sh=ih
     if(imageRatio>targetRatio){sw=ih*targetRatio;sx=(iw-sw)/2}else{sh=iw/targetRatio;sy=(ih-sh)/2}
     ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.drawImage(image,sx,sy,sw,sh,X(x),Y(y),targetW,targetH);ctx.restore();return true
+  }
+  function drawImageTiled(image,x,y,w,h,tileW=64,tileH=64,worldOffsetX=0,worldOffsetY=0,alpha=1){
+    const {w:iw,h:ih}=imageSize(image)
+    if(!iw||!ih||tileW<=0||tileH<=0)return false
+    const mod=(value,base)=>((value%base)+base)%base
+    const firstX=x-mod(worldOffsetX,tileW)
+    const firstY=y-mod(worldOffsetY,tileH)
+    ctx.save()
+    ctx.globalAlpha=alpha
+    ctx.imageSmoothingEnabled=true
+    ctx.beginPath();ctx.rect(X(x),Y(y),X(w),Y(h));ctx.clip()
+    for(let yy=firstY;yy<y+h;yy+=tileH){
+      for(let xx=firstX;xx<x+w;xx+=tileW){
+        ctx.drawImage(image,0,0,iw,ih,X(xx),Y(yy),X(tileW),Y(tileH))
+      }
+    }
+    ctx.restore()
+    return true
   }
   function drawNineSlice(image,x,y,w,h,sourceSlice=32,destEdge=6,alpha=1){
     const {w:iw,h:ih}=imageSize(image)
@@ -42,5 +61,5 @@ export function makeRenderer(canvas) {
   function wrapText(value,x,y,maxWidth,lineHeight=10,size=8,color=COLORS.white,align='left',family=FONT){const chars=[...String(value)];let lineText='';let yy=y;ctx.font=`500 ${Math.round(size*S)}px ${family}`;for(const ch of chars){const next=lineText+ch;if(ctx.measureText(next).width>X(maxWidth)&&lineText){text(lineText,x,yy,size,color,align,'top',family);lineText=ch;yy+=lineHeight}else lineText=next}if(lineText)text(lineText,x,yy,size,color,align,'top',family)}
   function scanlines(alpha=.035){ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#000';for(let y=1;y<HD_H;y+=8)ctx.fillRect(0,y,HD_W,2);ctx.restore()}
   function portraitBust(cx,baseY,scale,tone,flip=false,kind=0){ctx.save();ctx.translate(X(cx),Y(baseY));ctx.scale(flip?-1:1,1);const s=S*scale;ctx.fillStyle=tone;ctx.strokeStyle='#1b0a07';ctx.lineWidth=Math.max(2,s*.7);ctx.beginPath();ctx.ellipse(0,-30*s/S,17*s/S,22*s/S,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#22130c';ctx.beginPath();ctx.moveTo(-17*s/S,-42*s/S);ctx.quadraticCurveTo(0,-58*s/S,19*s/S,-40*s/S);ctx.lineTo(15*s/S,-34*s/S);ctx.quadraticCurveTo(0,-45*s/S,-16*s/S,-34*s/S);ctx.closePath();ctx.fill();if(kind%2===0){ctx.fillStyle='#23120d';ctx.beginPath();ctx.moveTo(-10*s/S,-15*s/S);ctx.quadraticCurveTo(0,8*s/S,11*s/S,-15*s/S);ctx.quadraticCurveTo(7*s/S,18*s/S,0,28*s/S);ctx.quadraticCurveTo(-7*s/S,18*s/S,-10*s/S,-15*s/S);ctx.fill()}ctx.fillStyle=kind%3===0?'#5f1914':'#2f2730';ctx.beginPath();ctx.moveTo(-24*s/S,-7*s/S);ctx.lineTo(24*s/S,-7*s/S);ctx.lineTo(34*s/S,37*s/S);ctx.lineTo(-34*s/S,37*s/S);ctx.closePath();ctx.fill();ctx.restore()}
-  return {ctx,S,clear,fillRect,strokeRect,line,text,shadowText,panel,ornateFrame,selector,wrapText,scanlines,drawImageStretch,drawImageCover,drawNineSlice,portraitBust,W:LOGICAL_W,H:LOGICAL_H}
+  return {ctx,S,clear,fillRect,strokeRect,line,text,shadowText,panel,ornateFrame,selector,wrapText,scanlines,drawImageStretch,drawImageCentered,drawImageCover,drawImageTiled,drawNineSlice,portraitBust,W:LOGICAL_W,H:LOGICAL_H}
 }
