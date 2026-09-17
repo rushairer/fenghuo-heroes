@@ -66,6 +66,9 @@ export class StrategyScene extends InfoStrategyScene {
     // Manual evidence assigns selection to C on this list. A is intentionally
     // left unused rather than acting as a modern secondary confirm button.
     if(b!=='C')return
+    // During the command phase this information screen stays read-only. Do not
+    // let a status drilldown bypass the existing command target restrictions.
+    if(this.stage!=='survey'){this.app.audio.alert();return}
     const row=rows[this.countryOverviewCursor]
     if(!row){this.app.audio.alert();return}
     this.targetCity=row.cityId
@@ -175,7 +178,8 @@ export class StrategyScene extends InfoStrategyScene {
       r.text(row.ruler,145,y,7,color)
       r.text(row.troops??'—',258,y,7,color,'right')
     })
-    r.text('↑↓ 捲動　C 國狀態　B 返回',160,178,6,'#887f6d','center')
+    const footer=this.stage==='survey'?'↑↓ 捲動　C 國狀態　B 返回':'↑↓ 捲動　B 返回'
+    r.text(footer,160,178,6,'#887f6d','center')
   }
 
   drawCityStatus() {
