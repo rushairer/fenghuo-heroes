@@ -72,31 +72,34 @@ export class StrategyScene extends ParityStrategyScene {
     const c=r.ctx
     const state=this.app.store.state
     const camera=cameraFor(state.cursor)
+    const sand=this.app.assets?.get('map.terrain.sandBase')
 
-    r.fillRect(0,0,MAP_VIEW_W,MAP_VIEW_H,'#b48855')
-    for(const dot of this.mapSpeckles){
-      const p=toScreen(dot,camera)
-      if(p.x<0||p.x>MAP_VIEW_W||p.y<0||p.y>MAP_VIEW_H)continue
-      c.fillStyle=dot.tone
-      c.beginPath()
-      c.arc(p.x*r.S,p.y*r.S,dot.size*r.S,0,Math.PI*2)
-      c.fill()
+    if(!sand||!r.drawImageTiled(sand,0,0,MAP_VIEW_W,MAP_VIEW_H,64,64,camera.x,camera.y)){
+      r.fillRect(0,0,MAP_VIEW_W,MAP_VIEW_H,'#b48855')
+      for(const dot of this.mapSpeckles){
+        const p=toScreen(dot,camera)
+        if(p.x<0||p.x>MAP_VIEW_W||p.y<0||p.y>MAP_VIEW_H)continue
+        c.fillStyle=dot.tone
+        c.beginPath()
+        c.arc(p.x*r.S,p.y*r.S,dot.size*r.S,0,Math.PI*2)
+        c.fill()
+      }
     }
 
     this.drawRiver(camera)
 
-    for(const ref of MOUNTAIN_REFS){
+    MOUNTAIN_REFS.forEach((ref,index)=>{
       const wp=worldPoint({x:ref[0],y:ref[1]})
-      if(!isVisible(wp,camera,16))continue
+      if(!isVisible(wp,camera,16))return
       const p=toScreen(wp,camera)
-      this.drawMountain(p.x,p.y)
-    }
-    for(const ref of FOREST_REFS){
+      this.drawMountain(p.x,p.y,index)
+    })
+    FOREST_REFS.forEach((ref,index)=>{
       const wp=worldPoint({x:ref[0],y:ref[1]})
-      if(!isVisible(wp,camera,16))continue
+      if(!isVisible(wp,camera,16))return
       const p=toScreen(wp,camera)
-      this.drawForest(p.x,p.y)
-    }
+      this.drawForest(p.x,p.y,index)
+    })
 
     for(const city of CITIES){
       const wp=cityWorldPoint(city)
@@ -148,8 +151,11 @@ export class StrategyScene extends ParityStrategyScene {
     c.restore()
   }
 
-  drawMountain(x,y) {
+  drawMountain(x,y,index=0) {
     const r=this.app.r
+    const assetKey=index%2===0?'map.terrain.mountainA':'map.terrain.mountainB'
+    const image=this.app.assets?.get(assetKey)??this.app.assets?.get('map.terrain.mountainA')
+    if(image&&r.drawImageCentered(image,x,y-2,28,24))return
     const c=r.ctx
     const S=r.S
     c.save()
@@ -179,8 +185,10 @@ export class StrategyScene extends ParityStrategyScene {
     c.restore()
   }
 
-  drawForest(x,y) {
+  drawForest(x,y,index=0) {
     const r=this.app.r
+    const image=this.app.assets?.get('map.terrain.forestA')
+    if(image&&r.drawImageCentered(image,x,y,22,18,.96))return
     const c=r.ctx
     const S=r.S
     const trees=[[-5,1,4],[-1,-3,5],[4,0,4],[8,-2,3],[-8,-2,3]]
