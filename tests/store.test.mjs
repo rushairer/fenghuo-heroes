@@ -46,3 +46,16 @@ test('tax rate can only be configured for the active player territory',()=>{
   s.newGame({humanFactions:['cao']})
   assert.throws(()=>s.setTaxRate('xinye',30),/本國城池/)
 })
+
+
+test('legacy generic tax command no longer performs the removed instant money and rule mutation',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['cao']})
+  const city=s.state.cities.xuchang
+  const before={gold:city.gold,food:city.food,rule:city.rule,taxRate:city.taxRate}
+  assert.match(s.executeInspection('tax','xuchang'),/設定畫面/)
+  assert.deepEqual(
+    {gold:city.gold,food:city.food,rule:city.rule,taxRate:city.taxRate},
+    before,
+  )
+})
