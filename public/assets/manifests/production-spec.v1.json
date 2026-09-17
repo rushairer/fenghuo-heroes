@@ -7,13 +7,13 @@
   "assets": {
     "title.main": {
       "target": "assets/title/hd/title-main-hd-v1.webp",
-      "sourceGenId": "c7dd6917-7f5e-4425-9062-5cf94f86ffd6",
-      "sourceRole": "concept-to-production crop",
-      "crop": { "x": 180, "y": 105, "width": 1000, "height": 700 },
+      "sourceGenId": "f0e1fab6-5f93-49da-8455-1239d7f118b7",
+      "sourceRole": "production crop from text-free Image 2.5 title composition",
+      "crop": { "x": 0, "y": 0, "width": 1463, "height": 1024 },
       "nativeTarget": { "width": 1600, "height": 1120, "aspect": "10:7" },
       "minimumRuntime": { "width": 640, "height": 448 },
-      "forbiddenBakedUI": ["START", "CONTINUE", "PUSH START", "menu", "HUD", "interactive labels"],
-      "notes": "Crop selected to keep the five-warrior composition while excluding generated menu and calligraphy areas. Interactive labels remain code-native."
+      "forbiddenBakedUI": ["START", "CONTINUE", "PUSH START", "readable interactive labels", "HUD"],
+      "notes": "The generated frame contains five warlords, battlefield scenery, right blue-gold trim and an empty ornamental menu frame. All interactive menu copy stays code-native."
     },
     "title.menuFrame": {
       "target": "assets/title/slices/title-menu-frame-v1.webp",
@@ -33,8 +33,37 @@
     "map.terrain.sandBase": {
       "target": "assets/map/terrain/map-terrain-sand-base-v1.webp",
       "nativeTarget": { "width": 2048, "height": 1434 },
+      "minimumRuntime": { "width": 512, "height": 512 },
       "tileablePreferred": true,
       "forbiddenBakedUI": ["city labels", "flags", "roads", "HUD", "text"]
+    },
+    "map.terrain.mountainA": {
+      "target": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp",
+      "nativeTarget": { "width": 1024, "height": 1024 },
+      "minimumRuntime": { "width": 256, "height": 256 },
+      "transparentPreferred": true,
+      "forbiddenBakedUI": ["text", "city", "flag"]
+    },
+    "map.terrain.mountainB": {
+      "target": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp",
+      "nativeTarget": { "width": 1024, "height": 1024 },
+      "minimumRuntime": { "width": 256, "height": 256 },
+      "transparentPreferred": true,
+      "forbiddenBakedUI": ["text", "city", "flag"]
+    },
+    "map.terrain.riverA": {
+      "target": "assets/map/terrain/map-terrain-river-segment-a-v1.webp",
+      "nativeTarget": { "width": 1024, "height": 512 },
+      "minimumRuntime": { "width": 256, "height": 128 },
+      "transparentPreferred": true,
+      "notes": "Reserved for a later river-path compositor; the current world-space bezier river remains the fallback."
+    },
+    "map.terrain.forestA": {
+      "target": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp",
+      "nativeTarget": { "width": 1024, "height": 1024 },
+      "minimumRuntime": { "width": 256, "height": 256 },
+      "transparentPreferred": true,
+      "forbiddenBakedUI": ["text", "city", "flag"]
     },
     "portraits.rulers.liu": {
       "target": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp",
