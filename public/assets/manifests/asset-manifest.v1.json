@@ -19,13 +19,13 @@
     },
     "cities": {
       "neutral": { "src": "assets/map/cities/city-fort-neutral-v1.webp", "status": "ready" },
-      "liu": { "src": "assets/map/cities/city-fort-liubei-v1.webp", "status": "planned" },
-      "cao": { "src": "assets/map/cities/city-fort-caocao-v1.webp", "status": "planned" },
-      "sun": { "src": "assets/map/cities/city-fort-sunjian-v1.webp", "status": "planned" },
-      "yuan": { "src": "assets/map/cities/city-fort-yuanshao-v1.webp", "status": "planned" },
-      "dong": { "src": "assets/map/cities/city-fort-dongzhuo-v1.webp", "status": "planned" },
-      "liu_biao": { "src": "assets/map/cities/city-fort-liubiao-v1.webp", "status": "planned" },
-      "ma": { "src": "assets/map/cities/city-fort-mateng-v1.webp", "status": "planned" }
+      "liu": { "src": "assets/map/cities/city-fort-liubei-v1.webp", "status": "ready" },
+      "cao": { "src": "assets/map/cities/city-fort-caocao-v1.webp", "status": "ready" },
+      "sun": { "src": "assets/map/cities/city-fort-sunjian-v1.webp", "status": "ready" },
+      "yuan": { "src": "assets/map/cities/city-fort-yuanshao-v1.webp", "status": "ready" },
+      "dong": { "src": "assets/map/cities/city-fort-dongzhuo-v1.webp", "status": "ready" },
+      "liu_biao": { "src": "assets/map/cities/city-fort-liubiao-v1.webp", "status": "ready" },
+      "ma": { "src": "assets/map/cities/city-fort-mateng-v1.webp", "status": "ready" }
     },
     "villages": {
       "neutral": { "src": "assets/map/villages/village-neutral-v1.webp", "status": "ready" }
