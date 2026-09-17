@@ -15,3 +15,34 @@ test('resolving conflict finishes only the active human turn',()=>{const s=new G
 test('save/load retains parity setup and command lock state',()=>{const mem=new MemoryStorage();const a=new GameStore(mem);a.newGame({scenarioYear:215,difficulty:'hard',animation:false,textSpeed:'fast',humanFactions:['sun','liu']});a.lockInspectionCategory('military');const b=new GameStore(mem);assert.equal(b.load(),true);assert.equal(b.state.scenarioYear,215);assert.deepEqual(b.state.humanFactions,['sun','liu']);assert.equal(b.inspectionCategoryForActive(),'military')})
 test('strategy world is larger than the 320x176 viewport and camera follows cursor',()=>{assert.equal(WORLD_W,640);assert.equal(WORLD_H,448);const city=CITIES.find((c)=>c.id==='xiangping');const wp=cityWorldPoint(city);assert.deepEqual(wp,{x:568,y:86});const cam=cameraFor(wp);assert.equal(cam.x,320);const sp=toScreen(wp,cam);assert.ok(sp.x>=0&&sp.x<=320);assert.ok(sp.y>=0&&sp.y<=176)})
 test('new games store cursor in world coordinates',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['yuan']});const first=CITIES.find((c)=>c.owner==='yuan');const wp=cityWorldPoint(first);assert.deepEqual(s.state.cursor,wp);assert.equal(s.cityAt(wp.x,wp.y,12)?.id,first.id)})
+
+
+test('setting tax rate persists the configured percentage without immediate settlement effects',()=>{
+  const mem=new MemoryStorage()
+  const s=new GameStore(mem)
+  s.newGame({humanFactions:['cao']})
+  const city=s.state.cities.xuchang
+  const before={gold:city.gold,food:city.food,rule:city.rule}
+  assert.equal(city.taxRate,undefined)
+  assert.equal(s.setTaxRate('xuchang',44),44)
+  assert.equal(city.taxRate,44)
+  assert.equal(city.gold,before.gold)
+  assert.equal(city.food,before.food)
+  assert.equal(city.rule,before.rule)
+
+  const loaded=new GameStore(mem)
+  assert.equal(loaded.load(),true)
+  assert.equal(loaded.state.cities.xuchang.taxRate,44)
+})
+
+test('tax rate rejects unverified out-of-range or non-integer values',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['cao']})
+  for(const value of [-1,100,44.5,NaN])assert.throws(()=>s.setTaxRate('xuchang',value),/0 到 99/)
+})
+
+test('tax rate can only be configured for the active player territory',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['cao']})
+  assert.throws(()=>s.setTaxRate('xinye',30),/本國城池/)
+})
