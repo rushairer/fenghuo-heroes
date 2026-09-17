@@ -62,6 +62,24 @@ The project targets the Chinese-ROM wording `軍備`. Some secondary summaries u
 `軍事`; do not silently switch the visible Chinese target label without direct
 Chinese-ROM screen evidence.
 
+## 情報 behavior
+
+The original manual explicitly says 情報 can inspect both own and other countries'
+status and can be used any number of times in the month.
+
+Runtime behavior therefore is:
+
+1. choose 情報 from any of the three command groups;
+2. open the 40-country status browser;
+3. C opens the highlighted country's status;
+4. C may continue into the officer list/status hierarchy already established by the
+   status-screen parity work;
+5. B walks back through those screens and finally returns to the original command menu;
+6. no city resource is mutated and no prototype formula is executed.
+
+Ordinary command-phase access to the country overview remains read-only with respect to
+command targeting; only the explicit 情報 command enables this documented drilldown.
+
 ## End-command behavior
 
 The manual explicitly documents an end command that terminates the current month's
