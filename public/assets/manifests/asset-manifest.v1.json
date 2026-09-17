@@ -5,7 +5,7 @@
     "loadOnlyReady": true
   },
   "title": {
-    "main": { "src": "assets/title/hd/title-main-hd-v1.webp", "status": "planned" },
+    "main": { "src": "assets/title/hd/title-main-hd-v1.webp", "status": "ready" },
     "menuFrame": { "src": "assets/title/slices/title-menu-frame-v1.webp", "status": "planned" },
     "rightBorder": { "src": "assets/title/slices/title-border-right-v1.webp", "status": "planned" }
   },
