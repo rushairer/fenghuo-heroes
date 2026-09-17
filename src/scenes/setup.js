@@ -1,6 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
-import { DIFFICULTIES, FACTIONS, SCENARIOS } from '../game/data.js'
+import { DIFFICULTIES, SCENARIOS } from '../game/data.js'
 import { mdButton } from '../game/input.js'
+import { runtimeScenarioSupported, scenarioRulerOptions } from '../game/scenario-target.js'
 
 const SPEEDS = [['slow', '慢'], ['normal', '普通'], ['fast', '快']]
 
@@ -16,6 +17,9 @@ export class SetupScene {
     this.rulers = new Set()
     this.message = `請選擇 ${app.playerCount ?? 1} 位君主`
   }
+
+  currentScenario() { return SCENARIOS[this.scenario] }
+  rulerOptions() { return scenarioRulerOptions(this.currentScenario()?.year) }
 
   update(_dt, input) {
     const key = input.consume()
@@ -37,8 +41,9 @@ export class SetupScene {
       return
     }
 
-    if (b === 'LEFT') { this.rulerCursor = (this.rulerCursor - 1 + 7) % 7; this.app.audio.move() }
-    if (b === 'RIGHT') { this.rulerCursor = (this.rulerCursor + 1) % 7; this.app.audio.move() }
+    const count = this.rulerOptions().length
+    if (b === 'LEFT' && count) { this.rulerCursor = (this.rulerCursor - 1 + count) % count; this.app.audio.move() }
+    if (b === 'RIGHT' && count) { this.rulerCursor = (this.rulerCursor + 1) % count; this.app.audio.move() }
     if (b === 'UP') { this.focus = 3; this.app.audio.move() }
     if (b === 'B') { this.focus = 3; this.app.audio.cancel() }
     if (b === 'C' || b === 'A') this.toggleRuler()
@@ -46,13 +51,23 @@ export class SetupScene {
   }
 
   changeTop(delta) {
-    if (this.focus === 0) this.scenario = (this.scenario + delta + SCENARIOS.length) % SCENARIOS.length
+    if (this.focus === 0) {
+      this.scenario = (this.scenario + delta + SCENARIOS.length) % SCENARIOS.length
+      this.rulers.clear()
+      this.rulerCursor = 0
+      const scenario = this.currentScenario()
+      this.message = runtimeScenarioSupported(scenario.year)
+        ? `請選擇 ${this.app.playerCount ?? 1} 位君主`
+        : `${scenario.year}年初始勢力／城池資料待實機校準`
+    }
     if (this.focus === 1) this.difficulty = (this.difficulty + delta + DIFFICULTIES.length) % DIFFICULTIES.length
     if (this.focus === 2) this.animation = (this.animation + delta + 2) % 2
     if (this.focus === 3) this.speed = (this.speed + delta + 3) % 3
   }
 
   toggleRuler() {
+    const options = this.rulerOptions()
+    if (!options.length) return
     const required = this.app.playerCount ?? 1
     if (this.rulers.has(this.rulerCursor)) this.rulers.delete(this.rulerCursor)
     else if (this.rulers.size < required) this.rulers.add(this.rulerCursor)
@@ -66,15 +81,29 @@ export class SetupScene {
   }
 
   start() {
+    const scenario = this.currentScenario()
+    if (!runtimeScenarioSupported(scenario.year)) {
+      this.message = `${scenario.year}年劇本尚未校準初始城池／勢力，暫不偽造開局`
+      this.app.audio.alert()
+      return
+    }
     const required = this.app.playerCount ?? 1
     if (this.rulers.size !== required) {
       this.message = `請選滿 ${required} 位君主後再開始`
       this.app.audio.alert()
       return
     }
-    const selected = [...this.rulers].sort((a, b) => a - b).map((i) => FACTIONS[i].id)
+    const options = this.rulerOptions()
+    const selected = [...this.rulers]
+      .sort((a, b) => a - b)
+      .map((i) => options[i]?.factionId)
+    if (selected.some((id) => !id)) {
+      this.message = '目前劇本的勢力 ID 尚未校準'
+      this.app.audio.alert()
+      return
+    }
     this.app.store.newGame({
-      scenarioYear: SCENARIOS[this.scenario].year,
+      scenarioYear: scenario.year,
       difficulty: DIFFICULTIES[this.difficulty].id,
       animation: this.animation === 0,
       textSpeed: SPEEDS[this.speed][0],
@@ -82,6 +111,15 @@ export class SetupScene {
     })
     this.app.audio.confirm()
     this.app.go('strategy')
+  }
+
+  rulerXs(count) {
+    if (count <= 1) return [160]
+    if (count === 3) return [72, 160, 248]
+    const left = 29
+    const right = 286
+    const step = (right - left) / (count - 1)
+    return Array.from({ length:count }, (_, i) => Math.round(left + step * i))
   }
 
   draw() {
@@ -99,22 +137,25 @@ export class SetupScene {
     })
     r.line(307, 36, 307, 140, COLORS.red, 2)
 
-    SCENARIOS.forEach((s, i) => r.text(`${s.year}年`, 46, 69 + i * 28, 13, i === this.scenario ? COLORS.cyan : '#777', 'center'))
-    DIFFICULTIES.forEach((d, i) => r.text(d.label, 118, 69 + i * 28, 12, i === this.difficulty ? COLORS.cyan : '#555', 'center'))
-    ;['看', '不看'].forEach((v, i) => r.text(v, 190, 78 + i * 35, 12, i === this.animation ? COLORS.cyan : '#555', 'center'))
-    SPEEDS.forEach((v, i) => r.text(v[1], 261, 67 + i * 27, 11, i === this.speed ? COLORS.cyan : '#555', 'center'))
+    SCENARIOS.forEach((scenario, i) => r.text(`${scenario.year}年`, 46, 69 + i * 28, 13, i === this.scenario ? COLORS.cyan : '#777', 'center'))
+    DIFFICULTIES.forEach((difficulty, i) => r.text(difficulty.label, 118, 69 + i * 28, 12, i === this.difficulty ? COLORS.cyan : '#555', 'center'))
+    ;['看', '不看'].forEach((value, i) => r.text(value, 190, 78 + i * 35, 12, i === this.animation ? COLORS.cyan : '#555', 'center'))
+    SPEEDS.forEach((value, i) => r.text(value[1], 261, 67 + i * 27, 11, i === this.speed ? COLORS.cyan : '#555', 'center'))
     if (this.focus < 4) r.selector(xs[this.focus] - 33, 40, this.focus === 3 ? 82 : 66, 96, true)
 
     r.line(9, 141, 311, 141, COLORS.red, 2)
-    r.text(`君　主　（${this.app.playerCount ?? 1}人）`, 160, 147, 11, this.focus === 4 ? '#f3efe4' : '#777', 'center')
-    const rulerXs = [29, 72, 114, 157, 200, 243, 286]
-    FACTIONS.slice(0, 7).forEach((f, i) => {
+    const scenario = this.currentScenario()
+    const options = this.rulerOptions()
+    r.text(`君　主　（${this.app.playerCount ?? 1}人）`, 160, 145, 11, this.focus === 4 ? '#f3efe4' : '#777', 'center')
+    r.text(`${scenario.name} · ${options.length}位`, 160, 158, 5.5, runtimeScenarioSupported(scenario.year) ? '#958a73' : '#b7795e', 'center')
+    const rulerXs = this.rulerXs(options.length)
+    options.forEach((option, i) => {
       const selected = this.rulers.has(i)
       const focused = this.focus === 4 && this.rulerCursor === i
-      r.text(f.ruler, rulerXs[i], 172, 10, selected ? COLORS.cyan : '#666', 'center')
-      if (focused) r.selector(rulerXs[i] - 17, 167, 34, 18, true)
+      r.text(option.ruler, rulerXs[i], 174, 9.5, selected ? COLORS.cyan : '#666', 'center')
+      if (focused) r.selector(rulerXs[i] - 17, 169, 34, 18, true)
     })
-    r.text(this.message, 160, 197, 6, '#a99d82', 'center')
+    r.text(this.message, 160, 197, 6, runtimeScenarioSupported(scenario.year) ? '#a99d82' : '#d58a6b', 'center')
     r.text('方向鍵選擇 · C 決定 · B 返回 · START 開始', 160, 207, 5.5, '#756d5c', 'center')
     r.scanlines(.02)
   }
