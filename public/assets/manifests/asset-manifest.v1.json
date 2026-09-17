@@ -18,7 +18,7 @@
       "forestA": { "src": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp", "status": "ready" }
     },
     "cities": {
-      "neutral": { "src": "assets/map/cities/city-fort-neutral-v1.webp", "status": "planned" },
+      "neutral": { "src": "assets/map/cities/city-fort-neutral-v1.webp", "status": "ready" },
       "liu": { "src": "assets/map/cities/city-fort-liubei-v1.webp", "status": "planned" },
       "cao": { "src": "assets/map/cities/city-fort-caocao-v1.webp", "status": "planned" },
       "sun": { "src": "assets/map/cities/city-fort-sunjian-v1.webp", "status": "planned" },
