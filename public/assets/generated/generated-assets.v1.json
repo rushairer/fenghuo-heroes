@@ -169,6 +169,31 @@
       "byteLength": 2898,
       "sha256": "8b023db4f1041462b8c09db4490473f69e0c3202789bfaeab5f4ffcaff904acf",
       "note": "Image 2.5 HD asset-atlas Ma Teng marching flag crop from the right edge of the production atlas."
+    },
+    "ui.frames.large": {
+      "output": "assets/ui/frames/ui-frame-large-v1.webp",
+      "mime": "image/webp",
+      "parts": [
+        "assets/generated/ui-frame-large-v1.part01.b64",
+        "assets/generated/ui-frame-large-v1.part02.b64",
+        "assets/generated/ui-frame-large-v1.part03.b64",
+        "assets/generated/ui-frame-large-v1.part04.b64"
+      ],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 320, "height": 260 },
+      "byteLength": 11624,
+      "sha256": "8589051101c00fd9873f7402f47ac0a40ec91afd5053c1cc2f72d0b0863e719d",
+      "note": "Image 2.5 black-and-gold large UI frame crop, 2x resized for nine-slice rendering."
+    },
+    "ui.cursors.box": {
+      "output": "assets/ui/cursors/ui-cursor-box-v1.webp",
+      "mime": "image/webp",
+      "parts": ["assets/generated/ui-cursor-box-v1.part01.b64"],
+      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
+      "runtimeSize": { "width": 128, "height": 128 },
+      "byteLength": 1972,
+      "sha256": "1abd510502d460992e97a65566bd9440c00a7a9de70eb8fed6eca15bf5980e9f",
+      "note": "Image 2.5 gold corner selector crop with atlas background removed and centered on transparent runtime canvas."
     }
   }
 }
