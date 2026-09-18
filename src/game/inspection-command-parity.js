@@ -11,6 +11,16 @@ const action = (id,label) => Object.freeze({
   structureEvidence:'manual-and-zh-rom-community',
   effectEvidence:'unverified-formula',
 })
+const program = (id,label,target) => Object.freeze({
+  id,
+  label,
+  kind:'program',
+  target,
+  continuous:true,
+  requires:Object.freeze(['officer','monthlyBudget']),
+  structureEvidence:'jp-manual-and-zh-rom-community',
+  effectEvidence:'continuous-program-structure-only; formula-unverified',
+})
 const intel = Object.freeze({
   id:'intel',
   label:'情報',
@@ -36,10 +46,10 @@ const end = Object.freeze({
 
 export const INSPECTION_COMMAND_SCHEMA = Object.freeze({
   domestic:Object.freeze([
-    action('develop','開發'),
+    program('develop','開發','industry'),
     action('transfer','調動'),
     intel,
-    action('welfare','福利'),
+    program('welfare','福利','rule'),
     action('appoint','任命'),
     tax,
     action('educate','教育'),
