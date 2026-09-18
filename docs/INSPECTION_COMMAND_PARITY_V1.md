@@ -100,6 +100,21 @@ Runtime behavior therefore is:
 Ordinary command-phase access to the country overview remains read-only with respect to
 command targeting; only the explicit 情報 command enables this documented drilldown.
 
+## 運輸 behavior boundary
+
+The first runtime slice restores only the evidence-backed destination step:
+
+1. the current command city is the source;
+2. entering 運輸 returns to the strategic map for destination targeting;
+3. C accepts only another city owned by the active faction;
+4. B returns to the command menu;
+5. choosing a destination does **not** immediately subtract or add 金/米.
+
+Loading amounts, route creation, transport-unit speed and interception resolution stay
+blocked until their exact interaction and timing can be calibrated. This prevents the
+remaster from replacing the original interceptable transport process with an invented
+instant-transfer UI.
+
 ## End-command behavior
 
 The manual explicitly documents an end command that terminates the current month's
@@ -135,8 +150,11 @@ without pretending they are exact formulas:
 - 借款 / 還款 require an alliance relationship.
 - 訓練 cost is related to the soldiers carried by the trained officer and affects
   morale; the exact cost/result formula is not yet verified.
-- 運輸 is an own-city-to-own-city resource workflow and may create an interceptable
-  transport unit on the march map.
+- 運輸 is an own-city-to-own-city resource workflow. Chinese-ROM player documentation
+  says 金 and 米 may be sent separately or together and reports a value of 20,000, while
+  old player notes confirm transport units can be intercepted on the march map. The
+  current evidence does not resolve whether 20,000 is a combined or per-resource cap,
+  so runtime does not enforce that number yet.
 
 These are **workflow clues**, not permission to invent numbers.
 

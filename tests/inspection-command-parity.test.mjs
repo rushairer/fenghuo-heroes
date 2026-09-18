@@ -126,3 +126,10 @@ test('tax is a persistent configuration command rather than an immediate prototy
   assert.equal(tax.kind,'configuration')
   assert.equal(tax.effectEvidence,'persistent-rate-only; settlement-formula-unverified')
 })
+
+test('transport is a workflow instead of an instant resource mutation',()=>{
+  const transport=inspectionCommandById('domestic','transport')
+  assert.equal(transport.kind,'workflow')
+  assert.equal(transport.workflow,'transport-targeting')
+  assert.match(transport.effectEvidence,/capacity-and-movement-unverified/)
+})

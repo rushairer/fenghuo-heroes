@@ -54,7 +54,14 @@ export const INSPECTION_COMMAND_SCHEMA = Object.freeze({
     }),
     tax,
     action('educate','教育'),
-    action('transport','運輸'),
+    Object.freeze({
+      id:'transport',
+      label:'運輸',
+      kind:'workflow',
+      workflow:'transport-targeting',
+      structureEvidence:'zh-rom-community',
+      effectEvidence:'own-city-target-and-gold-food-known; capacity-and-movement-unverified',
+    }),
     end,
   ]),
   diplomacy:Object.freeze([
