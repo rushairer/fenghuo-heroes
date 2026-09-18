@@ -58,7 +58,8 @@ Before a screen is marked parity-complete it needs:
 - [ ] Free marching movement parity.
 - [ ] Supply interception and village occupation.
 - [x] Battle speed choices and the documented 15-squad-per-unit ceiling are modeled.
-- [ ] Exact formation allocation screen and real-time battle rules.
+- [x] Field-battle A/B/C window semantics and command families are modeled as an evidence-backed contract.
+- [ ] Exact formation allocation screen and real-time battle movement/combat rules.
 - [ ] Siege and duel frame-level parity.
 
 ## Copyright / clean-room line
