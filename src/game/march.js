@@ -194,13 +194,15 @@ export function enemyCityNearArmy(store, armyId, tolerance = 24) {
 
 export function beginSiegeFromArmy(store, armyId, targetCityId) {
   const armies = ensureMarchState(store)
-  const index = armies.findIndex((item) => item.id === armyId && item.faction === store.humanFaction)
-  const army = index >= 0 ? armies[index] : null
+  const army = armies.find((item) => item.id === armyId && item.faction === store.humanFaction)
   const target = store.state.cities[targetCityId]
   if (!army || !target || target.owner === army.faction) throw new Error('目前無可攻擊的敵城。')
   const near = enemyCityNearArmy(store, armyId)
   if (!near || near.id !== targetCityId) throw new Error('部隊尚未接近敵城。')
+  army.status = 'besieging'
   store.pendingConflict = {
+    kind: 'siege',
+    armyId: army.id,
     from: army.from,
     target: targetCityId,
     attacker: army.faction,
@@ -209,8 +211,18 @@ export function beginSiegeFromArmy(store, armyId, targetCityId) {
     defenderTroops: target.troops,
     attackerOfficers: [...(army.officerNames ?? [])],
   }
-  armies.splice(index, 1)
   store.addLog(`${CITY_BY_ID[targetCityId].name}攻城準備。`)
   store.save()
   return store.pendingConflict
+}
+
+export function cancelSiegeFromArmy(store) {
+  const conflict = store.pendingConflict
+  if (!conflict || conflict.kind !== 'siege') return false
+  const army = ensureMarchState(store).find((item) => item.id === conflict.armyId)
+  if (army) army.status = 'waiting'
+  store.pendingConflict = null
+  store.addLog(`${CITY_BY_ID[conflict.target]?.name ?? conflict.target}中止攻城。`)
+  store.save()
+  return true
 }
