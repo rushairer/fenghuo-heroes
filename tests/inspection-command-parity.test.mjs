@@ -27,6 +27,16 @@ test('domestic command structure keeps eight commands plus explicit end',()=>{
   )
 })
 
+test('appointment is a Chinese-ROM submenu with governor strategist and office branches',()=>{
+  const appoint=inspectionCommandById('domestic','appoint')
+  assert.equal(appoint.kind,'submenu')
+  assert.deepEqual(
+    inspectionCommandItems('domestic','appoint').map(({id,label})=>[id,label]),
+    [['appoint-governor','太守'],['appoint-strategist','軍師'],['appoint-office','官職']],
+  )
+  assert.deepEqual(inspectionCommandPath('domestic','appoint'),['內政','任命'])
+})
+
 test('diplomacy exposes strategy as a submenu instead of flattening its three tactics',()=>{
   assert.deepEqual(
     INSPECTION_COMMAND_SCHEMA.diplomacy.map(({id,label,kind})=>[id,label,kind]),

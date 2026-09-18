@@ -10,7 +10,7 @@ test('single player alternates inspection and march months',()=>{const s=new Gam
 test('three human players act in the same month before month advances',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['liu','cao','sun']});assert.equal(s.state.month,1);assert.equal(s.humanFaction,'liu');s.finishCurrentTurn();assert.equal(s.state.month,1);assert.equal(s.humanFaction,'cao');s.finishCurrentTurn();assert.equal(s.state.month,1);assert.equal(s.humanFaction,'sun');s.finishCurrentTurn();assert.equal(s.state.month,2);assert.equal(s.humanFaction,'liu')})
 test('inspection category is locked per player for the month',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['liu','cao']});assert.equal(s.lockInspectionCategory('domestic'),true);assert.equal(s.lockInspectionCategory('military'),false);assert.equal(s.inspectionCategoryForActive(),'domestic');s.finishCurrentTurn();assert.equal(s.humanFaction,'cao');assert.equal(s.inspectionCategoryForActive(),null);assert.equal(s.lockInspectionCategory('military'),true)})
 test('unverified inspection formulas never mutate city resources or combat values',()=>{
-  const commands=['develop','welfare','educate','borrow','repay','recruit','weapons','defense','train']
+  const commands=['develop','welfare','educate','appoint-governor','appoint-strategist','appoint-office','borrow','repay','recruit','weapons','defense','train']
   for(const command of commands){
     const s=new GameStore(new MemoryStorage())
     s.newGame({humanFactions:['cao']})
