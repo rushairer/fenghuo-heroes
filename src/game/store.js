@@ -16,6 +16,22 @@ const baseCities = () => Object.fromEntries(CITIES.map((c) => [c.id, {
   defense: 40,
   training: 35,
 }]))
+const UNVERIFIED_INSPECTION_EFFECT_MESSAGES = Object.freeze({
+  develop:'開發：投入金額、執行武將與產值公式尚未校準，本次不修改數值。',
+  welfare:'福利：執行武將、投入金額與統治效果公式尚未校準，本次不修改數值。',
+  educate:'教育：對象、投入金額與忠誠／德效果公式尚未校準，本次不修改數值。',
+  ally:'同盟：交涉方式、代價與成功判定尚未校準，本次不建立同盟狀態。',
+  alienate:'離間：對象條件與成功／忠誠變化公式尚未校準，本次不修改武將狀態。',
+  assassinate:'暗殺：對象條件與成功判定尚未校準，本次不修改武將狀態。',
+  fire:'火計：目標條件、成功判定與金／米損失公式尚未校準，本次不修改數值。',
+  borrow:'借款：已確認需要同盟關係，但借款額與債務規則尚未校準，本次不修改金。',
+  repay:'還款：已確認屬同盟債務流程，但償還額與債務規則尚未校準，本次不修改金。',
+  recruit:'徵兵：兵源、成本與兵數公式尚未校準，本次不修改兵／金／米。',
+  weapons:'武器：品項、價格與能力效果尚未校準，本次不修改數值。',
+  defense:'防衛：投入資源與防衛效果公式尚未校準，本次不修改數值。',
+  train:'訓練：已確認成本與兵力相關且影響士氣，但精確公式尚未校準，本次不修改數值。',
+})
+
 const openingRosters = (year) => year === 189
   ? Object.fromEntries(ORIGINAL_189_RULERS.map((item) => [item.id, {
       ruler: item.ruler,
@@ -48,11 +64,29 @@ export class GameStore {
   inspectionCategoryForActive(){this.assertState();return this.state.inspectionCategories?.[this.humanFaction]??null}
   lockInspectionCategory(category){this.assertState();if(this.mode!=='inspection')return false;if(!this.state.inspectionCategories)this.state.inspectionCategories={};const current=this.state.inspectionCategories[this.humanFaction];if(current&&current!==category)return false;this.state.inspectionCategories[this.humanFaction]=category;this.save();return true}
   setTaxRate(cityId,rate){this.assertState();const city=this.state.cities[cityId];if(!city||city.owner!==this.humanFaction)throw new Error('只能設定本國城池稅率。');if(!isTaxRate(rate))throw new RangeError('稅率必須是 0 到 99 的整數。');city.taxRate=rate;this.addLog(`${CITY_BY_ID[cityId]?.name??cityId} 稅率設定為 ${rate}%。`);this.save();return rate}
-  // Menu hierarchy is evidence-backed in inspection-command-parity.js. The
-  // numerical effects below are still prototype vertical-slice rules unless a
-  // future evidence-specific module explicitly replaces them. Do not treat these
-  // fixed costs/increments as original-game formulas.
-  executeInspection(command,cityId){this.assertState();const city=this.state.cities[cityId];if(!city||city.owner!==this.humanFaction)return'只能向本國城池下令。';let result='';switch(command){case'develop':if(city.gold<80)return'金不足。';city.gold-=80;city.development=clamp(city.development+35,0,999);result='開發完成，產值提高。';break;case'transfer':result='調動：選擇武將與目的城。';break;case'intel':result=`情報 兵${city.troops} 金${city.gold} 米${city.food} 統治${city.rule}`;break;case'welfare':if(city.gold<60)return'金不足。';city.gold-=60;city.rule=clamp(city.rule+12,0,200);result='福利完成，統治力提高。';break;case'appoint':result='任命：等待武將資料表校準。';break;case'tax':result='稅率請由設定畫面調整。';break;case'educate':if(city.gold<70)return'金不足。';city.gold-=70;city.development=clamp(city.development+15,0,999);result='教育完成。';break;case'transport':result='運輸：等待輸送隊與截糧規則校準。';break;case'ally':result='已派使者提出同盟。';break;case'alienate':result='已派使者執行離間。';break;case'assassinate':result='已派刺客。';break;case'fire':result='火計執行中。';break;case'borrow':city.gold+=300;result='借款成功。';break;case'repay':if(city.gold<200)return'金不足。';city.gold-=200;result='已償還借款。';break;case'recruit':{const n=Math.min(1500,Math.floor(city.food*.55));if(n<200)return'米不足。';city.food-=Math.floor(n*.4);city.troops+=n;result=`徵兵 ${n}`;break}case'weapons':if(city.gold<120)return'金不足。';city.gold-=120;city.training=clamp(city.training+8,0,100);result='購入武器，軍備提高。';break;case'talent':result='人材搜索：等待武將表校準。';break;case'defense':if(city.gold<90)return'金不足。';city.gold-=90;city.defense=clamp(city.defense+10,0,100);result='防衛提高。';break;case'train':if(city.food<100)return'米不足。';city.food-=100;city.training=clamp(city.training+8,0,100);result='訓練完成。';break;default:result='此命令尚未校準。'}this.addLog(result);this.save();return result}
+  // Menu hierarchy is evidence-backed in inspection-command-parity.js.
+  // Commands whose numerical effect is still unverified must never mutate game
+  // state. Each effect is re-enabled only through an evidence-specific module.
+  executeInspection(command,cityId){
+    this.assertState()
+    const city=this.state.cities[cityId]
+    if(!city||city.owner!==this.humanFaction)return'只能向本國城池下令。'
+    let result=UNVERIFIED_INSPECTION_EFFECT_MESSAGES[command]??''
+    if(!result){
+      switch(command){
+        case'transfer':result='調動：選擇武將與目的城。';break
+        case'intel':result='情報請由四十國狀態畫面查看。';break
+        case'appoint':result='任命：等待武將城市配屬與官職條件校準。';break
+        case'tax':result='稅率請由設定畫面調整。';break
+        case'transport':result='運輸：等待己方城市輸送與截糧規則校準。';break
+        case'talent':result='人材：等待搜索條件與武將出現規則校準。';break
+        default:result='此命令尚未校準。'
+      }
+    }
+    this.addLog(result)
+    this.save()
+    return result
+  }
   planMarch(from,target){this.assertState();if(this.mode!=='march')throw new Error('偶數月才能行軍。');const fromDef=CITY_BY_ID[from];if(!fromDef?.neighbors.includes(target))throw new Error('目前路線校準僅支援相鄰地點。');const src=this.state.cities[from],dst=this.state.cities[target];if(src.owner!==this.humanFaction)throw new Error('必須從本國城池出發。');const troops=Math.min(3500,Math.max(800,Math.floor(src.troops*.38)));if(src.troops-troops<800)return null;src.troops-=troops;if(dst.owner===src.owner){dst.troops+=troops;this.addLog(`${CITY_BY_ID[from].name} → ${CITY_BY_ID[target].name} 調兵${troops}`);this.finishCurrentTurn();return null}this.pendingConflict={from,target,attacker:src.owner,defender:dst.owner,attackerTroops:troops,defenderTroops:dst.troops};this.addLog(`${CITY_BY_ID[from].name}軍接近${CITY_BY_ID[target].name}`);this.save();return this.pendingConflict}
   resolveConflict(win){this.assertState();const c=this.pendingConflict;if(!c)return;const src=this.state.cities[c.from],dst=this.state.cities[c.target];if(win){dst.owner=c.attacker;dst.troops=Math.max(600,Math.floor(c.attackerTroops*.68));this.addLog(`${CITY_BY_ID[c.target].name}陷落。`)}else{src.troops+=Math.max(300,Math.floor(c.attackerTroops*.3));dst.troops=Math.max(500,Math.floor(dst.troops*.84));this.addLog(`攻打${CITY_BY_ID[c.target].name}失敗。`)}this.pendingConflict=null;this.finishCurrentTurn()}
   finishCurrentTurn(){this.assertState();const previousMode=this.mode,previousFaction=this.humanFaction;if(!this.isLastHumanTurn){this.state.activeHumanIndex+=1;this.addLog(`${this.state.year}年${this.state.month}月：輪到 ${this.humanFaction}。`);this.save();return{monthAdvanced:false,previousMode,previousFaction,nextFaction:this.humanFaction}}this.state.activeHumanIndex=0;this.state.month+=1;if(this.state.month>12){this.state.month=1;this.state.year+=1}this.state.inspectionCategories={};this.addLog(`${this.state.year}年${this.state.month}月 ${this.mode==='inspection'?'視察情況':'行軍'}`);this.save();return{monthAdvanced:true,previousMode,previousFaction,nextFaction:this.humanFaction}}

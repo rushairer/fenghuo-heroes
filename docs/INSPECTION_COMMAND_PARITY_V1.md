@@ -91,15 +91,40 @@ a fake city action.
 
 Menu presence and hierarchy are evidence-backed. Most command **formulas are not**.
 
-At the time of this document, `GameStore.executeInspection()` still contains several
-prototype effects created to keep the vertical slice playable (for example fixed gold
-costs and fixed development/training increments). Those numbers are engineering
-placeholders, not parity facts.
+The old vertical slice once contained fixed placeholder effects such as fixed gold
+costs, fixed development/training increments, a fixed +300 loan and a food-ratio
+recruitment formula. Those prototype mutations are now retired. A command whose
+`effectEvidence` remains `unverified-formula` must not change city resources,
+troops, governance, defense, training, diplomacy or officer state.
+
+The only numerical/configuration behavior that may mutate state is behavior already
+moved into an evidence-specific module (for example the persistent 0-99 tax-rate
+configuration). Settlement formulas remain separate and unimplemented until verified.
+
+### Qualitative evidence already useful for the next slices
+
+Chinese-ROM player documentation gives several workflow-level facts that are useful
+without pretending they are exact formulas:
+
+- 開發 uses an executing officer and a user-chosen money investment; player reports
+  associate better results with higher intelligence.
+- 福利 uses an executing officer and a money investment; player reports associate
+  the command with governance/unification improvement and officer virtue.
+- 教育 targets non-ruler officers and accepts a money investment; reports describe
+  loyalty/virtue effects, including a known 1-gold edge case.
+- 借款 / 還款 require an alliance relationship.
+- 訓練 cost is related to the soldiers carried by the trained officer and affects
+  morale; the exact cost/result formula is not yet verified.
+- 運輸 is an own-city-to-own-city resource workflow and may create an interceptable
+  transport unit on the march map.
+
+These are **workflow clues**, not permission to invent numbers.
 
 Rules for later work:
 
 - keep menu structure evidence separate from formula evidence;
-- replace prototype effects only from manual/ROM/emulator evidence;
+- implement input/target/amount state machines before numerical effects when only the
+  workflow is known;
+- replace blocked effects only from manual/ROM/emulator evidence;
 - never infer exact formulas from another Three Kingdoms title;
-- never promote a prototype number to a parity document merely because it feels
-  plausible.
+- never promote a community heuristic or prototype number to a parity fact.
