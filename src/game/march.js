@@ -222,7 +222,7 @@ export function cancelSiegeFromArmy(store) {
   const army = ensureMarchState(store).find((item) => item.id === conflict.armyId)
   if (army) army.status = 'waiting'
   store.pendingConflict = null
-  store.addLog(`${CITY_BY_ID[conflict.target]?.name ?? conflict.target}攻城を中止。`)
+  store.addLog(`${CITY_BY_ID[conflict.target]?.name ?? conflict.target}中止攻城。`)
   store.save()
   return true
 }
