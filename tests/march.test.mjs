@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
-import { advanceMarchArmies,beginSiegeFromArmy,dailyFoodFor,ensureMarchState,queueMarch,rerouteArmy } from '../src/game/march.js'
+import { advanceMarchArmies,beginSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,friendlyArmyStack,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { cityWorldPoint } from '../src/game/world.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
@@ -101,4 +101,35 @@ test('siege conflict inherits the selected attacking officers',()=>{
   const conflict=beginSiegeFromArmy(s,army.id,'xinye')
   assert.deepEqual(conflict.attackerOfficers,['曹操','夏候惇'])
   assert.equal(ensureMarchState(s).length,0)
+})
+
+
+test('friendly stack detection requires armies to share the same map point',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const a=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:500,food:100,gold:0})
+  const b=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y+8}],troops:500,food:100,gold:0})
+  assert.equal(friendlyArmyStack(s,a.id).length,2)
+  b.x+=8
+  assert.equal(friendlyArmyStack(s,a.id).length,1)
+})
+
+test('enemy attack proximity is one route-step engineering baseline and excludes friendly armies',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const own=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:500,food:100,gold:0})
+  s.state.armies.push({
+    id:'enemy-near',faction:'liu',from:'xinye',x:start.x+8,y:start.y,
+    route:[{x:start.x+8,y:start.y}],routeIndex:0,troops:500,food:100,gold:0,
+    officerCount:1,officerNames:['劉備'],dailyFood:6,starving:false,status:'waiting',
+  })
+  s.state.armies.push({
+    id:'enemy-far',faction:'liu',from:'xinye',x:start.x+16,y:start.y,
+    route:[{x:start.x+16,y:start.y}],routeIndex:0,troops:500,food:100,gold:0,
+    officerCount:1,officerNames:['關羽'],dailyFood:6,starving:false,status:'waiting',
+  })
+  assert.equal(enemyArmyNearArmy(s,own.id)?.id,'enemy-near')
+  s.state.armies.find((army)=>army.id==='enemy-near').x=start.x
+  s.state.armies.find((army)=>army.id==='enemy-near').y=start.y
+  assert.equal(enemyArmyNearArmy(s,own.id),null)
 })
