@@ -80,37 +80,77 @@ export const INSPECTION_COMMAND_SCHEMA = Object.freeze({
     action('recruit','徵兵'),
     action('weapons','武器'),
     intel,
-    action('talent','人材'),
+    Object.freeze({
+      id:'talent',
+      label:'人材',
+      kind:'submenu',
+      structureEvidence:'zh-rom-community',
+      effectEvidence:'n/a',
+      children:Object.freeze([
+        action('talent-search','探尋'),
+        Object.freeze({
+          id:'talent-select',
+          label:'選拔',
+          kind:'submenu',
+          structureEvidence:'zh-rom-community',
+          effectEvidence:'n/a',
+          children:Object.freeze([
+            action('talent-persuade','說服'),
+            action('talent-gift','貢品'),
+          ]),
+        }),
+      ]),
+    }),
     action('defense','防衛'),
     action('train','訓練'),
     end,
   ]),
 })
 
-export function inspectionCommandItems(category, submenuId=null) {
-  const items=INSPECTION_COMMAND_SCHEMA[category]??Object.freeze([])
-  if(!submenuId)return items
-  const submenu=items.find((item)=>item.id===submenuId&&item.kind==='submenu')
-  return submenu?.children??Object.freeze([])
+const EMPTY_ITEMS=Object.freeze([])
+
+function normalizeSubmenuPath(submenuPath=null) {
+  if(Array.isArray(submenuPath))return submenuPath.filter(Boolean)
+  return submenuPath?[submenuPath]:[]
 }
 
-export function inspectionCommandPath(category, submenuId=null) {
-  const categoryLabel=INSPECTION_CATEGORY_SCHEMA.find((item)=>item.id===category)?.label??category
-  if(!submenuId)return Object.freeze([categoryLabel])
-  const submenu=(INSPECTION_COMMAND_SCHEMA[category]??[]).find((item)=>item.id===submenuId)
-  return Object.freeze([categoryLabel,submenu?.label??submenuId])
+export function inspectionCommandItems(category, submenuPath=null) {
+  let items=INSPECTION_COMMAND_SCHEMA[category]??EMPTY_ITEMS
+  for(const submenuId of normalizeSubmenuPath(submenuPath)){
+    const submenu=items.find((item)=>item.id===submenuId&&item.kind==='submenu')
+    if(!submenu)return EMPTY_ITEMS
+    items=submenu.children??EMPTY_ITEMS
+  }
+  return items
+}
+
+export function inspectionCommandPath(category, submenuPath=null) {
+  const labels=[INSPECTION_CATEGORY_SCHEMA.find((item)=>item.id===category)?.label??category]
+  let items=INSPECTION_COMMAND_SCHEMA[category]??EMPTY_ITEMS
+  for(const submenuId of normalizeSubmenuPath(submenuPath)){
+    const submenu=items.find((item)=>item.id===submenuId&&item.kind==='submenu')
+    if(!submenu){
+      labels.push(submenuId)
+      break
+    }
+    labels.push(submenu.label)
+    items=submenu.children??EMPTY_ITEMS
+  }
+  return Object.freeze(labels)
 }
 
 export function inspectionCommandById(category,id) {
-  const top=INSPECTION_COMMAND_SCHEMA[category]??[]
-  for(const item of top){
-    if(item.id===id)return item
-    if(item.kind==='submenu'){
-      const child=item.children.find((candidate)=>candidate.id===id)
-      if(child)return child
+  const visit=(items)=>{
+    for(const item of items){
+      if(item.id===id)return item
+      if(item.kind==='submenu'){
+        const found=visit(item.children??EMPTY_ITEMS)
+        if(found)return found
+      }
     }
+    return null
   }
-  return null
+  return visit(INSPECTION_COMMAND_SCHEMA[category]??EMPTY_ITEMS)
 }
 
 export function isInspectionConfirmButton(button) {
