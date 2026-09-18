@@ -148,7 +148,9 @@ test('enemy attack proximity is one route-step engineering baseline and excludes
 test('manual-confirmed march menu keeps the documented command order and conditions',()=>{
   assert.equal(MARCH_COMMAND_EVIDENCE.conditionSemantics,'manual-confirmed')
   assert.equal(MARCH_COMMAND_EVIDENCE.source,'jp-manual-pages-24-25')
-  assert.equal(MARCH_COMMAND_EVIDENCE.adjacencyProjection,'provisional-8px-route-step')
+  assert.equal(MARCH_COMMAND_EVIDENCE.enemyArmyAdjacencyProjection,'provisional-8px-route-step')
+  assert.equal(MARCH_COMMAND_EVIDENCE.enemyCityAdjacencyProjection,'provisional-24px-city-tolerance')
+  assert.equal(MARCH_COMMAND_EVIDENCE.splitGroupingProjection,'same-map-point-engineering')
   assert.equal(MARCH_COMMAND_EVIDENCE.villageProjection,'unimplemented')
   assert.deepEqual(MARCH_COMMAND_ORDER,['move','split','supply','attack','siege','end'])
 
