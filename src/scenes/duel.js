@@ -17,7 +17,7 @@ export class DuelScene{
 
   update(dt,input){
     if(this.modeSelect){this.updateModeSelect(input);return}
-    if(this.result){this.timer+=dt;if(this.timer>950)this.app.go('strategy');return}
+    if(this.result){this.timer+=dt;if(this.timer>950)this.app.go('siege');return}
     this.attackCd=Math.max(0,this.attackCd-dt)
     this.enemyCd=Math.max(0,this.enemyCd-dt)
     this.enemyRage=Math.max(0,this.enemyRage-dt)
@@ -124,7 +124,11 @@ export class DuelScene{
     this.message='我方退卻。';this.finish(false)
   }
 
-  finish(win){if(this.result)return;this.result=win?'勝':'敗';this.app.store.resolveConflict(win)}
+  finish(win){
+    if(this.result)return
+    this.result=win?'勝':'敗'
+    this.message='一騎討ち的戰略結果尚未校準；本次不修改城池、兵力或行軍狀態。'
+  }
 
   draw(){
     const r=this.app.r,c=r.ctx

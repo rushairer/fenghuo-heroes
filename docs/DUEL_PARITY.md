@@ -20,7 +20,8 @@ Implemented:
 - manual / auto selection before the duel starts;
 - manual A/B/C control structure;
 - command menu structure;
-- deterministic auto-control path so auto mode is functional and testable.
+- deterministic auto-control path so auto mode is functional and testable;
+- duel QA is isolated from strategic state: local win/loss never changes city ownership, army strength or turn progression.
 
 Still provisional:
 
@@ -32,3 +33,5 @@ Still provisional:
 - exact scrolling/background art and timing.
 
 Those values must not be described as original-game values until measured from real gameplay or supported by the manual.
+
+The previous generic `GameStore.resolveConflict()` path used arbitrary troop multipliers and is retired. A future duel may affect a larger field battle only after the original consequence rules are evidence-backed.
