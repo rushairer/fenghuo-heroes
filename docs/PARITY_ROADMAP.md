@@ -45,7 +45,8 @@ Before a screen is marked parity-complete it needs:
 - [x] Original command vocabulary restored.
 - [x] Odd-month inspection / even-month march state machine.
 - [ ] Exact 40-city coordinates and route network from the Chinese manual map.
-- [ ] Villages, supply routes and transport units.
+- [x] Transport destination targeting and original three fixed payload choices.
+- [ ] Transport-unit movement, interception, villages and supply routes.
 - [ ] Exact status panels and page-switch timing.
 
 ### Gate C — March / battle
