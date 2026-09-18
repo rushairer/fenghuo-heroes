@@ -1,7 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
-import { advanceMarchArmies,armyAt,beginSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,friendlyArmyStack,queueMarch,rerouteArmy } from '../game/march.js'
+import { advanceMarchArmies,armyAt,beginSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../game/march.js'
 import { cameraFor,cityWorldPoint,isVisible,toScreen } from '../game/world.js'
 import { StrategyScene as BaseStrategyScene } from './strategy.js'
 const routeStep=8
@@ -15,14 +15,17 @@ export class StrategyScene extends BaseStrategyScene{
   beginArmyRoute(army){this.marchArmyId=army.id;this.marchFrom=army.from;this.marchRoute=[{x:army.x,y:army.y}];this.app.store.setCursor(army.x,army.y);this.view='march-route';this.app.audio.confirm()}
   updateMarchRoute(b){if(['LEFT','RIGHT','UP','DOWN'].includes(b)){const dx=b==='LEFT'?-1:b==='RIGHT'?1:0,dy=b==='UP'?-1:b==='DOWN'?1:0,s=this.app.store.state;this.app.store.setCursor(s.cursor.x+dx*routeStep,s.cursor.y+dy*routeStep);const p=this.app.store.state.cursor,last=this.marchRoute[this.marchRoute.length-1];if(!last||last.x!==p.x||last.y!==p.y)this.marchRoute.push({x:p.x,y:p.y});this.app.audio.move();return}if(b==='B'){if(this.marchRoute.length>1){this.marchRoute.pop();const p=this.marchRoute[this.marchRoute.length-1];this.app.store.setCursor(p.x,p.y)}else this.view=this.marchArmyId?'army-menu':'march-compose';this.app.audio.cancel();return}if(b!=='C'&&b!=='START')return;if(this.marchRoute.length<2){this.app.audio.alert();return}try{if(this.marchArmyId)rerouteArmy(this.app.store,this.marchArmyId,this.marchRoute);else queueMarch(this.app.store,{from:this.marchFrom,route:this.marchRoute,troops:this.marchTroops,food:this.marchFood,gold:this.marchGold,officerCount:1});this.message='行軍路線已決定。部隊將在本月命令結束後移動。';this.marchArmyId=null;this.marchRoute=[];this.view='message';this.app.audio.confirm()}catch(error){this.message=error instanceof Error?error.message:'行軍命令失敗。';this.view='message';this.app.audio.alert()}}
   armyMenuOptions(army){
-    const options=[{id:'move',label:'移動'}]
-    if(friendlyArmyStack(this.app.store,army.id).length>=2)options.push({id:'split',label:'分散'})
     const enemyArmy=enemyArmyNearArmy(this.app.store,army.id)
-    if(enemyArmy)options.push({id:'attack',label:'攻擊'})
     const enemyCity=enemyCityNearArmy(this.app.store,army.id)
-    if(enemyCity)options.push({id:'siege',label:`攻城 ${enemyCity.name}`})
-    options.push({id:'end',label:'結束'})
-    return options
+    return marchCommandOptions({
+      canSplit:friendlyArmyStack(this.app.store,army.id).length>=2,
+      // Manual: 補給 appears only after entering a village. Runtime village
+      // coordinates are still uncalibrated, so this remains false by design.
+      inVillage:false,
+      enemyArmyAdjacent:Boolean(enemyArmy),
+      enemyCityAdjacent:Boolean(enemyCity),
+      enemyCityName:enemyCity?.name??'',
+    })
   }
   updateArmyMenu(b){
     const army=ensureMarchState(this.app.store).find((item)=>item.id===this.marchArmyId)

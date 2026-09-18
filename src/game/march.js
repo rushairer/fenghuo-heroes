@@ -21,6 +21,38 @@ export function armyAt(store, x, y, tolerance = 10, faction = store.humanFaction
   ) ?? null
 }
 
+export const MARCH_COMMAND_EVIDENCE = Object.freeze({
+  source:'jp-manual-pages-24-25',
+  conditionSemantics:'manual-confirmed',
+  adjacencySemantics:'adjacent-on-original-map',
+  enemyArmyAdjacencyProjection:'provisional-8px-route-step',
+  enemyCityAdjacencyProjection:'provisional-24px-city-tolerance',
+  splitGroupingProjection:'same-map-point-engineering',
+  villageProjection:'unimplemented',
+})
+
+export const MARCH_COMMAND_ORDER = Object.freeze([
+  'move','split','supply','attack','siege','end',
+])
+
+export function marchCommandOptions({
+  canSplit=false,
+  inVillage=false,
+  enemyArmyAdjacent=false,
+  enemyCityAdjacent=false,
+  enemyCityName='',
+}={}) {
+  const options=[Object.freeze({id:'move',label:'移動'})]
+  if(canSplit)options.push(Object.freeze({id:'split',label:'分散'}))
+  if(inVillage)options.push(Object.freeze({id:'supply',label:'補給'}))
+  if(enemyArmyAdjacent)options.push(Object.freeze({id:'attack',label:'攻擊'}))
+  if(enemyCityAdjacent){
+    const suffix=enemyCityName?' '+enemyCityName:''
+    options.push(Object.freeze({id:'siege',label:'攻城'+suffix}))
+  }
+  options.push(Object.freeze({id:'end',label:'結束'}))
+  return Object.freeze(options)
+}
 export const MARCH_ADJACENCY_STEP = 8
 
 export function friendlyArmyStack(store, armyId) {
