@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
-import { advanceMarchArmies,beginSiegeFromArmy,cancelSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,friendlyArmyStack,queueMarch,rerouteArmy } from '../src/game/march.js'
+import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginSiegeFromArmy,cancelSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { cityWorldPoint } from '../src/game/world.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
@@ -142,4 +142,45 @@ test('enemy attack proximity is one route-step engineering baseline and excludes
   s.state.armies.find((army)=>army.id==='enemy-near').x=start.x
   s.state.armies.find((army)=>army.id==='enemy-near').y=start.y
   assert.equal(enemyArmyNearArmy(s,own.id),null)
+})
+
+
+test('manual-confirmed march menu keeps the documented command order and conditions',()=>{
+  assert.equal(MARCH_COMMAND_EVIDENCE.conditionSemantics,'manual-confirmed')
+  assert.equal(MARCH_COMMAND_EVIDENCE.source,'jp-manual-pages-24-25')
+  assert.equal(MARCH_COMMAND_EVIDENCE.adjacencyProjection,'provisional-8px-route-step')
+  assert.equal(MARCH_COMMAND_EVIDENCE.villageProjection,'unimplemented')
+  assert.deepEqual(MARCH_COMMAND_ORDER,['move','split','supply','attack','siege','end'])
+
+  assert.deepEqual(marchCommandOptions().map((item)=>item.id),['move','end'])
+  assert.deepEqual(
+    marchCommandOptions({canSplit:true}).map((item)=>item.id),
+    ['move','split','end'],
+  )
+  assert.deepEqual(
+    marchCommandOptions({inVillage:true}).map((item)=>item.id),
+    ['move','supply','end'],
+  )
+  assert.deepEqual(
+    marchCommandOptions({enemyArmyAdjacent:true}).map((item)=>item.id),
+    ['move','attack','end'],
+  )
+  assert.deepEqual(
+    marchCommandOptions({enemyCityAdjacent:true,enemyCityName:'新野'}).map((item)=>item.id),
+    ['move','siege','end'],
+  )
+  assert.equal(
+    marchCommandOptions({enemyCityAdjacent:true,enemyCityName:'新野'}).find((item)=>item.id==='siege')?.label,
+    '攻城 新野',
+  )
+  assert.deepEqual(
+    marchCommandOptions({
+      canSplit:true,
+      inVillage:true,
+      enemyArmyAdjacent:true,
+      enemyCityAdjacent:true,
+      enemyCityName:'新野',
+    }).map((item)=>item.id),
+    ['move','split','supply','attack','siege','end'],
+  )
 })
