@@ -30,6 +30,35 @@ test('base strategy root B only cancels and never navigates',()=>{
   assert.deepEqual(rootBEvents(BaseStrategyScene,'survey'),['cancel'])
 })
 
+
+test('base strategy cannot re-enter the retired adjacent-city march flow',()=>{
+  const events=[]
+  const scene=Object.create(BaseStrategyScene.prototype)
+  scene.stage='march'
+  scene.view='map'
+  scene.message=''
+  scene.infoTab=0
+  scene.infoReturnView='map'
+  scene.infoCommandBrowse=false
+  scene.app={
+    store:{
+      state:{cursor:{x:10,y:10},cities:{home:{owner:'cao'}}},
+      humanFaction:'cao',
+      cityAt(){return{id:'home'}},
+      planMarch(){events.push('legacy-planMarch')},
+    },
+    audio:{
+      confirm(){events.push('confirm')},
+      alert(){events.push('alert')},
+      cancel(){events.push('cancel')},
+    },
+  }
+  scene.updateMap('C')
+  assert.equal(scene.view,'message')
+  assert.match(scene.message,/自由路線部隊狀態機/)
+  assert.deepEqual(events,['alert'])
+})
+
 test('march strategy root B only cancels and never navigates',()=>{
   assert.deepEqual(rootBEvents(MarchStrategyScene,'march'),['cancel'])
 })
