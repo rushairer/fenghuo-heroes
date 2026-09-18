@@ -83,3 +83,10 @@ test('inspection menus use C as the original confirm button',()=>{
   assert.equal(isInspectionConfirmButton('C'),true)
   for(const button of ['A','B','START','UP','DOWN'])assert.equal(isInspectionConfirmButton(button),false)
 })
+
+
+test('tax is a persistent configuration command rather than an immediate prototype effect',()=>{
+  const tax=inspectionCommandById('domestic','tax')
+  assert.equal(tax.kind,'configuration')
+  assert.equal(tax.effectEvidence,'persistent-rate-only; settlement-formula-unverified')
+})
