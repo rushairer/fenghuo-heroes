@@ -28,6 +28,9 @@ Chinese-ROM cross-checks:
 3. 情報
 4. 福利
 5. 任命
+   - 太守
+   - 軍師
+   - 官職
 6. 稅率
 7. 教育
 8. 運輸
@@ -47,6 +50,12 @@ Chinese-ROM cross-checks:
 
 The important structural correction is that 離間 / 暗殺 / 火計 are **not** three
 top-level diplomacy commands. They are children of 計策.
+
+
+Chinese-ROM player documentation also records 任命 as a second-level structure with
+太守 / 軍師 / 官職 panels. Runtime now restores those three entries, but appointment
+eligibility and effects remain blocked until officer city assignment, ability
+thresholds and the office table are verified.
 
 ### 軍備
 
