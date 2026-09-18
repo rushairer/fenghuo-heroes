@@ -1,7 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { GameStore } from '../src/game/store.js'
-import { TRANSPORT_EVIDENCE, transportEligibleDestinations, transportTargetStatus } from '../src/game/transport-parity.js'
+import {
+  TRANSPORT_EVIDENCE,
+  TRANSPORT_LOAD_OPTIONS,
+  transportEligibleDestinations,
+  transportLoadStatus,
+  transportTargetStatus,
+} from '../src/game/transport-parity.js'
 
 class MemoryStorage{
   constructor(){this.m=new Map()}
@@ -10,10 +16,18 @@ class MemoryStorage{
   removeItem(k){this.m.delete(k)}
 }
 
-test('transport evidence records the reported 20000 value without pretending its capacity semantics are settled',()=>{
+test('transport evidence locks the original three fixed payload choices',()=>{
   assert.equal(TRANSPORT_EVIDENCE.reportedMaximum,20000)
-  assert.equal(TRANSPORT_EVIDENCE.capacityInterpretation,'ambiguous-total-vs-per-resource')
-  assert.deepEqual(TRANSPORT_EVIDENCE.resources,['gold','food'])
+  assert.equal(TRANSPORT_EVIDENCE.capacityInterpretation,'10000-each-when-both-selected')
+  assert.equal(TRANSPORT_EVIDENCE.movementParity,'unverified')
+  assert.deepEqual(
+    TRANSPORT_LOAD_OPTIONS.map(({id,gold,food})=>({id,gold,food})),
+    [
+      {id:'gold',gold:10000,food:0},
+      {id:'food',gold:0,food:10000},
+      {id:'both',gold:10000,food:10000},
+    ],
+  )
   assert.equal(TRANSPORT_EVIDENCE.interception,true)
 })
 
@@ -31,6 +45,27 @@ test('transport destination must be another city owned by the active faction',()
   assert.equal(transportTargetStatus(s,source,source).ok,false)
   const enemy=Object.values(s.state.cities).find((city)=>city.owner!=='cao')?.id
   assert.equal(transportTargetStatus(s,source,enemy).ok,false)
+})
+
+test('transport payload availability follows source gold and food without mutating state',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({scenarioYear:189,humanFactions:['cao']})
+  const source=Object.values(s.state.cities).find((city)=>city.owner==='cao').id
+  s.state.cities[source].gold=20000
+  s.state.cities[source].food=20000
+  const before=structuredClone(s.state.cities)
+  assert.equal(transportLoadStatus(s,source,'gold').ok,true)
+  assert.equal(transportLoadStatus(s,source,'food').ok,true)
+  assert.equal(transportLoadStatus(s,source,'both').ok,true)
+  assert.deepEqual(s.state.cities,before)
+
+  s.state.cities[source].gold=9999
+  assert.equal(transportLoadStatus(s,source,'gold').ok,false)
+  assert.match(transportLoadStatus(s,source,'gold').reason,/金不足/)
+  s.state.cities[source].gold=20000
+  s.state.cities[source].food=9999
+  assert.equal(transportLoadStatus(s,source,'both').ok,false)
+  assert.match(transportLoadStatus(s,source,'both').reason,/米不足/)
 })
 
 test('transport target discovery does not move gold food or other city state',()=>{

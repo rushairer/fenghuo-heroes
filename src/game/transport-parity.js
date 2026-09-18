@@ -1,13 +1,36 @@
 import { CITIES, CITY_BY_ID } from './data.js'
 
+export const TRANSPORT_LOAD_UNIT = 10000
+export const TRANSPORT_LOAD_OPTIONS = Object.freeze([
+  Object.freeze({ id:'gold', label:'金1萬', gold:TRANSPORT_LOAD_UNIT, food:0 }),
+  Object.freeze({ id:'food', label:'米1萬', gold:0, food:TRANSPORT_LOAD_UNIT }),
+  Object.freeze({ id:'both', label:'金＋米', gold:TRANSPORT_LOAD_UNIT, food:TRANSPORT_LOAD_UNIT }),
+])
+
 export const TRANSPORT_EVIDENCE = Object.freeze({
-  source: 'zh-rom-community',
+  sources: Object.freeze(['jp-manual-page-21','zh-player-report']),
   resources: Object.freeze(['gold','food']),
   reportedMaximum: 20000,
-  capacityInterpretation: 'ambiguous-total-vs-per-resource',
+  capacityInterpretation: '10000-each-when-both-selected',
   deliveryModel: 'march-map-transport-unit',
   interception: true,
+  movementParity: 'unverified',
 })
+
+export function transportLoadOption(loadId) {
+  return TRANSPORT_LOAD_OPTIONS.find((option)=>option.id===loadId)??null
+}
+
+export function transportLoadStatus(store, sourceId, loadId) {
+  if(!store?.state?.cities||!CITY_BY_ID[sourceId])return Object.freeze({ok:false,reason:'來源城市不存在。'})
+  const source=store.state.cities[sourceId]
+  if(!source||source.owner!==store.humanFaction)return Object.freeze({ok:false,reason:'只能從本國城市發出運輸。'})
+  const load=transportLoadOption(loadId)
+  if(!load)return Object.freeze({ok:false,reason:'請選擇運輸物資。'})
+  if(source.gold<load.gold)return Object.freeze({ok:false,reason:`金不足：需要${load.gold}。`})
+  if(source.food<load.food)return Object.freeze({ok:false,reason:`米不足：需要${load.food}。`})
+  return Object.freeze({ok:true,reason:'',load})
+}
 
 export function transportEligibleDestinations(store, sourceId) {
   if(!store?.state?.cities||!sourceId)return Object.freeze([])
