@@ -25,7 +25,9 @@ export const MARCH_COMMAND_EVIDENCE = Object.freeze({
   source:'jp-manual-pages-24-25',
   conditionSemantics:'manual-confirmed',
   adjacencySemantics:'adjacent-on-original-map',
-  adjacencyProjection:'provisional-8px-route-step',
+  enemyArmyAdjacencyProjection:'provisional-8px-route-step',
+  enemyCityAdjacencyProjection:'provisional-24px-city-tolerance',
+  splitGroupingProjection:'same-map-point-engineering',
   villageProjection:'unimplemented',
 })
 
