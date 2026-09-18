@@ -83,6 +83,16 @@ Repeated Chinese-ROM gameplay references identify these seven as player-selectab
 
 They identify 公孫瓚、孔融、陶謙、袁術、王朗、張魯、劉焉 as AI-only for this version/start. Because the Japanese manual says eight rulers for its 189 scenario, the code labels these flags `zhCommunitySelectable` instead of pretending they apply to every edition.
 
+## Confirmed 189 starting-city evidence
+
+Starting-city ownership is migrated only when it is directly supported. The current sparse evidence set contains:
+
+- 劉備 → 代縣 — observed original-game play record.
+
+This is stored in `ZH_189_START_CITY_EVIDENCE`. It is not applied to the playable scaffold yet, because the scaffold does not even contain the target 代縣 node. Applying it by renaming or moving an unrelated node would create false parity.
+
+The remaining lords stay unset until independently verified.
+
 ## 189 starting retinues
 
 The same original-game research lineage gives initial subordinate lists for fourteen 189 lords. Those lists are preserved in `ORIGINAL_189_RULERS`. They may be carried into runtime state because the roster transcription is independently useful, but city ownership, officer attributes and later-scenario placement remain unverified.
