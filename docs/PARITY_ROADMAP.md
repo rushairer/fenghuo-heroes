@@ -46,7 +46,8 @@ Before a screen is marked parity-complete it needs:
 - [x] Odd-month inspection / even-month march state machine.
 - [ ] Exact 40-city coordinates and route network from the Chinese manual map.
 - [x] Transport destination targeting and original three fixed payload choices.
-- [ ] Transport-unit movement, interception, villages and supply routes.
+- [x] Transport interception trigger is modeled as same-cell overlap, distinct from enemy-army adjacency.
+- [ ] Transport-unit route/speed/delivery lifecycle, villages and supply routes.
 - [ ] Exact status panels and page-switch timing.
 
 ### Gate C — March / battle
