@@ -66,6 +66,32 @@ test('military command structure keeps the documented six commands plus end',()=
   )
 })
 
+test('talent restores nested search and selection recruitment hierarchy',()=>{
+  const talent=inspectionCommandById('military','talent')
+  assert.equal(talent.kind,'submenu')
+  assert.deepEqual(
+    inspectionCommandItems('military',['talent']).map(({id,label,kind})=>[id,label,kind]),
+    [['talent-search','探尋','action'],['talent-select','選拔','submenu']],
+  )
+  assert.deepEqual(
+    inspectionCommandItems('military',['talent','talent-select']).map(({id,label})=>[id,label]),
+    [['talent-persuade','說服'],['talent-gift','貢品']],
+  )
+  assert.deepEqual(
+    inspectionCommandPath('military',['talent','talent-select']),
+    ['軍備','人材','選拔'],
+  )
+  assert.equal(inspectionCommandById('military','talent-gift').label,'貢品')
+})
+
+test('submenu helpers retain backward compatibility for one-level string paths',()=>{
+  assert.deepEqual(
+    inspectionCommandItems('diplomacy','strategy').map(({id})=>id),
+    ['alienate','assassinate','fire'],
+  )
+  assert.deepEqual(inspectionCommandPath('domestic','appoint'),['內政','任命'])
+})
+
 test('menu evidence does not pretend prototype effect formulas are verified',()=>{
   for(const category of ['domestic','diplomacy','military']){
     const visit=(items)=>{
