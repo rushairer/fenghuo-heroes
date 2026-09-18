@@ -25,8 +25,9 @@ export class StrategyScene{
     if(b==='B'){
       if(this.commandSubmenu.length){
         const submenuId=this.commandSubmenu[this.commandSubmenu.length-1]
-        this.commandSubmenu=[]
-        const parent=inspectionCommandItems(this.category)
+        const parentPath=this.commandSubmenu.slice(0,-1)
+        const parent=inspectionCommandItems(this.category,parentPath)
+        this.commandSubmenu=parentPath
         this.menuIndex=Math.max(0,parent.findIndex((item)=>item.id===submenuId))
       }else{
         this.view='target'
