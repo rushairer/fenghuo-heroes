@@ -59,3 +59,22 @@ test('legacy generic tax command no longer performs the removed instant money an
     before,
   )
 })
+
+
+test('development no longer applies the removed fixed one-shot prototype formula',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['cao']})
+  const city=s.state.cities.xuchang
+  const before={gold:city.gold,development:city.development}
+  assert.match(s.executeInspection('develop','xuchang'),/擔當武將.*每月預算/)
+  assert.deepEqual({gold:city.gold,development:city.development},before)
+})
+
+test('welfare no longer applies the removed fixed one-shot prototype formula',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['cao']})
+  const city=s.state.cities.xuchang
+  const before={gold:city.gold,rule:city.rule}
+  assert.match(s.executeInspection('welfare','xuchang'),/擔當武將.*每月預算/)
+  assert.deepEqual({gold:city.gold,rule:city.rule},before)
+})
