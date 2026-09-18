@@ -90,3 +90,15 @@ test('tax is a persistent configuration command rather than an immediate prototy
   assert.equal(tax.kind,'configuration')
   assert.equal(tax.effectEvidence,'persistent-rate-only; settlement-formula-unverified')
 })
+
+
+test('development and welfare are continuous officer-plus-budget programs',()=>{
+  for(const [id,target] of [['develop','industry'],['welfare','rule']]){
+    const item=inspectionCommandById('domestic',id)
+    assert.equal(item.kind,'program')
+    assert.equal(item.target,target)
+    assert.equal(item.continuous,true)
+    assert.deepEqual(item.requires,['officer','monthlyBudget'])
+    assert.equal(item.effectEvidence,'continuous-program-structure-only; formula-unverified')
+  }
+})
