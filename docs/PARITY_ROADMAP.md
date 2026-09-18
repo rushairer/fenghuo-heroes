@@ -38,13 +38,15 @@ Before a screen is marked parity-complete it needs:
 
 ### Gate B — Main screen / inspection
 
-- [x] 40-city map scaffold.
+- [x] 40-node runtime map scaffold, explicitly quarantined as non-canonical.
+- [x] Chinese-ROM canonical 40-city identity set is protected separately with an automated mismatch guard.
+- [ ] Replace runtime scaffold identities / coordinates / 189 ownership with verified Chinese-ROM map data.
 - [x] Free map cursor.
 - [x] Blank-map C opens domestic / diplomacy / military command.
 - [x] Category selection returns to map to choose an owned city.
 - [x] Original command vocabulary restored.
 - [x] Odd-month inspection / even-month march state machine.
-- [ ] Exact 40-city coordinates and route network from the Chinese manual map.
+- [ ] Exact 40-city coordinates, villages and spatial layout from original Chinese-ROM/manual evidence.
 - [x] Transport destination targeting and original three fixed payload choices.
 - [x] Transport interception trigger is modeled as same-cell overlap, distinct from enemy-army adjacency.
 - [ ] Transport-unit route/speed/delivery lifecycle, villages and supply routes.
