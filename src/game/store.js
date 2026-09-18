@@ -97,7 +97,10 @@ export class GameStore {
     this.assertState()
     throw new Error('舊版相鄰城市瞬移行軍已退休；請使用自由路線行軍狀態機。')
   }
-  resolveConflict(win){this.assertState();const c=this.pendingConflict;if(!c)return;const src=this.state.cities[c.from],dst=this.state.cities[c.target];if(win){dst.owner=c.attacker;dst.troops=Math.max(600,Math.floor(c.attackerTroops*.68));this.addLog(`${CITY_BY_ID[c.target].name}陷落。`)}else{src.troops+=Math.max(300,Math.floor(c.attackerTroops*.3));dst.troops=Math.max(500,Math.floor(dst.troops*.84));this.addLog(`攻打${CITY_BY_ID[c.target].name}失敗。`)}this.pendingConflict=null;this.finishCurrentTurn()}
+  resolveConflict(){
+    this.assertState()
+    throw new Error('舊版通用即時戰鬥結算已退休；戰鬥結果必須由校準後的野戰／攻城狀態機提交。')
+  }
   finishCurrentTurn(){this.assertState();const previousMode=this.mode,previousFaction=this.humanFaction;if(!this.isLastHumanTurn){this.state.activeHumanIndex+=1;this.addLog(`${this.state.year}年${this.state.month}月：輪到 ${this.humanFaction}。`);this.save();return{monthAdvanced:false,previousMode,previousFaction,nextFaction:this.humanFaction}}this.state.activeHumanIndex=0;this.state.month+=1;if(this.state.month>12){this.state.month=1;this.state.year+=1}this.state.inspectionCategories={};this.addLog(`${this.state.year}年${this.state.month}月 ${this.mode==='inspection'?'視察情況':'行軍'}`);this.save();return{monthAdvanced:true,previousMode,previousFaction,nextFaction:this.humanFaction}}
   advanceMonth(){this.assertState();this.state.activeHumanIndex=this.state.humanFactions.length-1;return this.finishCurrentTurn()}
   save(){if(this.state&&this.storage?.setItem)this.storage.setItem(SAVE_KEY,JSON.stringify(this.state))}
