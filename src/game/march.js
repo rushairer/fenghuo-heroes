@@ -21,6 +21,31 @@ export function armyAt(store, x, y, tolerance = 10, faction = store.humanFaction
   ) ?? null
 }
 
+export const MARCH_ADJACENCY_STEP = 8
+
+export function friendlyArmyStack(store, armyId) {
+  const armies = ensureMarchState(store)
+  const army = armies.find((item) => item.id === armyId)
+  if (!army) return Object.freeze([])
+  return Object.freeze(
+    armies.filter((item) =>
+      item.faction === army.faction && item.x === army.x && item.y === army.y
+    ),
+  )
+}
+
+export function enemyArmyNearArmy(store, armyId, tolerance = MARCH_ADJACENCY_STEP) {
+  const armies = ensureMarchState(store)
+  const army = armies.find((item) => item.id === armyId)
+  if (!army) return null
+  return armies.find((item) => {
+    if (item.id === army.id || item.faction === army.faction) return false
+    const dx = Math.abs(item.x - army.x)
+    const dy = Math.abs(item.y - army.y)
+    return Math.max(dx, dy) > 0 && Math.max(dx, dy) <= tolerance
+  }) ?? null
+}
+
 export function queueMarch(store, {
   from,
   route,
