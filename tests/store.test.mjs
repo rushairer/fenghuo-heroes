@@ -30,8 +30,26 @@ test('unverified diplomacy effects do not pretend success or mutate city state',
     assert.deepEqual(s.state.cities.xuchang,before,command)
   }
 })
-test('march creates enemy conflict after inspection turn',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['cao']});s.finishCurrentTurn();const c=s.planMarch('xuchang','xinye');assert.ok(c);assert.equal(c.target,'xinye')})
-test('resolving conflict finishes only the active human turn',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['cao','liu']});s.finishCurrentTurn();s.finishCurrentTurn();assert.equal(s.state.month,2);assert.equal(s.humanFaction,'cao');s.planMarch('xuchang','xinye');s.resolveConflict(false);assert.equal(s.state.month,2);assert.equal(s.humanFaction,'liu')})
+test('legacy adjacent-city instant march API is retired without mutating city state',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['cao']})
+  s.finishCurrentTurn()
+  const before=structuredClone(s.state.cities)
+  assert.throws(()=>s.planMarch('xuchang','xinye'),/自由路線行軍/)
+  assert.deepEqual(s.state.cities,before)
+  assert.equal(s.pendingConflict,null)
+})
+test('resolving a current-route conflict still finishes only the active human turn',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['cao','liu']})
+  s.finishCurrentTurn();s.finishCurrentTurn()
+  assert.equal(s.state.month,2)
+  assert.equal(s.humanFaction,'cao')
+  s.pendingConflict={from:'xuchang',target:'xinye',attacker:'cao',defender:'liu',attackerTroops:1200,defenderTroops:s.state.cities.xinye.troops}
+  s.resolveConflict(false)
+  assert.equal(s.state.month,2)
+  assert.equal(s.humanFaction,'liu')
+})
 test('save/load retains parity setup and command lock state',()=>{const mem=new MemoryStorage();const a=new GameStore(mem);a.newGame({scenarioYear:215,difficulty:'hard',animation:false,textSpeed:'fast',humanFactions:['sun','liu']});a.lockInspectionCategory('military');const b=new GameStore(mem);assert.equal(b.load(),true);assert.equal(b.state.scenarioYear,215);assert.deepEqual(b.state.humanFactions,['sun','liu']);assert.equal(b.inspectionCategoryForActive(),'military')})
 test('strategy world is larger than the 320x176 viewport and camera follows cursor',()=>{assert.equal(WORLD_W,640);assert.equal(WORLD_H,448);const city=CITIES.find((c)=>c.id==='xiangping');const wp=cityWorldPoint(city);assert.deepEqual(wp,{x:568,y:86});const cam=cameraFor(wp);assert.equal(cam.x,320);const sp=toScreen(wp,cam);assert.ok(sp.x>=0&&sp.x<=320);assert.ok(sp.y>=0&&sp.y<=176)})
 test('new games store cursor in world coordinates',()=>{const s=new GameStore(new MemoryStorage());s.newGame({humanFactions:['yuan']});const first=CITIES.find((c)=>c.owner==='yuan');const wp=cityWorldPoint(first);assert.deepEqual(s.state.cursor,wp);assert.equal(s.cityAt(wp.x,wp.y,12)?.id,first.id)})

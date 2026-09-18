@@ -93,7 +93,10 @@ export class GameStore {
     this.save()
     return result
   }
-  planMarch(from,target){this.assertState();if(this.mode!=='march')throw new Error('偶數月才能行軍。');const fromDef=CITY_BY_ID[from];if(!fromDef?.neighbors.includes(target))throw new Error('目前路線校準僅支援相鄰地點。');const src=this.state.cities[from],dst=this.state.cities[target];if(src.owner!==this.humanFaction)throw new Error('必須從本國城池出發。');const troops=Math.min(3500,Math.max(800,Math.floor(src.troops*.38)));if(src.troops-troops<800)return null;src.troops-=troops;if(dst.owner===src.owner){dst.troops+=troops;this.addLog(`${CITY_BY_ID[from].name} → ${CITY_BY_ID[target].name} 調兵${troops}`);this.finishCurrentTurn();return null}this.pendingConflict={from,target,attacker:src.owner,defender:dst.owner,attackerTroops:troops,defenderTroops:dst.troops};this.addLog(`${CITY_BY_ID[from].name}軍接近${CITY_BY_ID[target].name}`);this.save();return this.pendingConflict}
+  planMarch(){
+    this.assertState()
+    throw new Error('舊版相鄰城市瞬移行軍已退休；請使用自由路線行軍狀態機。')
+  }
   resolveConflict(win){this.assertState();const c=this.pendingConflict;if(!c)return;const src=this.state.cities[c.from],dst=this.state.cities[c.target];if(win){dst.owner=c.attacker;dst.troops=Math.max(600,Math.floor(c.attackerTroops*.68));this.addLog(`${CITY_BY_ID[c.target].name}陷落。`)}else{src.troops+=Math.max(300,Math.floor(c.attackerTroops*.3));dst.troops=Math.max(500,Math.floor(dst.troops*.84));this.addLog(`攻打${CITY_BY_ID[c.target].name}失敗。`)}this.pendingConflict=null;this.finishCurrentTurn()}
   finishCurrentTurn(){this.assertState();const previousMode=this.mode,previousFaction=this.humanFaction;if(!this.isLastHumanTurn){this.state.activeHumanIndex+=1;this.addLog(`${this.state.year}年${this.state.month}月：輪到 ${this.humanFaction}。`);this.save();return{monthAdvanced:false,previousMode,previousFaction,nextFaction:this.humanFaction}}this.state.activeHumanIndex=0;this.state.month+=1;if(this.state.month>12){this.state.month=1;this.state.year+=1}this.state.inspectionCategories={};this.addLog(`${this.state.year}年${this.state.month}月 ${this.mode==='inspection'?'視察情況':'行軍'}`);this.save();return{monthAdvanced:true,previousMode,previousFaction,nextFaction:this.humanFaction}}
   advanceMonth(){this.assertState();this.state.activeHumanIndex=this.state.humanFactions.length-1;return this.finishCurrentTurn()}
