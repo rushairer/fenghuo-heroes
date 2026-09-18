@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
-import { advanceMarchArmies,beginSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,friendlyArmyStack,queueMarch,rerouteArmy } from '../src/game/march.js'
+import { advanceMarchArmies,beginSiegeFromArmy,cancelSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,friendlyArmyStack,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { cityWorldPoint } from '../src/game/world.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
@@ -85,7 +85,7 @@ test('an existing army can receive a new free route',()=>{
   assert.equal(army.route.at(-1).y,start.y+8)
 })
 
-test('siege conflict inherits the selected attacking officers',()=>{
+test('siege preparation preserves the attacking army instead of applying fake instant casualties',()=>{
   const s=marchingCaoStore()
   const start=cityWorldPoint(city('xuchang'))
   const target=cityWorldPoint(city('xinye'))
@@ -98,9 +98,19 @@ test('siege conflict inherits the selected attacking officers',()=>{
     officerNames:['曹操','夏候惇'],
   })
   advanceMarchArmies(s,1)
+  const citiesBefore=structuredClone(s.state.cities)
   const conflict=beginSiegeFromArmy(s,army.id,'xinye')
+  assert.equal(conflict.kind,'siege')
+  assert.equal(conflict.armyId,army.id)
   assert.deepEqual(conflict.attackerOfficers,['曹操','夏候惇'])
-  assert.equal(ensureMarchState(s).length,0)
+  assert.equal(ensureMarchState(s).length,1)
+  assert.equal(army.status,'besieging')
+  assert.deepEqual(s.state.cities,citiesBefore)
+
+  assert.equal(cancelSiegeFromArmy(s),true)
+  assert.equal(s.pendingConflict,null)
+  assert.equal(army.status,'waiting')
+  assert.deepEqual(s.state.cities,citiesBefore)
 })
 
 
