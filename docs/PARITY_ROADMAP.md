@@ -60,6 +60,7 @@ Before a screen is marked parity-complete it needs:
 - [ ] Supply interception and village occupation.
 - [x] Battle speed choices and the documented 15-squad-per-unit ceiling are modeled.
 - [x] Field-battle A/B/C window semantics and command families are modeled as an evidence-backed contract.
+- [x] Observed 30-day battle carryover boundary is modeled separately from manual-confirmed rules.
 - [ ] Exact formation allocation screen and real-time battle movement/combat rules.
 - [ ] Siege and duel frame-level parity.
 
