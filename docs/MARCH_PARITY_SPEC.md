@@ -45,3 +45,15 @@ Mega Drive 原版說明書的行軍章節明確描述：
 - 攻城失敗後部隊實際退卻路徑。
 
 以上未校準項不得標記為 1:1 完成。
+
+## Retired prototype path
+
+The original clean-room vertical slice exposed `GameStore.planMarch(from,target)` as an
+adjacent-city shortcut that immediately removed troops and created a conflict. That
+model contradicts the evidence-backed march flow now implemented by `game/march.js`:
+officer/resource composition, free route drawing, persistent world-map armies and
+later siege entry.
+
+The legacy API is therefore a hard failure and must never be used as a compatibility
+shortcut. Tests explicitly require it to leave city state and pending-conflict state
+unchanged. Any future march work must extend the persistent route/army model instead.
