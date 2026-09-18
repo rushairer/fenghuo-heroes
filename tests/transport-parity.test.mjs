@@ -4,7 +4,9 @@ import { GameStore } from '../src/game/store.js'
 import {
   TRANSPORT_EVIDENCE,
   TRANSPORT_LOAD_OPTIONS,
+  capturedTransportCargo,
   transportEligibleDestinations,
+  transportInterceptStatus,
   transportLoadStatus,
   transportTargetStatus,
 } from '../src/game/transport-parity.js'
@@ -75,4 +77,27 @@ test('transport target discovery does not move gold food or other city state',()
   const before=structuredClone(s.state.cities)
   transportEligibleDestinations(s,source)
   assert.deepEqual(s.state.cities,before)
+})
+
+
+test('transport interception requires exact map-cell overlap rather than army adjacency',()=>{
+  const army={id:'army-1',faction:'cao',x:100,y:120}
+  const enemy={id:'transport-1',faction:'liu',x:108,y:120,gold:10000,food:0}
+  assert.equal(transportInterceptStatus(army,enemy).ok,false)
+  assert.match(transportInterceptStatus(army,enemy).reason,/重疊/)
+
+  enemy.x=100
+  assert.equal(transportInterceptStatus(army,enemy).ok,true)
+
+  enemy.faction='cao'
+  assert.equal(transportInterceptStatus(army,enemy).ok,false)
+  assert.match(transportInterceptStatus(army,enemy).reason,/本國/)
+})
+
+test('captured transport payload is exposed without guessing where loot is deposited',()=>{
+  const cargo=capturedTransportCargo({gold:10000,food:10000})
+  assert.deepEqual(cargo,{gold:10000,food:10000})
+  assert.equal(TRANSPORT_EVIDENCE.interceptionTrigger,'same-map-cell-overlap')
+  assert.equal(TRANSPORT_EVIDENCE.capturedCargoDestination,'unverified')
+  assert.equal(TRANSPORT_EVIDENCE.transportRelativeSpeed,'faster-than-marching-army-observed')
 })
