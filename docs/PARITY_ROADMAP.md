@@ -53,11 +53,12 @@ Before a screen is marked parity-complete it needs:
 
 - [x] March starts from an owned city.
 - [x] Route is visible before confirmation.
-- [x] Enemy city enters siege decision before duel.
+- [x] Enemy city enters evidence-backed siege battle preparation; direct pre-battle duel shortcut is retired.
 - [x] Playable duel movement / attack / guard vertical slice.
 - [ ] Free marching movement parity.
 - [ ] Supply interception and village occupation.
-- [ ] Formation screen and real-time battle rules.
+- [x] Battle speed choices and the documented 15-squad-per-unit ceiling are modeled.
+- [ ] Exact formation allocation screen and real-time battle rules.
 - [ ] Siege and duel frame-level parity.
 
 ## Copyright / clean-room line
