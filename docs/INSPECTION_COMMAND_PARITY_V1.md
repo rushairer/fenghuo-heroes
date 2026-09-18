@@ -63,6 +63,10 @@ thresholds and the office table are verified.
 2. 武器
 3. 情報
 4. 人材
+   - 探尋
+   - 選拔
+     - 說服
+     - 貢品
 5. 防衛
 6. 訓練
 7. 結束
@@ -70,6 +74,13 @@ thresholds and the office table are verified.
 The project targets the Chinese-ROM wording `軍備`. Some secondary summaries use
 `軍事`; do not silently switch the visible Chinese target label without direct
 Chinese-ROM screen evidence.
+
+
+Chinese-ROM player documentation records 人材 as a nested workflow rather than one
+flat action: 探尋 and 選拔 are the first branch, and 選拔 further branches into
+說服 and 貢品. Runtime restores that hierarchy and recursive B/C navigation. The
+search pool, selectable targets, gift amount and success formulas remain unverified,
+so none of these branches may change officer ownership or money yet.
 
 ## 情報 behavior
 

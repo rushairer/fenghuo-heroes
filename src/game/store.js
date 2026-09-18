@@ -33,6 +33,9 @@ const UNVERIFIED_INSPECTION_EFFECT_MESSAGES = Object.freeze({
   weapons:'武器：品項、價格與能力效果尚未校準，本次不修改數值。',
   defense:'防衛：投入資源與防衛效果公式尚未校準，本次不修改數值。',
   train:'訓練：已確認成本與兵力相關且影響士氣，但精確公式尚未校準，本次不修改數值。',
+  'talent-search':'人材／探尋：搜索條件、城市人才池與成功判定尚未校準，本次不新增武將。',
+  'talent-persuade':'人材／選拔／說服：目標條件與成功判定尚未校準，本次不修改武將歸屬。',
+  'talent-gift':'人材／選拔／貢品：目標條件、金額與成功判定尚未校準，本次不修改金或武將歸屬。',
 })
 
 const openingRosters = (year) => year === 189
