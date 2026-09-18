@@ -14,6 +14,9 @@ export const TRANSPORT_EVIDENCE = Object.freeze({
   capacityInterpretation: '10000-each-when-both-selected',
   deliveryModel: 'march-map-transport-unit',
   interception: true,
+  interceptionTrigger: 'same-map-cell-overlap',
+  transportRelativeSpeed: 'faster-than-marching-army-observed',
+  capturedCargoDestination: 'unverified',
   movementParity: 'unverified',
 })
 
@@ -49,4 +52,24 @@ export function transportTargetStatus(store, sourceId, targetId) {
   const eligible=transportEligibleDestinations(store,sourceId)
   if(!eligible.includes(targetId))return Object.freeze({ok:false,reason:'運輸目的地必須是另一座本國城市。'})
   return Object.freeze({ok:true,reason:''})
+}
+
+
+export function transportInterceptStatus(army, transport) {
+  if(!army||!transport)return Object.freeze({ok:false,reason:'缺少行軍部隊或運輸隊。'})
+  if(army.faction===transport.faction)return Object.freeze({ok:false,reason:'不能截獲本國運輸隊。'})
+  if(!Number.isFinite(army.x)||!Number.isFinite(army.y)||!Number.isFinite(transport.x)||!Number.isFinite(transport.y)){
+    return Object.freeze({ok:false,reason:'地圖座標不存在。'})
+  }
+  if(army.x!==transport.x||army.y!==transport.y){
+    return Object.freeze({ok:false,reason:'必須與敵方運輸隊在地圖上重疊。'})
+  }
+  return Object.freeze({ok:true,reason:''})
+}
+
+export function capturedTransportCargo(transport) {
+  return Object.freeze({
+    gold:Math.max(0,Math.floor(transport?.gold??0)),
+    food:Math.max(0,Math.floor(transport?.food??0)),
+  })
 }
