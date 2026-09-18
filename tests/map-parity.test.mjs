@@ -25,7 +25,7 @@ test('runtime scaffold city identities demonstrably differ from the Chinese-ROM 
   assert.equal(report.cityIdentityMatchesTarget,false)
   for(const fakeOfTarget of ['北平','南皮','鄴','平原'])assert.ok(report.unexpectedRuntime.includes(fakeOfTarget))
   for(const requiredTarget of ['代縣','信都','濮陽','番禺','龍編'])assert.ok(report.missingTarget.includes(requiredTarget))
-  assert.equal(assertRuntimeMapNotClaimedCanonical(),report)
+  assert.deepEqual(assertRuntimeMapNotClaimedCanonical(),report)
 })
 
 test('evidence layer records Liu Bei at Dai County without forcing that fact onto the wrong geometry',()=>{
