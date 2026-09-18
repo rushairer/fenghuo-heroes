@@ -34,6 +34,31 @@ export const ZH_ROM_CITY_NAME_VARIANTS = Object.freeze([
   Object.freeze({ ramSource:'臨溜', normalizedRam:'臨淄', status:'cross-source-normalized' }),
 ])
 
+export function normalizeZhRomCityName(name) {
+  if (name === '蘇縣') return '薊縣'
+  if (name === '故藏') return '姑藏'
+  if (name === '臨溜') return '臨淄'
+  return name
+}
+
+export const ZH_ROM_CANONICAL_CITY_SET = Object.freeze(
+  [...new Set(ZH_ROM_NUMBERED_GUIDE_CITY_ORDER.map(normalizeZhRomCityName))],
+)
+
+// High-confidence observed start facts are kept sparse on purpose. A faction
+// is added only when a repeatable original-game play record establishes the
+// opening city; missing factions must not be filled from historical intuition
+// or another Romance of the Three Kingdoms title.
+export const ZH_189_START_CITY_EVIDENCE = Object.freeze([
+  Object.freeze({
+    factionId:'liu',
+    ruler:'劉備',
+    city:'代縣',
+    evidence:'observed-play-record',
+    source:'https://www.ptt.cc/bbs/Old-Games/M.1299229026.A.78D.html',
+  }),
+])
+
 // Legacy alias retained for existing callers. It means RAM-address order, not a
 // proven visible country-number order. New evidence-sensitive code should use a
 // source-qualified constant above.
