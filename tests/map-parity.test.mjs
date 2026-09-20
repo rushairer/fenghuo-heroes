@@ -10,6 +10,7 @@ import {
 import {
   ZH_189_START_CITY_EVIDENCE,
   ZH_ROM_CANONICAL_CITY_SET,
+  ZH_ROM_CITY_NAME_VARIANTS,
 } from '../src/game/original-data.js'
 
 test('runtime map is explicitly quarantined as a provisional scaffold',()=>{
@@ -38,7 +39,7 @@ test('evidence layer records Liu Bei at Dai County without forcing that fact ont
 })
 
 
-test('canonical map migration cannot open before every evidence gate is satisfied',()=>{
+test('canonical map migration stays blocked while the evidence ledger is empty',()=>{
   const blocked=canonicalMapMigrationReadiness()
   assert.equal(blocked.ready,false)
   assert.equal(blocked.cityCoordinatesComplete,false)
@@ -47,18 +48,55 @@ test('canonical map migration cannot open before every evidence gate is satisfie
   assert.equal(blocked.cityNamesResolved,false)
   assert.equal(blocked.villageCoordinatesVerified,false)
   assert.equal(blocked.ownership189Verified,false)
+  assert.equal(blocked.routeNetworkVerified,false)
+})
 
-  const syntheticCoordinates=ZH_ROM_CANONICAL_CITY_SET.map((name,index)=>({
+test('canonical map migration opens only when every source-backed evidence gate is present',()=>{
+  const source={id:'capture-full',kind:'direct-capture',ref:'capture-full.png'}
+  const cityCoordinates=ZH_ROM_CANONICAL_CITY_SET.map((name,index)=>({
     name,
-    x:index,
-    y:index+1,
+    x:(index*7)%320,
+    y:(index*11)%224,
+    space:'logical-320x224',
+    sourceId:source.id,
+    frameRef:`frame#city-${index}`,
+    verified:true,
   }))
-  const stillBlocked=canonicalMapMigrationReadiness({
-    cityCoordinates:syntheticCoordinates,
-    villageCoordinatesVerified:true,
-    ownership189Verified:true,
-  })
-  assert.equal(stillBlocked.cityCoordinatesComplete,true)
-  assert.equal(stillBlocked.ready,false)
-  assert.ok(stillBlocked.unresolvedNameVariants.length>=2)
+  const ownership189=ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
+    city,
+    factionId:index===0?'liu':'neutral',
+    sourceId:source.id,
+    frameRef:`frame#owner-${index}`,
+    verified:true,
+  }))
+  const nameResolutions=ZH_ROM_CITY_NAME_VARIANTS
+    .filter((item)=>item.status==='unresolved')
+    .map((item,index)=>({
+      ram:item.ram,
+      numberedGuide:item.numberedGuide,
+      chosen:item.ram,
+      sourceId:source.id,
+      frameRef:`frame#name-${index}`,
+      verified:true,
+    }))
+  const complete={
+    status:'test-fixture-complete',
+    sources:[source],
+    cityCoordinates,
+    villages:[],
+    villageCoverage:{sourceId:source.id,frameRef:'frame#villages',verified:true},
+    ownership189,
+    routes:[],
+    routeNetworkCoverage:{sourceId:source.id,frameRef:'frame#routes',verified:true},
+    nameResolutions,
+  }
+  const report=canonicalMapMigrationReadiness(complete)
+  assert.equal(report.cityCoordinatesComplete,true)
+  assert.equal(report.verifiedCityCoordinateCount,40)
+  assert.equal(report.cityNamesResolved,true)
+  assert.equal(report.villageCoordinatesVerified,true)
+  assert.equal(report.ownership189Verified,true)
+  assert.equal(report.verifiedOwnershipCityCount,40)
+  assert.equal(report.routeNetworkVerified,true)
+  assert.equal(report.ready,true)
 })
