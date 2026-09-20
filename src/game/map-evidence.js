@@ -41,6 +41,17 @@ export function validateCityCoordinateRecord(record,{sources=[]}={}){
   })
 }
 
+function pointRecordInRange(record){
+  const space=Object.values(MAP_COORDINATE_SPACES).find((item)=>item.id===record?.space)
+  return Boolean(
+    space&&
+    Number.isFinite(record?.x)&&
+    Number.isFinite(record?.y)&&
+    record.x>=0&&record.x<=space.width&&
+    record.y>=0&&record.y<=space.height
+  )
+}
+
 function sourceBackedVerification(record,sources){
   return Boolean(
     record?.verified===true&&
@@ -69,10 +80,7 @@ export function validateCanonicalMapEvidence(evidence={}){
 
   const canonical=new Set(ZH_ROM_CANONICAL_CITY_SET)
   const verifiedVillages=villages.filter((record)=>
-    sourceBackedVerification(record,sources)&&
-    Number.isFinite(record?.x)&&
-    Number.isFinite(record?.y)&&
-    Object.values(MAP_COORDINATE_SPACES).some((space)=>space.id===record?.space)
+    sourceBackedVerification(record,sources)&&pointRecordInRange(record)
   )
 
   const verifiedOwnership=ownership189.filter((record)=>
