@@ -6,6 +6,8 @@ import {
   assetSharpnessReport,
   isAssetSharpEnough,
   requiredRasterPixels,
+  nineSliceSharpnessReport,
+  isNineSliceSharpEnough,
 } from '../src/game/asset-quality.js'
 
 test('runtime raster HD floor is independent from backing-store supersampling',()=>{
@@ -33,4 +35,22 @@ test('natural image dimensions take priority over layout dimensions',()=>{
     width:256,
     height:128,
   })
+})
+
+
+test('nine-slice sharpness checks edge density instead of full panel dimensions',()=>{
+  const image={naturalWidth:320,naturalHeight:260}
+  const report=nineSliceSharpnessReport(image,{sourceSlice:32,destEdge:6,scale:5})
+  assert.equal(report.requiredEdgePixels,30)
+  assert.equal(report.enoughSourcePixels,true)
+  assert.equal(report.enoughImageBounds,true)
+  assert.equal(report.ok,true)
+  assert.equal(isNineSliceSharpEnough(image,{sourceSlice:32,destEdge:7,scale:5}),false)
+})
+
+test('nine-slice assets must contain three source slices in both axes',()=>{
+  assert.equal(isNineSliceSharpEnough(
+    {naturalWidth:80,naturalHeight:128},
+    {sourceSlice:32,destEdge:6,scale:5},
+  ),false)
 })
