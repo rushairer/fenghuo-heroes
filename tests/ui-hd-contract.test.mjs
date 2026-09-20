@@ -1,8 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
-
 const scenesDir=new URL('../src/scenes/',import.meta.url)
 
 function sceneSources(){
@@ -38,7 +36,7 @@ test('scene code never directly stretches reusable panel/frame assets',()=>{
 test('scene visual assets may not bypass explicit HD-aware registry lookups',()=>{
   const failures=[]
   for(const {name,source} of sceneSources()){
-    const raw=[...source.matchAll(/assets\?\.get\(/g)]
+    const raw=[...source.matchAll(/assets(?:\?\.)?\.get\(/g)]
     if(raw.length)failures.push(`${name}: ${raw.length} raw asset lookup(s)`)
   }
   assert.deepEqual(failures,[])
