@@ -9,102 +9,241 @@
       "target": "assets/title/hd/title-main-hd-v1.webp",
       "sourceGenId": "f0e1fab6-5f93-49da-8455-1239d7f118b7",
       "sourceRole": "production crop from text-free Image 2.5 title composition",
-      "crop": { "x": 0, "y": 0, "width": 1463, "height": 1024 },
-      "nativeTarget": { "width": 1600, "height": 1120, "aspect": "10:7" },
-      "minimumRuntime": { "width": 1600, "height": 1120 },
-      "forbiddenBakedUI": ["START", "CONTINUE", "PUSH START", "readable interactive labels", "HUD"],
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1463,
+        "height": 1024
+      },
+      "nativeTarget": {
+        "width": 1600,
+        "height": 1120,
+        "aspect": "10:7"
+      },
+      "minimumRuntime": {
+        "width": 1600,
+        "height": 1120
+      },
+      "forbiddenBakedUI": [
+        "START",
+        "CONTINUE",
+        "PUSH START",
+        "readable interactive labels",
+        "HUD"
+      ],
       "notes": "The generated frame contains five warlords, battlefield scenery, right blue-gold trim and an empty ornamental menu frame. All interactive menu copy stays code-native."
     },
     "title.menuFrame": {
       "target": "assets/title/slices/title-menu-frame-v1.webp",
-      "nativeTarget": { "width": 1024, "height": 512 },
+      "nativeTarget": {
+        "width": 1024,
+        "height": 512
+      },
       "transparentPreferred": true,
-      "minimumRuntime": { "width": 256, "height": 128 },
-      "forbiddenBakedUI": ["START", "CONTINUE", "text", "cursor"],
+      "minimumRuntime": {
+        "width": 256,
+        "height": 128
+      },
+      "forbiddenBakedUI": [
+        "START",
+        "CONTINUE",
+        "text",
+        "cursor"
+      ],
       "notes": "Ornate black-and-gold frame only; inner copy and selected state are code-native."
     },
     "ui.frames.large": {
       "target": "assets/ui/frames/ui-frame-large-v1.webp",
-      "nativeTarget": { "width": 1024, "height": 1024 },
+      "nativeTarget": {
+        "width": 1024,
+        "height": 1024
+      },
       "transparentPreferred": true,
-      "minimumRuntime": { "width": 256, "height": 256 },
-      "nineSlice": { "left": 48, "top": 48, "right": 48, "bottom": 48 }
+      "minimumRuntime": {
+        "width": 256,
+        "height": 256
+      },
+      "nineSlice": {
+        "sourceSlice": 32,
+        "destEdge": 7
+      }
     },
     "ui.icons.food": {
       "target": "assets/ui/icons/ui-icon-food-v1.webp",
       "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
       "sourceRole": "Image 2.5 HD asset-atlas food sack icon crop",
-      "nativeTarget": { "width": 1536, "height": 1024 },
-      "runtimeTarget": { "width": 128, "height": 128 },
-      "minimumRuntime": { "width": 128, "height": 128 },
+      "nativeTarget": {
+        "width": 1536,
+        "height": 1024
+      },
+      "runtimeTarget": {
+        "width": 128,
+        "height": 128
+      },
+      "minimumRuntime": {
+        "width": 128,
+        "height": 128
+      },
       "transparentPreferred": true,
       "preprocess": "crop icon only; flood-clear atlas background; trim alpha bounds; center on transparent 128x128 canvas; WebP q82",
-      "integrity": { "byteLength": 1744, "sha256": "497accec5466aed7bbbb45933602c9f0719d3118baedaa2845a24b3e642591e9" },
-      "forbiddenBakedUI": ["text", "label", "HUD"]
+      "integrity": {
+        "byteLength": 1744,
+        "sha256": "497accec5466aed7bbbb45933602c9f0719d3118baedaa2845a24b3e642591e9"
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "label",
+        "HUD"
+      ]
     },
     "ui.icons.gold": {
       "target": "assets/ui/icons/ui-icon-gold-v1.webp",
       "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
       "sourceRole": "Image 2.5 HD asset-atlas gold ingot icon crop",
-      "nativeTarget": { "width": 1536, "height": 1024 },
-      "runtimeTarget": { "width": 128, "height": 128 },
-      "minimumRuntime": { "width": 128, "height": 128 },
+      "nativeTarget": {
+        "width": 1536,
+        "height": 1024
+      },
+      "runtimeTarget": {
+        "width": 128,
+        "height": 128
+      },
+      "minimumRuntime": {
+        "width": 128,
+        "height": 128
+      },
       "transparentPreferred": true,
       "preprocess": "crop icon only; flood-clear atlas background; trim alpha bounds; center on transparent 128x128 canvas; WebP q82",
-      "integrity": { "byteLength": 1774, "sha256": "2789eb47560e895073f5858e251930b24e16197e4e89cc82c0dffec792536265" },
-      "forbiddenBakedUI": ["text", "label", "HUD"]
+      "integrity": {
+        "byteLength": 1774,
+        "sha256": "2789eb47560e895073f5858e251930b24e16197e4e89cc82c0dffec792536265"
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "label",
+        "HUD"
+      ]
     },
     "ui.icons.troops": {
       "target": "assets/ui/icons/ui-icon-troops-v1.webp",
       "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
       "sourceRole": "Image 2.5 HD asset-atlas troop formation icon crop",
-      "nativeTarget": { "width": 1536, "height": 1024 },
-      "runtimeTarget": { "width": 128, "height": 128 },
-      "minimumRuntime": { "width": 128, "height": 128 },
+      "nativeTarget": {
+        "width": 1536,
+        "height": 1024
+      },
+      "runtimeTarget": {
+        "width": 128,
+        "height": 128
+      },
+      "minimumRuntime": {
+        "width": 128,
+        "height": 128
+      },
       "transparentPreferred": true,
       "preprocess": "crop icon only; flood-clear atlas background; trim alpha bounds; center on transparent 128x128 canvas; WebP q82",
-      "integrity": { "byteLength": 2146, "sha256": "5400ed09183dee06d5a3f258f8e7d90e208123cd8904455d7e72a271497d94a8" },
-      "forbiddenBakedUI": ["text", "label", "HUD"]
+      "integrity": {
+        "byteLength": 2146,
+        "sha256": "5400ed09183dee06d5a3f258f8e7d90e208123cd8904455d7e72a271497d94a8"
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "label",
+        "HUD"
+      ]
     },
     "map.terrain.sandBase": {
       "target": "assets/map/terrain/map-terrain-sand-base-v1.webp",
       "sourceGenId": "97109680-a41d-441a-a5b5-34a31e317fbe",
       "sourceRole": "Image 2.5 text-free sandy strategy-map terrain texture",
-      "nativeTarget": { "width": 2048, "height": 1434 },
-      "runtimeTarget": { "width": 512, "height": 512 },
-      "minimumRuntime": { "width": 512, "height": 512 },
+      "nativeTarget": {
+        "width": 2048,
+        "height": 1434
+      },
+      "runtimeTarget": {
+        "width": 512,
+        "height": 512
+      },
+      "minimumRuntime": {
+        "width": 512,
+        "height": 512
+      },
       "tileablePreferred": true,
       "preprocess": "center-square crop; 512x512 Lanczos resize; 48px opposite-edge blend; WebP q48",
-      "forbiddenBakedUI": ["city labels", "flags", "roads", "HUD", "text"]
+      "forbiddenBakedUI": [
+        "city labels",
+        "flags",
+        "roads",
+        "HUD",
+        "text"
+      ]
     },
     "map.terrain.mountainA": {
       "target": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp",
       "sourceGenId": "1a1fdfe6-1d77-4d2e-9545-813e555fbd19",
       "sourceRole": "Image 2.5 transparent painterly mountain cluster for strategy-map stamping",
-      "nativeTarget": { "width": 1024, "height": 1024 },
-      "runtimeTarget": { "width": 512, "height": 512 },
-      "minimumRuntime": { "width": 256, "height": 256 },
+      "nativeTarget": {
+        "width": 1024,
+        "height": 1024
+      },
+      "runtimeTarget": {
+        "width": 512,
+        "height": 512
+      },
+      "minimumRuntime": {
+        "width": 256,
+        "height": 256
+      },
       "transparentPreferred": true,
       "preprocess": "trim alpha bounds; resize within 448x448; center on 512x512 transparent canvas; WebP q82",
-      "integrity": { "byteLength": 35333, "sha256": "7baced082ee5c0a594d13c3576ca5d482e15c81ed03e990d7c86c7a8b96f17a5" },
-      "forbiddenBakedUI": ["text", "city", "flag"]
+      "integrity": {
+        "byteLength": 35333,
+        "sha256": "7baced082ee5c0a594d13c3576ca5d482e15c81ed03e990d7c86c7a8b96f17a5"
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "city",
+        "flag"
+      ]
     },
     "map.terrain.mountainB": {
       "target": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp",
       "sourceGenId": "aa621b8b-fd6a-4422-9530-ecf7febe6ced",
       "sourceRole": "Image 2.5 transparent secondary mountain range for alternating strategy-map stamps",
-      "nativeTarget": { "width": 1536, "height": 1024 },
-      "runtimeTarget": { "width": 256, "height": 256 },
-      "minimumRuntime": { "width": 256, "height": 256 },
+      "nativeTarget": {
+        "width": 1536,
+        "height": 1024
+      },
+      "runtimeTarget": {
+        "width": 256,
+        "height": 256
+      },
+      "minimumRuntime": {
+        "width": 256,
+        "height": 256
+      },
       "transparentPreferred": true,
       "preprocess": "trim alpha using >8 threshold; resize alpha bounds within 224x224; center on 256x256 transparent canvas; WebP q55",
-      "integrity": { "byteLength": 8324, "sha256": "3d5bfb76b3001f416a3ccbf519b1b47b13ce9a4f686283ebb42db69d9d702e8b" },
-      "forbiddenBakedUI": ["text", "city", "flag"]
+      "integrity": {
+        "byteLength": 8324,
+        "sha256": "3d5bfb76b3001f416a3ccbf519b1b47b13ce9a4f686283ebb42db69d9d702e8b"
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "city",
+        "flag"
+      ]
     },
     "map.terrain.riverA": {
       "target": "assets/map/terrain/map-terrain-river-segment-a-v1.webp",
-      "nativeTarget": { "width": 1024, "height": 512 },
-      "minimumRuntime": { "width": 256, "height": 128 },
+      "nativeTarget": {
+        "width": 1024,
+        "height": 512
+      },
+      "minimumRuntime": {
+        "width": 256,
+        "height": 128
+      },
       "transparentPreferred": true,
       "notes": "Reserved for a later river-path compositor; the current world-space bezier river remains the fallback."
     },
@@ -112,46 +251,156 @@
       "target": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp",
       "sourceGenId": "4d431137-a279-4330-a30f-51b57d3fd9f0",
       "sourceRole": "Image 2.5 transparent HD asset-atlas crop containing a standalone forest cluster",
-      "crop": { "x": 1190, "y": 10, "width": 335, "height": 208 },
-      "nativeTarget": { "width": 1536, "height": 1024 },
-      "runtimeTarget": { "width": 256, "height": 256 },
-      "minimumRuntime": { "width": 256, "height": 256 },
+      "crop": {
+        "x": 1190,
+        "y": 10,
+        "width": 335,
+        "height": 208
+      },
+      "nativeTarget": {
+        "width": 1536,
+        "height": 1024
+      },
+      "runtimeTarget": {
+        "width": 256,
+        "height": 256
+      },
+      "minimumRuntime": {
+        "width": 256,
+        "height": 256
+      },
       "transparentPreferred": true,
       "preprocess": "crop forest cluster from transparent atlas; zero alpha <=8; trim alpha bounds; resize within 224x224; center on 256x256 transparent WebP canvas; WebP q62",
-      "integrity": { "byteLength": 14042, "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c" },
-      "forbiddenBakedUI": ["text", "city", "flag", "river", "HUD"]
+      "integrity": {
+        "byteLength": 14042,
+        "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c"
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "city",
+        "flag",
+        "river",
+        "HUD"
+      ]
     },
     "map.cities.neutral": {
       "target": "assets/map/cities/city-fort-neutral-v1.webp",
       "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
       "sourceRole": "Image 2.5 HD asset-atlas crop containing the neutral city fort",
-      "crop": { "x": 418, "y": 248, "width": 72, "height": 94 },
-      "nativeTarget": { "width": 1536, "height": 1024 },
-      "runtimeTarget": { "width": 256, "height": 256 },
-      "minimumRuntime": { "width": 256, "height": 256 },
+      "crop": {
+        "x": 418,
+        "y": 248,
+        "width": 72,
+        "height": 94
+      },
+      "nativeTarget": {
+        "width": 1536,
+        "height": 1024
+      },
+      "runtimeTarget": {
+        "width": 256,
+        "height": 256
+      },
+      "minimumRuntime": {
+        "width": 256,
+        "height": 256
+      },
       "transparentPreferred": true,
       "preprocess": "crop neutral fort; flood-clear atlas background from four corners; trim alpha bounds; resize within 200x200; center on 256x256 transparent canvas; WebP q82",
-      "integrity": { "byteLength": 4794, "sha256": "0e19fa9169bcae6037dd921f2b7cab36db86fee7d8de0af08c22b468d08e2e3c" },
-      "forbiddenBakedUI": ["text", "city label", "HUD"]
+      "integrity": {
+        "byteLength": 4794,
+        "sha256": "0e19fa9169bcae6037dd921f2b7cab36db86fee7d8de0af08c22b468d08e2e3c"
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "city label",
+        "HUD"
+      ]
     },
     "map.flags.liu": {
       "target": "assets/map/flags/army-flag-liubei-v1.webp",
       "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
       "sourceRole": "Image 2.5 HD asset-atlas crop containing the Liu Bei marching flag",
-      "crop": { "x": 1158, "y": 242, "width": 52, "height": 78 },
-      "nativeTarget": { "width": 1536, "height": 1024 },
-      "runtimeTarget": { "width": 128, "height": 128 },
-      "minimumRuntime": { "width": 128, "height": 128 },
+      "crop": {
+        "x": 1158,
+        "y": 242,
+        "width": 52,
+        "height": 78
+      },
+      "nativeTarget": {
+        "width": 1536,
+        "height": 1024
+      },
+      "runtimeTarget": {
+        "width": 128,
+        "height": 128
+      },
+      "minimumRuntime": {
+        "width": 128,
+        "height": 128
+      },
       "transparentPreferred": true,
       "preprocess": "crop flag only; flood-clear atlas background; trim alpha bounds; resize within 112x112; center on 128x128 transparent canvas; WebP q80",
-      "integrity": { "byteLength": 2992, "sha256": "f06526531c154be76139dea3ffb7b7ff0138ea599ca8f99a5cda854e9c8bdd94" },
-      "forbiddenBakedUI": ["player label", "HUD", "status text"]
+      "integrity": {
+        "byteLength": 2992,
+        "sha256": "f06526531c154be76139dea3ffb7b7ff0138ea599ca8f99a5cda854e9c8bdd94"
+      },
+      "forbiddenBakedUI": [
+        "player label",
+        "HUD",
+        "status text"
+      ]
     },
     "portraits.rulers.liu": {
       "target": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp",
-      "nativeTarget": { "width": 1024, "height": 1024 },
+      "nativeTarget": {
+        "width": 1024,
+        "height": 1024
+      },
       "transparentPreferred": true,
-      "minimumRuntime": { "width": 512, "height": 512 }
+      "minimumRuntime": {
+        "width": 512,
+        "height": 512
+      }
+    },
+    "ui.frames.small": {
+      "target": "assets/ui/frames/ui-frame-small-v1.webp",
+      "transparentPreferred": true,
+      "nineSlice": {
+        "sourceSlice": 32,
+        "destEdge": 7
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "cursor",
+        "interactive labels"
+      ]
+    },
+    "ui.panels.large": {
+      "target": "assets/ui/panels/ui-panel-black-gold-a-v1.webp",
+      "transparentPreferred": true,
+      "nineSlice": {
+        "sourceSlice": 32,
+        "destEdge": 6
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "cursor",
+        "interactive labels"
+      ]
+    },
+    "ui.panels.small": {
+      "target": "assets/ui/panels/ui-panel-black-gold-b-v1.webp",
+      "transparentPreferred": true,
+      "nineSlice": {
+        "sourceSlice": 32,
+        "destEdge": 6
+      },
+      "forbiddenBakedUI": [
+        "text",
+        "cursor",
+        "interactive labels"
+      ]
     }
   }
 }
