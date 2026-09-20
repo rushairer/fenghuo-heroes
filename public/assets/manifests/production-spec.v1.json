@@ -50,7 +50,11 @@
         "text",
         "cursor"
       ],
-      "notes": "Ornate black-and-gold frame only; inner copy and selected state are code-native."
+      "notes": "Ornate black-and-gold frame only; inner copy and selected state are code-native. Runtime must consume this through the nine-slice path; while the asset remains planned, the scalable Canvas panel fallback is authoritative.",
+      "nineSlice": {
+        "sourceSlice": 32,
+        "destEdge": 6
+      }
     },
     "ui.frames.large": {
       "target": "assets/ui/frames/ui-frame-large-v1.webp",
