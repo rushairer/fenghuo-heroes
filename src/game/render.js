@@ -20,6 +20,10 @@ export function renderScaleFor({
   return Math.max(min, Math.min(max, Math.ceil(cssScale * safeDpr)))
 }
 
+export function renderScaleForMode({ pixelPreview = false, ...metrics } = {}) {
+  return pixelPreview ? 1 : renderScaleFor(metrics)
+}
+
 export function makeRenderer(canvas) {
   let S = HD_SCALE
   let pixelW = HD_W
@@ -56,8 +60,7 @@ export function makeRenderer(canvas) {
     dpr = globalThis.devicePixelRatio ?? 1,
     pixelPreview = false,
   } = {}) {
-    if (pixelPreview) return applyScale(1)
-    return applyScale(renderScaleFor({ cssWidth, cssHeight, dpr }))
+    return applyScale(renderScaleForMode({ cssWidth, cssHeight, dpr, pixelPreview }))
   }
 
   const X=(v)=>Math.round(v*S), Y=(v)=>Math.round(v*S)
