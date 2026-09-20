@@ -1,6 +1,7 @@
 import { COLORS } from '../game/constants.js'
 import { mdButton } from '../game/input.js'
 import { drawTitleComposition } from '../game/title-art.js'
+import { drawPromptPlate } from '../game/ui-art.js'
 
 export class TitleScene {
   constructor(app) {
@@ -60,7 +61,7 @@ export class TitleScene {
       if (this.blink < 820) {
         if (hdArt) r.shadowText('PUSH START BUTTON', 164, 173, 7, '#fff0c9', 'center')
         else {
-          r.fillRect(87, 197, 132, 17, 'rgba(32,12,14,.68)')
+          drawPromptPlate(r,87,197,132,17)
           r.text('PUSH START BUTTON', 153, 202, 7, '#fff0c9', 'center')
         }
       }
@@ -68,7 +69,8 @@ export class TitleScene {
       const opts = this.hasSave ? ['START', 'CONTINUE'] : ['START']
       if (!hdArt) {
         const height = this.hasSave ? 39 : 25
-        r.panel(103, 171, 111, height, 'rgba(8,5,5,.92)', '#b47722', this.app.assets?.get('title.menuFrame'))
+        const menuFrame=this.app.assets?.getNineSlice('title.menuFrame',{sourceSlice:32,destEdge:6})
+        r.panel(103, 171, 111, height, 'rgba(8,5,5,.92)', '#b47722', menuFrame)
       }
       const centerX=hdArt?165:158
       const firstY=hdArt?(this.hasSave?164:171):177
