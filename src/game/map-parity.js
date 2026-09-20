@@ -2,6 +2,7 @@ import { CITIES } from './data.js'
 import {
   ZH_189_START_CITY_EVIDENCE,
   ZH_ROM_CANONICAL_CITY_SET,
+  ZH_ROM_CITY_NAME_VARIANTS,
   normalizeZhRomCityName,
 } from './original-data.js'
 
@@ -14,6 +15,34 @@ export const RUNTIME_MAP_PARITY = Object.freeze({
 })
 
 const sortedUnique=(values)=>[...new Set(values)].sort()
+
+export function canonicalMapMigrationReadiness({
+  cityCoordinates=[],
+  villageCoordinatesVerified=false,
+  ownership189Verified=false,
+}={}) {
+  const canonicalSet=new Set(ZH_ROM_CANONICAL_CITY_SET)
+  const coordinateNames=sortedUnique(
+    cityCoordinates
+      .filter((item)=>Number.isFinite(item?.x)&&Number.isFinite(item?.y))
+      .map((item)=>normalizeZhRomCityName(item.name))
+      .filter((name)=>canonicalSet.has(name)),
+  )
+  const unresolvedNameVariants=ZH_ROM_CITY_NAME_VARIANTS.filter((item)=>item.status==='unresolved')
+  const cityCoordinatesComplete=coordinateNames.length===ZH_ROM_CANONICAL_CITY_SET.length
+  const cityNamesResolved=unresolvedNameVariants.length===0
+  const ready=cityCoordinatesComplete&&cityNamesResolved&&villageCoordinatesVerified&&ownership189Verified
+  return Object.freeze({
+    ready,
+    cityCoordinatesComplete,
+    verifiedCityCoordinateCount:coordinateNames.length,
+    requiredCityCoordinateCount:ZH_ROM_CANONICAL_CITY_SET.length,
+    cityNamesResolved,
+    unresolvedNameVariants:Object.freeze(unresolvedNameVariants),
+    villageCoordinatesVerified:Boolean(villageCoordinatesVerified),
+    ownership189Verified:Boolean(ownership189Verified),
+  })
+}
 
 export function runtimeMapParityReport() {
   const runtimeNames=sortedUnique(CITIES.map((city)=>normalizeZhRomCityName(city.name)))
@@ -31,6 +60,7 @@ export function runtimeMapParityReport() {
     unexpectedRuntime:Object.freeze(unexpectedRuntime),
     missingTarget:Object.freeze(missingTarget),
     confirmed189Starts:ZH_189_START_CITY_EVIDENCE,
+    canonicalMigration:canonicalMapMigrationReadiness(),
     ...RUNTIME_MAP_PARITY,
   })
 }
