@@ -33,3 +33,33 @@ export function assetSharpnessReport(image, logicalWidth, logicalHeight, scale =
 export function isAssetSharpEnough(image, logicalWidth, logicalHeight, scale = HD_RASTER_MIN_SCALE) {
   return assetSharpnessReport(image, logicalWidth, logicalHeight, scale).ok
 }
+
+
+export function nineSliceSharpnessReport(
+  image,
+  {
+    sourceSlice=32,
+    destEdge=6,
+    scale=HD_RASTER_MIN_SCALE,
+  }={},
+) {
+  const actual=assetPixelSize(image)
+  const source=Math.max(1,Number(sourceSlice)||32)
+  const edge=Math.max(0,Number(destEdge)||6)
+  const requiredEdge=Math.ceil(edge*Math.max(1,Number(scale)||HD_RASTER_MIN_SCALE))
+  const enoughSourcePixels=source>=requiredEdge
+  const enoughImageBounds=actual.width>=source*3&&actual.height>=source*3
+  return Object.freeze({
+    ok:enoughSourcePixels&&enoughImageBounds,
+    actual,
+    sourceSlice:source,
+    destEdge:edge,
+    requiredEdgePixels:requiredEdge,
+    enoughSourcePixels,
+    enoughImageBounds,
+  })
+}
+
+export function isNineSliceSharpEnough(image, options) {
+  return nineSliceSharpnessReport(image,options).ok
+}
