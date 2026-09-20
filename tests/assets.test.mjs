@@ -59,3 +59,15 @@ test('registry sharpness gate evaluates loaded image density',()=>{
   registry.images.set('title.main',{naturalWidth:1600,naturalHeight:1120})
   assert.equal(registry.isSharpEnough('title.main',320,224),true)
 })
+
+
+test('getForDisplay returns only raster assets dense enough for their logical footprint',()=>{
+  const registry=new AssetRegistry({fetchFn:null,imageFactory:null})
+  const sharp={naturalWidth:128,naturalHeight:128}
+  const soft={naturalWidth:64,naturalHeight:64}
+  registry.images.set('map.flag.sharp',sharp)
+  registry.images.set('map.flag.soft',soft)
+  assert.equal(registry.getForDisplay('map.flag.sharp',20,20),sharp)
+  assert.equal(registry.getForDisplay('map.flag.soft',20,20),null)
+  assert.equal(registry.getForDisplay('missing',20,20),null)
+})
