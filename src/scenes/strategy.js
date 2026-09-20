@@ -210,7 +210,7 @@ export class StrategyScene{
     const h=35+items.length*14
     const y=Math.max(22,105-h/2)
     const pointer=this.app.assets?.getForDisplay('ui.cursors.pointer',9,9)
-    r.panel(88,y,144,h,'#000','#9b6514',this.app.assets?.get('ui.panels.small'))
+    r.panel(88,y,144,h,'#000','#9b6514',this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
     r.text(`${CITY_BY_ID[this.targetCity]?.name??''} · ${path}`,160,y+8,7.5,'#e8cc73','center')
     items.forEach((item,i)=>{
       const active=i===this.menuIndex
@@ -225,7 +225,7 @@ export class StrategyScene{
   drawTaxRate(){
     const r=this.app.r
     const city=CITY_BY_ID[this.targetCity]
-    r.panel(84,66,152,91,'#000','#9b6514',this.app.assets?.get('ui.panels.small'))
+    r.panel(84,66,152,91,'#000','#9b6514',this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
     r.text(`${city?.name??'—'} · 稅率`,160,77,10,'#efd27d','center','top',SERIF,'700')
     r.text(`${this.taxRateDraft}%`,160,103,20,COLORS.cyan,'center','top',SERIF,'700')
     const previous=this.taxRateOriginal==null?'未設定':`${this.taxRateOriginal}%`
@@ -235,7 +235,7 @@ export class StrategyScene{
   drawTransportTargetHint(){
     const r=this.app.r
     const source=CITY_BY_ID[this.transportSource]
-    r.panel(52,181,216,37,'#000','#9b6514',this.app.assets?.get('ui.panels.small'))
+    r.panel(52,181,216,37,'#000','#9b6514',this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
     r.text(`運輸：${source?.name??'—'} → 選擇本國城`,160,189,7.5,COLORS.cyan,'center')
     r.text(this.transportHint||'C 決定　B 返回',160,203,6,'#b5a88b','center')
   }
@@ -244,7 +244,7 @@ export class StrategyScene{
     const source=CITY_BY_ID[this.transportSource]
     const destination=CITY_BY_ID[this.transportDestination]
     const runtime=this.app.store.state.cities[this.transportSource]
-    r.panel(75,47,170,128,'#000','#9b6514',this.app.assets?.get('ui.panels.small'))
+    r.panel(75,47,170,128,'#000','#9b6514',this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
     r.text(`${source?.name??'—'} → ${destination?.name??'—'}`,160,58,9,'#efd27d','center','top',SERIF,'700')
     r.text(`所持　金${runtime?.gold??0}　米${runtime?.food??0}`,160,75,6.5,'#a99d82','center')
     TRANSPORT_LOAD_OPTIONS.forEach((option,index)=>{
