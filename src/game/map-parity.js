@@ -1,3 +1,5 @@
+import { CANONICAL_MAP_EVIDENCE } from './canonical-map-evidence.js'
+import { mapEvidenceSourceValid, validateCanonicalMapEvidence } from './map-evidence.js'
 import { CITIES } from './data.js'
 import {
   ZH_189_START_CITY_EVIDENCE,
@@ -16,31 +18,59 @@ export const RUNTIME_MAP_PARITY = Object.freeze({
 
 const sortedUnique=(values)=>[...new Set(values)].sort()
 
-export function canonicalMapMigrationReadiness({
-  cityCoordinates=[],
-  villageCoordinatesVerified=false,
-  ownership189Verified=false,
-}={}) {
-  const canonicalSet=new Set(ZH_ROM_CANONICAL_CITY_SET)
-  const coordinateNames=sortedUnique(
-    cityCoordinates
-      .filter((item)=>Number.isFinite(item?.x)&&Number.isFinite(item?.y))
-      .map((item)=>normalizeZhRomCityName(item.name))
-      .filter((name)=>canonicalSet.has(name)),
+export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) {
+  const report=validateCanonicalMapEvidence(evidence)
+  const validSources=new Set(
+    (evidence.sources??[]).filter(mapEvidenceSourceValid).map((source)=>source.id),
+  )
+  const coordinateNames=new Set(
+    (evidence.cityCoordinates??[])
+      .filter((record,index)=>report.coordinateReports[index]?.ok)
+      .map((record)=>normalizeZhRomCityName(record.name)),
   )
   const unresolvedNameVariants=ZH_ROM_CITY_NAME_VARIANTS.filter((item)=>item.status==='unresolved')
-  const cityCoordinatesComplete=coordinateNames.length===ZH_ROM_CANONICAL_CITY_SET.length
-  const cityNamesResolved=unresolvedNameVariants.length===0
-  const ready=cityCoordinatesComplete&&cityNamesResolved&&villageCoordinatesVerified&&ownership189Verified
+  const resolvedVariantKeys=new Set(
+    (evidence.nameResolutions??[])
+      .filter((record)=>
+        record?.verified===true&&
+        validSources.has(record?.sourceId)&&
+        typeof record?.frameRef==='string'&&record.frameRef.trim()&&
+        typeof record?.chosen==='string'&&record.chosen.trim()
+      )
+      .map((record)=>`${record.ram}|${record.numberedGuide}`),
+  )
+  const unresolvedAfterEvidence=unresolvedNameVariants.filter(
+    (item)=>!resolvedVariantKeys.has(`${item.ram}|${item.numberedGuide}`),
+  )
+
+  const cityCoordinatesComplete=
+    coordinateNames.size===ZH_ROM_CANONICAL_CITY_SET.length&&
+    report.duplicateCoordinateNames.length===0
+  const cityNamesResolved=unresolvedAfterEvidence.length===0
+  const ownership189Verified=report.ownership189EvidenceCount===ZH_ROM_CANONICAL_CITY_SET.length
+  const villageCoordinatesVerified=report.villageCoverageVerified
+  const routeNetworkVerified=report.routeNetworkVerified
+  const ready=
+    cityCoordinatesComplete&&
+    cityNamesResolved&&
+    villageCoordinatesVerified&&
+    ownership189Verified&&
+    routeNetworkVerified
+
   return Object.freeze({
     ready,
+    ledgerStatus:evidence.status??'unknown',
     cityCoordinatesComplete,
-    verifiedCityCoordinateCount:coordinateNames.length,
+    verifiedCityCoordinateCount:coordinateNames.size,
     requiredCityCoordinateCount:ZH_ROM_CANONICAL_CITY_SET.length,
     cityNamesResolved,
-    unresolvedNameVariants:Object.freeze(unresolvedNameVariants),
-    villageCoordinatesVerified:Boolean(villageCoordinatesVerified),
-    ownership189Verified:Boolean(ownership189Verified),
+    unresolvedNameVariants:Object.freeze(unresolvedAfterEvidence),
+    villageCoordinatesVerified,
+    ownership189Verified,
+    verifiedOwnershipCityCount:report.ownership189EvidenceCount,
+    routeNetworkVerified,
+    routeEvidenceCount:report.routeEvidenceCount,
+    evidenceReport:report,
   })
 }
 
