@@ -25,6 +25,9 @@ export const CANONICAL_MAP_EVIDENCE=Object.freeze({
   sources:Object.freeze([]),
   cityCoordinates:Object.freeze([]),
   villages:Object.freeze([]),
+  villageCoverage:null,
   ownership189:Object.freeze([]),
+  routes:Object.freeze([]),
+  routeNetworkCoverage:null,
   nameResolutions:Object.freeze([]),
 })
