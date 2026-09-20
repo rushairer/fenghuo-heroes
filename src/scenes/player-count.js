@@ -33,7 +33,7 @@ export class PlayerCountScene {
 
   draw() {
     const r = this.app.r
-    const frame = this.app.assets?.getNineSlice('ui.frames.small',{sourceSlice:32,destEdge:7})
+    const frame = this.app.assets?.getNineSlice('ui.frames.small',{sourceSlice:48,destEdge:7})
     const pointer = this.app.assets?.getForDisplay('ui.cursors.pointer',15,15)
     r.clear('#000')
     r.ornateFrame(23, 24, 274, 176, frame)
