@@ -159,7 +159,7 @@ export class StrategyScene extends ParityStrategyScene {
 
   drawMountain(x,y,index=0) {
     const r=this.app.r
-    const hasMountainB=Boolean(this.app.assets?.get('map.terrain.mountainB'))
+    const hasMountainB=Boolean(this.app.assets?.isSharpEnough('map.terrain.mountainB',32,32))
     const style=mountainStampStyle(index,hasMountainB)
     const image=this.app.assets?.getForDisplay(style.assetKey,style.width,style.height)
       ??this.app.assets?.getForDisplay('map.terrain.mountainA',style.width,style.height)
