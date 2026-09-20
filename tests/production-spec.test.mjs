@@ -42,3 +42,12 @@ test('nine-slice source edges satisfy the runtime HD raster floor',()=>{
     )
   }
 })
+
+
+test('planned title menu frame is already bound to the future nine-slice runtime contract',()=>{
+  const entry=manifestEntry('title.menuFrame')
+  assert.equal(entry?.status,'planned')
+  const contract=spec.assets?.['title.menuFrame']?.nineSlice
+  assert.deepEqual(contract,{sourceSlice:32,destEdge:6})
+  assert.ok(contract.sourceSlice>=Math.ceil(contract.destEdge*HD_RASTER_MIN_SCALE))
+})
