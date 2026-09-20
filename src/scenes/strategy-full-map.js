@@ -2,7 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { CITIES, FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, FULL_MAP_RIVER, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
-import { drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
+import { drawFullMapCitySymbol, drawMapCursor, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { cityWorldPoint } from '../game/world.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
 
@@ -52,12 +52,11 @@ export class StrategyScene extends OfficerStrategyScene {
       const point=fullMapPoint(cityWorldPoint(city),bounds)
       const runtime=state.cities[city.id]
       const faction=FACTION_BY_ID[runtime?.owner]??FACTION_BY_ID.neutral
-      r.fillRect(point.x-1.7,point.y-1.7,3.4,3.4,'#1c130d')
-      r.fillRect(point.x-1.1,point.y-1.1,2.2,2.2,faction.color)
+      drawFullMapCitySymbol(r,point.x,point.y,faction.color,4.2)
     }
 
     const cursor=fullMapPoint(state.cursor,bounds)
-    r.strokeRect(cursor.x-3.5,cursor.y-3.5,7,7,COLORS.cyan,.8)
+    drawMapCursor(r,cursor.x,cursor.y,{width:8,height:8,color:COLORS.cyan,inner:'#1d120c',scale:.75})
 
     const legendX=235
     r.text(`${state.year}年 ${state.month}月`,legendX,51,7,'#e6d7b7')
