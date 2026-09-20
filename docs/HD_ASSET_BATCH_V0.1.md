@@ -53,3 +53,22 @@ Canvas/vector fallback is used instead.
 The backing canvas itself remains adaptive: 6× baseline and up to 10× for large/high-DPR
 displays. Raster acceptance and backing-store supersampling are deliberately separate
 concerns.
+
+
+## 2026-09-21 vector fallback hardening
+
+The HD path no longer treats "raster missing" as permission to fall back to crude
+engineering rectangles.
+
+- strategy-map mountains, forests, forts, army flags and map cursors have scalable
+  Canvas/vector fallbacks;
+- full-map city symbols and legend fort/village/mountain marks have scalable fallbacks;
+- duel fighters and the arena backdrop have scalable vector composition;
+- siege fortress artwork has a scalable vector composition;
+- setup focus rectangles and the title prompt plate have code-native vector fallbacks;
+- title.menuFrame is bound to a 32px -> 6 logical px nine-slice contract before the
+  planned production raster is enabled;
+- scene code is forbidden by tests from using raw `assets.get(...)` visual lookups.
+
+This does **not** change the evidence boundary. Vector artwork improves HD presentation;
+it does not make the provisional runtime map or uncalibrated battle behavior canonical.
