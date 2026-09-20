@@ -4,6 +4,7 @@ import { CITIES } from '../src/game/data.js'
 import {
   RUNTIME_MAP_PARITY,
   assertRuntimeMapNotClaimedCanonical,
+  canonicalMapMigrationReadiness,
   runtimeMapParityReport,
 } from '../src/game/map-parity.js'
 import {
@@ -34,4 +35,30 @@ test('evidence layer records Liu Bei at Dai County without forcing that fact ont
   ])
   const runtimeLiuCities=CITIES.filter((city)=>city.owner==='liu').map((city)=>city.name)
   assert.equal(runtimeLiuCities.includes('代縣'),false)
+})
+
+
+test('canonical map migration cannot open before every evidence gate is satisfied',()=>{
+  const blocked=canonicalMapMigrationReadiness()
+  assert.equal(blocked.ready,false)
+  assert.equal(blocked.cityCoordinatesComplete,false)
+  assert.equal(blocked.verifiedCityCoordinateCount,0)
+  assert.equal(blocked.requiredCityCoordinateCount,40)
+  assert.equal(blocked.cityNamesResolved,false)
+  assert.equal(blocked.villageCoordinatesVerified,false)
+  assert.equal(blocked.ownership189Verified,false)
+
+  const syntheticCoordinates=ZH_ROM_CANONICAL_CITY_SET.map((name,index)=>({
+    name,
+    x:index,
+    y:index+1,
+  }))
+  const stillBlocked=canonicalMapMigrationReadiness({
+    cityCoordinates:syntheticCoordinates,
+    villageCoordinatesVerified:true,
+    ownership189Verified:true,
+  })
+  assert.equal(stillBlocked.cityCoordinatesComplete,true)
+  assert.equal(stillBlocked.ready,false)
+  assert.ok(stillBlocked.unresolvedNameVariants.length>=2)
 })
