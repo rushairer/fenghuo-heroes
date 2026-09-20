@@ -249,7 +249,7 @@ export class StrategyScene extends MarchStrategyScene {
     const officerLabel = this.selectedOfficerNames.length
       ? this.selectedOfficerNames.join('、')
       : '未選擇'
-    r.panel(62, 27, 196, 151, '#000', '#9b6514', this.app.assets?.get('ui.panels.small'))
+    r.panel(62, 27, 196, 151, '#000', '#9b6514', this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
     r.text(`${city?.name ?? ''} 出陣`, 160, 36, 11, '#efd27d', 'center', 'top', SERIF, '700')
     const rows = [
       { label:'武將', value:`${count}人` },
@@ -278,7 +278,7 @@ export class StrategyScene extends MarchStrategyScene {
     const visibleCount = Math.min(8, available.length)
     const maxStart = Math.max(0, available.length - visibleCount)
     const start = Math.max(0, Math.min(maxStart, this.officerCursor - 3))
-    r.panel(68, 26, 184, 153, '#000', '#9b6514', this.app.assets?.get('ui.panels.small'))
+    r.panel(68, 26, 184, 153, '#000', '#9b6514', this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
     r.text('出陣武將', 160, 35, 11, '#efd27d', 'center', 'top', SERIF, '700')
     r.text(`已選 ${this.selectedOfficerNames.length} 人`, 160, 49, 6, '#9f947b', 'center')
     available.slice(start, start + visibleCount).forEach((name, row) => {
@@ -292,7 +292,7 @@ export class StrategyScene extends MarchStrategyScene {
 
   drawMarchRoutePrompt() {
     const r = this.app.r
-    r.panel(54, 73, 212, 77, '#000', '#b07118', this.app.assets?.get('ui.panels.small'))
+    r.panel(54, 73, 212, 77, '#000', '#b07118', this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
     r.text('請決定到目的地的', 160, 86, 10, '#f0dfad', 'center', 'top', SERIF, '700')
     r.text('行軍路線', 160, 104, 12, COLORS.cyan, 'center', 'top', SERIF, '700')
     r.text('C / A：開始指定　B：取消', 160, 132, 6.5, '#9c927f', 'center')
