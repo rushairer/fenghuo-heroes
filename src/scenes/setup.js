@@ -124,8 +124,9 @@ export class SetupScene {
 
   draw() {
     const r = this.app.r
-    const selectorImage = this.app.assets?.get('ui.cursors.box')
+    const selectorImageFor = (w,h) => this.app.assets?.getForDisplay('ui.cursors.box',w,h)
     const focusFrame = (x, y, w, h) => {
+      const selectorImage=selectorImageFor(w,h)
       if (!selectorImage || !r.drawImageStretch(selectorImage, x, y, w, h)) r.selector(x, y, w, h, true)
     }
 
