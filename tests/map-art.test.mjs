@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { forestLayout, mountainVariant } from '../src/game/map-art.js'
+import { flagGeometry, forestLayout, fullMapCitySymbolGeometry, mountainVariant } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -24,4 +24,24 @@ test('forest vector fallback keeps six trees with stable finite geometry',()=>{
       assert.ok(tree.size>0)
     }
   }
+})
+
+
+test('vector flag geometry stays bounded and exposes alert border state',()=>{
+  const normal=flagGeometry()
+  const selected=flagGeometry({selected:true})
+  const starving=flagGeometry({starving:true,width:20,height:20})
+  assert.equal(normal.border,false)
+  assert.equal(selected.border,true)
+  assert.equal(starving.border,true)
+  assert.ok(starving.flagRight>normal.flagRight)
+  assert.ok(starving.poleTop<normal.poleTop)
+})
+
+test('full-map city symbol geometry scales proportionally',()=>{
+  const small=fullMapCitySymbolGeometry(4)
+  const large=fullMapCitySymbolGeometry(8)
+  assert.equal(large.outer,small.outer*2)
+  assert.equal(large.inner,small.inner*2)
+  assert.equal(large.flagHeight,small.flagHeight*2)
 })
