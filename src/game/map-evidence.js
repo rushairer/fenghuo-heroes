@@ -41,12 +41,22 @@ export function validateCityCoordinateRecord(record,{sources=[]}={}){
   })
 }
 
+function sourceBackedVerification(record,sources){
+  return Boolean(
+    record?.verified===true&&
+    typeof record?.sourceId==='string'&&
+    typeof record?.frameRef==='string'&&record.frameRef.trim()&&
+    sources.some((source)=>source.id===record.sourceId&&mapEvidenceSourceValid(source))
+  )
+}
+
 export function validateCanonicalMapEvidence(evidence={}){
   const sources=Array.isArray(evidence.sources)?evidence.sources:[]
   const cityCoordinates=Array.isArray(evidence.cityCoordinates)?evidence.cityCoordinates:[]
   const villages=Array.isArray(evidence.villages)?evidence.villages:[]
   const ownership189=Array.isArray(evidence.ownership189)?evidence.ownership189:[]
   const nameResolutions=Array.isArray(evidence.nameResolutions)?evidence.nameResolutions:[]
+  const routes=Array.isArray(evidence.routes)?evidence.routes:[]
 
   const invalidSources=sources.filter((source)=>!mapEvidenceSourceValid(source))
   const coordinateReports=cityCoordinates.map((record)=>validateCityCoordinateRecord(record,{sources}))
@@ -57,21 +67,36 @@ export function validateCanonicalMapEvidence(evidence={}){
     validCoordinates.filter((record)=>normalizeZhRomCityName(record.name)===name).length>1
   )
 
+  const canonical=new Set(ZH_ROM_CANONICAL_CITY_SET)
   const verifiedVillages=villages.filter((record)=>
-    record?.verified===true&&
+    sourceBackedVerification(record,sources)&&
     Number.isFinite(record?.x)&&
     Number.isFinite(record?.y)&&
-    typeof record?.sourceId==='string'&&
-    sources.some((source)=>source.id===record.sourceId&&mapEvidenceSourceValid(source))
+    Object.values(MAP_COORDINATE_SPACES).some((space)=>space.id===record?.space)
   )
 
   const verifiedOwnership=ownership189.filter((record)=>
-    record?.verified===true&&
-    typeof record?.city==='string'&&
-    typeof record?.factionId==='string'&&
-    typeof record?.sourceId==='string'&&
-    sources.some((source)=>source.id===record.sourceId&&mapEvidenceSourceValid(source))
+    sourceBackedVerification(record,sources)&&
+    canonical.has(normalizeZhRomCityName(record?.city))&&
+    typeof record?.factionId==='string'&&record.factionId.trim()
   )
+
+  const verifiedRoutes=routes.filter((record)=>
+    sourceBackedVerification(record,sources)&&
+    canonical.has(normalizeZhRomCityName(record?.from))&&
+    canonical.has(normalizeZhRomCityName(record?.to))&&
+    normalizeZhRomCityName(record?.from)!==normalizeZhRomCityName(record?.to)
+  )
+
+  const verifiedNameResolutions=nameResolutions.filter((record)=>
+    sourceBackedVerification(record,sources)&&
+    typeof record?.ram==='string'&&
+    typeof record?.numberedGuide==='string'&&
+    typeof record?.chosen==='string'&&record.chosen.trim()
+  )
+
+  const villageCoverageVerified=sourceBackedVerification(evidence.villageCoverage,sources)
+  const routeNetworkVerified=sourceBackedVerification(evidence.routeNetworkCoverage,sources)
 
   return Object.freeze({
     sourceCount:sources.length,
@@ -80,7 +105,10 @@ export function validateCanonicalMapEvidence(evidence={}){
     validCityCoordinateCount:uniqueCoordinateNames.size,
     duplicateCoordinateNames:Object.freeze(duplicateCoordinateNames),
     villageEvidenceCount:verifiedVillages.length,
-    ownership189EvidenceCount:verifiedOwnership.length,
-    nameResolutionCount:nameResolutions.filter((record)=>record?.verified===true).length,
+    ownership189EvidenceCount:new Set(verifiedOwnership.map((record)=>normalizeZhRomCityName(record.city))).size,
+    routeEvidenceCount:verifiedRoutes.length,
+    nameResolutionCount:verifiedNameResolutions.length,
+    villageCoverageVerified,
+    routeNetworkVerified,
   })
 }
