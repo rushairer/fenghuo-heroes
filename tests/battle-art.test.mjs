@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelFighterPose } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaPosts, duelFighterPose } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -18,4 +18,12 @@ test('duel pose changes only presentation geometry and preserves explicit facing
   assert.equal(guard.flip,true)
   assert.notEqual(guard.spearAngle,idle.spearAngle)
   assert.notEqual(attack.frontArm,idle.frontArm)
+})
+
+
+test('duel arena post layout is deterministic and stays inside the backdrop width',()=>{
+  const posts=duelArenaPosts(280,20)
+  assert.ok(posts.length>=10)
+  assert.deepEqual(posts,duelArenaPosts(280,20))
+  assert.ok(posts.every((value)=>value>0&&value<280))
 })
