@@ -132,7 +132,7 @@ export class DuelScene{
 
   draw(){
     const r=this.app.r,c=r.ctx
-    const smallPanel=this.app.assets?.get('ui.panels.small')
+    const smallPanel=this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6})
     r.clear('#221510')
     const grad=c.createLinearGradient(0,0,0,224*r.S);grad.addColorStop(0,'#aa6a42');grad.addColorStop(.5,'#cf9b62');grad.addColorStop(1,'#806b3d');c.fillStyle=grad;c.fillRect(0,0,320*r.S,224*r.S)
     r.fillRect(0,38,320,104,'#6e4d31');r.fillRect(0,142,320,82,'#927c49');r.fillRect(20,84,280,47,'#49392f')
@@ -155,7 +155,7 @@ export class DuelScene{
 
   drawModeSelect(){
     const r=this.app.r
-    const smallPanel=this.app.assets?.get('ui.panels.small')
+    const smallPanel=this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6})
     r.panel(94,66,132,85,'#000','#a96e16',smallPanel)
     r.text('一騎討ち',160,75,10,'#f0d57f','center','top',SERIF,'700')
     DUEL_MODES.forEach((mode,i)=>r.text(`${i===this.modeIndex?'▶':'　'}${mode.label}`,126,98+i*19,9,i===this.modeIndex?COLORS.cyan:'#ddd0ad'))
