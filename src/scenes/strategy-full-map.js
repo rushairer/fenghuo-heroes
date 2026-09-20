@@ -1,9 +1,10 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { CITIES, FACTION_BY_ID } from '../game/data.js'
-import { FULL_MAP_BOUNDS, FULL_MAP_RIVER, fullMapPoint } from '../game/full-map.js'
+import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
 import { drawFullMapCitySymbol, drawMapCursor, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { cityWorldPoint } from '../game/world.js'
+import { drawProjectedRiver } from '../game/world-art.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
 
 export class StrategyScene extends OfficerStrategyScene {
@@ -83,29 +84,10 @@ export class StrategyScene extends OfficerStrategyScene {
   }
 
   drawFullMapRiver(bounds) {
-    const r=this.app.r
-    const c=r.ctx
-    const S=r.S
-    const project=(point)=>fullMapPoint(point,bounds)
-    const start=project(FULL_MAP_RIVER.start)
-    c.save()
-    c.beginPath()
-    c.rect(bounds.x*S,bounds.y*S,bounds.w*S,bounds.h*S)
-    c.clip()
-    c.beginPath()
-    c.moveTo(start.x*S,start.y*S)
-    for(const curve of FULL_MAP_RIVER.curves){
-      const [a,b,end]=curve.map(project)
-      c.bezierCurveTo(a.x*S,a.y*S,b.x*S,b.y*S,end.x*S,end.y*S)
-    }
-    c.lineCap='round'
-    c.lineJoin='round'
-    c.strokeStyle='#644b30'
-    c.lineWidth=5*S
-    c.stroke()
-    c.strokeStyle='#0b55d8'
-    c.lineWidth=3.4*S
-    c.stroke()
-    c.restore()
+    return drawProjectedRiver(this.app.r,{
+      project:(point)=>fullMapPoint(point,bounds),
+      clip:bounds,
+    })
   }
+
 }
