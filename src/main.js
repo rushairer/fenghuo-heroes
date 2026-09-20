@@ -2,7 +2,7 @@ import { AssetRegistry } from './game/assets.js'
 import { AudioBus } from './game/audio.js'
 import { Input } from './game/input.js'
 import { shouldBlockTitleNavigation } from './game/parity.js'
-import { applyVisualQaState } from './game/qa-state.js'
+import { applyVisualQaState, initialSceneForVisualQa } from './game/qa-state.js'
 import { makeRenderer } from './game/render.js'
 import { GameStore } from './game/store.js'
 import { DuelScene } from './scenes/duel.js'
@@ -31,7 +31,7 @@ class App {
     const params=new URLSearchParams(location.search)
     const qa=params.get('qa')
     const forced=params.get('scene')
-    const initial=forced??(qa&&qa!=='title-menu'?'strategy':'title')
+    const initial=forced??initialSceneForVisualQa(qa)
 
     if(initial==='players')this.go('players')
     else if(initial==='setup')this.go('setup')
