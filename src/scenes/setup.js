@@ -2,6 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { DIFFICULTIES, SCENARIOS } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { runtimeScenarioSupported, scenarioRulerOptions } from '../game/scenario-target.js'
+import { drawFocusFrame } from '../game/ui-art.js'
 
 const SPEEDS = [['slow', '慢'], ['normal', '普通'], ['fast', '快']]
 
@@ -127,7 +128,7 @@ export class SetupScene {
     const selectorImageFor = (w,h) => this.app.assets?.getForDisplay('ui.cursors.box',w,h)
     const focusFrame = (x, y, w, h) => {
       const selectorImage=selectorImageFor(w,h)
-      if (!selectorImage || !r.drawImageStretch(selectorImage, x, y, w, h)) r.selector(x, y, w, h, true)
+      if (!selectorImage || !r.drawImageStretch(selectorImage, x, y, w, h)) drawFocusFrame(r,x,y,w,h)
     }
 
     r.clear('#000')
