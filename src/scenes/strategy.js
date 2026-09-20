@@ -272,6 +272,23 @@ export class StrategyScene{
     r.text(this.transportHint||'↑↓ 選擇　C 決定　B 返回',160,157,6,'#b5a88b','center')
   }
   drawMessage(){const r=this.app.r;r.panel(40,77,240,65,'#000','#b07118');r.wrapText(this.message,160,90,208,11,8,'#f0e4c5','center');r.text('A / B / C 關閉',160,126,6,'#8a806e','center')}
-  drawInfo(){const r=this.app.r,s=this.app.store.state;r.panel(18,20,284,170,'#020202','#b07118');const tabs=['統治國一覽','全體地圖','武將狀態'];tabs.forEach((t,i)=>r.text(t,66+i*94,30,8,i===this.infoTab?COLORS.cyan:'#777','center'));r.line(28,45,292,45,'#7b4e12',1);if(this.infoTab===0){const list=CITIES.filter((c)=>s.cities[c.id].owner===this.app.store.humanFaction).slice(0,15);list.forEach((city,i)=>{const rt=s.cities[city.id],col=i>=8?1:0,row=i%8;r.text(`${city.name} 兵${rt.troops}`,34+col*133,56+row*14,7,'#e8dfc8')})}else if(this.infoTab===1){r.fillRect(46,55,228,105,'#9a7849');for(const city of CITIES){const f=FACTION_BY_ID[s.cities[city.id].owner]??FACTION_BY_ID.neutral,wp=cityWorldPoint(city),x=51+(wp.x/WORLD_W)*218,y=59+(wp.y/WORLD_H)*96;r.fillRect(x-1.5,y-1.5,3,3,f.color)}r.text(`全國 40 城　我方 ${CITIES.filter((c)=>s.cities[c.id].owner===this.app.store.humanFaction).length} 城`,160,168,7,'#d9cba8','center')}else{r.text('武將資料：姓名／等級／武力／知力／德／忠誠',160,78,7,'#e8dfc8','center');r.text('武將表仍在按中文版實機資料逐項建立',160,102,7,'#9e9582','center')}r.text('← → 切換　A/B/C 返回',160,176,6,'#887f6d','center')}
+  drawInfo(){
+    const r=this.app.r,s=this.app.store.state
+    const panel=this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6})
+    r.panel(18,20,284,170,'#020202','#b07118',panel)
+    const tabs=['統治國一覽','全體地圖','武將狀態']
+    tabs.forEach((title,index)=>r.text(title,66+index*94,30,8,index===this.infoTab?COLORS.cyan:'#777','center'))
+    r.line(28,45,292,45,'#7b4e12',1)
+    if(this.infoTab===0){
+      const list=CITIES.filter((city)=>s.cities[city.id].owner===this.app.store.humanFaction).slice(0,15)
+      list.forEach((city,index)=>{
+        const runtime=s.cities[city.id],col=index>=8?1:0,row=index%8
+        r.text(`${city.name} 兵${runtime.troops}`,34+col*133,56+row*14,7,'#e8dfc8')
+      })
+    }else{
+      r.text('此頁由專用 parity renderer 提供',160,96,7,'#9e9582','center')
+    }
+    r.text('← → 切換　A/B/C 返回',160,176,6,'#887f6d','center')
+  }
   drawSave(){const r=this.app.r;r.panel(79,73,162,76,'#000','#b07118');r.text('是否保存遊戲？',160,84,10,'#eee2c3','center','top',SERIF,'600');['是','否'].forEach((v,i)=>r.text(`${i===this.saveIndex?'▶':'　'}${v}`,160,106+i*15,8,i===this.saveIndex?COLORS.cyan:'#d4c8a9','center'))}
 }
