@@ -1,3 +1,5 @@
+import { assetSharpnessReport, isAssetSharpEnough } from './asset-quality.js'
+
 const DEFAULT_MANIFEST_URL = './assets/manifests/asset-manifest.v1.json'
 
 export function manifestEntry(manifest, key) {
@@ -104,6 +106,14 @@ export class AssetRegistry {
 
   isPlanned(key) {
     return this.entry(key)?.status === 'planned'
+  }
+
+  sharpness(key, logicalWidth, logicalHeight) {
+    return assetSharpnessReport(this.get(key), logicalWidth, logicalHeight)
+  }
+
+  isSharpEnough(key, logicalWidth, logicalHeight) {
+    return isAssetSharpEnough(this.get(key), logicalWidth, logicalHeight)
   }
 }
 
