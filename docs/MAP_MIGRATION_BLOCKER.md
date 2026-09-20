@@ -73,3 +73,33 @@ The road graph used by the scaffold is not a migration source. The original game
 `tests/map-parity.test.mjs` deliberately fails if somebody marks the current map parity-complete or silently turns the identity mismatch into a "canonical" claim without updating the migration contract.
 
 `canonicalMapMigrationReadiness()` adds a second hard gate: matching the 40 names is not enough. Migration remains blocked until all 40 canonical city coordinates are evidence-backed, the unresolved 薊縣/蘇縣 and 姑藏/故藏 display-name variants are resolved, village coordinates are verified, and the 189 ownership layer is verified. This prevents a future refactor from turning a visually plausible rename into a false 1:1 claim.
+
+
+## Evidence ledger contract
+
+Canonical migration is now driven by `src/game/canonical-map-evidence.js`, validated by
+`src/game/map-evidence.js` and enforced by `scripts/check-map-evidence.mjs`.
+
+A city coordinate is counted only when all of the following are present:
+
+- a canonical Chinese-ROM city identity;
+- an explicit coordinate space (`logical-320x224` or `world-640x448`);
+- finite in-range coordinates;
+- a declared source ID;
+- a source reference;
+- a frame-level reference;
+- `verified: true`.
+
+The migration gate cannot be opened by setting booleans manually. It requires all of:
+
+1. 40 source-backed canonical city coordinates with no duplicate identities;
+2. source-backed resolution of the unresolved 薊縣/蘇縣 and 姑藏/故藏 display-name variants;
+3. source-backed village coverage verification;
+4. 40 source-backed 189 ownership records;
+5. source-backed route-network coverage verification.
+
+The ledger intentionally starts empty and blocked. A screenshot, memory, historical map,
+another Three Kingdoms game, or the current runtime scaffold is not sufficient evidence.
+
+`npm run check` now includes the map-evidence validator, so malformed or silently
+self-certified evidence fails CI before a canonical migration can be claimed.
