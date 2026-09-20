@@ -71,6 +71,7 @@ export class SiegeScene{
 
   draw(){
     const r=this.app.r,c=r.ctx
+    const smallPanel=this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6})
     r.clear('#160d08')
     r.ornateFrame(3,3,314,218)
     const city=CITY_BY_ID[this.conflict?.target]
@@ -89,7 +90,7 @@ export class SiegeScene{
 
     const af=FACTION_BY_ID[this.conflict?.attacker]
     const df=FACTION_BY_ID[this.conflict?.defender]
-    r.panel(30,157,260,50,'#030303','#7e5315')
+    r.panel(30,157,260,50,'#030303','#7e5315',smallPanel)
     r.text(`${af?.label??''} ${this.conflict?.attackerTroops??0}`,45,164,7,af?.color??'#fff')
     r.text(`${df?.label??''} ${this.conflict?.defenderTroops??0}`,275,164,7,df?.color??'#fff','right')
 
@@ -106,7 +107,7 @@ export class SiegeScene{
     }
 
     if(this.message){
-      r.panel(40,75,240,64,'#000','#b07118')
+      r.panel(40,75,240,64,'#000','#b07118',smallPanel)
       r.wrapText(this.message,160,88,208,11,7.5,'#f0e4c5','center')
       r.text('A / B / C 關閉',160,124,6,'#8a806e','center')
     }
