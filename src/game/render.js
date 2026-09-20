@@ -54,7 +54,9 @@ export function makeRenderer(canvas) {
     cssWidth = canvas.clientWidth,
     cssHeight = canvas.clientHeight,
     dpr = globalThis.devicePixelRatio ?? 1,
+    pixelPreview = false,
   } = {}) {
+    if (pixelPreview) return applyScale(1)
     return applyScale(renderScaleFor({ cssWidth, cssHeight, dpr }))
   }
 
