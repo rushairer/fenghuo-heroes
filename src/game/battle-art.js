@@ -207,3 +207,79 @@ export function drawSiegeFortress(r,{
   c.restore()
   return true
 }
+
+
+export function duelArenaPosts(width=280,step=20){
+  const safeWidth=Math.max(80,Number(width)||280)
+  const safeStep=Math.max(12,Number(step)||20)
+  const posts=[]
+  for(let x=12;x<safeWidth-8;x+=safeStep)posts.push(x)
+  return Object.freeze(posts)
+}
+
+export function drawDuelArena(r,{
+  x=0,
+  y=38,
+  width=320,
+  height=152,
+}={}){
+  const c=r.ctx,S=r.S
+  c.save()
+
+  const sky=c.createLinearGradient(0,y*S,0,(y+height)*S)
+  sky.addColorStop(0,'#b27650')
+  sky.addColorStop(.52,'#c99b68')
+  sky.addColorStop(1,'#7d6842')
+  c.fillStyle=sky
+  c.fillRect(x*S,y*S,width*S,height*S)
+
+  // Distant timber spectator wall.
+  c.fillStyle='#4e3b31'
+  c.fillRect((x+18)*S,(y+46)*S,(width-36)*S,50*S)
+  c.fillStyle='#2d221d'
+  c.fillRect((x+132)*S,(y+55)*S,56*S,41*S)
+
+  for(const px of duelArenaPosts(width-40,20)){
+    const worldX=x+20+px
+    c.fillStyle='#5a4639'
+    c.fillRect(worldX*S,(y+35)*S,11*S,15*S)
+    c.fillStyle='rgba(218,187,145,.22)'
+    c.fillRect((worldX+1.5)*S,(y+37)*S,1.2*S,11*S)
+  }
+
+  // Arena floor with converging plank lines.
+  const floorY=y+96
+  const floor=c.createLinearGradient(0,floorY*S,0,(y+height)*S)
+  floor.addColorStop(0,'#9a8254')
+  floor.addColorStop(1,'#6f5c39')
+  c.fillStyle=floor
+  c.fillRect(x*S,floorY*S,width*S,(height-96)*S)
+
+  c.strokeStyle='rgba(59,42,29,.38)'
+  c.lineWidth=.65*S
+  for(let px=x+18;px<x+width;px+=26){
+    c.beginPath()
+    c.moveTo(px*S,(y+height)*S)
+    c.lineTo((x+width/2+(px-(x+width/2))*.62)*S,floorY*S)
+    c.stroke()
+  }
+  for(let yy=floorY+10;yy<y+height;yy+=12){
+    c.beginPath()
+    c.moveTo(x*S,yy*S)
+    c.lineTo((x+width)*S,yy*S)
+    c.stroke()
+  }
+
+  // Central gate depth.
+  c.fillStyle='#1f1714'
+  c.beginPath()
+  c.moveTo((x+138)*S,(y+96)*S)
+  c.lineTo((x+138)*S,(y+67)*S)
+  c.quadraticCurveTo((x+160)*S,(y+49)*S,(x+182)*S,(y+67)*S)
+  c.lineTo((x+182)*S,(y+96)*S)
+  c.closePath()
+  c.fill()
+
+  c.restore()
+  return true
+}
