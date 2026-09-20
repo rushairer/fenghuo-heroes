@@ -35,7 +35,8 @@ export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) 
         record?.verified===true&&
         validSources.has(record?.sourceId)&&
         typeof record?.frameRef==='string'&&record.frameRef.trim()&&
-        typeof record?.chosen==='string'&&record.chosen.trim()
+        typeof record?.chosen==='string'&&
+        (record.chosen===record.ram||record.chosen===record.numberedGuide)
       )
       .map((record)=>`${record.ram}|${record.numberedGuide}`),
   )
