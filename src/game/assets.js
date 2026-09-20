@@ -1,4 +1,4 @@
-import { assetSharpnessReport, isAssetSharpEnough } from './asset-quality.js'
+import { assetSharpnessReport, isAssetSharpEnough, isNineSliceSharpEnough, nineSliceSharpnessReport } from './asset-quality.js'
 
 const DEFAULT_MANIFEST_URL = './assets/manifests/asset-manifest.v1.json'
 
@@ -119,6 +119,15 @@ export class AssetRegistry {
   getForDisplay(key, logicalWidth, logicalHeight) {
     const image=this.get(key)
     return image&&isAssetSharpEnough(image,logicalWidth,logicalHeight)?image:null
+  }
+
+  nineSliceSharpness(key, options) {
+    return nineSliceSharpnessReport(this.get(key),options)
+  }
+
+  getNineSlice(key, options) {
+    const image=this.get(key)
+    return image&&isNineSliceSharpEnough(image,options)?image:null
   }
 }
 
