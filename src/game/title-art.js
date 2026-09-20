@@ -153,13 +153,28 @@ function drawFrontRightGeneral(r) {
 function drawBrocadeStrip(r) {
   const c=r.ctx, S=r.S
   c.fillStyle='#211317';c.fillRect(306*S,0,14*S,224*S)
-  c.fillStyle='#bc8b31';c.fillRect(307*S,0,2*S,224*S)
-  c.fillStyle='#16398a';c.fillRect(310*S,0,7*S,224*S)
-  c.strokeStyle='#e4aa36';c.lineWidth=.8*S
+  const gold=c.createLinearGradient(307*S,0,309*S,0)
+  gold.addColorStop(0,'#6f4515')
+  gold.addColorStop(.45,'#e5b84d')
+  gold.addColorStop(1,'#8a5b1e')
+  c.fillStyle=gold;c.fillRect(307*S,0,2*S,224*S)
+  const blue=c.createLinearGradient(310*S,0,317*S,0)
+  blue.addColorStop(0,'#0d245d')
+  blue.addColorStop(.5,'#1f4cab')
+  blue.addColorStop(1,'#102765')
+  c.fillStyle=blue;c.fillRect(310*S,0,7*S,224*S)
+  c.strokeStyle='#e6b243';c.lineWidth=.72*S
   for(let y=-8;y<232;y+=16){
     c.beginPath();c.moveTo(310*S,(y+8)*S);c.lineTo(313.5*S,(y+2)*S);c.lineTo(317*S,(y+8)*S);c.lineTo(313.5*S,(y+14)*S);c.closePath();c.stroke()
+    c.fillStyle='#d4a13b'
+    c.beginPath();c.arc(313.5*S,(y+8)*S,.72*S,0,Math.PI*2);c.fill()
+    c.strokeStyle='rgba(245,213,124,.55)'
+    c.lineWidth=.28*S
+    c.beginPath();c.moveTo(311*S,(y+8)*S);c.lineTo(316*S,(y+8)*S);c.stroke()
+    c.strokeStyle='#e6b243';c.lineWidth=.72*S
   }
   c.fillStyle='#6d171b';c.fillRect(318*S,0,2*S,224*S)
+  c.fillStyle='rgba(255,221,139,.22)';c.fillRect(308.6*S,0,.35*S,224*S)
 }
 
 export function drawTitleComposition(r) {
@@ -171,9 +186,16 @@ export function drawTitleComposition(r) {
   c.fillStyle=gradient
   c.fillRect(0,0,320*S,224*S)
 
-  // subtle horizontal texture visible in original captures
-  c.save();c.globalAlpha=.12;c.strokeStyle='#f2b0b1';c.lineWidth=.35*S
-  for(let y=5;y<224;y+=3){c.beginPath();c.moveTo(0,y*S);c.lineTo(306*S,y*S);c.stroke()}
+  // Fine horizontal weave visible in archived captures. Keep it geometric so
+  // the detail remains crisp at 6–10× instead of baking another low-res raster.
+  c.save()
+  for(let y=4;y<224;y+=2){
+    const strong=y%6===0
+    c.globalAlpha=strong?.105:.052
+    c.strokeStyle=strong?'#f5b7b6':'#8f4650'
+    c.lineWidth=(strong?.28:.18)*S
+    c.beginPath();c.moveTo(0,y*S);c.lineTo(306*S,y*S);c.stroke()
+  }
   c.restore()
 
   drawRearGeneral(r)
