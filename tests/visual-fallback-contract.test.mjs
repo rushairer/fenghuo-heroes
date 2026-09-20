@@ -49,3 +49,19 @@ test('duel backdrop uses the vector arena compositor rather than block spectator
   assert.doesNotMatch(source,/for\(let x=24;x<300;x\+=20\)/)
   assert.doesNotMatch(source,/r\.fillRect\(134,93,52,38/)
 })
+
+
+test('base strategy info view no longer contains the retired square-dot full-map renderer',()=>{
+  const source=read('src/scenes/strategy.js')
+  assert.doesNotMatch(source,/r\.fillRect\(46,55,228,105,'#9a7849'\)/)
+  assert.doesNotMatch(source,/r\.fillRect\(x-1\.5,y-1\.5,3,3,f\.color\)/)
+})
+
+test('active strategy and overview maps share centralized world-art river rendering',()=>{
+  const strategy=read('src/scenes/strategy-info.js')
+  const overview=read('src/scenes/strategy-full-map.js')
+  assert.match(strategy,/drawWorldRiver/)
+  assert.match(strategy,/drawRoadNetwork/)
+  assert.match(overview,/drawProjectedRiver/)
+  assert.doesNotMatch(strategy,/bezierCurveTo\(229\*S,48\*S/)
+})
