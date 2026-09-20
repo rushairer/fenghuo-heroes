@@ -2,6 +2,7 @@ import { AssetRegistry } from './game/assets.js'
 import { AudioBus } from './game/audio.js'
 import { Input } from './game/input.js'
 import { shouldBlockTitleNavigation } from './game/parity.js'
+import { prepareVisualQaStore } from './game/qa-fixtures.js'
 import { applyVisualQaState, initialSceneForVisualQa } from './game/qa-state.js'
 import { makeRenderer } from './game/render.js'
 import { GameStore } from './game/store.js'
@@ -33,12 +34,18 @@ class App {
     const forced=params.get('scene')
     const initial=forced??initialSceneForVisualQa(qa)
 
+    const qaNeedsGame=['strategy','siege','duel'].includes(initial)
+    if(qa&&qaNeedsGame){
+      this.store.newGame({scenarioYear:189,humanFactions:['liu']})
+      prepareVisualQaStore(this.store,qa)
+    }
+
     if(initial==='players')this.go('players')
     else if(initial==='setup')this.go('setup')
-    else if(initial==='strategy'){
-      this.store.newGame({scenarioYear:189,humanFactions:['liu']})
-      this.go('strategy')
-    }else this.go('title')
+    else if(initial==='strategy')this.go('strategy')
+    else if(initial==='siege')this.go('siege')
+    else if(initial==='duel')this.go('duel')
+    else this.go('title')
 
     if(qa)applyVisualQaState(this,qa)
 
