@@ -66,12 +66,12 @@ test('evidence summary counts only source-backed verified records',()=>{
       },
     ],
     villages:[
-      {x:1,y:2,sourceId:'capture-001',verified:true},
-      {x:3,y:4,sourceId:'missing',verified:true},
+      {x:1,y:2,space:'logical-320x224',sourceId:'capture-001',frameRef:'frame-001#village-1',verified:true},
+      {x:3,y:4,space:'logical-320x224',sourceId:'missing',frameRef:'frame-001#village-2',verified:true},
     ],
     ownership189:[
-      {city:'代縣',factionId:'liu',sourceId:'capture-001',verified:true},
-      {city:'成都',factionId:'liu',sourceId:'missing',verified:true},
+      {city:'代縣',factionId:'liu',sourceId:'capture-001',frameRef:'frame-001#owner-dai',verified:true},
+      {city:'成都',factionId:'liu',sourceId:'missing',frameRef:'frame-001#owner-chengdu',verified:true},
     ],
   })
   assert.equal(report.validCityCoordinateCount,1)
