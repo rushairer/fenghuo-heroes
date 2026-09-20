@@ -71,3 +71,5 @@ The road graph used by the scaffold is not a migration source. The original game
 `src/game/map-parity.js` compares runtime city identities against the target set and exposes all missing/unexpected names.
 
 `tests/map-parity.test.mjs` deliberately fails if somebody marks the current map parity-complete or silently turns the identity mismatch into a "canonical" claim without updating the migration contract.
+
+`canonicalMapMigrationReadiness()` adds a second hard gate: matching the 40 names is not enough. Migration remains blocked until all 40 canonical city coordinates are evidence-backed, the unresolved 薊縣/蘇縣 and 姑藏/故藏 display-name variants are resolved, village coordinates are verified, and the 189 ownership layer is verified. This prevents a future refactor from turning a visually plausible rename into a false 1:1 claim.
