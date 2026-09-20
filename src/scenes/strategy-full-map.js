@@ -35,7 +35,7 @@ export class StrategyScene extends OfficerStrategyScene {
     const S=r.S
     const state=this.app.store.state
     const bounds=FULL_MAP_BOUNDS
-    r.panel(18,18,284,174,'#020202','#b07118',this.app.assets?.get('ui.panels.large'))
+    r.panel(18,18,284,174,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
     r.text('全體地圖',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(28,44,292,44,'#72501b',.7)
 
