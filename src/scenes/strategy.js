@@ -209,7 +209,7 @@ export class StrategyScene{
     const path=inspectionCommandPath(this.category,this.commandSubmenu).join(' · ')
     const h=35+items.length*14
     const y=Math.max(22,105-h/2)
-    const pointer=this.app.assets?.get('ui.cursors.pointer')
+    const pointer=this.app.assets?.getForDisplay('ui.cursors.pointer',9,9)
     r.panel(88,y,144,h,'#000','#9b6514',this.app.assets?.get('ui.panels.small'))
     r.text(`${CITY_BY_ID[this.targetCity]?.name??''} · ${path}`,160,y+8,7.5,'#e8cc73','center')
     items.forEach((item,i)=>{
