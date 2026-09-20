@@ -1,6 +1,7 @@
 export const LOGICAL_W = 320
 export const LOGICAL_H = 224
-export const HD_SCALE = 4
+export const HD_SCALE = 6
+export const HD_MAX_SCALE = 10
 export const HD_W = LOGICAL_W * HD_SCALE
 export const HD_H = LOGICAL_H * HD_SCALE
 export const W = LOGICAL_W
