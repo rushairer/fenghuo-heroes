@@ -115,3 +115,18 @@ export function drawRoadNetwork(r,segments,{
   }
   return drawn
 }
+
+
+export function uniqueRoadPairs(cities=[]){
+  const seen=new Set()
+  const pairs=[]
+  for(const city of cities){
+    for(const neighbor of city?.neighbors??[]){
+      const key=[city.id,neighbor].sort().join(':')
+      if(seen.has(key))continue
+      seen.add(key)
+      pairs.push(Object.freeze([city.id,neighbor]))
+    }
+  }
+  return Object.freeze(pairs)
+}
