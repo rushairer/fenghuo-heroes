@@ -262,7 +262,7 @@ export class StrategyScene extends MarchStrategyScene {
       const y = 57 + i * 18
       const focused = i === this.composeFocus
       const color = focused ? COLORS.cyan : '#ddd0ad'
-      const image = icon ? this.app.assets?.get(icon) : null
+      const image = icon ? this.app.assets?.getForDisplay(icon,12,12) : null
       r.text(focused ? '▶' : '　', 78, y, 8, color)
       if (image) r.drawImageCentered(image, 94, y + 4, 12, 12)
       r.text(label, image ? 105 : 91, y, 8, color)
