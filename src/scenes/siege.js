@@ -1,4 +1,5 @@
 import { COLORS, SERIF } from '../game/constants.js'
+import { drawSiegeFortress } from '../game/battle-art.js'
 import { BATTLE_SPEEDS, MAX_SQUADS_PER_UNIT, battlePreparation, cycleBattleSpeed } from '../game/battle-prep.js'
 import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
@@ -72,21 +73,13 @@ export class SiegeScene{
   draw(){
     const r=this.app.r,c=r.ctx
     const smallPanel=this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6})
+    const largeFrame=this.app.assets?.getNineSlice('ui.frames.large',{sourceSlice:48,destEdge:7})
     r.clear('#160d08')
-    r.ornateFrame(3,3,314,218)
+    r.ornateFrame(3,3,314,218,largeFrame)
     const city=CITY_BY_ID[this.conflict?.target]
     r.shadowText(`${city?.name??''} 攻城準備`,160,18,14,'#f2d174','center')
 
-    r.fillRect(15,48,290,105,'#573a22')
-    r.fillRect(15,118,290,35,'#75613a')
-    for(let x=40;x<290;x+=36){
-      r.fillRect(x,76,22,42,'#84735a')
-      r.fillRect(x+4,67,14,9,'#443629')
-    }
-    r.fillRect(115,91,90,62,'#3d2d22')
-    r.fillRect(139,110,42,43,'#18120e')
-    c.fillStyle='rgba(0,0,0,.25)'
-    for(let i=0;i<12;i++)c.fillRect((18+i*27)*r.S,(130+(i%3)*4)*r.S,15*r.S,18*r.S)
+    drawSiegeFortress(r,{x:15,y:48,width:290,height:105})
 
     const af=FACTION_BY_ID[this.conflict?.attacker]
     const df=FACTION_BY_ID[this.conflict?.defender]
