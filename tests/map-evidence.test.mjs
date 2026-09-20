@@ -78,3 +78,34 @@ test('evidence summary counts only source-backed verified records',()=>{
   assert.equal(report.villageEvidenceCount,1)
   assert.equal(report.ownership189EvidenceCount,1)
 })
+
+
+test('village evidence must stay inside its declared coordinate space',()=>{
+  const report=validateCanonicalMapEvidence({
+    sources,
+    villages:[
+      {
+        x:999,y:999,space:'logical-320x224',
+        sourceId:'capture-001',frameRef:'frame-001#village-outside',verified:true,
+      },
+    ],
+  })
+  assert.equal(report.villageEvidenceCount,0)
+})
+
+test('name resolutions cannot choose an arbitrary third spelling',()=>{
+  const report=validateCanonicalMapEvidence({
+    sources,
+    nameResolutions:[
+      {
+        ram:'薊縣',
+        numberedGuide:'蘇縣',
+        chosen:'薊州',
+        sourceId:'capture-001',
+        frameRef:'frame-001#name',
+        verified:true,
+      },
+    ],
+  })
+  assert.equal(report.nameResolutionCount,0)
+})
