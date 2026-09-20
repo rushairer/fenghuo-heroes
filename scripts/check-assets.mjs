@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
+import { HD_RASTER_MIN_SCALE } from '../src/game/asset-quality.js'
 
 const manifestPath='public/assets/manifests/asset-manifest.v1.json'
 const productionSpecPath='public/assets/manifests/production-spec.v1.json'
@@ -123,6 +124,19 @@ for(const [key,spec] of Object.entries(productionSpec.assets??{})){
     }else{
       if(spec.integrity.byteLength!==undefined&&(!Number.isInteger(spec.integrity.byteLength)||spec.integrity.byteLength<=0))failures.push(`${key}: integrity.byteLength must be a positive integer`)
       if(spec.integrity.sha256!==undefined&&!sha256Pattern.test(spec.integrity.sha256))failures.push(`${key}: integrity.sha256 must be a lowercase SHA-256 hex string`)
+    }
+  }
+  if(spec.nineSlice!==undefined){
+    const nine=spec.nineSlice
+    if(!nine||typeof nine!=='object'||Array.isArray(nine)){
+      failures.push(`${key}: nineSlice must be an object when present`)
+    }else{
+      if(!Number.isInteger(nine.sourceSlice)||nine.sourceSlice<=0)failures.push(`${key}: nineSlice.sourceSlice must be a positive integer`)
+      if(typeof nine.destEdge!=='number'||!Number.isFinite(nine.destEdge)||nine.destEdge<=0)failures.push(`${key}: nineSlice.destEdge must be a positive number`)
+      if(Number.isInteger(nine.sourceSlice)&&typeof nine.destEdge==='number'&&Number.isFinite(nine.destEdge)){
+        const required=Math.ceil(nine.destEdge*HD_RASTER_MIN_SCALE)
+        if(nine.sourceSlice<required)failures.push(`${key}: nineSlice source ${nine.sourceSlice}px is below HD edge floor ${required}px`)
+      }
     }
   }
 }
