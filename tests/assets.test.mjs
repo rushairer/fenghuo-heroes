@@ -49,3 +49,13 @@ test('registry fails closed so canvas fallback can continue',async()=>{
   assert.match(registry.error.message,/manifest request failed/i)
   assert.equal(registry.get('title.main'),null)
 })
+
+
+test('registry sharpness gate evaluates loaded image density',()=>{
+  const registry=new AssetRegistry({fetchFn:null,imageFactory:null})
+  registry.images.set('title.main',{naturalWidth:640,naturalHeight:448})
+  assert.equal(registry.isSharpEnough('title.main',320,224),false)
+  assert.deepEqual(registry.sharpness('title.main',320,224).required,{width:1600,height:1120})
+  registry.images.set('title.main',{naturalWidth:1600,naturalHeight:1120})
+  assert.equal(registry.isSharpEnough('title.main',320,224),true)
+})
