@@ -33,3 +33,13 @@ test('scene code never directly stretches reusable panel/frame assets',()=>{
   }
   assert.deepEqual(failures,[])
 })
+
+
+test('scene visual assets may not bypass explicit HD-aware registry lookups',()=>{
+  const failures=[]
+  for(const {name,source} of sceneSources()){
+    const raw=[...source.matchAll(/assets\?\.get\(/g)]
+    if(raw.length)failures.push(`${name}: ${raw.length} raw asset lookup(s)`)
+  }
+  assert.deepEqual(failures,[])
+})
