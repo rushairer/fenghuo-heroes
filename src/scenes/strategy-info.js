@@ -5,6 +5,7 @@ import { drawMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVe
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { mountainStampStyle } from '../game/terrain-style.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, isVisible, toScreen, worldPoint } from '../game/world.js'
+import { drawWorldRiver } from '../game/world-art.js'
 import { StrategyScene as ParityStrategyScene } from './strategy-parity.js'
 
 const MOUNTAIN_REFS = Object.freeze([
@@ -134,27 +135,9 @@ export class StrategyScene extends ParityStrategyScene {
   }
 
   drawRiver(camera) {
-    const r=this.app.r
-    const c=r.ctx
-    const S=r.S
     const water=this.app.assets?.getForDisplay('map.terrain.riverA',42,20)
-    const pattern=water?c.createPattern(water,'repeat'):null
-    const drawPath=()=>{
-      c.beginPath()
-      c.moveTo(205*S,-12*S)
-      c.bezierCurveTo(229*S,48*S,287*S,69*S,323*S,126*S)
-      c.bezierCurveTo(360*S,184*S,421*S,218*S,473*S,235*S)
-      c.bezierCurveTo(526*S,254*S,579*S,278*S,658*S,326*S)
-    }
-    c.save()
-    c.translate(-camera.x*S,-camera.y*S)
-    c.lineCap='round'
-    c.lineJoin='round'
-    drawPath();c.strokeStyle='#6f5837';c.lineWidth=23*S;c.stroke()
-    drawPath();c.strokeStyle='#082d92';c.lineWidth=19*S;c.stroke()
-    drawPath();c.strokeStyle=pattern??'#064ac0';c.lineWidth=13*S;c.stroke()
-    drawPath();c.strokeStyle=pattern?'#b8e7ef':'#0d63d7';c.lineWidth=3*S;c.globalAlpha=pattern?.24:.55;c.stroke()
-    c.restore()
+    const pattern=water?this.app.r.ctx.createPattern(water,'repeat'):null
+    drawWorldRiver(this.app.r,{camera,pattern})
   }
 
   drawMountain(x,y,index=0) {
