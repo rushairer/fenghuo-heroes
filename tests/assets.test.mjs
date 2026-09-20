@@ -71,3 +71,18 @@ test('getForDisplay returns only raster assets dense enough for their logical fo
   assert.equal(registry.getForDisplay('map.flag.soft',20,20),null)
   assert.equal(registry.getForDisplay('missing',20,20),null)
 })
+
+
+test('registry nine-slice lookup evaluates source edge density instead of destination size',()=>{
+  const registry=new AssetRegistry({fetchFn:null,imageFactory:null})
+  const frame={naturalWidth:320,naturalHeight:260}
+  registry.images.set('ui.frames.large',frame)
+  assert.equal(
+    registry.getNineSlice('ui.frames.large',{sourceSlice:32,destEdge:6,scale:5}),
+    frame,
+  )
+  assert.equal(
+    registry.getNineSlice('ui.frames.large',{sourceSlice:32,destEdge:7,scale:5}),
+    null,
+  )
+})
