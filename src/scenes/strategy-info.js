@@ -1,11 +1,11 @@
 import { COLORS } from '../game/constants.js'
-import { CITIES, FACTION_BY_ID } from '../game/data.js'
+import { CITIES, CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
 import { drawMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { mountainStampStyle } from '../game/terrain-style.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, isVisible, toScreen, worldPoint } from '../game/world.js'
-import { drawWorldRiver } from '../game/world-art.js'
+import { drawRoadNetwork, drawWorldRiver, uniqueRoadPairs } from '../game/world-art.js'
 import { StrategyScene as ParityStrategyScene } from './strategy-parity.js'
 
 const MOUNTAIN_REFS = Object.freeze([
@@ -21,6 +21,12 @@ const FOREST_REFS = Object.freeze([
 ])
 
 const ARMY_SELECTED_VIEWS = new Set(['army-menu','march-route','march-route-prompt'])
+const ROAD_SEGMENTS_WORLD = Object.freeze(
+  uniqueRoadPairs(CITIES).map(([from,to])=>Object.freeze({
+    a:Object.freeze(cityWorldPoint(CITY_BY_ID[from])),
+    b:Object.freeze(cityWorldPoint(CITY_BY_ID[to])),
+  })),
+)
 
 export class StrategyScene extends ParityStrategyScene {
   constructor(app) {
@@ -92,6 +98,16 @@ export class StrategyScene extends ParityStrategyScene {
     }
 
     this.drawRiver(camera)
+
+    const roadSegments=ROAD_SEGMENTS_WORLD
+      .map(({a,b})=>({a:toScreen(a,camera),b:toScreen(b,camera)}))
+      .filter(({a,b})=>!(
+        (a.x<-24&&b.x<-24)||
+        (a.x>MAP_VIEW_W+24&&b.x>MAP_VIEW_W+24)||
+        (a.y<-24&&b.y<-24)||
+        (a.y>MAP_VIEW_H+24&&b.y>MAP_VIEW_H+24)
+      ))
+    drawRoadNetwork(r,roadSegments)
 
     MOUNTAIN_REFS.forEach((ref,index)=>{
       const wp=worldPoint({x:ref[0],y:ref[1]})
