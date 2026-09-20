@@ -16,7 +16,7 @@
 - 可手动操作的单挑
 - 俘虏、继位、势力灭亡、AI 与统一判定
 
-当前主线是 **HD parity**：原作 320×224 只作为参考坐标系，浏览器以 6× 高清 backing store 起步，并根据实际显示尺寸与设备像素比自适应提升，最高 10×；同时保持原作界面几何和操作节奏。HD 模式追求高分辨率重绘，不再把固定低分辨率画布用 CSS 二次放大冒充高清。运行时 raster 素材还必须达到至少约 5× 的实际显示像素密度，否则自动退回 Canvas/vector 绘制。
+当前主线是 **HD parity**：原作 320×224 只作为参考坐标系，浏览器以 6× 高清 backing store 起步，并根据实际显示尺寸与设备像素比自适应提升，最高 10×；同时保持原作界面几何和操作节奏。HD 模式追求高分辨率重绘，不再把固定低分辨率画布用 CSS 二次放大冒充高清。运行时普通 raster 素材还必须达到至少约 5× 的实际显示像素密度，否则自动退回 Canvas/vector 绘制。nine-slice UI 则按角/边切片本身的源像素密度验收，避免把可安全拉伸的面板误判为低清，也避免低分边框被强行放大。
 
 > **地图状态警告**：当前可玩战略地图仍是迁移前的 40 节点工程脚手架，不是中文版原作 40 城地图。原作城市身份已进入独立 evidence layer；在坐标、村庄与 189 归属完成证据校准前，不得把当前地图称为 1:1。详见 `docs/MAP_MIGRATION_BLOCKER.md`。
 
@@ -55,12 +55,18 @@ npm run check
 
 以下查询参数用于把页面固定到确定状态，方便人工走查和截图 diff：
 
+- `?qa=title-splash`
 - `?qa=title-menu`
+- `?qa=player-count`
+- `?qa=setup`
+- `?qa=strategy-map`
+- `?qa=city-status`
 - `?qa=country-overview`
 - `?qa=full-map`
+- `?qa=officer-list`
 - `?qa=officer-status`
 
-这些 QA 状态只固定画面入口，不绕过游戏规则，也不改变默认玩家流程。
+这些 QA 状态只固定画面入口，不绕过游戏规则，也不改变默认玩家流程。武将 QA 状态只使用仓库现有 evidence-backed 开局名册投影，不为截图方便补造武将资料。
 
 ## GitHub Pages
 
