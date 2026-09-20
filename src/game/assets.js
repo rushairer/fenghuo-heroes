@@ -115,6 +115,11 @@ export class AssetRegistry {
   isSharpEnough(key, logicalWidth, logicalHeight) {
     return isAssetSharpEnough(this.get(key), logicalWidth, logicalHeight)
   }
+
+  getForDisplay(key, logicalWidth, logicalHeight) {
+    const image=this.get(key)
+    return image&&isAssetSharpEnough(image,logicalWidth,logicalHeight)?image:null
+  }
 }
 
 export const ASSET_MANIFEST_URL = DEFAULT_MANIFEST_URL
