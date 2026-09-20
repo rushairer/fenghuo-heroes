@@ -2,6 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { CITIES, FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, FULL_MAP_RIVER, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
+import { drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { cityWorldPoint } from '../game/world.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
 
@@ -63,20 +64,19 @@ export class StrategyScene extends OfficerStrategyScene {
     r.text('地圖符號',legendX,68,6,'#9e947e')
     const fort=this.app.assets?.getForDisplay('map.cities.neutral',17,17)
     if(!fort||!r.drawImageCentered(fort,244,88,17,17)){
-      r.fillRect(239,83,10,8,'#8c6b43')
-      r.strokeRect(238,82,12,10,'#2a1c13',.5)
+      drawVectorFort(r,244,91,'#8c8c8c',.72)
     }
     r.text('城',258,84,7,'#e8dfc8')
 
     const village=this.app.assets?.getForDisplay('map.villages.neutral',17,17)
     if(!village||!r.drawImageCentered(village,244,111,17,17)){
-      r.fillRect(239,107,10,6,'#9d8059')
+      drawVectorVillage(r,244,111,.78)
     }
     r.text('村',258,107,7,'#e8dfc8')
 
     const mountain=this.app.assets?.getForDisplay('map.terrain.mountainA',18,14)
     if(!mountain||!r.drawImageCentered(mountain,244,135,18,14)){
-      r.text('▲',244,128,10,'#7b5638','center')
+      drawVectorMountain(r,244,137,0,.72)
     }
     r.text('山',258,131,7,'#e8dfc8')
     r.text('村庄位置待實機校準',264,151,5,'#837a69','center')
