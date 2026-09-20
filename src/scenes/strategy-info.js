@@ -137,7 +137,7 @@ export class StrategyScene extends ParityStrategyScene {
     const r=this.app.r
     const c=r.ctx
     const S=r.S
-    const water=this.app.assets?.get('map.terrain.riverA')
+    const water=this.app.assets?.getForDisplay('map.terrain.riverA',42,20)
     const pattern=water?c.createPattern(water,'repeat'):null
     const drawPath=()=>{
       c.beginPath()
