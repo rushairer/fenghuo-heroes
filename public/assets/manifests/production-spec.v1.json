@@ -64,7 +64,7 @@
         "height": 256
       },
       "nineSlice": {
-        "sourceSlice": 32,
+        "sourceSlice": 48,
         "destEdge": 7
       }
     },
@@ -367,7 +367,7 @@
       "target": "assets/ui/frames/ui-frame-small-v1.webp",
       "transparentPreferred": true,
       "nineSlice": {
-        "sourceSlice": 32,
+        "sourceSlice": 48,
         "destEdge": 7
       },
       "forbiddenBakedUI": [
