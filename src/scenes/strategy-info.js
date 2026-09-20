@@ -1,7 +1,7 @@
 import { COLORS } from '../game/constants.js'
 import { CITIES, FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
-import { drawVectorForest, drawVectorFort, drawVectorMountain } from '../game/map-art.js'
+import { drawMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { mountainStampStyle } from '../game/terrain-style.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, isVisible, toScreen, worldPoint } from '../game/world.js'
@@ -130,8 +130,7 @@ export class StrategyScene extends ParityStrategyScene {
     }
 
     const cursor=toScreen(state.cursor,camera)
-    r.strokeRect(cursor.x-8,cursor.y-6,16,12,'#fff5a4',1.15)
-    r.strokeRect(cursor.x-6,cursor.y-4,12,8,'#24180e',.45)
+    drawMapCursor(r,cursor.x,cursor.y)
   }
 
   drawRiver(camera) {
@@ -200,22 +199,6 @@ export class StrategyScene extends ParityStrategyScene {
       }
       return
     }
-    c.save()
-    c.translate(x*S,y*S)
-    c.fillStyle='#332016'
-    c.fillRect(-4*S,0,9*S,5*S)
-    c.fillRect(1*S,-9*S,1*S,10*S)
-    c.fillStyle=color
-    c.beginPath()
-    c.moveTo(2*S,-9*S)
-    c.lineTo(10*S,-8*S)
-    c.lineTo(8*S,-3*S)
-    c.lineTo(2*S,-4*S)
-    c.closePath()
-    c.fill()
-    c.strokeStyle=starving?'#ff765f':selected?COLORS.cyan:'#2a1c13'
-    c.lineWidth=(starving||selected?1.1:.5)*S
-    c.strokeRect(-5*S,-10*S,16*S,16*S)
-    c.restore()
+    drawVectorFlag(r,x,y,color,{selected,starving})
   }
 }
