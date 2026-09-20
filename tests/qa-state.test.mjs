@@ -6,7 +6,7 @@ import {
   initialSceneForVisualQa,
 } from '../src/game/qa-state.js'
 
-test('visual QA state catalog covers setup and primary strategy inspection screens',()=>{
+test('visual QA state catalog covers setup, strategy, march, siege and duel screens',()=>{
   assert.deepEqual(VISUAL_QA_STATES,[
     'title-splash',
     'title-menu',
@@ -18,6 +18,14 @@ test('visual QA state catalog covers setup and primary strategy inspection scree
     'full-map',
     'officer-list',
     'officer-status',
+    'march-compose',
+    'march-officers',
+    'march-route-prompt',
+    'army-menu',
+    'siege-speed',
+    'siege-formation',
+    'duel-mode',
+    'duel-manual',
   ])
 })
 
@@ -26,7 +34,9 @@ test('QA states resolve to deterministic initial scenes',()=>{
   assert.equal(initialSceneForVisualQa('player-count'),'players')
   assert.equal(initialSceneForVisualQa('setup'),'setup')
   assert.equal(initialSceneForVisualQa('strategy-map'),'strategy')
-  assert.equal(initialSceneForVisualQa('officer-status'),'strategy')
+  assert.equal(initialSceneForVisualQa('march-compose'),'strategy')
+  assert.equal(initialSceneForVisualQa('siege-speed'),'siege')
+  assert.equal(initialSceneForVisualQa('duel-mode'),'duel')
   assert.equal(initialSceneForVisualQa('unknown'),'title')
 })
 
@@ -61,14 +71,25 @@ test('player-count and setup QA states reset deterministic controls',()=>{
 })
 
 function strategyApp() {
-  return {
-    store:{
-      humanFaction:'liu',
-      hasGame:()=>true,
-      state:{cities:{c1:{owner:'liu'},c2:{owner:'cao'}}},
+  const store={
+    humanFaction:'liu',
+    hasGame:()=>true,
+    state:{
+      cities:{c1:{owner:'liu',troops:5000,food:3000,gold:900},c2:{owner:'cao',troops:4200}},
+      armies:[],
+      openingRosters:{liu:{ruler:'劉備',officers:['關羽','張飛']}},
+      cursor:{x:20,y:20},
     },
+    assertState(){},
+    setCursor(x,y){this.state.cursor={x,y}},
+  }
+  return {
+    store,
+    audio:{confirm(){},move(){},cancel(){},alert(){}},
     scene:{
+      app:null,
       view:'map',
+      stage:'march',
       infoTab:0,
       infoReturnView:'map',
       infoCommandBrowse:true,
@@ -78,9 +99,26 @@ function strategyApp() {
       officerListCity:null,
       officerListCursor:4,
       officerStatusRow:null,
+      marchArmyId:null,
+      armyMenuIndex:4,
+      officerCursor:3,
+      selectedOfficerNames:[],
+      composeFocus:4,
+      marchTroops:1000,
+      marchFood:300,
+      marchGold:100,
+      marchFoodDays:30,
       syncCountryOverviewCursorToMap(){this.countryOverviewCursor=2},
-      officerListProjection(){
-        return {rows:[{name:'關羽',role:'將'}]}
+      officerListProjection(){return {rows:[{name:'關羽',role:'將'}]}},
+      beginMarchCompose(cityId){
+        this.marchFrom=cityId
+        this.composeFocus=0
+        this.selectedOfficerNames=['劉備']
+        this.view='march-compose'
+      },
+      beginNewMarchRoute(){
+        this.marchRoute=[{x:20,y:20}]
+        this.view='march-route-prompt'
       },
     },
   }
@@ -119,6 +157,54 @@ test('officer QA states derive display rows without inventing new officer data',
   assert.equal(status.scene.view,'officer-status')
   assert.equal(status.scene.officerStatusRow.name,'關羽')
   assert.equal(status.scene.officerStatusRow.role,'將')
+})
+
+test('march QA states deterministically open compose, officers, route prompt and army menu',()=>{
+  for(const qaState of ['march-compose','march-officers','march-route-prompt']){
+    const app=strategyApp()
+    assert.equal(applyVisualQaState(app,qaState),true)
+    assert.equal(app.scene.stage,'march')
+    assert.equal(app.scene.marchFrom,'c1')
+    if(qaState==='march-compose')assert.equal(app.scene.view,'march-compose')
+    if(qaState==='march-officers')assert.equal(app.scene.view,'march-officers')
+    if(qaState==='march-route-prompt')assert.equal(app.scene.view,'march-route-prompt')
+  }
+
+  const armyMenu=strategyApp()
+  armyMenu.store.state.armies=[{
+    id:'qa-army',faction:'liu',x:40,y:50,qaFixture:true,
+  }]
+  assert.equal(applyVisualQaState(armyMenu,'army-menu'),true)
+  assert.equal(armyMenu.scene.view,'army-menu')
+  assert.equal(armyMenu.scene.marchArmyId,'qa-army')
+  assert.deepEqual(armyMenu.store.state.cursor,{x:40,y:50})
+})
+
+test('siege QA states reset phase and overlays deterministically',()=>{
+  for(const [qaState,phase] of [['siege-speed','speed'],['siege-formation','formation']]){
+    const app={scene:{phase:'formation',speedIndex:2,message:'old',conflict:{target:'x'}}}
+    assert.equal(applyVisualQaState(app,qaState),true)
+    assert.equal(app.scene.phase,phase)
+    assert.equal(app.scene.speedIndex,0)
+    assert.equal(app.scene.message,'')
+  }
+})
+
+test('duel QA states reset mode, health and transient command state',()=>{
+  for(const [qaState,modeSelect] of [['duel-mode',true],['duel-manual',false]]){
+    const app={scene:{
+      c:{target:'x'},modeSelect:false,modeIndex:2,autoMode:true,commandOpen:true,
+      result:'勝',message:'old',php:12,ehp:5,
+    }}
+    assert.equal(applyVisualQaState(app,qaState),true)
+    assert.equal(app.scene.modeSelect,modeSelect)
+    assert.equal(app.scene.modeIndex,0)
+    assert.equal(app.scene.autoMode,false)
+    assert.equal(app.scene.commandOpen,false)
+    assert.equal(app.scene.result,null)
+    assert.equal(app.scene.php,100)
+    assert.equal(app.scene.ehp,100)
+  }
 })
 
 test('unknown QA states and missing required scene shapes are inert',()=>{
