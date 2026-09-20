@@ -11,7 +11,7 @@
       "sourceRole": "production crop from text-free Image 2.5 title composition",
       "crop": { "x": 0, "y": 0, "width": 1463, "height": 1024 },
       "nativeTarget": { "width": 1600, "height": 1120, "aspect": "10:7" },
-      "minimumRuntime": { "width": 640, "height": 448 },
+      "minimumRuntime": { "width": 1600, "height": 1120 },
       "forbiddenBakedUI": ["START", "CONTINUE", "PUSH START", "readable interactive labels", "HUD"],
       "notes": "The generated frame contains five warlords, battlefield scenery, right blue-gold trim and an empty ornamental menu frame. All interactive menu copy stays code-native."
     },
