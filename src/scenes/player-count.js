@@ -34,7 +34,7 @@ export class PlayerCountScene {
   draw() {
     const r = this.app.r
     const frame = this.app.assets?.get('ui.frames.small')
-    const pointer = this.app.assets?.get('ui.cursors.pointer')
+    const pointer = this.app.assets?.getForDisplay('ui.cursors.pointer',15,15)
     r.clear('#000')
     r.ornateFrame(23, 24, 274, 176, frame)
     r.text('參加人數', 160, 48, 15, '#f3efe4', 'center', 'top', SERIF, '700')
