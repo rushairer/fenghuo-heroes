@@ -92,7 +92,8 @@ export function validateCanonicalMapEvidence(evidence={}){
     sourceBackedVerification(record,sources)&&
     typeof record?.ram==='string'&&
     typeof record?.numberedGuide==='string'&&
-    typeof record?.chosen==='string'&&record.chosen.trim()
+    typeof record?.chosen==='string'&&
+    (record.chosen===record.ram||record.chosen===record.numberedGuide)
   )
 
   const villageCoverageVerified=sourceBackedVerification(evidence.villageCoverage,sources)
