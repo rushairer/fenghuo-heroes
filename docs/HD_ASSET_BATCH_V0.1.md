@@ -15,7 +15,7 @@
 
 | Asset | 母版建议 | Runtime | 当前 |
 | --- | ---: | --- | --- |
-| `title-main-hd-v1` | ≥1536×1024 | WebP | 概念完成，待纯背景生产版 |
+| `title-main-hd-v1` | ≥1600×1120 | WebP | 旧 640×448 runtime 已停用；待真正 1600×1120+ 生产版 |
 | `title-menu-frame-v1` | 1024×512 | WebP/PNG | 待生成 |
 | `title-border-right-v1` | 512×1434 | WebP/PNG | 待生成 |
 | `ui-panel-black-gold-a-v1` | 1024×1024 | PNG/WebP + 9-slice | 待生成 |
@@ -41,3 +41,15 @@
 4. Map terrain → strategy world renderer
 5. Fort / village / flags → map entities
 6. 189 ruler portraits → setup / officer info
+
+
+## Runtime HD acceptance rule
+
+`status: ready` is no longer sufficient by itself. Full-screen and sprite rasters are
+accepted only when their intrinsic pixel dimensions cover roughly 5× their actual
+logical display footprint. Undersized assets are ignored at runtime and the scalable
+Canvas/vector fallback is used instead.
+
+The backing canvas itself remains adaptive: 6× baseline and up to 10× for large/high-DPR
+displays. Raster acceptance and backing-store supersampling are deliberately separate
+concerns.
