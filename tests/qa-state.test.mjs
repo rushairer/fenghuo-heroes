@@ -75,7 +75,7 @@ function strategyApp() {
     humanFaction:'liu',
     hasGame:()=>true,
     state:{
-      cities:{c1:{owner:'liu',troops:5000,food:3000,gold:900},c2:{owner:'cao',troops:4200}},
+      cities:{chengdu:{owner:'liu',troops:5000,food:3000,gold:900},xiangping:{owner:'yuan',troops:4200}},
       armies:[],
       openingRosters:{liu:{ruler:'劉備',officers:['關羽','張飛']}},
       cursor:{x:20,y:20},
