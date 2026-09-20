@@ -178,3 +178,131 @@ export function drawVectorVillage(r,x,y,scale=1){
   c.restore()
   return true
 }
+
+
+export function flagGeometry({
+  width=16,
+  height=16,
+  selected=false,
+  starving=false,
+}={}){
+  const w=Math.max(8,Number(width)||16)
+  const h=Math.max(8,Number(height)||16)
+  return Object.freeze({
+    poleX:1,
+    poleTop:-h*.48,
+    poleBottom:h*.3,
+    flagRight:w*.48,
+    flagTop:-h*.45,
+    flagBottom:-h*.08,
+    border:selected||starving,
+  })
+}
+
+export function drawVectorFlag(r,x,y,color,{
+  selected=false,
+  starving=false,
+  scale=1,
+}={}){
+  const c=r.ctx,S=r.S*scale
+  const g=flagGeometry({selected,starving})
+  c.save()
+  c.translate(x*r.S,y*r.S)
+
+  c.fillStyle='rgba(24,15,10,.34)'
+  c.beginPath()
+  c.ellipse(1*S,5*S,7*S,2.2*S,0,0,Math.PI*2)
+  c.fill()
+
+  c.strokeStyle='#3a2418'
+  c.lineWidth=1.1*S
+  c.beginPath()
+  c.moveTo(g.poleX*S,g.poleTop*S)
+  c.lineTo(g.poleX*S,g.poleBottom*S)
+  c.stroke()
+
+  const cloth=c.createLinearGradient(2*S,-8*S,g.flagRight*S,-2*S)
+  cloth.addColorStop(0,color)
+  cloth.addColorStop(1,'rgba(38,24,18,.92)')
+  c.fillStyle=cloth
+  c.beginPath()
+  c.moveTo(2*S,g.flagTop*S)
+  c.quadraticCurveTo(7*S,-8*S,g.flagRight*S,-6*S)
+  c.lineTo((g.flagRight-1.5)*S,g.flagBottom*S)
+  c.quadraticCurveTo(7*S,-5*S,2*S,-5.5*S)
+  c.closePath()
+  c.fill()
+
+  c.strokeStyle=starving?'#ff765f':selected?'#4ee8f0':'rgba(28,18,13,.72)'
+  c.lineWidth=(starving||selected?1.05:.45)*S
+  c.stroke()
+
+  if(starving){
+    c.fillStyle='#ffd08a'
+    c.beginPath()
+    c.arc(-3*S,-5*S,2.2*S,0,Math.PI*2)
+    c.fill()
+  }
+
+  c.restore()
+  return true
+}
+
+export function fullMapCitySymbolGeometry(size=4){
+  const s=Math.max(2,Number(size)||4)
+  return Object.freeze({
+    outer:s,
+    inner:s*.58,
+    flagHeight:s*1.9,
+  })
+}
+
+export function drawFullMapCitySymbol(r,x,y,color,size=4){
+  const c=r.ctx,S=r.S,g=fullMapCitySymbolGeometry(size)
+  c.save()
+  c.translate(x*S,y*S)
+  c.fillStyle='#20150f'
+  c.beginPath()
+  c.arc(0,0,g.outer*S/2,0,Math.PI*2)
+  c.fill()
+  c.fillStyle=color
+  c.beginPath()
+  c.arc(0,0,g.inner*S/2,0,Math.PI*2)
+  c.fill()
+  c.strokeStyle='rgba(255,229,177,.48)'
+  c.lineWidth=.35*S
+  c.stroke()
+  c.restore()
+  return true
+}
+
+export function drawMapCursor(r,x,y,{
+  width=16,
+  height=12,
+  color='#fff5a4',
+  inner='#24180e',
+  scale=1,
+}={}){
+  const c=r.ctx,S=r.S*scale
+  c.save()
+  c.translate(x*r.S,y*r.S)
+  c.strokeStyle=color
+  c.lineWidth=1.15*S
+  c.beginPath()
+  const w=width/2,h=height/2,corner=Math.min(3,w*.35,h*.5)
+  c.moveTo(-w+corner,-h)
+  c.lineTo(w-corner,-h)
+  c.lineTo(w,-h+corner)
+  c.lineTo(w,h-corner)
+  c.lineTo(w-corner,h)
+  c.lineTo(-w+corner,h)
+  c.lineTo(-w,h-corner)
+  c.lineTo(-w,-h+corner)
+  c.closePath()
+  c.stroke()
+  c.strokeStyle=inner
+  c.lineWidth=.42*S
+  c.strokeRect((-w+2)*S,(-h+2)*S,(width-4)*S,(height-4)*S)
+  c.restore()
+  return true
+}
