@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   WORLD_RIVER_PATH,
   roadSegmentStyle,
+  uniqueRoadPairs,
   worldRiverBounds,
 } from '../src/game/world-art.js'
 
@@ -24,4 +25,14 @@ test('road segment style varies deterministically within narrow HD-safe bounds',
     assert.ok(style.alpha>=.34&&style.alpha<=.43)
     assert.deepEqual(style,roadSegmentStyle(index))
   }
+})
+
+
+test('road-pair extraction removes reverse duplicates without changing identities',()=>{
+  const pairs=uniqueRoadPairs([
+    {id:'a',neighbors:['b','c']},
+    {id:'b',neighbors:['a']},
+    {id:'c',neighbors:['a']},
+  ])
+  assert.deepEqual(pairs,[['a','b'],['a','c']])
 })
