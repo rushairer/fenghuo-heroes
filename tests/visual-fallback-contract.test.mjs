@@ -32,3 +32,20 @@ test('deep visual QA synthetic state remains explicitly marked as fixture data',
   assert.match(source,/qaFixture:true/)
   assert.match(source,/pendingConflict=/)
 })
+
+
+test('base strategy scene no longer carries rectangle-only mountain forest or city fallbacks',()=>{
+  const source=read('src/scenes/strategy.js')
+  for(const symbol of ['drawVectorMountain','drawVectorForest','drawVectorFort']){
+    assert.match(source,new RegExp(`\\b${symbol}\\b`))
+  }
+  assert.doesNotMatch(source,/drawForest\(x,y\)\{const r=this\.app\.r;r\.fillRect/)
+  assert.doesNotMatch(source,/drawCity\(city,x,y\).*r\.fillRect\(x-4/)
+})
+
+test('duel backdrop uses the vector arena compositor rather than block spectator rows',()=>{
+  const source=read('src/scenes/duel.js')
+  assert.match(source,/drawDuelArena/)
+  assert.doesNotMatch(source,/for\(let x=24;x<300;x\+=20\)/)
+  assert.doesNotMatch(source,/r\.fillRect\(134,93,52,38/)
+})
