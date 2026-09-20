@@ -39,7 +39,7 @@ export class StrategyScene extends OfficerStrategyScene {
     r.text('全體地圖',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(28,44,292,44,'#72501b',.7)
 
-    const sand=this.app.assets?.get('map.terrain.sandBase')
+    const sand=this.app.assets?.getForDisplay('map.terrain.sandBase',32,32)
     if(!sand||!r.drawImageTiled(sand,bounds.x,bounds.y,bounds.w,bounds.h,32,32,0,0,.94)){
       r.fillRect(bounds.x,bounds.y,bounds.w,bounds.h,'#a98654')
     }
@@ -61,20 +61,20 @@ export class StrategyScene extends OfficerStrategyScene {
     const legendX=235
     r.text(`${state.year}年 ${state.month}月`,legendX,51,7,'#e6d7b7')
     r.text('地圖符號',legendX,68,6,'#9e947e')
-    const fort=this.app.assets?.get('map.cities.neutral')
+    const fort=this.app.assets?.getForDisplay('map.cities.neutral',17,17)
     if(!fort||!r.drawImageCentered(fort,244,88,17,17)){
       r.fillRect(239,83,10,8,'#8c6b43')
       r.strokeRect(238,82,12,10,'#2a1c13',.5)
     }
     r.text('城',258,84,7,'#e8dfc8')
 
-    const village=this.app.assets?.get('map.villages.neutral')
+    const village=this.app.assets?.getForDisplay('map.villages.neutral',17,17)
     if(!village||!r.drawImageCentered(village,244,111,17,17)){
       r.fillRect(239,107,10,6,'#9d8059')
     }
     r.text('村',258,107,7,'#e8dfc8')
 
-    const mountain=this.app.assets?.get('map.terrain.mountainA')
+    const mountain=this.app.assets?.getForDisplay('map.terrain.mountainA',18,14)
     if(!mountain||!r.drawImageCentered(mountain,244,135,18,14)){
       r.text('▲',244,128,10,'#7b5638','center')
     }
