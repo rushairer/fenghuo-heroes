@@ -132,7 +132,7 @@ test('strategy QA states select map, city and info views from the first owned ci
   const city=strategyApp()
   assert.equal(applyVisualQaState(city,'city-status'),true)
   assert.equal(city.scene.view,'city-status')
-  assert.equal(city.scene.targetCity,'c1')
+  assert.equal(city.scene.targetCity,'chengdu')
 
   const overview=strategyApp()
   assert.equal(applyVisualQaState(overview,'country-overview'),true)
@@ -149,7 +149,7 @@ test('officer QA states derive display rows without inventing new officer data',
   const list=strategyApp()
   assert.equal(applyVisualQaState(list,'officer-list'),true)
   assert.equal(list.scene.view,'officer-list')
-  assert.equal(list.scene.officerListCity,'c1')
+  assert.equal(list.scene.officerListCity,'chengdu')
   assert.equal(list.scene.officerListCursor,0)
 
   const status=strategyApp()
@@ -164,7 +164,7 @@ test('march QA states deterministically open compose, officers, route prompt and
     const app=strategyApp()
     assert.equal(applyVisualQaState(app,qaState),true)
     assert.equal(app.scene.stage,'march')
-    assert.equal(app.scene.marchFrom,'c1')
+    assert.equal(app.scene.marchFrom,'chengdu')
     if(qaState==='march-compose')assert.equal(app.scene.view,'march-compose')
     if(qaState==='march-officers')assert.equal(app.scene.view,'march-officers')
     if(qaState==='march-route-prompt')assert.equal(app.scene.view,'march-route-prompt')
