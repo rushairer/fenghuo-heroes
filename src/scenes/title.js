@@ -48,10 +48,9 @@ export class TitleScene {
 
   draw() {
     const r = this.app.r
-    const titleImage = this.app.assets?.get('title.main')
-    const pointer = this.app.assets?.get('ui.cursors.pointer')
-    const titleSharpEnough = Boolean(titleImage && this.app.assets?.isSharpEnough('title.main', r.W, r.H))
-    const hdArt = Boolean(titleSharpEnough && r.drawImageCover(titleImage, 0, 0, r.W, r.H))
+    const titleImage = this.app.assets?.getForDisplay('title.main', r.W, r.H)
+    const pointer = this.app.assets?.getForDisplay('ui.cursors.pointer', 12, 12)
+    const hdArt = Boolean(titleImage && r.drawImageCover(titleImage, 0, 0, r.W, r.H))
     if (!hdArt) drawTitleComposition(r)
 
     // Image 2.5 provides only visual chrome/background. Interactive labels remain
