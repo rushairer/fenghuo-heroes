@@ -75,7 +75,7 @@ export class StrategyScene extends ParityStrategyScene {
     const c=r.ctx
     const state=this.app.store.state
     const camera=cameraFor(state.cursor)
-    const sand=this.app.assets?.get('map.terrain.sandBase')
+    const sand=this.app.assets?.getForDisplay('map.terrain.sandBase',64,64)
 
     if(!sand||!r.drawImageTiled(sand,0,0,MAP_VIEW_W,MAP_VIEW_H,64,64,camera.x,camera.y)){
       r.fillRect(0,0,MAP_VIEW_W,MAP_VIEW_H,'#b48855')
@@ -161,7 +161,7 @@ export class StrategyScene extends ParityStrategyScene {
     const r=this.app.r
     const hasMountainB=Boolean(this.app.assets?.get('map.terrain.mountainB'))
     const style=mountainStampStyle(index,hasMountainB)
-    const image=this.app.assets?.get(style.assetKey)??this.app.assets?.get('map.terrain.mountainA')
+    const image=this.app.assets?.getForDisplay(style.assetKey,style.width,style.height)??this.app.assets?.getForDisplay('map.terrain.mountainA',style.width,style.height)
     if(image&&r.drawImageCentered(image,x,y+style.offsetY,style.width,style.height,style.alpha,style.mirror))return
     const c=r.ctx
     const S=r.S
@@ -194,7 +194,7 @@ export class StrategyScene extends ParityStrategyScene {
 
   drawForest(x,y,index=0) {
     const r=this.app.r
-    const image=this.app.assets?.get('map.terrain.forestA')
+    const image=this.app.assets?.getForDisplay('map.terrain.forestA',22,18)
     if(image&&r.drawImageCentered(image,x,y,22,18,.96))return
     const c=r.ctx
     const S=r.S
@@ -222,7 +222,7 @@ export class StrategyScene extends ParityStrategyScene {
     const S=r.S
     const runtime=this.app.store.state.cities[city.id]
     const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
-    const image=this.app.assets?.get(`map.cities.${runtime.owner}`)??(runtime.owner==='neutral'?this.app.assets?.get('map.cities.neutral'):null)
+    const image=this.app.assets?.getForDisplay(`map.cities.${runtime.owner}`,24,24)??(runtime.owner==='neutral'?this.app.assets?.getForDisplay('map.cities.neutral',24,24):null)
     if(image&&r.drawImageStretch(image,x-12,y-16,24,24))return
     c.save()
     c.translate(x*S,y*S)
@@ -257,9 +257,9 @@ export class StrategyScene extends ParityStrategyScene {
     const r=this.app.r
     const c=r.ctx
     const S=r.S
-    const base=this.app.assets?.get(`map.flags.${factionId}`)
-    const selectedFlag=selected?this.app.assets?.get('map.flags.selected'):null
-    const lowFoodFlag=starving?this.app.assets?.get('map.flags.lowFood'):null
+    const base=this.app.assets?.getForDisplay(`map.flags.${factionId}`,20,20)
+    const selectedFlag=selected?this.app.assets?.getForDisplay('map.flags.selected',20,20):null
+    const lowFoodFlag=starving?this.app.assets?.getForDisplay('map.flags.lowFood',20,20):null
     const image=lowFoodFlag??selectedFlag??base
     if(image){
       r.drawImageStretch(image,x-10,y-14,20,20)
