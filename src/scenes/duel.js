@@ -1,3 +1,4 @@
+import { drawDuelFighter } from '../game/battle-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
 import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { DUEL_COMMANDS, DUEL_MODES, autoDuelIntent, cycleDuelMode } from '../game/duel-parity.js'
@@ -138,11 +139,18 @@ export class DuelScene{
     r.fillRect(0,38,320,104,'#6e4d31');r.fillRect(0,142,320,82,'#927c49');r.fillRect(20,84,280,47,'#49392f')
     for(let x=24;x<300;x+=20)r.fillRect(x,74,12,14,'#554439')
     r.fillRect(134,93,52,38,'#251c18')
-    r.panel(6,5,308,31,'#050505','#7c5014')
+    r.panel(6,5,308,31,'#050505','#7c5014',smallPanel)
     r.text(`${CITY_BY_ID[this.c?.target]?.name??''} · 一騎討ち`,160,9,10,'#f1d477','center','top',SERIF,'700')
     r.text(`我方 ${String(this.php).padStart(3)}      敵方 ${String(this.ehp).padStart(3)}`,160,24,6.5,'#e8dec4','center')
     const af=FACTION_BY_ID[this.c?.attacker],df=FACTION_BY_ID[this.c?.defender]
-    this.fighter(this.px,160,af?.color??'#587cc7',false);this.fighter(this.ex,160,df?.color??'#b75f52',true)
+    drawDuelFighter(r,{
+      x:this.px,y:160,color:af?.color??'#587cc7',flip:false,
+      guard:this.guard,attacking:this.attackCd>160,
+    })
+    drawDuelFighter(r,{
+      x:this.ex,y:160,color:df?.color??'#b75f52',flip:true,
+      guard:false,attacking:this.enemyCd>500,
+    })
     if(this.hitFlash>0){c.save();c.globalAlpha=Math.min(.35,this.hitFlash/300);c.fillStyle='#fff2bf';c.fillRect(0,0,320*r.S,224*r.S);c.restore()}
     r.fillRect(0,190,320,34,'rgba(10,8,6,.82)')
     r.text(this.autoMode&&!this.modeSelect?'自動一騎討ち中':'← → 移動　B+↑/↓ 上下段攻擊　B 中段　C 防禦　A 命令',160,197,6.2,'#eadbb9','center')
@@ -162,5 +170,4 @@ export class DuelScene{
     r.text('C / A 決定　B 返回',160,139,6,'#918775','center')
   }
 
-  fighter(x,y,color,flip){const r=this.app.r,c=r.ctx;c.save();c.translate(x*r.S,y*r.S);c.scale(flip?-1:1,1);c.fillStyle='#3b2418';c.fillRect(-16*r.S,2*r.S,32*r.S,8*r.S);c.fillStyle=color;c.fillRect(-8*r.S,-27*r.S,16*r.S,25*r.S);c.fillStyle='#d6a274';c.fillRect(-5*r.S,-37*r.S,10*r.S,10*r.S);c.fillStyle='#1e1714';c.fillRect(-7*r.S,-42*r.S,14*r.S,6*r.S);c.fillStyle='#d8d0b0';c.fillRect(6*r.S,-18*r.S,34*r.S,2*r.S);c.fillStyle='#40251a';c.fillRect(-13*r.S,-2*r.S,4*r.S,22*r.S);c.fillRect(9*r.S,-2*r.S,4*r.S,22*r.S);c.restore()}
 }
