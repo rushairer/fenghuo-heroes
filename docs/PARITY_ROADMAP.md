@@ -5,7 +5,7 @@
 This project separates three things that were previously mixed together:
 
 1. **Reference geometry** — original MD screen space (`320×224`).
-2. **Rendered resolution** — default HD backing canvas (`1280×896`, 4×).
+2. **Rendered resolution** — adaptive HD backing canvas: 6× baseline, display-size/DPR aware, capped at 10×.
 3. **Assets** — clean-room high-resolution redraws or user-supplied licensed assets.
 
 Therefore "1:1" means the flow, geometry, input semantics, timing and rules are measured against the original, while the browser output is allowed to be substantially sharper than an emulator screenshot.
@@ -20,7 +20,8 @@ Before a screen is marked parity-complete it needs:
 - D-pad / A / B / C / START input mapping;
 - deterministic browser QA URL;
 - screenshot diff notes;
-- remaining intentional deviations.
+- remaining intentional deviations;
+- raster assets must meet the effective on-screen pixel-density requirement for the current HD scale; a `ready` manifest flag alone is not sufficient.
 
 ## Current sequence
 
