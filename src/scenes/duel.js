@@ -1,4 +1,4 @@
-import { drawDuelFighter } from '../game/battle-art.js'
+import { drawDuelArena, drawDuelFighter } from '../game/battle-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
 import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { DUEL_COMMANDS, DUEL_MODES, autoDuelIntent, cycleDuelMode } from '../game/duel-parity.js'
@@ -135,10 +135,7 @@ export class DuelScene{
     const r=this.app.r,c=r.ctx
     const smallPanel=this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6})
     r.clear('#221510')
-    const grad=c.createLinearGradient(0,0,0,224*r.S);grad.addColorStop(0,'#aa6a42');grad.addColorStop(.5,'#cf9b62');grad.addColorStop(1,'#806b3d');c.fillStyle=grad;c.fillRect(0,0,320*r.S,224*r.S)
-    r.fillRect(0,38,320,104,'#6e4d31');r.fillRect(0,142,320,82,'#927c49');r.fillRect(20,84,280,47,'#49392f')
-    for(let x=24;x<300;x+=20)r.fillRect(x,74,12,14,'#554439')
-    r.fillRect(134,93,52,38,'#251c18')
+    drawDuelArena(r,{x:0,y:38,width:320,height:152})
     r.panel(6,5,308,31,'#050505','#7c5014',smallPanel)
     r.text(`${CITY_BY_ID[this.c?.target]?.name??''} · 一騎討ち`,160,9,10,'#f1d477','center','top',SERIF,'700')
     r.text(`我方 ${String(this.php).padStart(3)}      敵方 ${String(this.ehp).padStart(3)}`,160,24,6.5,'#e8dec4','center')
