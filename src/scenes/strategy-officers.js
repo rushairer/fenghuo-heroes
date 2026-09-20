@@ -164,7 +164,7 @@ export class StrategyScene extends InfoStrategyScene {
     const r=this.app.r
     const rows=countryOverviewRows(this.app.store,{revealAll:this.infoCommandBrowse})
     const page=countryOverviewWindow(rows,this.countryOverviewCursor,COUNTRY_OVERVIEW_PAGE_SIZE)
-    const pointer=this.app.assets?.get('ui.cursors.pointer')
+    const pointer=this.app.assets?.getForDisplay('ui.cursors.pointer',10,10)
     r.panel(24,18,272,174,'#020202','#b07118',this.app.assets?.get('ui.panels.large'))
     r.text('統治國一覽',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(37,44,283,44,'#72501b',.7)
@@ -230,7 +230,7 @@ export class StrategyScene extends InfoStrategyScene {
       const maxStart=Math.max(0,rows.length-OFFICER_PAGE_SIZE)
       const start=Math.min(maxStart,Math.max(0,this.officerListCursor-3))
       const visible=rows.slice(start,start+OFFICER_PAGE_SIZE)
-      const pointer=this.app.assets?.get('ui.cursors.pointer')
+      const pointer=this.app.assets?.getForDisplay('ui.cursors.pointer',10,10)
       visible.forEach((row,index)=>{
         const absolute=start+index
         const y=80+index*12
