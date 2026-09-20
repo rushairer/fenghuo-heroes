@@ -1,6 +1,7 @@
 import { COLORS } from '../game/constants.js'
 import { CITIES, FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
+import { drawVectorForest, drawVectorFort, drawVectorMountain } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { mountainStampStyle } from '../game/terrain-style.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, isVisible, toScreen, worldPoint } from '../game/world.js'
@@ -161,96 +162,27 @@ export class StrategyScene extends ParityStrategyScene {
     const r=this.app.r
     const hasMountainB=Boolean(this.app.assets?.get('map.terrain.mountainB'))
     const style=mountainStampStyle(index,hasMountainB)
-    const image=this.app.assets?.getForDisplay(style.assetKey,style.width,style.height)??this.app.assets?.getForDisplay('map.terrain.mountainA',style.width,style.height)
+    const image=this.app.assets?.getForDisplay(style.assetKey,style.width,style.height)
+      ??this.app.assets?.getForDisplay('map.terrain.mountainA',style.width,style.height)
     if(image&&r.drawImageCentered(image,x,y+style.offsetY,style.width,style.height,style.alpha,style.mirror))return
-    const c=r.ctx
-    const S=r.S
-    c.save()
-    c.translate(x*S,y*S)
-    const peak=(dx,base,w,h,fill,highlight)=>{
-      c.fillStyle=fill
-      c.beginPath()
-      c.moveTo((dx-w/2)*S,base*S)
-      c.lineTo(dx*S,(base-h)*S)
-      c.lineTo((dx+w/2)*S,base*S)
-      c.closePath()
-      c.fill()
-      c.fillStyle=highlight
-      c.beginPath()
-      c.moveTo(dx*S,(base-h)*S)
-      c.lineTo((dx+w*.08)*S,(base-h*.45)*S)
-      c.lineTo((dx+w*.36)*S,base*S)
-      c.lineTo((dx+w*.05)*S,(base-h*.24)*S)
-      c.closePath()
-      c.fill()
-    }
-    peak(-5,6,13,13,'#68452e','#ae7c4e')
-    peak(3,7,16,17,'#5a3a29','#a97649')
-    peak(10,6,11,11,'#744b2f','#bd8954')
-    c.fillStyle='#3c2b22'
-    c.fillRect(-8*S,5*S,20*S,2*S)
-    c.restore()
+    drawVectorMountain(r,x,y,index)
   }
 
   drawForest(x,y,index=0) {
     const r=this.app.r
     const image=this.app.assets?.getForDisplay('map.terrain.forestA',22,18)
     if(image&&r.drawImageCentered(image,x,y,22,18,.96))return
-    const c=r.ctx
-    const S=r.S
-    const trees=[[-5,1,4],[-1,-3,5],[4,0,4],[8,-2,3],[-8,-2,3]]
-    c.save()
-    c.translate(x*S,y*S)
-    for(const [dx,dy,size] of trees){
-      c.fillStyle='#39451d'
-      c.fillRect((dx-.5)*S,(dy+size*.7)*S,1*S,3*S)
-      c.fillStyle='#4f6d24'
-      c.beginPath()
-      c.arc(dx*S,dy*S,size*S,0,Math.PI*2)
-      c.fill()
-      c.fillStyle='#718d32'
-      c.beginPath()
-      c.arc((dx-1)*S,(dy-1)*S,(size*.45)*S,0,Math.PI*2)
-      c.fill()
-    }
-    c.restore()
+    drawVectorForest(r,x,y,index)
   }
 
   drawCity(city,x,y) {
     const r=this.app.r
-    const c=r.ctx
-    const S=r.S
     const runtime=this.app.store.state.cities[city.id]
     const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
-    const image=this.app.assets?.getForDisplay(`map.cities.${runtime.owner}`,24,24)??(runtime.owner==='neutral'?this.app.assets?.getForDisplay('map.cities.neutral',24,24):null)
+    const image=this.app.assets?.getForDisplay(`map.cities.${runtime.owner}`,24,24)
+      ??(runtime.owner==='neutral'?this.app.assets?.getForDisplay('map.cities.neutral',24,24):null)
     if(image&&r.drawImageStretch(image,x-12,y-16,24,24))return
-    c.save()
-    c.translate(x*S,y*S)
-    c.fillStyle='#3b291d'
-    c.fillRect(-8*S,-2*S,16*S,7*S)
-    c.fillStyle='#8c6b43'
-    c.fillRect(-6*S,-5*S,12*S,4*S)
-    c.fillStyle='#c29a62'
-    c.fillRect(-4*S,-7*S,8*S,3*S)
-    c.strokeStyle='#24170f'
-    c.lineWidth=.65*S
-    c.strokeRect(-8*S,-5*S,16*S,10*S)
-    c.fillStyle='#251810'
-    c.fillRect(-2*S,1*S,4*S,4*S)
-    c.fillStyle='#332016'
-    c.fillRect(4*S,-13*S,1*S,9*S)
-    c.fillStyle=faction.color
-    c.beginPath()
-    c.moveTo(5*S,-13*S)
-    c.lineTo(13*S,-12*S)
-    c.lineTo(11*S,-7*S)
-    c.lineTo(5*S,-8*S)
-    c.closePath()
-    c.fill()
-    c.strokeStyle='#20130c'
-    c.lineWidth=.5*S
-    c.stroke()
-    c.restore()
+    drawVectorFort(r,x,y,faction.color)
   }
 
   drawArmyFlag(x,y,color,starving=false,factionId=null,selected=false) {
