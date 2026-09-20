@@ -131,7 +131,7 @@ export class SetupScene {
     }
 
     r.clear('#000')
-    r.ornateFrame(7, 7, 306, 210, this.app.assets?.getNineSlice('ui.frames.large',{sourceSlice:32,destEdge:7}))
+    r.ornateFrame(7, 7, 306, 210, this.app.assets?.getNineSlice('ui.frames.large',{sourceSlice:48,destEdge:7}))
     r.text('請 設 定 初 期 條 件', 160, 15, 15, '#f3efe4', 'center', 'top', SERIF, '600')
     r.line(10, 35, 310, 35, COLORS.red, 2)
 
