@@ -305,3 +305,12 @@ test('strategy and full-map rivers share deterministic surface micro-reflections
   assert.match(world,/drawRiverSurfaceMarks/)
   assert.match(projected,/drawRiverSurfaceMarks/)
 })
+
+
+test('strategy fort banner retains finial fold and knot micro-detail',()=>{
+  const source=read('src/game/map-art.js')
+  assert.ok(source.includes('fortBannerDetailGeometry'))
+  assert.match(source,/banner\.finialRadius/)
+  assert.match(source,/banner\.folds/)
+  assert.match(source,/banner\.knot/)
+})
