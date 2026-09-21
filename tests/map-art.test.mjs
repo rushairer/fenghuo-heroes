@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
+import { flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -141,4 +141,14 @@ test('map cursor HD detail scales from requested cursor size',()=>{
   assert.equal(large.centerRadius,small.centerRadius*2)
   assert.equal(large.cornerGlow,small.cornerGlow*2)
   assert.equal(small.inset,2)
+})
+
+
+test('strategy fort banner detail keeps finial folds and knot compact',()=>{
+  const detail=fortBannerDetailGeometry()
+  assert.ok(detail.finialRadius>0)
+  assert.equal(detail.folds.length,2)
+  assert.ok(detail.poleTop<0)
+  assert.ok(detail.knot.r>0)
+  assert.ok(detail.folds.every((fold)=>fold.x2>fold.x1&&fold.y1<0&&fold.y2<0))
 })
