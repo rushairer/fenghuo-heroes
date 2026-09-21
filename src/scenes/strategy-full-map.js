@@ -3,11 +3,13 @@ import { CITIES, CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
 import { drawFullMapCitySymbol, drawMapCursor, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
+import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
 import { cityWorldPoint } from '../game/world.js'
 import { drawProjectedRiver, drawRoadNetwork, uniqueRoadPairs } from '../game/world-art.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
 
 const FULL_MAP_ROAD_PAIRS=uniqueRoadPairs(CITIES)
+const FULL_MAP_GRAIN=createTerrainGrain({width:194,height:112,count:360,seed:0x21500189})
 
 export class StrategyScene extends OfficerStrategyScene {
   update(dt,input) {
@@ -46,6 +48,10 @@ export class StrategyScene extends OfficerStrategyScene {
     const sand=this.app.assets?.getForDisplay('map.terrain.sandBase',32,32)
     if(!sand||!r.drawImageTiled(sand,bounds.x,bounds.y,bounds.w,bounds.h,32,32,0,0,.94)){
       r.fillRect(bounds.x,bounds.y,bounds.w,bounds.h,'#a98654')
+      drawTerrainGrain(r,FULL_MAP_GRAIN,{
+        project:(dot)=>({x:bounds.x+dot.x,y:bounds.y+dot.y}),
+        alpha:.58,
+      })
     }
     r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
 
