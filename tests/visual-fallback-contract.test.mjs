@@ -230,3 +230,12 @@ test('siege fortress retains inner gate-depth geometry',()=>{
   assert.match(source,/plankXs/)
   assert.match(source,/thresholdY/)
 })
+
+
+test('strategy map presentation keeps fort grounding flag finials and forest canopy highlights',()=>{
+  const source=read('src/game/map-art.js')
+  assert.match(source,/fortDetailGeometry[\s\S]*ground:Object\.freeze/)
+  assert.match(source,/flagGeometry[\s\S]*finialRadius/)
+  assert.match(source,/flagGeometry[\s\S]*cordLength/)
+  assert.match(source,/forestDetailGeometry[\s\S]*canopyHighlights/)
+})
