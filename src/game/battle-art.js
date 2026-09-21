@@ -476,6 +476,21 @@ export function duelArenaDetailGeometry(width=320,height=152){
   })
 }
 
+export function duelArenaOrnamentGeometry(width=320){
+  const w=Math.max(200,Number(width)||320)
+  return Object.freeze({
+    lanterns:Object.freeze([
+      Object.freeze({x:w*.18,y:39,r:3.4}),
+      Object.freeze({x:w*.82,y:39,r:3.4}),
+    ]),
+    pennants:Object.freeze([
+      Object.freeze({x:w*.31,y:31,w:9,h:12}),
+      Object.freeze({x:w*.5,y:27,w:10,h:14}),
+      Object.freeze({x:w*.69,y:31,w:9,h:12}),
+    ]),
+  })
+}
+
 export function drawDuelArena(r,{
   x=0,
   y=38,
@@ -514,6 +529,38 @@ export function drawDuelArena(r,{
     c.moveTo((x+beam.x1)*S,(y+beam.y1)*S)
     c.lineTo((x+beam.x2)*S,(y+beam.y2)*S)
     c.stroke()
+  }
+
+  const ornament=duelArenaOrnamentGeometry(width)
+  for(const lantern of ornament.lanterns){
+    c.strokeStyle='rgba(62,42,30,.8)'
+    c.lineWidth=.4*S
+    c.beginPath()
+    c.moveTo((x+lantern.x)*S,(y+20)*S)
+    c.lineTo((x+lantern.x)*S,(y+lantern.y-lantern.r)*S)
+    c.stroke()
+    const glow=c.createRadialGradient((x+lantern.x)*S,(y+lantern.y)*S,0,(x+lantern.x)*S,(y+lantern.y)*S,lantern.r*2.2*S)
+    glow.addColorStop(0,'rgba(255,214,122,.32)')
+    glow.addColorStop(1,'rgba(255,214,122,0)')
+    c.fillStyle=glow
+    c.beginPath()
+    c.arc((x+lantern.x)*S,(y+lantern.y)*S,lantern.r*2.2*S,0,Math.PI*2)
+    c.fill()
+    c.fillStyle='#8d4931'
+    c.fillRect((x+lantern.x-lantern.r*.7)*S,(y+lantern.y-lantern.r)*S,lantern.r*1.4*S,lantern.r*2*S)
+    c.strokeStyle='rgba(246,198,108,.58)'
+    c.lineWidth=.28*S
+    c.strokeRect((x+lantern.x-lantern.r*.7)*S,(y+lantern.y-lantern.r)*S,lantern.r*1.4*S,lantern.r*2*S)
+  }
+  for(const pennant of ornament.pennants){
+    c.fillStyle='rgba(105,47,37,.8)'
+    c.beginPath()
+    c.moveTo((x+pennant.x)*S,(y+pennant.y)*S)
+    c.lineTo((x+pennant.x+pennant.w)*S,(y+pennant.y+2)*S)
+    c.lineTo((x+pennant.x+pennant.w*.72)*S,(y+pennant.y+pennant.h)*S)
+    c.lineTo((x+pennant.x)*S,(y+pennant.y+pennant.h-2)*S)
+    c.closePath()
+    c.fill()
   }
 
   for(const row of detail.crowdRows){
