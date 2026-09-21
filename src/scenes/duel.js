@@ -1,6 +1,6 @@
 import { drawDuelArena, drawDuelFighter } from '../game/battle-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
-import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
+import { FACTION_BY_ID } from '../game/data.js'
 import { DUEL_COMMANDS, DUEL_MODES, autoDuelIntent, cycleDuelMode } from '../game/duel-parity.js'
 import { mdButton } from '../game/input.js'
 
@@ -137,7 +137,7 @@ export class DuelScene{
     r.clear('#221510')
     drawDuelArena(r,{x:0,y:38,width:320,height:152})
     r.panel(6,5,308,31,'#050505','#7c5014',smallPanel)
-    r.text(`${CITY_BY_ID[this.c?.target]?.name??''} · 一騎討ち`,160,9,10,'#f1d477','center','top',SERIF,'700')
+    r.text(`${this.app.store.mapProfile?.cityById?.[this.c?.target]?.name??''} · 一騎討ち`,160,9,10,'#f1d477','center','top',SERIF,'700')
     r.text(`我方 ${String(this.php).padStart(3)}      敵方 ${String(this.ehp).padStart(3)}`,160,24,6.5,'#e8dec4','center')
     const af=FACTION_BY_ID[this.c?.attacker],df=FACTION_BY_ID[this.c?.defender]
     drawDuelFighter(r,{
