@@ -7,6 +7,7 @@ const manifest=readJson('public/assets/manifests/asset-manifest.v1.json')
 const spec=readJson('public/assets/manifests/production-spec.v1.json')
 const generated=readJson('public/assets/generated/generated-assets.v1.json')
 const titleScene=readFileSync(new URL('../src/scenes/title.js',import.meta.url),'utf8')
+const titleArt=readFileSync(new URL('../src/game/title-art.js',import.meta.url),'utf8')
 
 test('legacy 640x448 title raster stays disabled below the true-HD runtime floor',()=>{
   assert.equal(manifest.title.main.status,'disabled')
@@ -26,4 +27,10 @@ test('title menu frame cannot bypass its nine-slice contract',()=>{
   assert.deepEqual(spec.assets['title.menuFrame'].nineSlice,{sourceSlice:32,destEdge:6})
   assert.match(titleScene,/getNineSlice\('title\.menuFrame',\{sourceSlice:32,destEdge:6\}\)/)
   assert.doesNotMatch(titleScene,/assets\?\.get\('title\.menuFrame'\)/)
+})
+
+
+test('vector title fallback includes the scalable HD micro-detail pass',()=>{
+  assert.match(titleArt,/drawTitleHdDetail/)
+  assert.match(titleArt,/drawFrontRightGeneral\(r\)[\s\S]*drawTitleHdDetail\(r\)[\s\S]*drawBrocadeStrip\(r\)/)
 })
