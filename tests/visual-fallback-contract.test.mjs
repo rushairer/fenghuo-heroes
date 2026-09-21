@@ -239,3 +239,12 @@ test('strategy map presentation keeps fort grounding flag finials and forest can
   assert.match(source,/flagGeometry[\s\S]*cordLength/)
   assert.match(source,/forestDetailGeometry[\s\S]*canopyHighlights/)
 })
+
+
+test('localized duel hit spark is drawn above the screen flash and stale hit side is cleared',()=>{
+  const source=read('src/scenes/duel.js')
+  const flash=source.indexOf("if(this.hitFlash>0){c.save();c.globalAlpha")
+  const spark=source.indexOf("if(this.hitFlash>0&&this.hitSide)")
+  assert.ok(flash>=0&&spark>flash)
+  assert.match(source,/if\(this\.hitFlash===0\)this\.hitSide=null/)
+})
