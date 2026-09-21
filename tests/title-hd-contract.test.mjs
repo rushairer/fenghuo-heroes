@@ -64,3 +64,9 @@ test('vector title fallback applies local portrait lighting before silhouette se
   assert.match(titleArt,/drawTitleLocalLight/)
   assert.match(titleArt,/drawTitleHeadgearDetail\(r\)[\s\S]*drawTitleLocalLight\(r\)[\s\S]*drawTitleSilhouetteDepth\(r\)[\s\S]*drawTitleHdDetail\(r\)/)
 })
+
+
+test('vector title fallback applies garment contours between local light and silhouette depth',()=>{
+  assert.match(titleArt,/drawTitleGarmentContour/)
+  assert.match(titleArt,/drawTitleLocalLight\(r\)[\s\S]*drawTitleGarmentContour\(r\)[\s\S]*drawTitleSilhouetteDepth\(r\)/)
+})
