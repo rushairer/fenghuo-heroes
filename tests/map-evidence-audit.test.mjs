@@ -7,6 +7,9 @@ import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.
 test('empty capture template reports all canonical map blockers without inventing data',()=>{
   const audit=auditCanonicalEvidenceBundle(createCanonicalEvidenceTemplate())
   assert.equal(audit.ready,false)
+  assert.equal(audit.geometryReady,false)
+  assert.equal(audit.scenario189Ready,false)
+  assert.equal(audit.sourceLedgerValid,true)
   assert.equal(audit.missingCityCoordinates.length,40)
   assert.equal(audit.missingOwnership189.length,40)
   assert.equal(audit.invalidCityCoordinates.length,0)
@@ -19,6 +22,9 @@ test('empty capture template reports all canonical map blockers without inventin
 test('complete source-backed fixture produces an empty blocker list',()=>{
   const audit=auditCanonicalEvidenceBundle(completeCanonicalMapEvidence())
   assert.equal(audit.ready,true)
+  assert.equal(audit.geometryReady,true)
+  assert.equal(audit.scenario189Ready,true)
+  assert.equal(audit.sourceLedgerValid,true)
   assert.deepEqual(audit.blockers,[])
   assert.equal(audit.missingCityCoordinates.length,0)
   assert.equal(audit.missingOwnership189.length,0)
@@ -40,4 +46,17 @@ test('invalid entered coordinate is reported with its original slot index',()=>{
   assert.equal(audit.invalidCityCoordinates.length,1)
   const entered=audit.invalidCityCoordinates.find((item)=>item.index===0)
   assert.ok(entered.errors.includes('coordinate-out-of-range'))
+})
+
+
+test('duplicate source IDs block both geometry and scenario readiness',()=>{
+  const bundle=completeCanonicalMapEvidence()
+  bundle.sources.push({...bundle.sources[0],ref:'duplicate-source.png'})
+  const audit=auditCanonicalEvidenceBundle(bundle)
+  assert.equal(audit.sourceLedgerValid,false)
+  assert.equal(audit.geometryReady,false)
+  assert.equal(audit.scenario189Ready,false)
+  assert.equal(audit.ready,false)
+  assert.deepEqual(audit.duplicateSourceIds,['capture-full'])
+  assert.ok(audit.blockers.includes('duplicate-source-ids'))
 })
