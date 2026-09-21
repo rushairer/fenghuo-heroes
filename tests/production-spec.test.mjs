@@ -104,3 +104,14 @@ test('production spec records fifth-pass HD focal and grounding detail',()=>{
   assert.ok(fallback.strategyMap.layers.includes('army-flag finials and tie cords'))
   assert.ok(fallback.strategyMap.layers.includes('forest canopy edge highlights'))
 })
+
+
+test('production spec records sixth-pass HD contour spacing and material detail',()=>{
+  const title=spec.assets['title.main'].vectorFallback.requiredLayers
+  const fallback=spec.presentationFallbacks
+  assert.ok(title.includes('robe and collar contour highlights'))
+  assert.ok(fallback.duel.layers.includes('proximity ground-contact cue derived only from fighter spacing'))
+  assert.ok(fallback.siege.layers.includes('subtle deterministic wall stains and cracks'))
+  assert.ok(fallback.strategyMap.layers.includes('shoreline accent shared by strategy and full-map river rendering'))
+  assert.ok(fallback.strategyMap.layers.includes('strategy-fort roof tile and gate stud micro-detail'))
+})
