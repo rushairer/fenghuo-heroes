@@ -4,6 +4,7 @@ import { buildCanonicalRuntimeMap } from '../src/game/canonical-map-profile.js'
 import { GameStore } from '../src/game/store.js'
 import { prepareVisualQaStore, qaEnemyCity, qaOwnedCity } from '../src/game/qa-fixtures.js'
 import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
+import { canonical189TestScenarioFactory } from './fixtures/canonical-scenario-state.mjs'
 
 class MemoryStorage{
   constructor(){this.m=new Map()}
@@ -13,8 +14,12 @@ class MemoryStorage{
 }
 
 function canonicalQaStore(){
-  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
-  const store=new GameStore(new MemoryStorage(),{mapProfile:profile})
+  const evidence=completeCanonicalMapEvidence()
+  const profile=buildCanonicalRuntimeMap(evidence)
+  const store=new GameStore(new MemoryStorage(),{
+    mapProfile:profile,
+    scenarioStartStateFactory:canonical189TestScenarioFactory(evidence),
+  })
   store.newGame({scenarioYear:189,humanFactions:['liu']})
   return {store,profile}
 }
