@@ -68,11 +68,12 @@ export function projectRiverSurfaceMark(mark,project=(point)=>point){
     y:mark.y+Math.sin(mark.angle),
   }
   const q=project(directionPoint)
+  const localScale=Math.hypot(q.x-p.x,q.y-p.y)
   return Object.freeze({
     x:p.x,
     y:p.y,
     angle:Math.atan2(q.y-p.y,q.x-p.x),
-    length:mark.length,
+    length:mark.length*localScale,
   })
 }
 
@@ -218,7 +219,7 @@ export function drawProjectedRiver(r,{
   c.stroke()
   c.globalAlpha=1
   drawRiverSurfaceMarks(c,S,riverSurfaceMarks(path),project,{
-    scale:Math.max(.32,innerScale*.62),
+    scale:1,
     alpha:.24,
   })
   c.restore()
