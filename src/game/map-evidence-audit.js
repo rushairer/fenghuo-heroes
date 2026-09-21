@@ -40,40 +40,32 @@ export function auditCanonicalEvidenceBundle(bundle={}){
   if(report.invalidSourceCount)blockers.push('invalid-sources')
   if(report.duplicateSourceIds.length)blockers.push('duplicate-source-ids')
   if(report.duplicateCoordinateNames.length)blockers.push('duplicate-city-coordinates')
-  if(report.duplicateOwnershipCities.length)blockers.push('duplicate-ownership')
   if(report.duplicateRouteKeys.length)blockers.push('duplicate-routes')
   if(report.duplicateVillageKeys.length)blockers.push('duplicate-villages')
   if(report.duplicateNameResolutionKeys.length)blockers.push('duplicate-name-resolutions')
   if(!readiness.cityCoordinatesComplete)blockers.push('city-coordinates-incomplete')
   if(!readiness.cityNamesResolved)blockers.push('city-name-variants-unresolved')
   if(!readiness.villageCoordinatesVerified)blockers.push('village-coverage-unverified')
-  if(!readiness.ownership189Verified)blockers.push('ownership-189-incomplete')
   if(!readiness.routeNetworkVerified)blockers.push('route-network-unverified')
 
   return Object.freeze({
-    ready:readiness.ready,
+    ready:readiness.geometryReady,
     geometryReady:readiness.geometryReady,
-    scenario189Ready:readiness.scenario189Ready,
     sourceLedgerValid:readiness.sourceLedgerValid,
     status:bundle.status??'unknown',
     blockers:Object.freeze(unique(blockers)),
     missingCityCoordinates:Object.freeze(
       ZH_ROM_CANONICAL_CITY_SET.filter((name)=>!validCoordinateNames.has(name)),
     ),
-    missingOwnership189:Object.freeze(
-      ZH_ROM_CANONICAL_CITY_SET.filter((name)=>!verifiedOwnershipNames.has(name)),
-    ),
     unresolvedNameVariants:readiness.unresolvedNameVariants,
     invalidCityCoordinates:Object.freeze(invalidCityCoordinates),
     duplicateSourceIds:report.duplicateSourceIds,
     duplicateCoordinateNames:report.duplicateCoordinateNames,
-    duplicateOwnershipCities:report.duplicateOwnershipCities,
     duplicateRouteKeys:report.duplicateRouteKeys,
     duplicateVillageKeys:report.duplicateVillageKeys,
     duplicateNameResolutionKeys:report.duplicateNameResolutionKeys,
     verified:Object.freeze({
       cityCoordinates:report.validCityCoordinateCount,
-      ownership189:report.ownership189EvidenceCount,
       villages:report.villageEvidenceCount,
       routes:report.routeEvidenceCount,
       nameResolutions:report.nameResolutionCount,
@@ -81,6 +73,14 @@ export function auditCanonicalEvidenceBundle(bundle={}){
     coverage:Object.freeze({
       villages:report.villageCoverageVerified,
       routes:report.routeNetworkVerified,
+    }),
+    legacyOwnership189:Object.freeze({
+      evidenceCount:report.ownership189EvidenceCount,
+      duplicateCities:report.duplicateOwnershipCities,
+      missingCities:Object.freeze(
+        ZH_ROM_CANONICAL_CITY_SET.filter((name)=>!verifiedOwnershipNames.has(name)),
+      ),
+      note:'Compatibility-only; production scenario ownership comes from scenario evidence.',
     }),
   })
 }
