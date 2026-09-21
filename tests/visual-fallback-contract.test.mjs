@@ -212,3 +212,12 @@ test('full-map compact symbols retain proportional ground-shadow geometry',()=>{
   assert.match(source,/fullMapVillageSymbolGeometry[\s\S]*shadowRx:s\*\.7/)
   assert.match(source,/c\.ellipse\(0,g\.shadowY\*S,g\.shadowRx\*S,g\.shadowRy\*S/)
 })
+
+
+test('duel hit feedback is localized to the struck fighter without changing combat formulas',()=>{
+  const source=read('src/scenes/duel.js')
+  assert.match(source,/drawDuelHitSpark/)
+  assert.match(source,/this\.hitSide='player'/)
+  assert.match(source,/this\.hitSide='enemy'/)
+  assert.match(source,/x:this\.hitSide==='player'\?this\.px:this\.ex/)
+})
