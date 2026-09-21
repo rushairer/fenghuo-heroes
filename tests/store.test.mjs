@@ -96,3 +96,36 @@ test('legacy generic tax command no longer performs the removed instant money an
     before,
   )
 })
+
+
+test('new saves are tagged with the active runtime map profile',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['liu']})
+  assert.equal(s.state.mapProfileId,'runtime-scaffold')
+})
+
+test('legacy untagged saves remain readable only while scaffold is active',()=>{
+  const mem=new MemoryStorage()
+  const original=new GameStore(mem)
+  original.newGame({humanFactions:['liu']})
+  const raw=JSON.parse(mem.getItem('fenghuo-heroes.cleanroom.v4'))
+  delete raw.mapProfileId
+  mem.setItem('fenghuo-heroes.cleanroom.v4',JSON.stringify(raw))
+
+  const loaded=new GameStore(mem)
+  assert.equal(loaded.load(),true)
+  assert.equal(loaded.state.mapProfileId,'runtime-scaffold')
+})
+
+test('save data from a different map profile is never reinterpreted as the active map',()=>{
+  const mem=new MemoryStorage()
+  const original=new GameStore(mem)
+  original.newGame({humanFactions:['liu']})
+  const raw=JSON.parse(mem.getItem('fenghuo-heroes.cleanroom.v4'))
+  raw.mapProfileId='zh-rom-canonical'
+  mem.setItem('fenghuo-heroes.cleanroom.v4',JSON.stringify(raw))
+
+  const loaded=new GameStore(mem)
+  assert.equal(loaded.load(),false)
+  assert.equal(loaded.state,null)
+})
