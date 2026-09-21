@@ -83,11 +83,11 @@ test('canonical map migration opens only when every source-backed evidence gate 
     status:'test-fixture-complete',
     sources:[source],
     cityCoordinates,
-    villages:[],
-    villageCoverage:{sourceId:source.id,frameRef:'frame#villages',itemCount:0,verified:true},
+    villages:[{x:12,y:14,space:'logical-320x224',sourceId:source.id,frameRef:'frame#village-1',verified:true}],
+    villageCoverage:{sourceId:source.id,frameRef:'frame#villages',itemCount:1,verified:true},
     ownership189,
-    routes:[],
-    routeNetworkCoverage:{sourceId:source.id,frameRef:'frame#routes',itemCount:0,verified:true},
+    routes:[{from:ZH_ROM_CANONICAL_CITY_SET[0],to:ZH_ROM_CANONICAL_CITY_SET[1],sourceId:source.id,frameRef:'frame#route-1',verified:true}],
+    routeNetworkCoverage:{sourceId:source.id,frameRef:'frame#routes',itemCount:1,verified:true},
     nameResolutions,
   }
   const report=canonicalMapMigrationReadiness(complete)
