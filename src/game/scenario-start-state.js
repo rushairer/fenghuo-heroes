@@ -1,5 +1,7 @@
 import { CANONICAL_MAP_EVIDENCE } from './canonical-map-evidence.js'
+import { canonicalScenarioEvidence } from './canonical-scenario-evidence.js'
 import { canonicalMapMigrationReadiness } from './map-parity.js'
+import { validateScenarioStartEvidence } from './scenario-evidence.js'
 import { normalizeZhRomCityName } from './original-data.js'
 
 export const CITY_ECONOMY_FIELDS=Object.freeze([
@@ -24,18 +26,6 @@ function provisionalScaffoldEconomy(city){
   }
 }
 
-function assertEconomyRecord(record,cityId){
-  if(!record||typeof record!=='object'){
-    throw new Error(`Missing scenario economy for city: ${cityId}`)
-  }
-  for(const field of CITY_ECONOMY_FIELDS){
-    if(!Number.isFinite(record[field])){
-      throw new Error(`Invalid scenario economy field ${field} for city: ${cityId}`)
-    }
-  }
-  return record
-}
-
 export function buildScaffold189ScenarioStartState(mapProfile){
   if(mapProfile?.id!=='runtime-scaffold'){
     throw new Error('Scaffold 189 start state requires the runtime scaffold map profile.')
@@ -56,6 +46,7 @@ export function buildScaffold189ScenarioStartState(mapProfile){
     scenarioYear:189,
     ownershipStatus:'provisional-scaffold',
     economyStatus:'provisional-coordinate-derived',
+    officerPlacementStatus:'provisional-roster-only',
     cities,
   }
 }
@@ -89,30 +80,88 @@ export function canonical189OwnershipByCityId(
   })))
 }
 
+export function canonicalScenarioStateByCityId(
+  mapProfile,
+  evidence,
+){
+  if(!mapProfile?.canonical){
+    throw new Error('Canonical scenario state requires a canonical map profile.')
+  }
+  const report=validateScenarioStartEvidence(evidence)
+  if(!report.economyReady){
+    throw new Error('Canonical scenario city-state evidence is incomplete.')
+  }
+
+  const stateByName=new Map(
+    report.verifiedCityStates.map((record)=>[
+      normalizeZhRomCityName(record.city),
+      record,
+    ]),
+  )
+  return Object.freeze(Object.fromEntries(mapProfile.cities.map((city)=>{
+    const identity=normalizeZhRomCityName(city.canonicalName??city.name)
+    const source=stateByName.get(identity)
+    if(!source)throw new Error(`Canonical scenario city state is missing: ${identity}`)
+    return [city.id,Object.freeze(Object.fromEntries(
+      CITY_ECONOMY_FIELDS.map((field)=>[field,source[field]])
+    ))]
+  })))
+}
+
+export function canonicalOfficerAssignmentsByCityId(
+  mapProfile,
+  evidence,
+){
+  if(!mapProfile?.canonical){
+    throw new Error('Canonical officer placement requires a canonical map profile.')
+  }
+  const report=validateScenarioStartEvidence(evidence)
+  if(!report.officerPlacementReady){
+    throw new Error('Canonical officer-placement evidence is incomplete.')
+  }
+
+  const idByIdentity=new Map(mapProfile.cities.map((city)=>[
+    normalizeZhRomCityName(city.canonicalName??city.name),
+    city.id,
+  ]))
+  const assignments=Object.fromEntries(mapProfile.cities.map((city)=>[city.id,[]]))
+  for(const record of report.verifiedOfficerAssignments){
+    const cityId=idByIdentity.get(normalizeZhRomCityName(record.city))
+    if(!cityId)throw new Error(`Canonical officer placement references unknown city: ${record.city}`)
+    assignments[cityId].push(record.officer.trim())
+  }
+  return Object.freeze(Object.fromEntries(
+    Object.entries(assignments).map(([cityId,officers])=>[
+      cityId,
+      Object.freeze([...officers].sort((a,b)=>a.localeCompare(b))),
+    ])
+  ))
+}
+
 export function buildCanonical189ScenarioStartState({
   mapProfile,
-  evidence=CANONICAL_MAP_EVIDENCE,
-  economyForCity,
-  economyStatus='caller-supplied',
+  mapEvidence=CANONICAL_MAP_EVIDENCE,
+  scenarioEvidence=canonicalScenarioEvidence(189),
 }={}){
-  if(typeof economyForCity!=='function'){
-    throw new Error('Canonical scenario start state requires an explicit economyForCity source.')
-  }
-  const ownership=canonical189OwnershipByCityId(mapProfile,evidence)
-  const cities=Object.fromEntries(mapProfile.cities.map((city)=>{
-    const economy=assertEconomyRecord(economyForCity(city),city.id)
-    return [city.id,{
+  const ownership=canonical189OwnershipByCityId(mapProfile,mapEvidence)
+  const cityState=canonicalScenarioStateByCityId(mapProfile,scenarioEvidence)
+  const officerAssignments=canonicalOfficerAssignmentsByCityId(mapProfile,scenarioEvidence)
+  const cities=Object.fromEntries(mapProfile.cities.map((city)=>[
+    city.id,
+    {
       id:city.id,
       owner:ownership[city.id],
-      ...economy,
-    }]
-  }))
+      ...cityState[city.id],
+      officers:[...officerAssignments[city.id]],
+    },
+  ]))
   return {
     id:'zh-rom-canonical:189',
     mapProfileId:mapProfile.id,
     scenarioYear:189,
     ownershipStatus:'source-backed-189',
-    economyStatus,
+    economyStatus:'source-backed-189',
+    officerPlacementStatus:'source-backed-189',
     cities,
   }
 }
@@ -124,6 +173,9 @@ export function defaultScenarioStartStateFactory({
   const year=Number(scenarioYear)
   if(mapProfile?.id==='runtime-scaffold'&&year===189){
     return buildScaffold189ScenarioStartState(mapProfile)
+  }
+  if(mapProfile?.canonical&&year===189){
+    return buildCanonical189ScenarioStartState({mapProfile})
   }
   throw new Error(
     `No production scenario start state is calibrated for ${mapProfile?.id??'unknown-map'} / ${year}.`,
