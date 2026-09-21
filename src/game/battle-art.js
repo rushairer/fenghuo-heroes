@@ -814,3 +814,64 @@ export function drawSiegeForegroundDepth(r,{
   c.restore()
   return true
 }
+
+
+export function duelHitSparkGeometry(intensity=1){
+  const strength=Math.max(.2,Math.min(1,Number(intensity)||1))
+  return Object.freeze({
+    ringRadius:6+strength*5,
+    ringAlpha:.18+strength*.22,
+    rays:Object.freeze(Array.from({length:8},(_,index)=>{
+      const angle=(Math.PI*2*index)/8
+      const inner=3.5+strength*1.5
+      const outer=9+strength*6+(index%2)*1.6
+      return Object.freeze({
+        x1:Math.cos(angle)*inner,
+        y1:Math.sin(angle)*inner,
+        x2:Math.cos(angle)*outer,
+        y2:Math.sin(angle)*outer,
+      })
+    })),
+  })
+}
+
+export function drawDuelHitSpark(r,{
+  x,
+  y,
+  intensity=1,
+  color='#fff1b8',
+}={}){
+  const c=r.ctx,S=r.S
+  const detail=duelHitSparkGeometry(intensity)
+  c.save()
+  c.translate(x*S,y*S)
+
+  c.strokeStyle=color
+  c.lineCap='round'
+  for(const [index,ray] of detail.rays.entries()){
+    c.globalAlpha=index%2===0?.72:.42
+    c.lineWidth=(index%2===0?.7:.38)*S
+    c.beginPath()
+    c.moveTo(ray.x1*S,ray.y1*S)
+    c.lineTo(ray.x2*S,ray.y2*S)
+    c.stroke()
+  }
+
+  c.globalAlpha=detail.ringAlpha
+  c.lineWidth=.8*S
+  c.beginPath()
+  c.arc(0,0,detail.ringRadius*S,0,Math.PI*2)
+  c.stroke()
+  c.globalAlpha=1
+
+  const glow=c.createRadialGradient(0,0,0,0,0,detail.ringRadius*S)
+  glow.addColorStop(0,'rgba(255,248,210,.52)')
+  glow.addColorStop(1,'rgba(255,226,160,0)')
+  c.fillStyle=glow
+  c.beginPath()
+  c.arc(0,0,detail.ringRadius*S,0,Math.PI*2)
+  c.fill()
+
+  c.restore()
+  return true
+}
