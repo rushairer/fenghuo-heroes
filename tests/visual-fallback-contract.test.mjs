@@ -65,3 +65,11 @@ test('active strategy and overview maps share centralized world-art river render
   assert.match(overview,/drawProjectedRiver/)
   assert.doesNotMatch(strategy,/bezierCurveTo\(229\*S,48\*S/)
 })
+
+
+test('full-map view projects the same provisional road graph as the strategy map',()=>{
+  const source=read('src/scenes/strategy-full-map.js')
+  assert.match(source,/uniqueRoadPairs\(CITIES\)/)
+  assert.match(source,/drawRoadNetwork\(r,roadSegments/)
+  assert.match(source,/drawProjectedRiver/)
+})
