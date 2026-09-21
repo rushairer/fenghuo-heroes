@@ -1,11 +1,13 @@
 import { COLORS, SERIF } from '../game/constants.js'
-import { CITIES, FACTION_BY_ID } from '../game/data.js'
+import { CITIES, CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
 import { drawFullMapCitySymbol, drawMapCursor, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { cityWorldPoint } from '../game/world.js'
-import { drawProjectedRiver } from '../game/world-art.js'
+import { drawProjectedRiver, drawRoadNetwork, uniqueRoadPairs } from '../game/world-art.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
+
+const FULL_MAP_ROAD_PAIRS=uniqueRoadPairs(CITIES)
 
 export class StrategyScene extends OfficerStrategyScene {
   update(dt,input) {
@@ -48,6 +50,11 @@ export class StrategyScene extends OfficerStrategyScene {
     r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
 
     this.drawFullMapRiver(bounds)
+    const roadSegments=FULL_MAP_ROAD_PAIRS.map(([from,to])=>({
+      a:fullMapPoint(cityWorldPoint(CITY_BY_ID[from]),bounds),
+      b:fullMapPoint(cityWorldPoint(CITY_BY_ID[to]),bounds),
+    }))
+    drawRoadNetwork(r,roadSegments,{color:'#6b542f'})
 
     for(const city of CITIES){
       const point=fullMapPoint(cityWorldPoint(city),bounds)
