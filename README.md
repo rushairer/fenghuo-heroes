@@ -118,3 +118,31 @@ npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.j
 本仓库不包含 ROM，不从 ROM/第三方站点抽取或重新分发原作受版权保护的图片、音乐、音效、字库、地图素材或大段文本。复刻依据公开可观察到的游戏行为、用户提供的合法参考截图/录屏，以及重新实现的原创代码与原创资源。
 
 详见 `docs/PARITY_ROADMAP.md`、`docs/RESEARCH_LOG.md`、`docs/MARCH_PARITY_SPEC.md` 与 `docs/PARITY_INPUT_AND_MARCH.md`。
+
+
+## Scenario start-state evidence
+
+Canonical map geometry and scenario start state are independent.
+
+The production evidence ledgers for 189 / 200 / 215 live in
+`src/game/canonical-scenario-evidence.js`. Each year independently requires:
+
+- 40-city ownership;
+- 40-city gold / food / troops / development / rule / defense / training;
+- complete officer-to-city placement.
+
+Useful commands:
+
+```bash
+npm run scenario:evidence:template -- 189 scenario-189.capture.json
+npm run scenario:evidence:audit -- scenario-189.capture.json --require-ownership-ready
+npm run scenario:evidence:audit -- scenario-189.capture.json --require-economy-ready
+npm run scenario:evidence:audit -- scenario-189.capture.json --require-officer-ready
+npm run scenario:evidence:audit -- scenario-189.capture.json --require-ready
+npm run scenario:evidence:compile -- scenario-189.capture.json scenario-189.compiled.json --scope full
+```
+
+See `docs/SCENARIO_EVIDENCE_CAPTURE.md` for the full workflow.
+
+The playable scaffold still contains quarantined coordinate-derived economy values.
+They are engineering placeholders only and cannot enter canonical scenario evidence.
