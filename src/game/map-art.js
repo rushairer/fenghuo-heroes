@@ -118,6 +118,28 @@ export function drawVectorForest(r,x,y,index=0,scale=1){
   return true
 }
 
+export function fortDetailGeometry(){
+  return Object.freeze({
+    stoneRows:Object.freeze([-5.4,-2.1,1.2,4.2]),
+    verticalJoints:Object.freeze([
+      Object.freeze({x:-5.2,y1:-5.4,y2:-2.1}),
+      Object.freeze({x:3.8,y1:-5.4,y2:-2.1}),
+      Object.freeze({x:-2.4,y1:-2.1,y2:1.2}),
+      Object.freeze({x:5.1,y1:-2.1,y2:1.2}),
+      Object.freeze({x:-6.1,y1:1.2,y2:4.2}),
+      Object.freeze({x:4.6,y1:1.2,y2:4.2}),
+    ]),
+    roofRidges:Object.freeze([-5.5,0,5.5]),
+  })
+}
+
+export function flagFoldGuides(){
+  return Object.freeze([
+    Object.freeze({x1:3.2,y1:-7.2,x2:10.2,y2:-5.9}),
+    Object.freeze({x1:3.5,y1:-5.9,x2:9.4,y2:-4.2}),
+  ])
+}
+
 export function drawVectorFort(r,x,y,color='#888',scale=1){
   const c=r.ctx,S=r.S*scale
   c.save()
@@ -141,6 +163,31 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
   c.strokeStyle='#1d130e'
   c.lineWidth=.55*S
   c.strokeRect(-9*S,-9*S,18*S,15*S)
+
+  const detail=fortDetailGeometry()
+  c.strokeStyle='rgba(50,34,25,.48)'
+  c.lineWidth=.28*S
+  for(const yRow of detail.stoneRows){
+    c.beginPath()
+    c.moveTo(-8.2*S,yRow*S)
+    c.lineTo(8.2*S,yRow*S)
+    c.stroke()
+  }
+  for(const joint of detail.verticalJoints){
+    c.beginPath()
+    c.moveTo(joint.x*S,joint.y1*S)
+    c.lineTo(joint.x*S,joint.y2*S)
+    c.stroke()
+  }
+  c.strokeStyle='rgba(236,204,151,.55)'
+  c.lineWidth=.3*S
+  for(const ridge of detail.roofRidges){
+    c.beginPath()
+    c.moveTo((ridge-1.6)*S,-8.3*S)
+    c.lineTo(ridge*S,-9.7*S)
+    c.lineTo((ridge+1.6)*S,-8.3*S)
+    c.stroke()
+  }
 
   c.fillStyle='#2b1a13'
   c.fillRect(4*S,-16*S,1.1*S,9*S)
@@ -236,6 +283,15 @@ export function drawVectorFlag(r,x,y,color,{
   c.strokeStyle=starving?'#ff765f':selected?'#4ee8f0':'rgba(28,18,13,.72)'
   c.lineWidth=(starving||selected?1.05:.45)*S
   c.stroke()
+
+  c.strokeStyle='rgba(255,236,190,.36)'
+  c.lineWidth=.28*S
+  for(const fold of flagFoldGuides()){
+    c.beginPath()
+    c.moveTo(fold.x1*S,fold.y1*S)
+    c.quadraticCurveTo(((fold.x1+fold.x2)/2+.7)*S,((fold.y1+fold.y2)/2-.35)*S,fold.x2*S,fold.y2*S)
+    c.stroke()
+  }
 
   if(starving){
     c.fillStyle='#ffd08a'
