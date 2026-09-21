@@ -17,7 +17,7 @@ test('compiler emits stable 40-city canonical ordering and ready status',()=>{
   bundle.cityCoordinates.reverse()
   bundle.ownership189.reverse()
   const compiled=compileCanonicalEvidenceBundle(bundle)
-  assert.equal(compiled.status,'ready-for-canonical-activation')
+  assert.equal(compiled.status,'ready-for-legacy-map-bundle')
   assert.equal(compiled.scope,'full')
   assert.equal(compiled.cityCoordinates.length,40)
   assert.equal(compiled.ownership189.length,40)
@@ -75,4 +75,12 @@ test('compiler rejects unknown readiness scopes',()=>{
     ()=>compileCanonicalEvidenceBundle(completeCanonicalMapEvidence(),{scope:'unknown'}),
     /Unknown canonical evidence compile scope/,
   )
+})
+
+
+test('full map-evidence scope is explicitly legacy compatibility and not a scenario activation artifact',()=>{
+  const compiled=compileCanonicalEvidenceBundle(completeCanonicalMapEvidence(),{scope:'full'})
+  assert.equal(compiled.status,'ready-for-legacy-map-bundle')
+  assert.equal(compiled.scope,'full')
+  assert.equal(compiled.ownership189.length,40)
 })
