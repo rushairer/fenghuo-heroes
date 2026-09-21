@@ -1,4 +1,4 @@
-import { CITIES, CITY_BY_ID } from './data.js'
+import { CITIES, CITY_BY_ID, MAP_PROFILE } from './data.js'
 import { ORIGINAL_189_RULERS } from './original-data.js'
 import { isTaxRate } from './tax-parity.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
@@ -55,7 +55,7 @@ export class GameStore {
     const firstCity=CITIES.find((city)=>city.owner===primary)??CITIES[0]
     if(!firstCity)throw new Error('Runtime map profile contains no cities.')
     const first=firstCity.id
-    this.state = { scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(firstCity), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
+    this.state = { mapProfileId:MAP_PROFILE.id, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(firstCity), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
     this.pendingConflict = null
     this.save()
     return this.state
@@ -106,6 +106,28 @@ export class GameStore {
   finishCurrentTurn(){this.assertState();const previousMode=this.mode,previousFaction=this.humanFaction;if(!this.isLastHumanTurn){this.state.activeHumanIndex+=1;this.addLog(`${this.state.year}年${this.state.month}月：輪到 ${this.humanFaction}。`);this.save();return{monthAdvanced:false,previousMode,previousFaction,nextFaction:this.humanFaction}}this.state.activeHumanIndex=0;this.state.month+=1;if(this.state.month>12){this.state.month=1;this.state.year+=1}this.state.inspectionCategories={};this.addLog(`${this.state.year}年${this.state.month}月 ${this.mode==='inspection'?'視察情況':'行軍'}`);this.save();return{monthAdvanced:true,previousMode,previousFaction,nextFaction:this.humanFaction}}
   advanceMonth(){this.assertState();this.state.activeHumanIndex=this.state.humanFactions.length-1;return this.finishCurrentTurn()}
   save(){if(this.state&&this.storage?.setItem)this.storage.setItem(SAVE_KEY,JSON.stringify(this.state))}
-  load(){if(!this.storage?.getItem)return false;const raw=this.storage.getItem(SAVE_KEY);if(!raw)return false;try{this.state=JSON.parse(raw);if(!this.state.inspectionCategories)this.state.inspectionCategories={};if(!this.state.openingRosters)this.state.openingRosters=openingRosters(this.state.scenarioYear);if(!Number.isInteger(this.state.activeHumanIndex))this.state.activeHumanIndex=0;this.pendingConflict=null;return Boolean(this.state?.cities&&this.state?.humanFactions)}catch{this.storage.removeItem?.(SAVE_KEY);return false}}
+  load(){
+    if(!this.storage?.getItem)return false
+    const raw=this.storage.getItem(SAVE_KEY)
+    if(!raw)return false
+    try{
+      const parsed=JSON.parse(raw)
+      // Saves created before map-profile tagging are compatible only while the
+      // scaffold remains active. Never reinterpret scaffold city IDs as a
+      // future canonical profile.
+      const savedProfileId=parsed.mapProfileId??(MAP_PROFILE.id==='runtime-scaffold'?'runtime-scaffold':null)
+      if(savedProfileId!==MAP_PROFILE.id)return false
+      parsed.mapProfileId=savedProfileId
+      this.state=parsed
+      if(!this.state.inspectionCategories)this.state.inspectionCategories={}
+      if(!this.state.openingRosters)this.state.openingRosters=openingRosters(this.state.scenarioYear)
+      if(!Number.isInteger(this.state.activeHumanIndex))this.state.activeHumanIndex=0
+      this.pendingConflict=null
+      return Boolean(this.state?.cities&&this.state?.humanFactions)
+    }catch{
+      this.storage.removeItem?.(SAVE_KEY)
+      return false
+    }
+  }
   clearSave(){this.state=null;this.pendingConflict=null;this.storage?.removeItem?.(SAVE_KEY)}
 }
