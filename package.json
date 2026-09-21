@@ -15,6 +15,8 @@
     "map:evidence:audit": "node scripts/audit-map-evidence.mjs",
     "map:evidence:compile": "node scripts/compile-map-evidence.mjs",
     "map:evidence:merge": "node scripts/merge-map-evidence.mjs",
-    "map:evidence:diff": "node scripts/diff-map-evidence.mjs"
+    "map:evidence:diff": "node scripts/diff-map-evidence.mjs",
+    "scenario:evidence:template": "node scripts/create-scenario-evidence-template.mjs",
+    "scenario:evidence:audit": "node scripts/audit-scenario-evidence.mjs"
   }
 }
