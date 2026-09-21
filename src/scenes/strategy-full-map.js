@@ -1,14 +1,13 @@
 import { COLORS, SERIF } from '../game/constants.js'
-import { CITIES, CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
+import { FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
-import { drawFullMapCitySymbol, drawMapCursor, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
+import { drawFullMapCitySymbol, drawFullMapVillageSymbol, drawMapCursor, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
 import { cityWorldPoint } from '../game/world.js'
 import { drawProjectedRiver, drawRoadNetwork, uniqueRoadPairs } from '../game/world-art.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
 
-const FULL_MAP_ROAD_PAIRS=uniqueRoadPairs(CITIES)
 const FULL_MAP_GRAIN=createTerrainGrain({width:194,height:112,count:360,seed:0x21500189})
 
 export class StrategyScene extends OfficerStrategyScene {
@@ -56,17 +55,22 @@ export class StrategyScene extends OfficerStrategyScene {
     r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
 
     this.drawFullMapRiver(bounds)
-    const roadSegments=FULL_MAP_ROAD_PAIRS.map(([from,to])=>({
-      a:fullMapPoint(cityWorldPoint(CITY_BY_ID[from]),bounds),
-      b:fullMapPoint(cityWorldPoint(CITY_BY_ID[to]),bounds),
+    const roadSegments=uniqueRoadPairs(this.mapCities()).map(([from,to])=>({
+      a:fullMapPoint(cityWorldPoint(this.cityById(from)),bounds),
+      b:fullMapPoint(cityWorldPoint(this.cityById(to)),bounds),
     }))
     drawRoadNetwork(r,roadSegments,{color:'#6b542f'})
 
-    for(const city of CITIES){
+    for(const city of this.mapCities()){
       const point=fullMapPoint(cityWorldPoint(city),bounds)
       const runtime=state.cities[city.id]
       const faction=FACTION_BY_ID[runtime?.owner]??FACTION_BY_ID.neutral
       drawFullMapCitySymbol(r,point.x,point.y,faction.color,4.2)
+    }
+
+    for(const village of this.app.store.mapProfile?.villages??[]){
+      const point=fullMapPoint(village,bounds)
+      drawFullMapVillageSymbol(r,point.x,point.y,3.6)
     }
 
     const cursor=fullMapPoint(state.cursor,bounds)
