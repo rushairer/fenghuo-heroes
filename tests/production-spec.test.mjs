@@ -51,3 +51,20 @@ test('planned title menu frame is already bound to the future nine-slice runtime
   assert.deepEqual(contract,{sourceSlice:32,destEdge:6})
   assert.ok(contract.sourceSlice>=Math.ceil(contract.destEdge*HD_RASTER_MIN_SCALE))
 })
+
+
+test('production spec records the current HD presentation fallback detail layers',()=>{
+  const fallback=spec.presentationFallbacks
+  assert.equal(fallback.strategyMap.canonical,false)
+  assert.ok(fallback.strategyMap.layers.includes('mountain ridge and scree micro-detail'))
+  assert.ok(fallback.strategyMap.layers.includes('full-map city masts, pennants and highlights'))
+  assert.ok(fallback.duel.layers.includes('spectator depth rows'))
+  assert.ok(fallback.siege.layers.includes('corner tower roofs and eaves'))
+})
+
+test('presentation fallback contract keeps non-canonical map art out of evidence',()=>{
+  assert.match(
+    spec.presentationFallbacks.strategyMap.boundary,
+    /must never be promoted as Chinese-ROM map evidence/,
+  )
+})
