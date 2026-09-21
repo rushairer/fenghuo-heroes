@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, siegeDetailGeometry, siegeStandardGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, duelMotionCueGeometry, siegeDetailGeometry, siegeStandardGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -122,4 +122,18 @@ test('siege confrontation standards stay symmetric inside fortress width',()=>{
   assert.equal(standards[0].flip,false)
   assert.equal(standards[1].flip,true)
   assert.ok(standards.every((item)=>item.x>0&&item.x<290&&item.y>0))
+})
+
+
+test('duel motion cues distinguish attack and guard presentation states',()=>{
+  const attack=duelMotionCueGeometry({attacking:true})
+  const guard=duelMotionCueGeometry({guard:true})
+  const idle=duelMotionCueGeometry()
+  assert.equal(attack.attackArcs.length,2)
+  assert.equal(attack.dust.length,2)
+  assert.equal(attack.guardBraces.length,0)
+  assert.equal(guard.guardBraces.length,2)
+  assert.equal(guard.attackArcs.length,0)
+  assert.equal(idle.attackArcs.length,0)
+  assert.equal(idle.guardBraces.length,0)
 })
