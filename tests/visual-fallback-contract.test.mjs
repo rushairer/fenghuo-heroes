@@ -110,3 +110,31 @@ test('presentation-only terrain relief is confined to raster fallback branches',
   assert.match(strategy,/if\(!sand\|\|!r\.drawImageTiled[\s\S]*drawTerrainGrain[\s\S]*drawWorldTerrainRelief[\s\S]*\}\n\n    this\.drawRiver/)
   assert.match(overview,/if\(!sand\|\|!r\.drawImageTiled[\s\S]*drawTerrainGrain[\s\S]*drawProjectedTerrainRelief[\s\S]*\}\n    r\.strokeRect/)
 })
+
+
+test('HD map fallback keeps natural-feature and symbol micro-detail layers',()=>{
+  const source=read('src/game/map-art.js')
+  for(const symbol of [
+    'mountainDetailGeometry',
+    'forestDetailGeometry',
+    'fortDetailGeometry',
+    'villageDetailGeometry',
+    'mapCursorDetailGeometry',
+  ]){
+    assert.ok(source.includes(symbol),symbol)
+  }
+  assert.match(source,/pennantWidth/)
+  assert.match(source,/chimneyH/)
+})
+
+test('HD battle fallback keeps arena and fortress structural detail layers',()=>{
+  const source=read('src/game/battle-art.js')
+  for(const symbol of [
+    'duelArmorDetailGeometry',
+    'duelArenaDetailGeometry',
+    'siegeDetailGeometry',
+    'siegeTowerDetailGeometry',
+  ]){
+    assert.ok(source.includes(symbol),symbol)
+  }
+})
