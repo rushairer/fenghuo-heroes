@@ -87,8 +87,11 @@ test('189 opening rosters are carried into runtime state',()=>{
   assert.equal(store.state.openingRosters.yuan_shu.zhCommunitySelectable,false)
 })
 
-test('later-scenario runtime does not invent opening rosters',()=>{
+test('later-scenario runtime refuses to invent opening rosters before scenario evidence is calibrated',()=>{
   const store=new GameStore(new MemoryStorage())
-  store.newGame({scenarioYear:200,humanFactions:['liu']})
-  assert.deepEqual(store.state.openingRosters,{})
+  assert.throws(
+    ()=>store.newGame({scenarioYear:200,humanFactions:['liu']}),
+    /No production scenario start state is calibrated/,
+  )
+  assert.equal(store.hasGame(),false)
 })
