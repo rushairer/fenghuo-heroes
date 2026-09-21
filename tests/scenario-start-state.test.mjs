@@ -52,7 +52,10 @@ test('canonical scenario numeric state and officer placement require their own s
   const officers=canonicalOfficerAssignmentsByCityId(profile,scenarioEvidence)
   assert.equal(Object.keys(cityState).length,40)
   assert.equal(cityState['zh-01'].gold,20000)
-  assert.deepEqual(officers['zh-03'],['張飛','關羽'].sort((a,b)=>a.localeCompare(b)))
+  assert.deepEqual(officers['zh-03'],[
+    {name:'張飛',role:'officer'},
+    {name:'關羽',role:'officer'},
+  ].sort((a,b)=>a.name.localeCompare(b.name)))
 
   const missingEconomy={...scenarioEvidence,cityStates:[]}
   assert.throws(
@@ -81,7 +84,10 @@ test('canonical 189 start state combines source-backed ownership economy and off
   assert.equal(state.officerPlacementStatus,'source-backed-189')
   assert.equal(state.cities['zh-01'].owner,'liu')
   assert.equal(state.cities['zh-01'].gold,20000)
-  assert.deepEqual(state.cities['zh-03'].officers,['張飛','關羽'].sort((a,b)=>a.localeCompare(b)))
+  assert.deepEqual(state.cities['zh-03'].officers,[
+    {name:'張飛',role:'officer'},
+    {name:'關羽',role:'officer'},
+  ].sort((a,b)=>a.name.localeCompare(b.name)))
   assert.equal(state.cities['zh-03'].officerCount,2)
   assert.equal(state.cities['zh-01'].officerCount,0)
 })
