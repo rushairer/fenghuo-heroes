@@ -147,3 +147,19 @@ test('full-map legend uses the same compact city and village symbol renderers as
   assert.doesNotMatch(source,/drawVectorFort\(r,244/)
   assert.doesNotMatch(source,/drawVectorVillage\(r,244/)
 })
+
+
+test('siege scene renders faction-colored confrontation standards after fortress art',()=>{
+  const source=read('src/scenes/siege.js')
+  assert.match(source,/drawSiegeStandards/)
+  const fortress=source.indexOf('drawSiegeFortress(r')
+  const standards=source.indexOf('drawSiegeStandards(r')
+  assert.ok(fortress>=0&&standards>fortress)
+})
+
+test('duel and siege art retain their second-pass ornament helpers',()=>{
+  const source=read('src/game/battle-art.js')
+  assert.ok(source.includes('duelFighterOrnamentGeometry'))
+  assert.ok(source.includes('duelArenaOrnamentGeometry'))
+  assert.ok(source.includes('siegeStandardGeometry'))
+})
