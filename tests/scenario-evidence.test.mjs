@@ -147,3 +147,13 @@ test('duplicate scenario ownership for one city invalidates ownership coverage',
   assert.deepEqual(report.duplicateOwnershipCities,['襄平'])
   assert.equal(report.ownershipReady,false)
 })
+
+
+test('officer placement requires an explicit source-backed ruler or officer role',()=>{
+  const evidence=completeEvidence()
+  evidence.officerAssignments[0]={...evidence.officerAssignments[0],role:'unknown'}
+  const report=validateScenarioStartEvidence(evidence)
+  assert.equal(report.officerAssignmentEvidenceCount,1)
+  assert.equal(report.officerPlacementReady,false)
+  assert.ok(report.officerAssignmentReports[0].errors.includes('invalid-role'))
+})
