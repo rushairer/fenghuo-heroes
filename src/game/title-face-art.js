@@ -1,5 +1,12 @@
 export const TITLE_FACE_FEATURES=Object.freeze([
   Object.freeze({
+    id:'rear-general',
+    brow:Object.freeze([[76,48],[84,47],[91,47],[99,48]]),
+    nose:Object.freeze([[88,50],[86,59],[89,63]]),
+    cheek:Object.freeze({x:91,y:58,rx:12,ry:11,rotation:.03}),
+    highlight:Object.freeze([[72,37],[84,33],[101,36]]),
+  }),
+  Object.freeze({
     id:'left-profile',
     brow:Object.freeze([[22,87],[43,83]]),
     nose:Object.freeze([[47,92],[55,107],[51,117]]),
