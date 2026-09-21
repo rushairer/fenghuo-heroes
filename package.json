@@ -19,6 +19,7 @@
     "scenario:evidence:template": "node scripts/create-scenario-evidence-template.mjs",
     "scenario:evidence:audit": "node scripts/audit-scenario-evidence.mjs",
     "scenario:evidence:compile": "node scripts/compile-scenario-evidence.mjs",
-    "scenario:evidence:merge": "node scripts/merge-scenario-evidence.mjs"
+    "scenario:evidence:merge": "node scripts/merge-scenario-evidence.mjs",
+    "copy:report": "node scripts/report-chinese-copy-parity.mjs"
   }
 }
