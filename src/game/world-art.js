@@ -32,7 +32,7 @@ export function riverStrokeStyle({projected=false,pattern=false}={}){
     return Object.freeze({
       bankOuterWidth:5,
       bankInnerWidth:4.15,
-      bankHighlightWidth:.36,
+      bankHighlightWidth:4.55,
       bankHighlightAlpha:.26,
       waterWidth:3.4,
       highlightWidth:.72,
@@ -42,7 +42,7 @@ export function riverStrokeStyle({projected=false,pattern=false}={}){
   return Object.freeze({
     bankOuterWidth:23,
     bankInnerWidth:19,
-    bankHighlightWidth:1.7,
+    bankHighlightWidth:21,
     bankHighlightAlpha:.24,
     waterWidth:13,
     highlightWidth:3,
@@ -67,16 +67,16 @@ export function drawWorldRiver(r,{
   c.stroke()
 
   traceRiver(c,S,path,project)
-  c.strokeStyle='#183d79'
-  c.lineWidth=style.bankInnerWidth*S
-  c.stroke()
-
-  traceRiver(c,S,path,project)
   c.strokeStyle='#d0a66b'
   c.lineWidth=style.bankHighlightWidth*S
   c.globalAlpha=style.bankHighlightAlpha
   c.stroke()
   c.globalAlpha=1
+
+  traceRiver(c,S,path,project)
+  c.strokeStyle='#183d79'
+  c.lineWidth=style.bankInnerWidth*S
+  c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle=pattern??'#064ac0'
@@ -121,16 +121,16 @@ export function drawProjectedRiver(r,{
   c.stroke()
 
   traceRiver(c,S,path,project)
-  c.strokeStyle='#244a79'
-  c.lineWidth=style.bankInnerWidth*outerScale*S
-  c.stroke()
-
-  traceRiver(c,S,path,project)
   c.strokeStyle='#d0a66b'
   c.lineWidth=style.bankHighlightWidth*outerScale*S
   c.globalAlpha=style.bankHighlightAlpha
   c.stroke()
   c.globalAlpha=1
+
+  traceRiver(c,S,path,project)
+  c.strokeStyle='#244a79'
+  c.lineWidth=style.bankInnerWidth*outerScale*S
+  c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle=inner
