@@ -16,6 +16,13 @@ export function completeCanonicalScenarioEvidence({
   economy=CANONICAL_TEST_ECONOMY,
 }={}){
   const source={id:`scenario-${year}-fixture`,kind:'direct-capture',ref:`scenario-${year}-fixture.png`}
+  const ownership=ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
+    city,
+    factionId:index===0?'liu':index===1?'cao':'neutral',
+    sourceId:source.id,
+    frameRef:`frame#owner-${index}`,
+    verified:true,
+  }))
   const cityStates=ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
     city,
     ...economy,
@@ -31,6 +38,13 @@ export function completeCanonicalScenarioEvidence({
     status:'test-fixture-complete',
     scenarioYear:year,
     sources:[source],
+    ownership,
+    ownershipCoverage:{
+      sourceId:source.id,
+      frameRef:'frame#ownership-coverage',
+      itemCount:ownership.length,
+      verified:true,
+    },
     cityStates,
     cityStateCoverage:{
       sourceId:source.id,
