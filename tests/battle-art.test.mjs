@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, duelHitSparkGeometry, duelMotionCueGeometry, siegeDetailGeometry, siegeForegroundGeometry, siegeGateDepthGeometry, siegeStandardGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, duelHitSparkGeometry, duelMotionCueGeometry, siegeDetailGeometry, siegeForegroundGeometry, siegeGateDepthGeometry, siegeStandardGeometry, siegeTowerDetailGeometry, siegeWeatheringGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -169,4 +169,16 @@ test('siege gate-depth geometry stays centered and bounded inside fortress heigh
   assert.ok(detail.thresholdY>detail.innerTop&&detail.thresholdY<=105)
   assert.equal(detail.plankXs.length,4)
   assert.ok(detail.plankXs.every((x)=>Math.abs(x)<detail.innerHalf))
+})
+
+
+test('siege wall weathering remains subtle and inside fortress bounds',()=>{
+  const detail=siegeWeatheringGeometry(290,105)
+  assert.equal(detail.stains.length,3)
+  assert.equal(detail.cracks.length,3)
+  assert.ok(detail.stains.every((item)=>item.x>0&&item.x<290&&item.y>0&&item.y<105&&item.alpha>0&&item.alpha<.2))
+  for(const crack of detail.cracks){
+    assert.ok(crack.length>=3)
+    assert.ok(crack.every(([x,y])=>x>0&&x<290&&y>0&&y<105))
+  }
 })
