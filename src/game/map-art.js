@@ -207,6 +207,7 @@ export function fortDetailGeometry(){
       Object.freeze({x:4.6,y1:1.2,y2:4.2}),
     ]),
     roofRidges:Object.freeze([-5.5,0,5.5]),
+    ground:Object.freeze({rx:11.5,ry:3,y:6.7}),
   })
 }
 
@@ -221,6 +222,12 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
   const c=r.ctx,S=r.S*scale
   c.save()
   c.translate(x*r.S,y*r.S)
+
+  const detail=fortDetailGeometry()
+  c.fillStyle='rgba(42,28,19,.3)'
+  c.beginPath()
+  c.ellipse(0,detail.ground.y*S,detail.ground.rx*S,detail.ground.ry*S,0,0,Math.PI*2)
+  c.fill()
 
   c.fillStyle=MAP_ART_PALETTE.fortDark
   c.fillRect(-9*S,-3*S,18*S,9*S)
@@ -241,7 +248,6 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
   c.lineWidth=.55*S
   c.strokeRect(-9*S,-9*S,18*S,15*S)
 
-  const detail=fortDetailGeometry()
   c.strokeStyle='rgba(50,34,25,.48)'
   c.lineWidth=.28*S
   for(const yRow of detail.stoneRows){
