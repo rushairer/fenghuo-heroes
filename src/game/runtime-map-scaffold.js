@@ -1,0 +1,36 @@
+// Provisional engineering map retained only until the Chinese-ROM canonical
+// evidence ledger opens the migration gate. Nothing in this file is parity
+// evidence and none of these city identities/coordinates/edges may be promoted
+// into canonical data by inference.
+
+export const RUNTIME_SCAFFOLD_CITY_ROWS=Object.freeze([
+  ['xiangping','襄平',284,43,'yuan'],['beiping','北平',251,48,'yuan'],['jicheng','薊',226,52,'yuan'],['nanpi','南皮',211,69,'yuan'],['ye','鄴',186,72,'yuan'],['pingyuan','平原',220,83,'yuan'],['beihai','北海',249,91,'neutral'],['xiapi','下邳',239,111,'neutral'],['xiaopei','小沛',211,103,'neutral'],['shouchun','壽春',215,124,'neutral'],['xuchang','許昌',177,102,'cao'],['chenliu','陳留',187,89,'cao'],['luoyang','洛陽',151,86,'dong'],['hongnong','弘農',126,86,'dong'],['changan','長安',103,83,'dong'],['tianshui','天水',74,75,'ma'],['xiliang','西涼',45,67,'ma'],['wuwei','武威',29,52,'ma'],['hanzhong','漢中',95,113,'neutral'],['shangyong','上庸',118,119,'neutral'],['xinye','新野',151,118,'liu_biao'],['xiangyang','襄陽',151,134,'liu_biao'],['jiangxia','江夏',185,139,'liu_biao'],['jiangling','江陵',145,154,'liu_biao'],['changsha','長沙',174,170,'neutral'],['wuling','武陵',137,174,'neutral'],['guiyang','桂陽',168,190,'neutral'],['lingling','零陵',136,195,'neutral'],['lujiang','廬江',211,145,'sun'],['jianye','建業',244,146,'sun'],['wujun','吳',260,158,'sun'],['kuaiji','會稽',278,170,'sun'],['chai_sang','柴桑',211,163,'sun'],['yuzhang','豫章',205,180,'sun'],['chengdu','成都',70,151,'liu'],['zitong','梓潼',73,127,'liu'],['jiangzhou','江州',84,173,'liu'],['yong_an','永安',106,158,'liu'],['jianning','建寧',72,196,'neutral'],['yunnan','雲南',43,201,'neutral'],
+])
+
+export const RUNTIME_SCAFFOLD_EDGES=Object.freeze([
+  ['xiangping','beiping'],['beiping','jicheng'],['jicheng','nanpi'],['nanpi','ye'],['nanpi','pingyuan'],['pingyuan','beihai'],['pingyuan','xiaopei'],['beihai','xiapi'],['xiapi','xiaopei'],['xiapi','shouchun'],['ye','chenliu'],['ye','luoyang'],['chenliu','xuchang'],['chenliu','xiaopei'],['xuchang','luoyang'],['xuchang','xinye'],['xuchang','shouchun'],['luoyang','hongnong'],['hongnong','changan'],['changan','tianshui'],['tianshui','xiliang'],['xiliang','wuwei'],['changan','hanzhong'],['hanzhong','zitong'],['hanzhong','shangyong'],['shangyong','xinye'],['xinye','xiangyang'],['xiangyang','jiangxia'],['xiangyang','jiangling'],['jiangxia','lujiang'],['jiangxia','chai_sang'],['jiangling','wuling'],['jiangling','yong_an'],['jiangling','changsha'],['lujiang','shouchun'],['lujiang','jianye'],['jianye','wujun'],['wujun','kuaiji'],['chai_sang','yuzhang'],['chai_sang','lujiang'],['changsha','guiyang'],['changsha','wuling'],['guiyang','lingling'],['wuling','lingling'],['chengdu','zitong'],['chengdu','jiangzhou'],['chengdu','yong_an'],['jiangzhou','yong_an'],['jiangzhou','jianning'],['jianning','yunnan'],
+])
+
+const neighbors=Object.fromEntries(RUNTIME_SCAFFOLD_CITY_ROWS.map(([id])=>[id,[]]))
+for(const [a,b] of RUNTIME_SCAFFOLD_EDGES){
+  neighbors[a].push(b)
+  neighbors[b].push(a)
+}
+
+export const RUNTIME_SCAFFOLD_CITIES=Object.freeze(
+  RUNTIME_SCAFFOLD_CITY_ROWS.map(([id,name,x,y,owner])=>Object.freeze({
+    id,name,x,y,owner,neighbors:Object.freeze(neighbors[id]),
+  })),
+)
+
+export const RUNTIME_SCAFFOLD_CITY_BY_ID=Object.freeze(
+  Object.fromEntries(RUNTIME_SCAFFOLD_CITIES.map((city)=>[city.id,city])),
+)
+
+export const RUNTIME_SCAFFOLD_MAP_PROFILE=Object.freeze({
+  id:'runtime-scaffold',
+  canonical:false,
+  cities:RUNTIME_SCAFFOLD_CITIES,
+  cityById:RUNTIME_SCAFFOLD_CITY_BY_ID,
+  villages:Object.freeze([]),
+})
