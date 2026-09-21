@@ -119,6 +119,7 @@ export function validateCanonicalMapEvidence(evidence={}){
     sourceCount:sources.length,
     invalidSourceCount:invalidSources.length,
     coordinateReports:Object.freeze(coordinateReports),
+    verifiedCityCoordinates:Object.freeze([...validCoordinates]),
     validCityCoordinateCount:uniqueCoordinateNames.size,
     duplicateCoordinateNames:Object.freeze(duplicateCoordinateNames),
     villageEvidenceCount:verifiedVillages.length,
