@@ -1,6 +1,6 @@
 import { CANONICAL_MAP_EVIDENCE } from './canonical-map-evidence.js'
 import { mapEvidenceSourceValid, validateCanonicalMapEvidence } from './map-evidence.js'
-import { CITIES } from './data.js'
+import { RUNTIME_SCAFFOLD_CITIES } from './runtime-map-scaffold.js'
 import {
   ZH_189_START_CITY_EVIDENCE,
   ZH_ROM_CANONICAL_CITY_SET,
@@ -76,7 +76,7 @@ export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) 
 }
 
 export function runtimeMapParityReport() {
-  const runtimeNames=sortedUnique(CITIES.map((city)=>normalizeZhRomCityName(city.name)))
+  const runtimeNames=sortedUnique(RUNTIME_SCAFFOLD_CITIES.map((city)=>normalizeZhRomCityName(city.name)))
   const targetNames=sortedUnique(ZH_ROM_CANONICAL_CITY_SET)
   const targetSet=new Set(targetNames)
   const runtimeSet=new Set(runtimeNames)
@@ -84,7 +84,7 @@ export function runtimeMapParityReport() {
   const missingTarget=targetNames.filter((name)=>!runtimeSet.has(name))
 
   return Object.freeze({
-    runtimeCityCount:CITIES.length,
+    runtimeCityCount:RUNTIME_SCAFFOLD_CITIES.length,
     targetCityCount:ZH_ROM_CANONICAL_CITY_SET.length,
     cityIdentityMatchesTarget:
       runtimeNames.length===targetNames.length&&unexpectedRuntime.length===0&&missingTarget.length===0,
