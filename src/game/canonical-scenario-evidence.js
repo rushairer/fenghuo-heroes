@@ -2,6 +2,8 @@ const emptyScenarioEvidence=(year)=>Object.freeze({
   status:'blocked-awaiting-direct-capture',
   scenarioYear:year,
   sources:Object.freeze([]),
+  ownership:Object.freeze([]),
+  ownershipCoverage:null,
   cityStates:Object.freeze([]),
   cityStateCoverage:null,
   officerAssignments:Object.freeze([]),
