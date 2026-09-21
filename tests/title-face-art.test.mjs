@@ -3,10 +3,10 @@ import assert from 'node:assert/strict'
 import { TITLE_FACE_FEATURES } from '../src/game/title-face-art.js'
 
 test('title face structure covers all visible foreground and midground faces',()=>{
-  assert.ok(TITLE_FACE_FEATURES.length>=4)
+  assert.equal(TITLE_FACE_FEATURES.length,5)
   assert.deepEqual(
     TITLE_FACE_FEATURES.map((item)=>item.id),
-    ['left-profile','center','upper-right','front-right'],
+    ['rear-general','left-profile','center','upper-right','front-right'],
   )
 })
 
