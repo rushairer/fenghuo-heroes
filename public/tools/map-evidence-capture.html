@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Canonical Map Evidence Capture</title>
+  <link rel="stylesheet" href="./map-evidence-capture.css" />
+</head>
+<body>
+  <main class="capture-app">
+    <header>
+      <h1>Chinese-ROM Map Evidence Capture</h1>
+      <p>本工具只產生 <code>verified:false</code> 候選記錄；人工復核後才能進入 canonical ledger。</p>
+    </header>
+
+    <section class="controls" aria-label="capture controls">
+      <label>截圖 <input id="image-input" type="file" accept="image/*" /></label>
+      <label>類型
+        <select id="record-type">
+          <option value="city">城市</option>
+          <option value="village">村莊</option>
+        </select>
+      </label>
+      <label id="city-name-wrap">城市名 <input id="city-name" autocomplete="off" /></label>
+      <label>Source ID <input id="source-id" value="capture-001" /></label>
+      <label>Frame Ref <input id="frame-ref" value="capture-001#frame-001" /></label>
+      <label>座標空間
+        <select id="target-space">
+          <option value="logical-320x224">logical-320x224</option>
+          <option value="world-640x448">world-640x448</option>
+        </select>
+      </label>
+      <button id="copy-output" type="button">複製候選 JSON</button>
+      <button id="clear-output" type="button">清空候選</button>
+    </section>
+
+    <section class="workspace">
+      <div class="canvas-shell">
+        <canvas id="capture-canvas" width="320" height="224" aria-label="Evidence screenshot canvas"></canvas>
+        <p id="canvas-help">載入原版截圖後，在城市或村莊標記中心點擊。</p>
+      </div>
+      <aside>
+        <h2>候選記錄</h2>
+        <pre id="output">[]</pre>
+      </aside>
+    </section>
+
+    <footer>
+      <span id="status">尚未載入截圖。</span>
+    </footer>
+  </main>
+  <script type="module" src="./map-evidence-capture.js"></script>
+</body>
+</html>
