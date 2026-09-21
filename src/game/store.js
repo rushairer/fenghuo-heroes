@@ -56,7 +56,7 @@ export class GameStore {
     const firstCity=cities.find((city)=>cityStates[city.id]?.owner===primary)??cities[0]
     if(!firstCity)throw new Error('Runtime map profile contains no cities.')
     const first=firstCity.id
-    this.state = { mapProfileId:this.mapProfile.id, scenarioStateId:scenarioState.id, scenarioOwnershipStatus:scenarioState.ownershipStatus, scenarioEconomyStatus:scenarioState.economyStatus, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(cityById[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:cityStates, log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
+    this.state = { mapProfileId:this.mapProfile.id, scenarioStateId:scenarioState.id, scenarioOwnershipStatus:scenarioState.ownershipStatus, scenarioEconomyStatus:scenarioState.economyStatus, scenarioOfficerPlacementStatus:scenarioState.officerPlacementStatus, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(cityById[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:cityStates, log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
     this.pendingConflict = null
     this.save()
     return this.state
@@ -123,6 +123,7 @@ export class GameStore {
         parsed.scenarioStateId='runtime-scaffold:189'
         parsed.scenarioOwnershipStatus='provisional-scaffold'
         parsed.scenarioEconomyStatus='provisional-coordinate-derived'
+        parsed.scenarioOfficerPlacementStatus='provisional-roster-only'
       }
       this.state=parsed
       if(!this.state.inspectionCategories)this.state.inspectionCategories={}
