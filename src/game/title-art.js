@@ -1,5 +1,6 @@
 import { drawTitleFaceStructure } from './title-face-art.js'
 import { drawTitleHdDetail } from './title-hd-detail.js'
+import { drawTitleHeadgearDetail } from './title-headgear-art.js'
 import { drawTitleMaterialPass } from './title-material-art.js'
 
 // Clean-room title artwork inspired only by the observed composition of the
@@ -209,6 +210,7 @@ export function drawTitleComposition(r) {
   drawFrontRightGeneral(r)
   drawTitleMaterialPass(r)
   drawTitleFaceStructure(r)
+  drawTitleHeadgearDetail(r)
   drawTitleHdDetail(r)
   drawBrocadeStrip(r)
 }
