@@ -93,3 +93,16 @@ test('canonical routes generate a symmetric runtime neighbor graph',()=>{
   assert.deepEqual(profile.cities[0].neighbors,['zh-02'])
   assert.deepEqual(profile.cities[1].neighbors,['zh-01'])
 })
+
+
+test('evidence-resolved display names are preserved without changing canonical identity',()=>{
+  const evidence=completeEvidence()
+  const variant=ZH_ROM_CITY_NAME_VARIANTS.find((item)=>item.status==='unresolved')
+  evidence.nameResolutions=evidence.nameResolutions.map((item)=>
+    item.ram===variant.ram?{...item,chosen:variant.numberedGuide}:item
+  )
+  const profile=buildCanonicalRuntimeMap(evidence)
+  const city=profile.cities.find((item)=>item.canonicalName===variant.ram)
+  assert.equal(city.name,variant.numberedGuide)
+  assert.equal(city.canonicalName,variant.ram)
+})
