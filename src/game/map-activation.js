@@ -1,5 +1,6 @@
 import { CANONICAL_MAP_EVIDENCE } from './canonical-map-evidence.js'
 import { selectRuntimeMapProfile } from './map-profile-selection.js'
+import { assertRuntimeMapProfile } from './map-profile-validation.js'
 import { RUNTIME_SCAFFOLD_MAP_PROFILE } from './runtime-map-scaffold.js'
 
 // Deliberate second gate. Evidence readiness proves the canonical profile can be
@@ -17,10 +18,10 @@ export function activeMapProfile({
     if(!selected.readiness.ready){
       throw new Error('Canonical map activation requested before evidence readiness.')
     }
-    return selected.profile
+    return assertRuntimeMapProfile(selected.profile)
   }
   if(target!=='scaffold')throw new Error(`Unknown map activation target: ${target}`)
-  return RUNTIME_SCAFFOLD_MAP_PROFILE
+  return assertRuntimeMapProfile(RUNTIME_SCAFFOLD_MAP_PROFILE)
 }
 
 export function mapActivationReport(options={}){
