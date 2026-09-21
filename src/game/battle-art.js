@@ -356,6 +356,28 @@ export function duelArenaPosts(width=280,step=20){
   return Object.freeze(posts)
 }
 
+export function duelArenaDetailGeometry(width=320,height=152){
+  const w=Math.max(200,Number(width)||320)
+  const h=Math.max(120,Number(height)||152)
+  return Object.freeze({
+    upperBeams:Object.freeze([
+      Object.freeze({x1:w*.12,y1:30,x2:w*.42,y2:42}),
+      Object.freeze({x1:w*.88,y1:30,x2:w*.58,y2:42}),
+      Object.freeze({x1:w*.2,y1:51,x2:w*.8,y2:51}),
+    ]),
+    crowdRows:Object.freeze([
+      Object.freeze({y:61,count:14,phase:0}),
+      Object.freeze({y:74,count:16,phase:.5}),
+      Object.freeze({y:86,count:13,phase:.2}),
+    ]),
+    ropeY:95,
+    dust:Object.freeze([
+      Object.freeze({x:w*.28,y:h-8,rx:30,ry:4,alpha:.08}),
+      Object.freeze({x:w*.72,y:h-10,rx:34,ry:5,alpha:.07}),
+    ]),
+  })
+}
+
 export function drawDuelArena(r,{
   x=0,
   y=38,
@@ -386,6 +408,36 @@ export function drawDuelArena(r,{
     c.fillRect((worldX+1.5)*S,(y+37)*S,1.2*S,11*S)
   }
 
+  const detail=duelArenaDetailGeometry(width,height)
+  c.strokeStyle='rgba(51,36,28,.62)'
+  c.lineWidth=2*S
+  for(const beam of detail.upperBeams){
+    c.beginPath()
+    c.moveTo((x+beam.x1)*S,(y+beam.y1)*S)
+    c.lineTo((x+beam.x2)*S,(y+beam.y2)*S)
+    c.stroke()
+  }
+
+  for(const row of detail.crowdRows){
+    const spacing=(width-54)/row.count
+    for(let i=0;i<row.count;i++){
+      const px=x+27+(i+row.phase)*spacing
+      const py=y+row.y+((i%3)-1)*1.1
+      c.fillStyle=i%4===0?'#3a2c26':'#46342b'
+      c.beginPath()
+      c.arc(px*S,py*S,2.1*S,0,Math.PI*2)
+      c.fill()
+      c.fillRect((px-1.5)*S,(py+1.5)*S,3*S,4.2*S)
+    }
+  }
+
+  c.strokeStyle='rgba(91,64,42,.7)'
+  c.lineWidth=.7*S
+  c.beginPath()
+  c.moveTo((x+12)*S,(y+detail.ropeY)*S)
+  c.quadraticCurveTo((x+width/2)*S,(y+detail.ropeY+2)*S,(x+width-12)*S,(y+detail.ropeY)*S)
+  c.stroke()
+
   // Arena floor with converging plank lines.
   const floorY=y+96
   const floor=c.createLinearGradient(0,floorY*S,0,(y+height)*S)
@@ -407,6 +459,13 @@ export function drawDuelArena(r,{
     c.moveTo(x*S,yy*S)
     c.lineTo((x+width)*S,yy*S)
     c.stroke()
+  }
+
+  for(const dust of detail.dust){
+    c.fillStyle=`rgba(214,183,127,${dust.alpha})`
+    c.beginPath()
+    c.ellipse((x+dust.x)*S,(y+dust.y)*S,dust.rx*S,dust.ry*S,0,0,Math.PI*2)
+    c.fill()
   }
 
   // Central gate depth.
