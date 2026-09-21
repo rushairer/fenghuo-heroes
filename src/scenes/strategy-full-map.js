@@ -2,7 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
-import { drawFullMapCitySymbol, drawFullMapVillageSymbol, drawMapCursor, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
+import { drawFullMapCitySymbol, drawFullMapVillageSymbol, drawMapCursor, drawVectorMountain } from '../game/map-art.js'
 import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawProjectedTerrainRelief } from '../game/terrain-relief.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from '../game/world.js'
@@ -86,16 +86,10 @@ export class StrategyScene extends OfficerStrategyScene {
     const legendX=235
     r.text(`${state.year}年 ${state.month}月`,legendX,51,7,'#e6d7b7')
     r.text('地圖符號',legendX,68,6,'#9e947e')
-    const fort=this.app.assets?.getForDisplay('map.cities.neutral',17,17)
-    if(!fort||!r.drawImageCentered(fort,244,88,17,17)){
-      drawVectorFort(r,244,91,'#8c8c8c',.72)
-    }
+    drawFullMapCitySymbol(r,244,89,FACTION_BY_ID.neutral.color,7)
     r.text('城',258,84,7,'#e8dfc8')
 
-    const village=this.app.assets?.getForDisplay('map.villages.neutral',17,17)
-    if(!village||!r.drawImageCentered(village,244,111,17,17)){
-      drawVectorVillage(r,244,111,.78)
-    }
+    drawFullMapVillageSymbol(r,244,111,5.6)
     r.text('村',258,107,7,'#e8dfc8')
 
     const mountain=this.app.assets?.getForDisplay('map.terrain.mountainA',18,14)
