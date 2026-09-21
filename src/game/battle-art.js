@@ -226,6 +226,11 @@ export function siegeDetailGeometry(width=290,height=105){
     embrasures:Object.freeze(embrasures),
     brickJoints:Object.freeze(brickJoints),
     gateBeams:Object.freeze([-31,-16,16,31]),
+    gateStudYs:Object.freeze([
+      Math.round(h*.7*100)/100,
+      Math.round(h*.82*100)/100,
+      Math.round(h*.94*100)/100,
+    ]),
     dust:Object.freeze([
       Object.freeze({x:w*.18,y:h-7,rx:28,ry:5,alpha:.12}),
       Object.freeze({x:w*.76,y:h-5,rx:34,ry:6,alpha:.1}),
@@ -323,7 +328,7 @@ export function drawSiegeFortress(r,{
   }
   c.fillStyle='rgba(215,166,82,.68)'
   for(const dx of [-13,0,13]){
-    for(const dy of [73,86,99]){
+    for(const dy of detail.gateStudYs){
       c.beginPath()
       c.arc((gateX+dx)*S,(y+dy)*S,.65*S,0,Math.PI*2)
       c.fill()
