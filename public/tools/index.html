@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fenghuo Heroes Parity Tools</title>
+  <link rel="stylesheet" href="./index.css" />
+</head>
+<body>
+  <main class="tools-app">
+    <header>
+      <p class="eyebrow">FENGHUO HEROES · CLEAN-ROOM PARITY</p>
+      <h1>Evidence Workbenches</h1>
+      <p>這裡只負責建立可審計候選。所有 workbench 輸出都保持 <code>verified:false</code>，不會把人工抄錄自動升級成 canonical evidence。</p>
+    </header>
+
+    <section class="tool-grid" aria-label="parity evidence tools">
+      <article>
+        <div class="tag">MAP</div>
+        <h2>Canonical Map Capture</h2>
+        <p>採集 40 城座標、村莊位置與地圖 frame 參考。支援 40 城自動下一項、畫布標記、撤銷與恢復批次。</p>
+        <a href="./map-evidence-capture.html">打開 Map Workbench</a>
+        <code>npm run map:evidence:audit -- capture.json</code>
+      </article>
+
+      <article>
+        <div class="tag">SCENARIO</div>
+        <h2>Scenario Start-State Capture</h2>
+        <p>189 / 200 / 215 分開採集 40 城 ownership、七項城市數值、武將城市配屬與 ruler/officer 角色。</p>
+        <a href="./scenario-evidence-capture.html">打開 Scenario Workbench</a>
+        <code>npm run scenario:evidence:audit -- capture.json</code>
+      </article>
+
+      <article>
+        <div class="tag">MARCH</div>
+        <h2>March Observation Capture</h2>
+        <p>從本地錄影/截圖記錄一格位移、格數↔日數、月末窗口、攻擊/攻城鄰接與缺糧前後狀態。</p>
+        <a href="./march-evidence-capture.html">打開 March Workbench</a>
+        <code>npm run march:evidence:audit -- capture.json</code>
+      </article>
+    </section>
+
+    <section class="rules">
+      <h2>Promotion rules</h2>
+      <ul>
+        <li>來源必須有 Source ID、Source Ref 與可回溯 Frame Ref。</li>
+        <li>工作台候選不是 canonical data；先 merge，再人工復核，再 audit。</li>
+        <li>互相矛盾的觀測不取平均、不用歷史常識補值。</li>
+        <li>ROM、原版圖片、影片檔本身不提交進倉庫；只保留合法參考的來源與量測記錄。</li>
+      </ul>
+    </section>
+
+    <footer>
+      <a href="../">返回遊戲</a>
+    </footer>
+  </main>
+</body>
+</html>
