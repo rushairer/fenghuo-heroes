@@ -1,5 +1,5 @@
 import { COLORS, SERIF } from '../game/constants.js'
-import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
+import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { dailyFoodFor, queueMarch, rerouteArmy } from '../game/march.js'
 import { foodForDays, maxFoodDaysForStock } from '../game/parity.js'
@@ -162,7 +162,7 @@ export class StrategyScene extends MarchStrategyScene {
   }
 
   beginNewMarchRoute() {
-    const point = cityWorldPoint(CITY_BY_ID[this.marchFrom])
+    const point = cityWorldPoint(this.app.store.mapProfile?.cityById?.[this.marchFrom])
     this.marchRoute = [{ ...point }]
     this.app.store.setCursor(point.x, point.y)
     this.routePromptReturnView = 'march-compose'
@@ -242,7 +242,7 @@ export class StrategyScene extends MarchStrategyScene {
 
   drawMarchCompose() {
     const r = this.app.r
-    const city = CITY_BY_ID[this.marchFrom]
+    const city = this.app.store.mapProfile?.cityById?.[this.marchFrom]
     const count = this.officerCount()
     const daily = dailyFoodFor(this.marchTroops, count)
     const food = foodForDays(this.marchTroops, count, this.marchFoodDays)
