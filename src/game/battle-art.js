@@ -626,3 +626,60 @@ export function drawDuelArena(r,{
   c.restore()
   return true
 }
+
+
+export function siegeStandardGeometry(width=290){
+  const w=Math.max(160,Number(width)||290)
+  return Object.freeze([
+    Object.freeze({x:w*.15,y:91,flip:false}),
+    Object.freeze({x:w*.85,y:91,flip:true}),
+  ])
+}
+
+export function drawSiegeStandards(r,{
+  x=15,
+  y=48,
+  width=290,
+  attackerColor='#587cc7',
+  defenderColor='#b75f52',
+}={}){
+  const c=r.ctx,S=r.S
+  const standards=siegeStandardGeometry(width)
+  const colors=[attackerColor,defenderColor]
+  c.save()
+  standards.forEach((standard,index)=>{
+    const baseX=x+standard.x
+    const baseY=y+standard.y
+    const dir=standard.flip?-1:1
+
+    c.strokeStyle='#3a261a'
+    c.lineWidth=1.15*S
+    c.beginPath()
+    c.moveTo(baseX*S,(baseY+15)*S)
+    c.lineTo(baseX*S,(baseY-23)*S)
+    c.stroke()
+
+    const cloth=c.createLinearGradient(baseX*S,(baseY-22)*S,(baseX+dir*15)*S,(baseY-12)*S)
+    cloth.addColorStop(0,colors[index])
+    cloth.addColorStop(1,'rgba(43,26,20,.92)')
+    c.fillStyle=cloth
+    c.beginPath()
+    c.moveTo(baseX*S,(baseY-22)*S)
+    c.quadraticCurveTo((baseX+dir*8)*S,(baseY-24)*S,(baseX+dir*16)*S,(baseY-18)*S)
+    c.lineTo((baseX+dir*12)*S,(baseY-9)*S)
+    c.quadraticCurveTo((baseX+dir*7)*S,(baseY-13)*S,baseX*S,(baseY-12)*S)
+    c.closePath()
+    c.fill()
+
+    c.strokeStyle='rgba(255,229,177,.42)'
+    c.lineWidth=.3*S
+    c.stroke()
+
+    c.fillStyle='rgba(35,22,16,.28)'
+    c.beginPath()
+    c.ellipse(baseX*S,(baseY+16)*S,9*S,2.5*S,0,0,Math.PI*2)
+    c.fill()
+  })
+  c.restore()
+  return true
+}
