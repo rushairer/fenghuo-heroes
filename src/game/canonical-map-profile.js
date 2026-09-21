@@ -27,8 +27,8 @@ function cityIdFor(name){
 
 export function buildCanonicalRuntimeMap(evidence){
   const readiness=canonicalMapMigrationReadiness(evidence)
-  if(!readiness.ready){
-    throw new Error('Canonical map evidence is incomplete; runtime migration remains blocked.')
+  if(!readiness.geometryReady){
+    throw new Error('Canonical map geometry evidence is incomplete; runtime migration remains blocked.')
   }
 
   const report=readiness.evidenceReport
@@ -36,12 +36,6 @@ export function buildCanonicalRuntimeMap(evidence){
     report.verifiedCityCoordinates.map((record)=>[
       normalizeZhRomCityName(record.name),
       record,
-    ]),
-  )
-  const ownershipByName=new Map(
-    report.verifiedOwnership.map((record)=>[
-      normalizeZhRomCityName(record.city),
-      record.factionId,
     ]),
   )
   const displayNameByIdentity=new Map(
@@ -77,7 +71,6 @@ export function buildCanonicalRuntimeMap(evidence){
       canonicalName:name,
       x:point.x,
       y:point.y,
-      owner:ownershipByName.get(name)??'neutral',
       neighbors:Object.freeze([...neighborIds[id]].sort()),
       evidence:Object.freeze({
         coordinateSourceId:coordinate.sourceId,
@@ -101,6 +94,7 @@ export function buildCanonicalRuntimeMap(evidence){
     id:'zh-rom-canonical',
     canonical:true,
     evidenceStatus:evidence.status,
+    geometryOnly:true,
     cities:Object.freeze(cities),
     villages,
     cityById:Object.freeze(Object.fromEntries(cities.map((city)=>[city.id,city]))),
