@@ -32,6 +32,8 @@ export function riverStrokeStyle({projected=false,pattern=false}={}){
     return Object.freeze({
       bankOuterWidth:5,
       bankInnerWidth:4.15,
+      bankHighlightWidth:.36,
+      bankHighlightAlpha:.26,
       waterWidth:3.4,
       highlightWidth:.72,
       highlightAlpha:.52,
@@ -40,6 +42,8 @@ export function riverStrokeStyle({projected=false,pattern=false}={}){
   return Object.freeze({
     bankOuterWidth:23,
     bankInnerWidth:19,
+    bankHighlightWidth:1.7,
+    bankHighlightAlpha:.24,
     waterWidth:13,
     highlightWidth:3,
     highlightAlpha:pattern?.24:.55,
