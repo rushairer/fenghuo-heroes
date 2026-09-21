@@ -6,10 +6,12 @@ const modules=await Promise.all([
   import(gameModuleRoot+'scenario-evidence-capture.js'),
   import(gameModuleRoot+'original-data.js'),
   import(gameModuleRoot+'scenario-fields.js'),
+  import(gameModuleRoot+'zh-rom-ram-evidence.js'),
 ])
 const captureModule=modules[0]
 const originalDataModule=modules[1]
 const fieldsModule=modules[2]
+const ramModule=modules[3]
 
 const normalizeScenarioCaptureBundleForEditing=captureModule.normalizeScenarioCaptureBundleForEditing
 const scenarioCaptureBundle=captureModule.scenarioCaptureBundle
@@ -19,6 +21,7 @@ const scenarioOwnershipCandidate=captureModule.scenarioOwnershipCandidate
 const ZH_ROM_CANONICAL_CITY_SET=originalDataModule.ZH_ROM_CANONICAL_CITY_SET
 const normalizeZhRomCityName=originalDataModule.normalizeZhRomCityName
 const CITY_ECONOMY_FIELDS=fieldsModule.CITY_ECONOMY_FIELDS
+const cityResourceRamAddress=ramModule.cityResourceRamAddress
 
 const FIELD_LABELS=Object.freeze({
   gold:'金',food:'米',troops:'兵力',development:'產值',
@@ -40,6 +43,7 @@ const ownershipEditor=document.querySelector('#ownership-editor')
 const cityStateEditor=document.querySelector('#city-state-editor')
 const officerEditor=document.querySelector('#officer-editor')
 const cityStateFields=document.querySelector('#city-state-fields')
+const ramHint=document.querySelector('#ram-hint')
 const autoNext=document.querySelector('#auto-next')
 const saveRecord=document.querySelector('#save-record')
 const copyOutput=document.querySelector('#copy-output')
@@ -201,8 +205,24 @@ function setEditorVisibility(){
   officerEditor.hidden=type!=='officer'
   loadSelectedCityIntoEditor()
 }
+function hexAddress(value){
+  return '0x'+Number(value).toString(16).toUpperCase().padStart(4,'0')
+}
+function updateRamHint(){
+  const city=normalizeZhRomCityName(cityName.value)
+  try{
+    ramHint.textContent=
+      'RAM 觀測提示（僅地址，不是開局值）：金 '+
+      hexAddress(cityResourceRamAddress(city,'gold'))+
+      ' · 米 '+hexAddress(cityResourceRamAddress(city,'food'))+
+      ' · 兵 '+hexAddress(cityResourceRamAddress(city,'troops'))
+  }catch{
+    ramHint.textContent='此城市目前沒有已驗證的 RAM 地址提示。'
+  }
+}
 function loadSelectedCityIntoEditor(){
   const city=normalizeZhRomCityName(cityName.value)
+  updateRamHint()
   const owner=ownership.find((item)=>normalizeZhRomCityName(item.city)===city)
   factionId.value=owner?.factionId||''
   const state=cityStates.find((item)=>normalizeZhRomCityName(item.city)===city)
