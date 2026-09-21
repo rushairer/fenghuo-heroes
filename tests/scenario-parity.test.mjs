@@ -31,8 +31,8 @@ function completeScenarioEvidence(year=189){
     verified:true,
   }))
   const officerAssignments=[
-    {officer:'關羽',city:'代縣',sourceId:source.id,frameRef:'frame#officer-1',verified:true},
-    {officer:'張飛',city:'代縣',sourceId:source.id,frameRef:'frame#officer-2',verified:true},
+    {officer:'關羽',role:'officer',city:'代縣',sourceId:source.id,frameRef:'frame#officer-1',verified:true},
+    {officer:'張飛',role:'officer',city:'代縣',sourceId:source.id,frameRef:'frame#officer-2',verified:true},
   ]
   return {
     status:'test-complete',
