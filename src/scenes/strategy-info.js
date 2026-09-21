@@ -79,13 +79,12 @@ export class StrategyScene extends ParityStrategyScene {
         project:(dot)=>toScreen(dot,camera),
         visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=MAP_VIEW_H,
       })
+      drawWorldTerrainRelief(r,this.mapRelief,{
+        camera,
+        viewWidth:MAP_VIEW_W,
+        viewHeight:MAP_VIEW_H,
+      })
     }
-
-    drawWorldTerrainRelief(r,this.mapRelief,{
-      camera,
-      viewWidth:MAP_VIEW_W,
-      viewHeight:MAP_VIEW_H,
-    })
 
     this.drawRiver(camera)
 
