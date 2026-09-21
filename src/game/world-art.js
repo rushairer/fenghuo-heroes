@@ -96,9 +96,14 @@ export function drawProjectedRiver(r,{
 
 export function roadSegmentStyle(index=0){
   const i=Math.abs(Math.floor(Number(index)||0))
+  const width=.48+(i%3)*.04
+  const alpha=.34+(i%4)*.03
   return Object.freeze({
-    width:.48+(i%3)*.04,
-    alpha:.34+(i%4)*.03,
+    width,
+    alpha,
+    shadowWidth:width*2.45,
+    highlightWidth:Math.max(.16,width*.34),
+    highlightAlpha:Math.min(.28,alpha*.58),
   })
 }
 
@@ -110,7 +115,9 @@ export function drawRoadNetwork(r,segments,{
     const a=segment?.a,b=segment?.b
     if(!a||!b)continue
     const style=roadSegmentStyle(index)
+    r.line(a.x,a.y,b.x,b.y,'#3f321f',style.shadowWidth,style.alpha*.34)
     r.line(a.x,a.y,b.x,b.y,color,style.width,style.alpha)
+    r.line(a.x,a.y,b.x,b.y,'#d2ad6b',style.highlightWidth,style.highlightAlpha)
     drawn++
   }
   return drawn
