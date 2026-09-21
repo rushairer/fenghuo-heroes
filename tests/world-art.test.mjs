@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   WORLD_RIVER_PATH,
+  riverStrokeStyle,
   roadSegmentStyle,
   uniqueRoadPairs,
   worldRiverBounds,
@@ -38,4 +39,26 @@ test('road-pair extraction removes reverse duplicates without changing identitie
     {id:'c',neighbors:['a']},
   ])
   assert.deepEqual(pairs,[['a','b'],['a','c']])
+})
+
+
+test('river stroke style keeps bank water and highlight widths ordered',()=>{
+  const world=riverStrokeStyle()
+  const projected=riverStrokeStyle({projected:true})
+  for(const style of [world,projected]){
+    assert.ok(style.bankOuterWidth>style.bankInnerWidth)
+    assert.ok(style.bankInnerWidth>style.waterWidth)
+    assert.ok(style.waterWidth>style.highlightWidth)
+    assert.ok(style.highlightAlpha>0&&style.highlightAlpha<=1)
+  }
+})
+
+test('pattern-backed river lowers highlight opacity without changing geometry',()=>{
+  const plain=riverStrokeStyle()
+  const patterned=riverStrokeStyle({pattern:true})
+  assert.equal(patterned.bankOuterWidth,plain.bankOuterWidth)
+  assert.equal(patterned.bankInnerWidth,plain.bankInnerWidth)
+  assert.equal(patterned.waterWidth,plain.waterWidth)
+  assert.equal(patterned.highlightWidth,plain.highlightWidth)
+  assert.ok(patterned.highlightAlpha<plain.highlightAlpha)
 })
