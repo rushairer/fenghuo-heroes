@@ -220,7 +220,7 @@ export class StrategyScene extends InfoStrategyScene {
     r.panel(46,27,228,164,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
     r.text(`${city?.name??'—'} · 武將一覽`,160,36,10,'#efd27d','center','top',SERIF,'700')
     r.text(faction?.label??'',160,52,7,faction?.color??'#ddd','center')
-    r.text('暫顯勢力開局名冊 · 城市配屬未校準',160,63,5.5,'#918978','center')
+    r.text(projection.cityAssignmentVerified?'開局城市配屬已由證據校準':'暫顯勢力開局名冊 · 城市配屬未校準',160,63,5.5,'#918978','center')
     r.line(60,73,260,73,'#72501b',.7)
 
     if(!rows.length){
