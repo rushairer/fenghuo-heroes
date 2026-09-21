@@ -20,6 +20,7 @@
     "scenario:evidence:audit": "node scripts/audit-scenario-evidence.mjs",
     "scenario:evidence:compile": "node scripts/compile-scenario-evidence.mjs",
     "scenario:evidence:merge": "node scripts/merge-scenario-evidence.mjs",
-    "copy:report": "node scripts/report-chinese-copy-parity.mjs"
+    "copy:report": "node scripts/report-chinese-copy-parity.mjs",
+    "ram:capture-plan": "node scripts/report-ram-capture-plan.mjs"
   }
 }
