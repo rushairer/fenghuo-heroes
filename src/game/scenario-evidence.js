@@ -30,6 +30,23 @@ export function validateScenarioCityStateRecord(record,{sources=[]}={}){
   })
 }
 
+export function validateScenarioOwnershipRecord(record,{sources=[]}={}){
+  const errors=[]
+  const city=normalizeZhRomCityName(record?.city)
+  const validSources=sourceIds(sources)
+  if(!canonicalCities.has(city))errors.push('unknown-city')
+  if(typeof record?.factionId!=='string'||!record.factionId.trim())errors.push('missing-faction')
+  if(typeof record?.sourceId!=='string'||!validSources.has(record.sourceId))errors.push('missing-source')
+  if(typeof record?.frameRef!=='string'||!record.frameRef.trim())errors.push('missing-frame-ref')
+  if(record?.verified!==true)errors.push('not-verified')
+  return Object.freeze({
+    ok:errors.length===0,
+    normalizedCity:city,
+    factionId:typeof record?.factionId==='string'?record.factionId.trim():'',
+    errors:Object.freeze(errors),
+  })
+}
+
 export function validateOfficerAssignmentRecord(record,{sources=[]}={}){
   const errors=[]
   const city=normalizeZhRomCityName(record?.city)
@@ -60,6 +77,7 @@ export function validateScenarioStartEvidence(evidence={}){
   const year=Number(evidence.scenarioYear)
   const scenarioYearValid=Boolean(targetScenario(year))
   const sources=Array.isArray(evidence.sources)?evidence.sources:[]
+  const ownership=Array.isArray(evidence.ownership)?evidence.ownership:[]
   const cityStates=Array.isArray(evidence.cityStates)?evidence.cityStates:[]
   const officerAssignments=Array.isArray(evidence.officerAssignments)?evidence.officerAssignments:[]
 
@@ -67,6 +85,14 @@ export function validateScenarioStartEvidence(evidence={}){
   const invalidSources=sources.filter((source)=>!mapEvidenceSourceValid(source))
   const duplicateSourceIds=[...new Set(validSourceIds)]
     .filter((id)=>validSourceIds.filter((candidate)=>candidate===id).length>1)
+
+  const ownershipReports=ownership.map((record)=>
+    validateScenarioOwnershipRecord(record,{sources})
+  )
+  const verifiedOwnership=ownership.filter((_,index)=>ownershipReports[index].ok)
+  const ownershipCities=verifiedOwnership.map((record)=>normalizeZhRomCityName(record.city))
+  const duplicateOwnershipCities=[...new Set(ownershipCities)]
+    .filter((name)=>ownershipCities.filter((candidate)=>candidate===name).length>1)
 
   const cityStateReports=cityStates.map((record)=>
     validateScenarioCityStateRecord(record,{sources})
@@ -86,6 +112,14 @@ export function validateScenarioStartEvidence(evidence={}){
   const duplicateOfficerAssignments=[...new Set(officerNames)]
     .filter((name)=>officerNames.filter((candidate)=>candidate===name).length>1)
 
+  const ownershipCoverageVerified=Boolean(
+    sourceBackedCoverage(evidence.ownershipCoverage,sources)&&
+    Number.isInteger(evidence.ownershipCoverage?.itemCount)&&
+    evidence.ownershipCoverage.itemCount===ZH_ROM_CANONICAL_CITY_SET.length&&
+    verifiedOwnership.length===ZH_ROM_CANONICAL_CITY_SET.length&&
+    duplicateOwnershipCities.length===0
+  )
+
   const cityStateCoverageVerified=Boolean(
     sourceBackedCoverage(evidence.cityStateCoverage,sources)&&
     Number.isInteger(evidence.cityStateCoverage?.itemCount)&&
@@ -103,6 +137,7 @@ export function validateScenarioStartEvidence(evidence={}){
   )
 
   const sourceLedgerValid=invalidSources.length===0&&duplicateSourceIds.length===0
+  const ownershipReady=scenarioYearValid&&sourceLedgerValid&&ownershipCoverageVerified
   const economyReady=scenarioYearValid&&sourceLedgerValid&&cityStateCoverageVerified
   const officerPlacementReady=scenarioYearValid&&sourceLedgerValid&&officerCoverageVerified
 
@@ -112,18 +147,24 @@ export function validateScenarioStartEvidence(evidence={}){
     sourceLedgerValid,
     invalidSourceCount:invalidSources.length,
     duplicateSourceIds:Object.freeze(duplicateSourceIds),
+    ownershipReports:Object.freeze(ownershipReports),
     cityStateReports:Object.freeze(cityStateReports),
     officerAssignmentReports:Object.freeze(officerAssignmentReports),
+    verifiedOwnership:Object.freeze([...verifiedOwnership]),
     verifiedCityStates:Object.freeze([...verifiedCityStates]),
     verifiedOfficerAssignments:Object.freeze([...verifiedOfficerAssignments]),
+    ownershipEvidenceCount:verifiedOwnership.length,
     cityStateEvidenceCount:verifiedCityStates.length,
     officerAssignmentEvidenceCount:verifiedOfficerAssignments.length,
+    duplicateOwnershipCities:Object.freeze(duplicateOwnershipCities),
     duplicateCityStates:Object.freeze(duplicateCityStates),
     duplicateOfficerAssignments:Object.freeze(duplicateOfficerAssignments),
+    ownershipCoverageVerified,
     cityStateCoverageVerified,
     officerCoverageVerified,
+    ownershipReady,
     economyReady,
     officerPlacementReady,
-    ready:economyReady&&officerPlacementReady,
+    ready:ownershipReady&&economyReady&&officerPlacementReady,
   })
 }
