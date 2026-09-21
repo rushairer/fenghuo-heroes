@@ -1,10 +1,12 @@
 import { mapActivationReport } from '../src/game/map-activation.js'
 import { canonicalMapMigrationReadiness } from '../src/game/map-parity.js'
 import { runtimeMapParityReport } from '../src/game/map-parity.js'
+import { canonicalScenarioReadinessReport } from '../src/game/scenario-parity.js'
 
 const activation=mapActivationReport()
 const readiness=canonicalMapMigrationReadiness()
 const parity=runtimeMapParityReport()
+const scenarios=canonicalScenarioReadinessReport()
 
 console.log(JSON.stringify({
   active:{
@@ -25,6 +27,7 @@ console.log(JSON.stringify({
     routeNetworkVerified:readiness.routeNetworkVerified,
     routeEvidenceCount:readiness.routeEvidenceCount,
   },
+  canonicalScenarios:scenarios,
   runtimeScaffold:{
     cityIdentityMatchesTarget:parity.cityIdentityMatchesTarget,
     parityComplete:parity.parityComplete,
