@@ -80,7 +80,7 @@ npm run check
 
 ### 地图证据采集工作台
 
-构建后的静态站点还包含 `tools/map-evidence-capture.html`。它允许加载本地原版截图，点击城市/村庄标记中心，并按截图固有尺寸转换成 evidence 坐标；所有候选默认保持 `verified:false`。
+构建后的静态站点还包含 `tools/map-evidence-capture.html`。它允许加载本地原版截图，点击城市/村庄标记中心，并按截图固有尺寸转换成 evidence 坐标；所有候选默认保持 `verified:false`。工作台直接加载 canonical 40 城列表，同一城市再次点击会覆盖旧候选，并提供自动下一城、撤销、进度统计与当前 frame 标记，减少重复/漏录。
 
 推荐流程：
 
@@ -89,10 +89,11 @@ npm run map:evidence:template
 npm run map:evidence:merge -- batch-a.json batch-b.json --out map-evidence.merged.json
 npm run map:evidence:audit -- map-evidence.merged.json
 npm run map:evidence:diff -- map-evidence.compiled.json
-npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.json
+npm run map:evidence:compile -- map-evidence.merged.json map-geometry.compiled.json --scope geometry
+npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.json --scope full
 ```
 
-其中 `audit` 负责指出缺项/冲突，`diff` 负责与仓库当前 canonical ledger 做语义差异，`compile` 只接受已经 ready 的 source-backed bundle。
+其中 `audit` 负责指出缺项/冲突，`diff` 负责与仓库当前 canonical ledger 做语义差异。`geometry` scope 只要求 40 城坐标、地名异体、村庄与路线 coverage 完成；`full` scope 还要求 189 ownership 完成。即使 full evidence 齐全，生产开局仍必须独立校准城市经济/兵力与武将城市配属，不能从地图坐标推导。
 
 
 运行 `npm run map:report` 可以查看：
