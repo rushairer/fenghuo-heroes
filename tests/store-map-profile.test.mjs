@@ -15,7 +15,7 @@ class MemoryStorage{
 test('GameStore can initialize directly against an injected canonical profile',()=>{
   const evidence=completeCanonicalMapEvidence()
   const profile=buildCanonicalRuntimeMap(evidence)
-  const store=new GameStore(new MemoryStorage(),{mapProfile:profile,scenarioStartStateFactory:canonical189TestScenarioFactory(evidence)})
+  const store=new GameStore(new MemoryStorage(),{mapProfile:profile,scenarioStartStateFactory:canonical189TestScenarioFactory()})
   store.newGame({scenarioYear:189,humanFactions:['liu']})
   assert.equal(store.state.mapProfileId,'zh-rom-canonical')
   assert.equal(Object.keys(store.state.cities).length,40)
@@ -28,10 +28,10 @@ test('canonical-profile saves reload only through a store using the same profile
   const evidence=completeCanonicalMapEvidence()
   const profile=buildCanonicalRuntimeMap(evidence)
   const storage=new MemoryStorage()
-  const original=new GameStore(storage,{mapProfile:profile,scenarioStartStateFactory:canonical189TestScenarioFactory(evidence)})
+  const original=new GameStore(storage,{mapProfile:profile,scenarioStartStateFactory:canonical189TestScenarioFactory()})
   original.newGame({scenarioYear:189,humanFactions:['liu']})
 
-  const sameProfile=new GameStore(storage,{mapProfile:profile,scenarioStartStateFactory:canonical189TestScenarioFactory(evidence)})
+  const sameProfile=new GameStore(storage,{mapProfile:profile,scenarioStartStateFactory:canonical189TestScenarioFactory()})
   assert.equal(sameProfile.load(),true)
   assert.equal(sameProfile.state.mapProfileId,'zh-rom-canonical')
 
@@ -65,7 +65,7 @@ test('new games record scenario-state provenance separately from map profile pro
   const profile=buildCanonicalRuntimeMap(evidence)
   const store=new GameStore(new MemoryStorage(),{
     mapProfile:profile,
-    scenarioStartStateFactory:canonical189TestScenarioFactory(evidence),
+    scenarioStartStateFactory:canonical189TestScenarioFactory(),
   })
   store.newGame({scenarioYear:189,humanFactions:['liu']})
   assert.equal(store.state.mapProfileId,'zh-rom-canonical')
