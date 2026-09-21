@@ -144,6 +144,31 @@ function selectNextMissingCity(){
   }
 }
 
+function ensureBatchIdentity(){
+  const requestedSourceId=sourceId.value.trim()
+  if(!requestedSourceId){
+    status.textContent='Source ID 不可為空。'
+    sourceId.focus()
+    return false
+  }
+  const batchSourceId=candidates[0]?.sourceId
+  if(batchSourceId&&batchSourceId!==requestedSourceId){
+    status.textContent=`目前批次使用 ${batchSourceId}；請先複製/清空批次後再切換 Source ID。`
+    return false
+  }
+  if(!sourceRef.value.trim()){
+    status.textContent='Source Ref 不可為空。'
+    sourceRef.focus()
+    return false
+  }
+  if(!frameRef.value.trim()){
+    status.textContent='Frame Ref 不可為空。'
+    frameRef.focus()
+    return false
+  }
+  return true
+}
+
 function currentBundle(){
   const batchSourceId=candidates[0]?.sourceId??sourceId.value.trim()
   return captureEvidenceBundle({
@@ -266,12 +291,7 @@ canvas.addEventListener('click',(event)=>{
   const rawY=(event.clientY-rect.top)*(canvas.height/rect.height)
   const imageX=Math.max(0,Math.min(canvas.width-1e-6,rawX))
   const imageY=Math.max(0,Math.min(canvas.height-1e-6,rawY))
-  const batchSourceId=candidates[0]?.sourceId
-  const requestedSourceId=sourceId.value.trim()
-  if(batchSourceId&&batchSourceId!==requestedSourceId){
-    status.textContent=`目前批次使用 ${batchSourceId}；請先複製/清空批次後再切換 Source ID。`
-    return
-  }
+  if(!ensureBatchIdentity())return
 
   const common={
     imageX,
@@ -304,6 +324,7 @@ canvas.addEventListener('click',(event)=>{
 })
 
 copyOutput.addEventListener('click',async()=>{
+  if(!ensureBatchIdentity())return
   const text=JSON.stringify(currentBundle(),null,2)
   try{
     await navigator.clipboard.writeText(text)
