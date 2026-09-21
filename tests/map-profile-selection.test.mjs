@@ -36,7 +36,7 @@ test('runtime selector keeps the engineering scaffold while evidence is blocked'
   const selected=selectRuntimeMapProfile()
   assert.equal(selected.profile.id,'runtime-scaffold')
   assert.equal(selected.profile.canonical,false)
-  assert.equal(selected.reason,'canonical-evidence-incomplete')
+  assert.equal(selected.reason,'canonical-geometry-incomplete')
   assert.equal(selected.geometryPreview,null)
 })
 
@@ -45,7 +45,7 @@ test('runtime selector switches only when every canonical gate is open',()=>{
   assert.equal(selected.profile.id,'zh-rom-canonical')
   assert.equal(selected.profile.canonical,true)
   assert.equal(selected.profile.cities.length,40)
-  assert.equal(selected.reason,'canonical-evidence-complete')
+  assert.equal(selected.reason,'canonical-geometry-complete')
   assert.equal(selected.geometryPreview?.id,'zh-rom-canonical')
 })
 
@@ -53,25 +53,25 @@ test('selection report exposes profile state without mutating the active game',(
   const report=runtimeMapSelectionReport()
   assert.equal(report.canonical,false)
   assert.equal(report.cityCount,40)
-  assert.equal(report.reason,'canonical-evidence-incomplete')
+  assert.equal(report.reason,'canonical-geometry-incomplete')
   assert.equal(report.geometryPreviewAvailable,false)
   assert.equal(report.geometryPreviewProfileId,null)
 })
 
 
-test('selector exposes canonical geometry preview without activating it when 189 ownership is incomplete',()=>{
+test('selector activates canonical geometry regardless of legacy 189 ownership compatibility records',()=>{
   const evidence=completeEvidence()
   evidence.ownership189=[]
   const selected=selectRuntimeMapProfile(evidence)
-  assert.equal(selected.profile.id,'runtime-scaffold')
+  assert.equal(selected.profile.id,'zh-rom-canonical')
   assert.equal(selected.readiness.geometryReady,true)
-  assert.equal(selected.readiness.scenario189Ready,false)
-  assert.equal(selected.reason,'canonical-geometry-ready-scenario-incomplete')
+  assert.equal(selected.readiness.ready,true)
+  assert.equal(selected.reason,'canonical-geometry-complete')
   assert.equal(selected.geometryPreview?.id,'zh-rom-canonical')
   assert.equal(selected.geometryPreview?.geometryOnly,true)
 
   const report=runtimeMapSelectionReport(evidence)
-  assert.equal(report.canonical,false)
+  assert.equal(report.canonical,true)
   assert.equal(report.geometryPreviewAvailable,true)
   assert.equal(report.geometryPreviewProfileId,'zh-rom-canonical')
 })
