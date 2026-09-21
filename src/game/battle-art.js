@@ -238,6 +238,20 @@ export function siegeDetailGeometry(width=290,height=105){
   })
 }
 
+export function siegeTowerDetailGeometry(width=290){
+  const w=Math.max(120,Number(width)||290)
+  return Object.freeze({
+    towers:Object.freeze([
+      Object.freeze({x:26,roofY:20,bodyW:24,bodyH:29}),
+      Object.freeze({x:w-26,roofY:20,bodyW:24,bodyH:29}),
+    ]),
+    eaves:Object.freeze([
+      Object.freeze({x1:12,x2:40,y:20}),
+      Object.freeze({x1:w-40,x2:w-12,y:20}),
+    ]),
+  })
+}
+
 export function drawSiegeFortress(r,{
   x=15,
   y=48,
@@ -271,6 +285,32 @@ export function drawSiegeFortress(r,{
     c.fillRect((bx-5)*S,(y+13)*S,10*S,5*S)
     c.fillStyle='rgba(205,176,127,.55)'
     c.fillRect((bx-5)*S,(y+19)*S,10*S,1.2*S)
+  }
+
+  const towerDetail=siegeTowerDetailGeometry(width)
+  for(const tower of towerDetail.towers){
+    c.fillStyle='#66513f'
+    c.fillRect((x+tower.x-tower.bodyW/2)*S,(y+tower.roofY+4)*S,tower.bodyW*S,tower.bodyH*S)
+    const roof=c.createLinearGradient((x+tower.x)*S,(y+tower.roofY-5)*S,(x+tower.x)*S,(y+tower.roofY+5)*S)
+    roof.addColorStop(0,'#2f2520')
+    roof.addColorStop(1,'#594336')
+    c.fillStyle=roof
+    c.beginPath()
+    c.moveTo((x+tower.x-tower.bodyW*.68)*S,(y+tower.roofY+4)*S)
+    c.lineTo((x+tower.x)*S,(y+tower.roofY-5)*S)
+    c.lineTo((x+tower.x+tower.bodyW*.68)*S,(y+tower.roofY+4)*S)
+    c.closePath()
+    c.fill()
+    c.fillStyle='rgba(225,192,140,.42)'
+    c.fillRect((x+tower.x-tower.bodyW*.35)*S,(y+tower.roofY+11)*S,tower.bodyW*.7*S,1.2*S)
+  }
+  c.strokeStyle='rgba(227,193,137,.4)'
+  c.lineWidth=.55*S
+  for(const eave of towerDetail.eaves){
+    c.beginPath()
+    c.moveTo((x+eave.x1)*S,(y+eave.y)*S)
+    c.lineTo((x+eave.x2)*S,(y+eave.y)*S)
+    c.stroke()
   }
 
   const detail=siegeDetailGeometry(width,height)
