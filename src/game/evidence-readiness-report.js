@@ -1,6 +1,7 @@
 import { mapActivationReport } from './map-activation.js'
 import { canonicalMapMigrationReadiness } from './map-parity.js'
 import { canonicalScenarioReadinessReport } from './scenario-parity.js'
+import { marchCalibrationReport } from './march-calibration.js'
 import { MONTHLY_COMMAND_PROMPT_EVIDENCE } from './chinese-copy-parity.js'
 import { chineseCopyGapReport } from './chinese-copy-gaps.js'
 
@@ -9,6 +10,7 @@ export function evidenceReadinessReport(){
   const map=canonicalMapMigrationReadiness()
   const scenarios=canonicalScenarioReadinessReport()
   const copyGaps=chineseCopyGapReport()
+  const march=marchCalibrationReport()
 
   return Object.freeze({
     runtime:Object.freeze({
@@ -28,6 +30,7 @@ export function evidenceReadinessReport(){
       routeNetworkVerified:map.routeNetworkVerified,
       routeEvidenceCount:map.routeEvidenceCount,
     }),
+    marchCalibration:march,
     scenarios:Object.freeze(scenarios.map((scenario)=>Object.freeze({
       year:scenario.year,
       ready:scenario.ready,
