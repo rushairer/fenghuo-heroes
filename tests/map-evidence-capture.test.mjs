@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   captureEvidenceBundle,
+  normalizeCaptureBundleForEditing,
   capturePoint,
   captureScale,
   cityEvidenceCandidate,
@@ -79,4 +80,47 @@ test('capture workbench candidates can be wrapped directly as a merge-ready evid
   assert.equal(bundle.villageCoverage,null)
   assert.deepEqual(bundle.ownership189,[])
   assert.deepEqual(bundle.routes,[])
+})
+
+
+test('capture bundles can be normalized back into an editable single-source session',()=>{
+  const bundle=captureEvidenceBundle({
+    source:{id:'capture-001',kind:'direct-capture',ref:'frame.png'},
+    cityCoordinates:[{
+      name:'代縣',x:10,y:20,space:'logical-320x224',
+      sourceId:'capture-001',frameRef:'frame#city',verified:true,
+    }],
+    villages:[{
+      x:12,y:22,space:'logical-320x224',
+      sourceId:'capture-001',frameRef:'frame#village',verified:true,
+    }],
+  })
+  const editable=normalizeCaptureBundleForEditing(bundle)
+  assert.equal(editable.source.id,'capture-001')
+  assert.equal(editable.cityCoordinates.length,1)
+  assert.equal(editable.villages.length,1)
+  assert.equal(editable.cityCoordinates[0].verified,false)
+  assert.equal(editable.villages[0].verified,false)
+})
+
+test('capture workbench import refuses multi-source or cross-source candidate bundles',()=>{
+  assert.throws(
+    ()=>normalizeCaptureBundleForEditing({
+      sources:[
+        {id:'a',kind:'direct-capture',ref:'a.png'},
+        {id:'b',kind:'direct-capture',ref:'b.png'},
+      ],
+    }),
+    /exactly one source/,
+  )
+  assert.throws(
+    ()=>normalizeCaptureBundleForEditing({
+      sources:[{id:'a',kind:'direct-capture',ref:'a.png'}],
+      cityCoordinates:[{
+        name:'代縣',x:1,y:2,space:'logical-320x224',
+        sourceId:'b',frameRef:'b#city',verified:false,
+      }],
+    }),
+    /another source/,
+  )
 })
