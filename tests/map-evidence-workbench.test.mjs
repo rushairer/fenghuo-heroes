@@ -12,14 +12,20 @@ test('capture workbench loads screenshots locally and exposes city/village modes
   assert.match(html,/value="city"/)
   assert.match(html,/value="village"/)
   assert.match(html,/id="capture-canvas"/)
+  assert.match(html,/id="city-name"/)
+  assert.match(html,/id="auto-next"/)
+  assert.match(html,/id="undo-output"/)
+  assert.match(html,/id="capture-progress"/)
 })
 
 test('capture workbench delegates coordinate math to the audited evidence module',()=>{
   assert.match(js,/cityEvidenceCandidate/)
   assert.match(js,/villageEvidenceCandidate/)
   assert.match(js,/location\.pathname\.includes\('\/public\/tools\/'\)/)
-  assert.match(js,/\.\.\/\.\.\/src\/game\/map-evidence-capture\.js/)
-  assert.match(js,/\.\.\/src\/game\/map-evidence-capture\.js/)
+  assert.match(js,/\.\.\/\.\.\/src\/game\//)
+  assert.match(js,/\.\.\/src\/game\//)
+  assert.match(js,/ZH_ROM_CANONICAL_CITY_SET/)
+  assert.match(js,/normalizeZhRomCityName/)
   assert.doesNotMatch(js,/verified\s*:\s*true/)
 })
 
@@ -28,6 +34,8 @@ test('capture workbench maps CSS click coordinates back to intrinsic screenshot 
   assert.match(js,/canvas\.height\/rect\.height/)
   assert.match(js,/imageWidth:canvas\.width/)
   assert.match(js,/imageHeight:canvas\.height/)
+  assert.match(js,/canvas\.width-1e-6/)
+  assert.match(js,/canvas\.height-1e-6/)
 })
 
 test('capture workbench remains usable on narrow viewports',()=>{
@@ -37,4 +45,26 @@ test('capture workbench remains usable on narrow viewports',()=>{
 
 test('static build publishes the public tools directory into GitHub Pages output',()=>{
   assert.match(build,/cpSync\('public', 'dist', \{ recursive: true \}\)/)
+})
+
+
+test('capture workbench upserts canonical city candidates instead of creating duplicate city records',()=>{
+  assert.match(js,/function upsertCity/)
+  assert.match(js,/normalizeZhRomCityName\(item\.name\)===identity/)
+  assert.match(js,/if\(index>=0\)candidates\[index\]=candidate/)
+})
+
+test('capture workbench supports auto-next progress undo and visible canvas markers',()=>{
+  assert.match(js,/function selectNextMissingCity/)
+  assert.match(js,/history\.push/)
+  assert.match(js,/undoOutput\.addEventListener/)
+  assert.match(js,/capture-progress/)
+  assert.match(js,/drawCandidateMarker/)
+  assert.match(js,/城市 \$\{cityCount\}\/\$\{ZH_ROM_CANONICAL_CITY_SET\.length\}/)
+})
+
+test('capture workbench refuses exact duplicate village clicks in one frame',()=>{
+  assert.match(js,/function addVillage/)
+  assert.match(js,/Math\.abs\(item\.x-candidate\.x\)<\.01/)
+  assert.match(js,/同一 frame 的這個村莊座標已存在/)
 })
