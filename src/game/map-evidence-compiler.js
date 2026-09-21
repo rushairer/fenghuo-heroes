@@ -15,12 +15,19 @@ function byCanonicalName(a,b,key){
 export function compileCanonicalEvidenceBundle(bundle={}, {scope='full'}={}){
   if(!['geometry','full'].includes(scope))throw new Error(`Unknown canonical evidence compile scope: ${scope}`)
   const audit=auditCanonicalEvidenceBundle(bundle)
-  const scopeReady=scope==='geometry'?audit.geometryReady:audit.ready
+  const report=validateCanonicalMapEvidence(bundle)
+  const legacyOwnershipReady=
+    report.ownership189EvidenceCount===ZH_ROM_CANONICAL_CITY_SET.length&&
+    report.duplicateOwnershipCities.length===0
+  const scopeReady=scope==='geometry'
+    ?audit.geometryReady
+    :audit.geometryReady&&legacyOwnershipReady
   if(!scopeReady){
-    throw new Error(`Canonical ${scope} evidence bundle is not ready: ${audit.blockers.join(', ')}`)
+    const blockers=[...audit.blockers]
+    if(scope==='full'&&!legacyOwnershipReady)blockers.push('legacy-ownership-189-incomplete')
+    throw new Error(`Canonical ${scope} evidence bundle is not ready: ${blockers.join(', ')}`)
   }
 
-  const report=validateCanonicalMapEvidence(bundle)
   const cityCoordinates=[...report.verifiedCityCoordinates]
     .sort((a,b)=>byCanonicalName(a,b,'name'))
     .map((record)=>({
@@ -71,7 +78,7 @@ export function compileCanonicalEvidenceBundle(bundle={}, {scope='full'}={}){
     .sort((a,b)=>a.id.localeCompare(b.id))
 
   return Object.freeze({
-    status:scope==='geometry'?'ready-for-canonical-geometry':'ready-for-canonical-activation',
+    status:scope==='geometry'?'ready-for-canonical-geometry':'ready-for-legacy-map-bundle',
     scope,
     sources:Object.freeze(sources),
     cityCoordinates:Object.freeze(cityCoordinates),
