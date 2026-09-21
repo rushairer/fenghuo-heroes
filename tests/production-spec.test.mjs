@@ -68,3 +68,16 @@ test('presentation fallback contract keeps non-canonical map art out of evidence
     /must never be promoted as Chinese-ROM map evidence/,
   )
 })
+
+
+test('production spec records third-pass HD ornaments and symbol consistency',()=>{
+  const title=spec.assets['title.main'].vectorFallback.requiredLayers
+  const fallback=spec.presentationFallbacks
+  assert.ok(title.includes('all five visible faces in one facial-structure pass'))
+  assert.ok(title.includes('headgear trim, studs, ribbons and cap-wing detail'))
+  assert.ok(fallback.duel.layers.includes('helmet plume, shoulder plates and waist tassels'))
+  assert.ok(fallback.duel.layers.includes('arena lantern and pennant accents'))
+  assert.ok(fallback.siege.layers.includes('attacker and defender confrontation standards'))
+  assert.ok(fallback.strategyMap.layers.includes('three-layer road edge, earth and highlight stroke'))
+  assert.ok(fallback.strategyMap.layers.includes('legend symbols shared with full-map city and village renderers'))
+})
