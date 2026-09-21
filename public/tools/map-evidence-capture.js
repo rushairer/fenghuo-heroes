@@ -1,7 +1,10 @@
-import {
+const captureModuleUrl=location.pathname.includes('/public/tools/')
+  ?'../../src/game/map-evidence-capture.js'
+  :'../src/game/map-evidence-capture.js'
+const {
   cityEvidenceCandidate,
   villageEvidenceCandidate,
-} from '../../src/game/map-evidence-capture.js'
+}=await import(captureModuleUrl)
 
 const imageInput=document.querySelector('#image-input')
 const recordType=document.querySelector('#record-type')
