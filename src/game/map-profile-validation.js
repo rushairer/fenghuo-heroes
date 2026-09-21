@@ -18,7 +18,7 @@ export function validateRuntimeMapProfile(profile){
     if(typeof city.name!=='string'||!city.name.trim())errors.push(`missing-city-name:${city.id}`)
     if(!Number.isFinite(city.x)||!Number.isFinite(city.y))errors.push(`invalid-city-coordinate:${city.id}`)
     else if(city.x<0||city.x>WORLD_W||city.y<0||city.y>WORLD_H)errors.push(`city-out-of-range:${city.id}`)
-    if(typeof city.owner!=='string'||!city.owner.trim())errors.push(`missing-city-owner:${city.id}`)
+    if('owner' in city&&(typeof city.owner!=='string'||!city.owner.trim()))errors.push(`invalid-city-owner:${city.id}`)
   }
 
   const cityById=profile.cityById
