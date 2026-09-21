@@ -334,6 +334,7 @@ bundleInput.addEventListener('change',async()=>{
   }
 })
 copyOutput.addEventListener('click',async()=>{
+  if(!ensureBatchIdentity())return
   const text=JSON.stringify(currentBundle(),null,2)
   try{
     await navigator.clipboard.writeText(text)
