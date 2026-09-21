@@ -81,3 +81,14 @@ test('production spec records third-pass HD ornaments and symbol consistency',()
   assert.ok(fallback.strategyMap.layers.includes('three-layer road edge, earth and highlight stroke'))
   assert.ok(fallback.strategyMap.layers.includes('legend symbols shared with full-map city and village renderers'))
 })
+
+
+test('production spec records fourth-pass HD depth and motion detail',()=>{
+  const title=spec.assets['title.main'].vectorFallback.requiredLayers
+  const fallback=spec.presentationFallbacks
+  assert.ok(title.includes('silhouette separation edges and shoulder contact depth'))
+  assert.ok(fallback.duel.layers.includes('attack arcs, guard braces and attack dust from existing duel state'))
+  assert.ok(fallback.siege.layers.includes('foreground earth, stones and haze depth below confrontation standards'))
+  assert.ok(fallback.strategyMap.layers.includes('shared four-layer river bank, water and highlight stroke'))
+  assert.ok(fallback.strategyMap.layers.includes('compact full-map city and village ground shadows'))
+})
