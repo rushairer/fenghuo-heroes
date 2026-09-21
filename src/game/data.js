@@ -1,5 +1,6 @@
 import { TARGET_SCENARIOS } from './scenario-target.js'
 import { INSPECTION_CATEGORY_SCHEMA } from './inspection-command-parity.js'
+import { RUNTIME_SCAFFOLD_CITIES, RUNTIME_SCAFFOLD_CITY_BY_ID } from './runtime-map-scaffold.js'
 
 // `SCENARIOS` is the runtime target profile. Edition-neutral / Japanese manual
 // facts live in original-data.js and must not be silently mixed into this UI.
@@ -16,17 +17,11 @@ export const FACTIONS = Object.freeze([
   {id:'dong',ruler:'董卓',label:'董卓軍',color:'#a455b8'},
   {id:'liu_biao',ruler:'劉表',label:'劉表軍',color:'#58a56b'},
   {id:'ma',ruler:'馬騰',label:'馬騰軍',color:'#6ec2a3'},
-  {id:'neutral',ruler:'群雄',label:'群雄',color:'#8c8c8c'}
-])
-export const FACTION_BY_ID=Object.fromEntries(FACTIONS.map((f)=>[f.id,f]))
-
-// IMPORTANT: these rows are an engineering scaffold retained only until the
-// Chinese-ROM 40-city geometry and 189 ownership can be migrated together.
-// The names, coordinates, edges and owners in this block are NOT canonical
-// original-game map data. Canonical target identities live in original-data.js.
-const RUNTIME_SCAFFOLD_CITY_ROWS=[['xiangping','襄平',284,43,'yuan'],['beiping','北平',251,48,'yuan'],['jicheng','薊',226,52,'yuan'],['nanpi','南皮',211,69,'yuan'],['ye','鄴',186,72,'yuan'],['pingyuan','平原',220,83,'yuan'],['beihai','北海',249,91,'neutral'],['xiapi','下邳',239,111,'neutral'],['xiaopei','小沛',211,103,'neutral'],['shouchun','壽春',215,124,'neutral'],['xuchang','許昌',177,102,'cao'],['chenliu','陳留',187,89,'cao'],['luoyang','洛陽',151,86,'dong'],['hongnong','弘農',126,86,'dong'],['changan','長安',103,83,'dong'],['tianshui','天水',74,75,'ma'],['xiliang','西涼',45,67,'ma'],['wuwei','武威',29,52,'ma'],['hanzhong','漢中',95,113,'neutral'],['shangyong','上庸',118,119,'neutral'],['xinye','新野',151,118,'liu_biao'],['xiangyang','襄陽',151,134,'liu_biao'],['jiangxia','江夏',185,139,'liu_biao'],['jiangling','江陵',145,154,'liu_biao'],['changsha','長沙',174,170,'neutral'],['wuling','武陵',137,174,'neutral'],['guiyang','桂陽',168,190,'neutral'],['lingling','零陵',136,195,'neutral'],['lujiang','廬江',211,145,'sun'],['jianye','建業',244,146,'sun'],['wujun','吳',260,158,'sun'],['kuaiji','會稽',278,170,'sun'],['chai_sang','柴桑',211,163,'sun'],['yuzhang','豫章',205,180,'sun'],['chengdu','成都',70,151,'liu'],['zitong','梓潼',73,127,'liu'],['jiangzhou','江州',84,173,'liu'],['yong_an','永安',106,158,'liu'],['jianning','建寧',72,196,'neutral'],['yunnan','雲南',43,201,'neutral']]
-const RUNTIME_SCAFFOLD_EDGES=[['xiangping','beiping'],['beiping','jicheng'],['jicheng','nanpi'],['nanpi','ye'],['nanpi','pingyuan'],['pingyuan','beihai'],['pingyuan','xiaopei'],['beihai','xiapi'],['xiapi','xiaopei'],['xiapi','shouchun'],['ye','chenliu'],['ye','luoyang'],['chenliu','xuchang'],['chenliu','xiaopei'],['xuchang','luoyang'],['xuchang','xinye'],['xuchang','shouchun'],['luoyang','hongnong'],['hongnong','changan'],['changan','tianshui'],['tianshui','xiliang'],['xiliang','wuwei'],['changan','hanzhong'],['hanzhong','zitong'],['hanzhong','shangyong'],['shangyong','xinye'],['xinye','xiangyang'],['xiangyang','jiangxia'],['xiangyang','jiangling'],['jiangxia','lujiang'],['jiangxia','chai_sang'],['jiangling','wuling'],['jiangling','yong_an'],['jiangling','changsha'],['lujiang','shouchun'],['lujiang','jianye'],['jianye','wujun'],['wujun','kuaiji'],['chai_sang','yuzhang'],['chai_sang','lujiang'],['changsha','guiyang'],['changsha','wuling'],['guiyang','lingling'],['wuling','lingling'],['chengdu','zitong'],['chengdu','jiangzhou'],['chengdu','yong_an'],['jiangzhou','yong_an'],['jiangzhou','jianning'],['jianning','yunnan']]
-const neighbors=Object.fromEntries(RUNTIME_SCAFFOLD_CITY_ROWS.map(([id])=>[id,[]]));for(const[a,b]of RUNTIME_SCAFFOLD_EDGES){neighbors[a].push(b);neighbors[b].push(a)}
-export const CITIES=Object.freeze(RUNTIME_SCAFFOLD_CITY_ROWS.map(([id,name,x,y,owner])=>({id,name,x,y,owner,neighbors:Object.freeze(neighbors[id])})))
+  {id:'neutral',ruler:'群雄',label:'群雄'// Runtime map selection remains scaffolded until the canonical evidence ledger
+// opens the migration gate. The provisional rows/edges live in
+// runtime-map-scaffold.js so they cannot be mistaken for evidence-backed data.
+export const CITIES=RUNTIME_SCAFFOLD_CITIES
+export const CITY_BY_ID=RUNTIME_SCAFFOLD_CITY_BY_ID
+.freeze(neighbors[id])})))
 export const CITY_BY_ID=Object.fromEntries(CITIES.map((c)=>[c.id,c]))
 export const CATEGORY_LABELS=Object.freeze(Object.fromEntries(INSPECTION_CATEGORY_SCHEMA.map(({id,label})=>[id,label])))
