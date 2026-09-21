@@ -31,7 +31,27 @@
         "readable interactive labels",
         "HUD"
       ],
-      "notes": "The generated frame contains five warlords, battlefield scenery, right blue-gold trim and an empty ornamental menu frame. All interactive menu copy stays code-native."
+      "notes": "The production title target remains a true 1600x1120+ text-free five-warlord composition. Until an approved raster satisfies that floor, runtime uses the clean-room scalable vector composition with a dedicated high-frequency micro-detail pass; the legacy 640x448 raster stays disabled. All interactive menu copy remains code-native.",
+      "vectorFallback": {
+        "mode": "clean-room-scalable",
+        "logicalSize": {
+          "width": 320,
+          "height": 224
+        },
+        "backingScaleRange": [
+          6,
+          10
+        ],
+        "requiredLayers": [
+          "five-warrior composition",
+          "horizontal weave",
+          "facial and beard micro-detail",
+          "robe embroidery",
+          "rim lighting",
+          "right brocade strip"
+        ],
+        "forbidden": "low-resolution raster upscale"
+      }
     },
     "title.menuFrame": {
       "target": "assets/title/slices/title-menu-frame-v1.webp",
