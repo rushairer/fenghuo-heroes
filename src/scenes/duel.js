@@ -1,4 +1,4 @@
-import { drawDuelArena, drawDuelFighter } from '../game/battle-art.js'
+import { drawDuelArena, drawDuelFighter, drawDuelMotionCue } from '../game/battle-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { DUEL_COMMANDS, DUEL_MODES, autoDuelIntent, cycleDuelMode } from '../game/duel-parity.js'
@@ -147,6 +147,22 @@ export class DuelScene{
     drawDuelFighter(r,{
       x:this.ex,y:160,color:df?.color??'#b75f52',flip:true,
       guard:false,attacking:this.enemyCd>500,
+    })
+    drawDuelMotionCue(r,{
+      x:this.px,
+      y:160,
+      flip:false,
+      attacking:this.attackCd>160,
+      guard:this.guard,
+      color:af?.color??'#f0d28a',
+    })
+    drawDuelMotionCue(r,{
+      x:this.ex,
+      y:160,
+      flip:true,
+      attacking:this.enemyCd>500,
+      guard:false,
+      color:df?.color??'#f0d28a',
     })
     if(this.hitFlash>0){c.save();c.globalAlpha=Math.min(.35,this.hitFlash/300);c.fillStyle='#fff2bf';c.fillRect(0,0,320*r.S,224*r.S);c.restore()}
     r.fillRect(0,190,320,34,'rgba(10,8,6,.82)')
