@@ -561,6 +561,9 @@ export function fullMapVillageSymbolGeometry(size=3.6){
     chimneyW:s*.13,
     chimneyH:s*.34,
     eave:s*.78,
+    shadowRx:s*.7,
+    shadowRy:s*.2,
+    shadowY:s*.78,
   })
 }
 
@@ -568,6 +571,12 @@ export function drawFullMapVillageSymbol(r,x,y,size=3.6){
   const c=r.ctx,S=r.S,g=fullMapVillageSymbolGeometry(size)
   c.save()
   c.translate(x*S,y*S)
+
+  c.fillStyle='rgba(42,28,18,.24)'
+  c.beginPath()
+  c.ellipse(0,g.shadowY*S,g.shadowRx*S,g.shadowRy*S,0,0,Math.PI*2)
+  c.fill()
+
   c.fillStyle='#281a12'
   c.beginPath()
   c.moveTo(-g.roof*.62*S,0)
