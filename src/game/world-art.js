@@ -61,6 +61,21 @@ function traceRiver(ctx,S,path,project=(point)=>point){
   }
 }
 
+export function projectRiverSurfaceMark(mark,project=(point)=>point){
+  const p=project(mark)
+  const directionPoint={
+    x:mark.x+Math.cos(mark.angle),
+    y:mark.y+Math.sin(mark.angle),
+  }
+  const q=project(directionPoint)
+  return Object.freeze({
+    x:p.x,
+    y:p.y,
+    angle:Math.atan2(q.y-p.y,q.x-p.x),
+    length:mark.length,
+  })
+}
+
 function drawRiverSurfaceMarks(ctx,S,marks,project=(point)=>point,{
   scale=1,
   alpha=.28,
@@ -70,9 +85,9 @@ function drawRiverSurfaceMarks(ctx,S,marks,project=(point)=>point,{
   ctx.strokeStyle=`rgba(211,243,248,${alpha})`
   ctx.lineWidth=.42*scale*S
   for(const mark of marks){
-    const p=project(mark)
-    const dx=Math.cos(mark.angle)*mark.length*.5*scale
-    const dy=Math.sin(mark.angle)*mark.length*.5*scale
+    const p=projectRiverSurfaceMark(mark,project)
+    const dx=Math.cos(p.angle)*p.length*.5*scale
+    const dy=Math.sin(p.angle)*p.length*.5*scale
     ctx.beginPath()
     ctx.moveTo((p.x-dx)*S,(p.y-dy)*S)
     ctx.lineTo((p.x+dx)*S,(p.y+dy)*S)
