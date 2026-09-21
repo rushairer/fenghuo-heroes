@@ -12,10 +12,12 @@ function byCanonicalName(a,b,key){
     -(canonicalOrder.get(normalizeZhRomCityName(b[key]))??999)
 }
 
-export function compileCanonicalEvidenceBundle(bundle={}){
+export function compileCanonicalEvidenceBundle(bundle={}, {scope='full'}={}){
+  if(!['geometry','full'].includes(scope))throw new Error(`Unknown canonical evidence compile scope: ${scope}`)
   const audit=auditCanonicalEvidenceBundle(bundle)
-  if(!audit.ready){
-    throw new Error(`Canonical evidence bundle is not ready: ${audit.blockers.join(', ')}`)
+  const scopeReady=scope==='geometry'?audit.geometryReady:audit.ready
+  if(!scopeReady){
+    throw new Error(`Canonical ${scope} evidence bundle is not ready: ${audit.blockers.join(', ')}`)
   }
 
   const report=validateCanonicalMapEvidence(bundle)
@@ -26,13 +28,15 @@ export function compileCanonicalEvidenceBundle(bundle={}){
       name:normalizeZhRomCityName(record.name),
       verified:true,
     }))
-  const ownership189=[...report.verifiedOwnership]
-    .sort((a,b)=>byCanonicalName(a,b,'city'))
-    .map((record)=>({
-      ...record,
-      city:normalizeZhRomCityName(record.city),
-      verified:true,
-    }))
+  const ownership189=scope==='full'
+    ?[...report.verifiedOwnership]
+      .sort((a,b)=>byCanonicalName(a,b,'city'))
+      .map((record)=>({
+        ...record,
+        city:normalizeZhRomCityName(record.city),
+        verified:true,
+      }))
+    :[]
   const routes=[...report.verifiedRoutes]
     .map((record)=>{
       const endpoints=[
@@ -67,7 +71,8 @@ export function compileCanonicalEvidenceBundle(bundle={}){
     .sort((a,b)=>a.id.localeCompare(b.id))
 
   return Object.freeze({
-    status:'ready-for-canonical-activation',
+    status:scope==='geometry'?'ready-for-canonical-geometry':'ready-for-canonical-activation',
+    scope,
     sources:Object.freeze(sources),
     cityCoordinates:Object.freeze(cityCoordinates),
     villages:Object.freeze(villages),
