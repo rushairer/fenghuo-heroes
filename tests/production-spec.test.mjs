@@ -115,3 +115,14 @@ test('production spec records sixth-pass HD contour spacing and material detail'
   assert.ok(fallback.strategyMap.layers.includes('shoreline accent shared by strategy and full-map river rendering'))
   assert.ok(fallback.strategyMap.layers.includes('strategy-fort roof tile and gate stud micro-detail'))
 })
+
+
+test('production spec records seventh-pass HD texture and contact detail',()=>{
+  const title=spec.assets['title.main'].vectorFallback.requiredLayers
+  const fallback=spec.presentationFallbacks
+  assert.ok(title.includes('low-opacity robe weave and seam texture'))
+  assert.ok(fallback.duel.layers.includes('weapon proximity/contact cue derived only from existing spacing and attack state'))
+  assert.ok(fallback.siege.layers.includes('corner tower windows, timber beams and braces'))
+  assert.ok(fallback.strategyMap.layers.includes('deterministic river surface micro-reflections sampled from the shared path'))
+  assert.ok(fallback.strategyMap.layers.includes('strategy-fort banner finial, folds and knot detail'))
+})
