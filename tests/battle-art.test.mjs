@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaDetailGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterPose, siegeDetailGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaDetailGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, siegeDetailGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -92,4 +92,15 @@ test('siege tower geometry adapts to narrower layouts without clipping',()=>{
   assert.ok(detail.towers.every((tower)=>tower.x-tower.bodyW*.68>=0))
   assert.ok(detail.towers.every((tower)=>tower.x+tower.bodyW*.68<=180))
   assert.ok(detail.eaves.every((eave)=>eave.x1>=0&&eave.x2<=180))
+})
+
+
+test('duel fighter ornaments provide plume shoulder plates and waist tassels',()=>{
+  const detail=duelFighterOrnamentGeometry()
+  assert.equal(detail.plume.length,4)
+  assert.equal(detail.shoulderPlates.length,2)
+  assert.equal(detail.tassels.length,3)
+  assert.ok(detail.plume.every((point)=>point.y<0))
+  assert.ok(detail.shoulderPlates.every((plate)=>plate.rx>0&&plate.ry>0))
+  assert.ok(detail.tassels.every((tassel)=>tassel.dy>0))
 })
