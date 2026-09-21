@@ -17,6 +17,7 @@ test('compiler emits stable 40-city canonical ordering and ready status',()=>{
   bundle.ownership189.reverse()
   const compiled=compileCanonicalEvidenceBundle(bundle)
   assert.equal(compiled.status,'ready-for-canonical-activation')
+  assert.equal(compiled.scope,'full')
   assert.equal(compiled.cityCoordinates.length,40)
   assert.equal(compiled.ownership189.length,40)
   assert.equal(compiled.cityCoordinates[0].name,'代縣')
@@ -43,5 +44,34 @@ test('compiler output is deterministic for equivalent input ordering',()=>{
   assert.deepEqual(
     compileCanonicalEvidenceBundle(a),
     compileCanonicalEvidenceBundle(b),
+  )
+})
+
+
+test('geometry-only compilation succeeds without 189 ownership evidence',()=>{
+  const bundle=completeCanonicalMapEvidence()
+  bundle.ownership189=[]
+  const compiled=compileCanonicalEvidenceBundle(bundle,{scope:'geometry'})
+  assert.equal(compiled.status,'ready-for-canonical-geometry')
+  assert.equal(compiled.scope,'geometry')
+  assert.equal(compiled.cityCoordinates.length,40)
+  assert.equal(compiled.ownership189.length,0)
+  assert.ok(compiled.routes.length>0)
+  assert.ok(compiled.villages.length>0)
+})
+
+test('full compilation still refuses geometry-only evidence',()=>{
+  const bundle=completeCanonicalMapEvidence()
+  bundle.ownership189=[]
+  assert.throws(
+    ()=>compileCanonicalEvidenceBundle(bundle,{scope:'full'}),
+    /full evidence bundle is not ready/,
+  )
+})
+
+test('compiler rejects unknown readiness scopes',()=>{
+  assert.throws(
+    ()=>compileCanonicalEvidenceBundle(completeCanonicalMapEvidence(),{scope:'unknown'}),
+    /Unknown canonical evidence compile scope/,
   )
 })
