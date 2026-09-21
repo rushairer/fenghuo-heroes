@@ -24,11 +24,18 @@ function canonicalQaStore(){
   return {store,profile}
 }
 
-test('QA owned/enemy selection follows the injected canonical profile',()=>{
+test('QA owned/enemy selection follows runtime scenario ownership over canonical geometry',()=>{
   const {store,profile}=canonicalQaStore()
-  assert.equal(qaOwnedCity(store)?.owner,'liu')
-  assert.ok(profile.cityById[qaOwnedCity(store).id])
-  assert.notEqual(qaEnemyCity(store)?.owner,'liu')
+  const owned=qaOwnedCity(store)
+  const enemy=qaEnemyCity(store)
+  assert.ok(owned)
+  assert.ok(enemy)
+  assert.equal('owner' in owned,false)
+  assert.equal('owner' in enemy,false)
+  assert.equal(store.state.cities[owned.id].owner,'liu')
+  assert.notEqual(store.state.cities[enemy.id].owner,'liu')
+  assert.ok(profile.cityById[owned.id])
+  assert.ok(profile.cityById[enemy.id])
 })
 
 test('battle QA fixture uses canonical city IDs without scaffold assumptions',()=>{
