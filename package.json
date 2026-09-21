@@ -11,6 +11,7 @@
     "dev": "python3 -m http.server 4173",
     "preview": "python3 -m http.server 4173 -d dist",
     "map:report": "node scripts/report-map-profile.mjs",
-    "map:evidence:template": "node scripts/create-map-evidence-template.mjs"
+    "map:evidence:template": "node scripts/create-map-evidence-template.mjs",
+    "map:evidence:audit": "node scripts/audit-map-evidence.mjs"
   }
 }
