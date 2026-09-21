@@ -132,3 +132,52 @@ test('coverage records cannot certify an empty village or route set',()=>{
   assert.equal(report.villageCoverageVerified,false)
   assert.equal(report.routeNetworkVerified,false)
 })
+
+
+test('duplicate ownership records are surfaced as canonical evidence conflicts',()=>{
+  const report=validateCanonicalMapEvidence({
+    sources,
+    ownership189:[
+      {city:'代縣',factionId:'liu',sourceId:'capture-001',frameRef:'frame#owner-1',verified:true},
+      {city:'代縣',factionId:'cao',sourceId:'capture-001',frameRef:'frame#owner-2',verified:true},
+    ],
+  })
+  assert.deepEqual(report.duplicateOwnershipCities,['代縣'])
+})
+
+test('reverse duplicate routes invalidate route-network coverage',()=>{
+  const report=validateCanonicalMapEvidence({
+    sources,
+    routes:[
+      {from:'代縣',to:'鄴',sourceId:'capture-001',frameRef:'frame#route-1',verified:true},
+      {from:'鄴',to:'代縣',sourceId:'capture-001',frameRef:'frame#route-2',verified:true},
+    ],
+    routeNetworkCoverage:{
+      sourceId:'capture-001',
+      frameRef:'frame#routes',
+      itemCount:2,
+      verified:true,
+    },
+  })
+  assert.deepEqual(report.duplicateRouteKeys,['代縣|鄴'])
+  assert.equal(report.routeNetworkVerified,false)
+})
+
+test('duplicate village coordinates invalidate village coverage',()=>{
+  const village={
+    x:10,y:20,space:'logical-320x224',
+    sourceId:'capture-001',frameRef:'frame#village',verified:true,
+  }
+  const report=validateCanonicalMapEvidence({
+    sources,
+    villages:[village,{...village,frameRef:'frame#village-duplicate'}],
+    villageCoverage:{
+      sourceId:'capture-001',
+      frameRef:'frame#villages',
+      itemCount:2,
+      verified:true,
+    },
+  })
+  assert.equal(report.duplicateVillageKeys.length,1)
+  assert.equal(report.villageCoverageVerified,false)
+})
