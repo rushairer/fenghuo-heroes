@@ -184,12 +184,21 @@ export function validateMarchEvidence(evidence={}){
     .filter((item)=>item.report.ok)
 
   const sourceLedgerValid=invalidSources.length===0&&duplicateSources.length===0
+  const routeStepWorld=sourceLedgerValid?inferRouteStepWorld(validRouteSteps):null
+  const enemyArmyAdjacencyGrid=sourceLedgerValid?inferAdjacencyThreshold(validAdjacencyChecks,'army'):null
+  const enemyCityAdjacencyGrid=sourceLedgerValid?inferAdjacencyThreshold(validAdjacencyChecks,'city'):null
   const inferred=Object.freeze({
-    routeStepWorld:sourceLedgerValid?inferRouteStepWorld(validRouteSteps):null,
+    routeStepWorld,
     routeNodeDays:sourceLedgerValid?inferRouteNodeDays(validMovementWindows):null,
     executionDaysPerEvenMonth:sourceLedgerValid?inferMonthlyExecutionDays(validMonthlyExecutionWindows):null,
-    enemyArmyAdjacencyGrid:sourceLedgerValid?inferAdjacencyThreshold(validAdjacencyChecks,'army'):null,
-    enemyCityAdjacencyGrid:sourceLedgerValid?inferAdjacencyThreshold(validAdjacencyChecks,'city'):null,
+    enemyArmyAdjacencyGrid,
+    enemyArmyAdjacencyWorld:routeStepWorld!=null&&enemyArmyAdjacencyGrid!=null
+      ?routeStepWorld*enemyArmyAdjacencyGrid
+      :null,
+    enemyCityAdjacencyGrid,
+    enemyCityAdjacencyWorld:routeStepWorld!=null&&enemyCityAdjacencyGrid!=null
+      ?routeStepWorld*enemyCityAdjacencyGrid
+      :null,
   })
 
   return Object.freeze({
