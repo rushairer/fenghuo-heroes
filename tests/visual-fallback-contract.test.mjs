@@ -221,3 +221,12 @@ test('duel hit feedback is localized to the struck fighter without changing comb
   assert.match(source,/this\.hitSide='enemy'/)
   assert.match(source,/x:this\.hitSide==='player'\?this\.px:this\.ex/)
 })
+
+
+test('siege fortress retains inner gate-depth geometry',()=>{
+  const source=read('src/game/battle-art.js')
+  assert.ok(source.includes('siegeGateDepthGeometry'))
+  assert.match(source,/innerHalf/)
+  assert.match(source,/plankXs/)
+  assert.match(source,/thresholdY/)
+})
