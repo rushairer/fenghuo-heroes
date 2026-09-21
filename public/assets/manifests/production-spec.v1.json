@@ -31,7 +31,7 @@
         "readable interactive labels",
         "HUD"
       ],
-      "notes": "The production title target remains a true 1600x1120+ text-free five-warlord composition. Until an approved raster satisfies that floor, runtime uses the clean-room scalable vector composition with a dedicated high-frequency micro-detail pass; the legacy 640x448 raster stays disabled. All interactive menu copy remains code-native.",
+      "notes": "The production title target remains a true 1600x1120+ text-free five-warlord composition. Until an approved raster satisfies that floor, runtime uses the clean-room scalable vector composition with dedicated material-depth and high-frequency micro-detail passes; the legacy 640x448 raster stays disabled. All interactive menu copy remains code-native.",
       "vectorFallback": {
         "mode": "clean-room-scalable",
         "logicalSize": {
@@ -45,8 +45,10 @@
         "requiredLayers": [
           "five-warrior composition",
           "horizontal weave",
+          "skin volume and material depth",
+          "headgear stitching and metal glints",
           "facial and beard micro-detail",
-          "robe embroidery",
+          "robe embroidery and cloth ridges",
           "rim lighting",
           "right brocade strip"
         ],
@@ -424,6 +426,42 @@
         "text",
         "cursor",
         "interactive labels"
+      ]
+    }
+  },
+  "presentationFallbacks": {
+    "strategyMap": {
+      "canonical": false,
+      "purpose": "HD presentation fallback only",
+      "layers": [
+        "deterministic sand grain",
+        "subtle non-canonical relief wash only when raster terrain is unavailable",
+        "centralized river and road vectors",
+        "masonry-detail forts",
+        "fold-detail faction flags",
+        "roof/window/detail villages"
+      ],
+      "boundary": "Presentation fallback geometry must never be promoted as Chinese-ROM map evidence."
+    },
+    "duel": {
+      "mode": "scalable-vector",
+      "layers": [
+        "fighter silhouette and pose",
+        "armor bands and vertical seams",
+        "helmet rivets",
+        "face micro-detail",
+        "spear bindings",
+        "vector arena"
+      ]
+    },
+    "siege": {
+      "mode": "scalable-vector",
+      "layers": [
+        "battlements",
+        "stone courses and offset joints",
+        "arrow slits",
+        "gatehouse beams and studs",
+        "foreground dust depth"
       ]
     }
   }
