@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaPosts, duelArmorDetailGeometry, duelFighterPose } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaPosts, duelArmorDetailGeometry, duelFighterPose, siegeDetailGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -37,4 +37,22 @@ test('duel HD armor detail geometry stays compact and deterministic',()=>{
   assert.ok(detail.spearBindings.length>=3)
   assert.ok(detail.face.eyeOffset>0)
   assert.ok(detail.face.eyeY<detail.face.mouthY)
+})
+
+
+test('siege HD detail geometry adds embrasures brick joints beams and dust',()=>{
+  const detail=siegeDetailGeometry(290,105)
+  assert.ok(detail.embrasures.length>=6)
+  assert.ok(detail.brickJoints.length>=20)
+  assert.equal(detail.gateBeams.length,4)
+  assert.equal(detail.dust.length,2)
+  assert.ok(detail.brickJoints.every((joint)=>joint.y2>joint.y1))
+})
+
+test('siege detail geometry scales its layout to narrower valid fortress widths',()=>{
+  const wide=siegeDetailGeometry(290,105)
+  const narrow=siegeDetailGeometry(180,90)
+  assert.ok(narrow.embrasures.length<wide.embrasures.length)
+  assert.ok(narrow.brickJoints.every((joint)=>joint.x<180))
+  assert.ok(narrow.dust.every((item)=>item.x>0&&item.x<180))
 })
