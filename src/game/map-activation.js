@@ -3,10 +3,10 @@ import { selectRuntimeMapProfile } from './map-profile-selection.js'
 import { assertRuntimeMapProfile } from './map-profile-validation.js'
 import { RUNTIME_SCAFFOLD_MAP_PROFILE } from './runtime-map-scaffold.js'
 
-// Deliberate second gate. Evidence readiness proves the canonical profile can be
-// built; it does not prove every consumer has been migrated away from scaffold
-// IDs. Flip this only after compatibility tests are green against the canonical
-// profile.
+// Deliberate second gate. Geometry readiness proves the canonical map profile can
+// be built; scenario ownership/economy/officer readiness is enforced separately
+// when GameStore constructs a start state. Flip the live target only after map
+// compatibility tests are green against the canonical geometry profile.
 export const MAP_ACTIVATION_TARGET='scaffold'
 
 export function activeMapProfile({
