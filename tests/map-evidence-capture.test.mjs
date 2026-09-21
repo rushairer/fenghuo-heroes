@@ -25,10 +25,12 @@ test('capture points are deterministic and preserve hundredth-pixel evidence pre
   assert.deepEqual(point,{x:100.25,y:50.75,space:'logical-320x224'})
 })
 
-test('capture rejects points outside the source frame',()=>{
-  assert.throws(()=>capturePoint({
-    imageX:1281,imageY:10,imageWidth:1280,imageHeight:896,
-  }),/outside the source image/)
+test('capture rejects points outside or exactly on the exclusive source-frame edge',()=>{
+  for(const [imageX,imageY] of [[1281,10],[1280,10],[10,896]]){
+    assert.throws(()=>capturePoint({
+      imageX,imageY,imageWidth:1280,imageHeight:896,
+    }),/outside the source image/)
+  }
 })
 
 test('new coordinate candidates remain unverified until human review',()=>{
