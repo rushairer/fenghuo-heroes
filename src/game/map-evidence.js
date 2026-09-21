@@ -104,8 +104,16 @@ export function validateCanonicalMapEvidence(evidence={}){
     (record.chosen===record.ram||record.chosen===record.numberedGuide)
   )
 
-  const villageCoverageVerified=sourceBackedVerification(evidence.villageCoverage,sources)
-  const routeNetworkVerified=sourceBackedVerification(evidence.routeNetworkCoverage,sources)
+  const villageCoverageVerified=Boolean(
+    sourceBackedVerification(evidence.villageCoverage,sources)&&
+    Number.isInteger(evidence.villageCoverage?.itemCount)&&
+    evidence.villageCoverage.itemCount===verifiedVillages.length
+  )
+  const routeNetworkVerified=Boolean(
+    sourceBackedVerification(evidence.routeNetworkCoverage,sources)&&
+    Number.isInteger(evidence.routeNetworkCoverage?.itemCount)&&
+    evidence.routeNetworkCoverage.itemCount===verifiedRoutes.length
+  )
 
   return Object.freeze({
     sourceCount:sources.length,
@@ -117,6 +125,10 @@ export function validateCanonicalMapEvidence(evidence={}){
     ownership189EvidenceCount:new Set(verifiedOwnership.map((record)=>normalizeZhRomCityName(record.city))).size,
     routeEvidenceCount:verifiedRoutes.length,
     nameResolutionCount:verifiedNameResolutions.length,
+    verifiedVillages:Object.freeze([...verifiedVillages]),
+    verifiedOwnership:Object.freeze([...verifiedOwnership]),
+    verifiedRoutes:Object.freeze([...verifiedRoutes]),
+    verifiedNameResolutions:Object.freeze([...verifiedNameResolutions]),
     villageCoverageVerified,
     routeNetworkVerified,
   })
