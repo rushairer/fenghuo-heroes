@@ -26,13 +26,12 @@ export function canonicalScenarioStartReadiness(
   const scenarioReport=validateScenarioStartEvidence(
     scenarioEvidence??{scenarioYear:scenario.year},
   )
-  const is189=scenario.year===189
-  const ownershipReady=is189?map.scenario189Ready:false
+  const ownershipReady=scenarioReport.ownershipReady
   const officerPlacementReady=scenarioReport.officerPlacementReady
   const economyReady=scenarioReport.economyReady
-  const ownershipEvidenceStatus=is189
-    ?(ownershipReady?'source-backed-189':'incomplete')
-    :'unverified'
+  const ownershipEvidenceStatus=ownershipReady
+    ?`source-backed-${scenario.year}`
+    :'incomplete'
 
   const blockers=[]
   if(!map.geometryReady)blockers.push('canonical-map-geometry-incomplete')
@@ -48,6 +47,7 @@ export function canonicalScenarioStartReadiness(
     ownershipEvidenceStatus,
     scenarioEvidenceStatus:scenarioEvidence?.status??'missing',
     scenarioSourceLedgerValid:scenarioReport.sourceLedgerValid,
+    ownershipEvidenceCount:scenarioReport.ownershipEvidenceCount,
     officerPlacementReady,
     officerAssignmentEvidenceCount:scenarioReport.officerAssignmentEvidenceCount,
     economyReady,
