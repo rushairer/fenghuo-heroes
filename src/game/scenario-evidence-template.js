@@ -11,6 +11,19 @@ export function createScenarioEvidenceTemplate(year,{
     status,
     scenarioYear:scenario.year,
     sources:[],
+    ownership:ZH_ROM_CANONICAL_CITY_SET.map((city)=>({
+      city,
+      factionId:'',
+      sourceId:'',
+      frameRef:'',
+      verified:false,
+    })),
+    ownershipCoverage:{
+      sourceId:'',
+      frameRef:'',
+      itemCount:null,
+      verified:false,
+    },
     cityStates:ZH_ROM_CANONICAL_CITY_SET.map((city)=>{
       const record={
         city,
@@ -38,10 +51,13 @@ export function createScenarioEvidenceTemplate(year,{
 }
 
 export function scenarioTemplateProgress(template){
+  const ownership=template?.ownership??[]
   const states=template?.cityStates??[]
   const assignments=template?.officerAssignments??[]
   return Object.freeze({
     scenarioYear:Number(template?.scenarioYear),
+    ownershipSlots:ownership.length,
+    ownershipEntered:ownership.filter((record)=>typeof record?.factionId==='string'&&record.factionId.trim()).length,
     cityStateSlots:states.length,
     cityStatesEntered:states.filter((record)=>
       CITY_ECONOMY_FIELDS.every((field)=>Number.isFinite(record?.[field]))
