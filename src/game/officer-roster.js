@@ -51,9 +51,18 @@ export function openingOfficerListForCity(store, cityId) {
     .startsWith('source-backed-')
   if(placementVerified&&Array.isArray(runtime?.officers)){
     const rows=runtime.officers
-      .map((name)=>String(name??'').trim())
+      .map((item)=>{
+        if(typeof item==='string'){
+          const name=item.trim()
+          return name?{name,role:officerRole(store,name)}:null
+        }
+        const name=String(item?.name??'').trim()
+        if(!name)return null
+        const role=item?.role==='ruler'?'君主':item?.role==='officer'?'武將':officerRole(store,name)
+        return {name,role}
+      })
       .filter(Boolean)
-      .map((name)=>Object.freeze({name,role:officerRole(store,name)}))
+      .map((row)=>Object.freeze(row))
     return Object.freeze({
       cityId:cityId??null,
       factionId,
