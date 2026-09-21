@@ -23,10 +23,13 @@ test('officer projection follows active human faction',()=>{
   assert.deepEqual(openingOfficerRows(store).map((row)=>row.name),['曹操','曹仁','曹洪','夏候惇','夏候淵'])
 })
 
-test('later scenarios do not fabricate an officer status list',()=>{
+test('later scenarios remain blocked instead of fabricating an officer status list',()=>{
   const store=new GameStore(new MemoryStorage())
-  store.newGame({scenarioYear:200,humanFactions:['liu']})
-  assert.deepEqual(openingOfficerRows(store),[])
+  assert.throws(
+    ()=>store.newGame({scenarioYear:200,humanFactions:['liu']}),
+    /No production scenario start state is calibrated/,
+  )
+  assert.equal(store.hasGame(),false)
 })
 
 test('country-status drilldown uses opening faction roster without pretending city placement is verified',()=>{
