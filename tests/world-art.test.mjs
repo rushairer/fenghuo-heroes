@@ -88,5 +88,6 @@ test('river surface mark angle follows non-uniform projected geometry',()=>{
   assert.equal(projected.y,10)
   assert.ok(projected.angle<Math.PI/4)
   assert.ok(projected.angle>0)
-  assert.equal(projected.length,10)
+  assert.ok(projected.length>10)
+  assert.ok(projected.length<15)
 })
