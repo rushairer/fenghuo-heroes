@@ -102,3 +102,11 @@ test('full-map frame is drawn after relief so terrain shading cannot wash out th
   const river=source.indexOf('this.drawFullMapRiver(bounds)')
   assert.ok(relief>=0&&frame>relief&&river>frame)
 })
+
+
+test('presentation-only terrain relief is confined to raster fallback branches',()=>{
+  const strategy=read('src/scenes/strategy-info.js')
+  const overview=read('src/scenes/strategy-full-map.js')
+  assert.match(strategy,/if\(!sand\|\|!r\.drawImageTiled[\s\S]*drawTerrainGrain[\s\S]*drawWorldTerrainRelief[\s\S]*\}\n\n    this\.drawRiver/)
+  assert.match(overview,/if\(!sand\|\|!r\.drawImageTiled[\s\S]*drawTerrainGrain[\s\S]*drawProjectedTerrainRelief[\s\S]*\}\n    r\.strokeRect/)
+})
