@@ -17,7 +17,7 @@ test('compiler emits stable 40-city canonical ordering and ready status',()=>{
   bundle.cityCoordinates.reverse()
   bundle.ownership189.reverse()
   const compiled=compileCanonicalEvidenceBundle(bundle)
-  assert.equal(compiled.status,'ready-for-canonical-activation')
+  assert.equal(compiled.status,'ready-for-map-compatibility-export')
   assert.equal(compiled.scope,'full')
   assert.equal(compiled.cityCoordinates.length,40)
   assert.equal(compiled.ownership189.length,40)
@@ -61,12 +61,12 @@ test('geometry-only compilation succeeds without 189 ownership evidence',()=>{
   assert.ok(compiled.villages.length>0)
 })
 
-test('full compilation still refuses geometry-only evidence',()=>{
+test('legacy full compatibility export still refuses geometry-only evidence',()=>{
   const bundle=completeCanonicalMapEvidence()
   bundle.ownership189=[]
   assert.throws(
     ()=>compileCanonicalEvidenceBundle(bundle,{scope:'full'}),
-    /full evidence bundle is not ready/,
+    /legacy-ownership-189-incomplete/,
   )
 })
 
