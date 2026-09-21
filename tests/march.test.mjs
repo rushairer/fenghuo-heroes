@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
-import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginSiegeFromArmy,cancelSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
+import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginSiegeFromArmy,cancelSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { cityWorldPoint } from '../src/game/world.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
@@ -185,4 +185,23 @@ test('manual-confirmed march menu keeps the documented command order and conditi
     }).map((item)=>item.id),
     ['move','split','supply','attack','siege','end'],
   )
+})
+
+
+test('march execution reports elapsed calendar days separately from route steps',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const army=queueMarch(s,{
+    from:'xuchang',
+    route:[start,{x:start.x+8,y:start.y},{x:start.x+16,y:start.y}],
+    troops:1000,
+    food:400,
+    gold:0,
+    officerCount:1,
+  })
+  const [event]=executeMarchTurn(s,1)
+  assert.equal(event.steps,1)
+  assert.equal(event.daysElapsed,1)
+  assert.equal(army.routeIndex,1)
+  assert.equal(army.food,389)
 })
