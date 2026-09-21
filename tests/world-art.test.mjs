@@ -23,6 +23,9 @@ test('road segment style varies deterministically within narrow HD-safe bounds',
     const style=roadSegmentStyle(index)
     assert.ok(style.width>=.48&&style.width<=.56)
     assert.ok(style.alpha>=.34&&style.alpha<=.43)
+    assert.ok(style.shadowWidth>style.width)
+    assert.ok(style.highlightWidth<style.width)
+    assert.ok(style.highlightAlpha>0&&style.highlightAlpha<style.alpha)
     assert.deepEqual(style,roadSegmentStyle(index))
   }
 })
