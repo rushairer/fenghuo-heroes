@@ -13,6 +13,7 @@
     "map:report": "node scripts/report-map-profile.mjs",
     "map:evidence:template": "node scripts/create-map-evidence-template.mjs",
     "map:evidence:audit": "node scripts/audit-map-evidence.mjs",
-    "map:evidence:compile": "node scripts/compile-map-evidence.mjs"
+    "map:evidence:compile": "node scripts/compile-map-evidence.mjs",
+    "map:evidence:merge": "node scripts/merge-map-evidence.mjs"
   }
 }
