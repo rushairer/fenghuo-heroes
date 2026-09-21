@@ -219,8 +219,8 @@ canvas.addEventListener('click',(event)=>{
   const rect=canvas.getBoundingClientRect()
   const rawX=(event.clientX-rect.left)*(canvas.width/rect.width)
   const rawY=(event.clientY-rect.top)*(canvas.height/rect.height)
-  const imageX=Math.max(0,Math.min(canvas.width-Number.EPSILON,rawX))
-  const imageY=Math.max(0,Math.min(canvas.height-Number.EPSILON,rawY))
+  const imageX=Math.max(0,Math.min(canvas.width-1e-6,rawX))
+  const imageY=Math.max(0,Math.min(canvas.height-1e-6,rawY))
   const common={
     imageX,
     imageY,
