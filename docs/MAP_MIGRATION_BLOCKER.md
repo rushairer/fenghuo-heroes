@@ -126,3 +126,27 @@ After the ledger becomes ready, the remaining migration sequence is:
 5. run the complete test/build/visual-QA matrix before deployment.
 
 Use `npm run map:report` to inspect current evidence readiness and the active map profile.
+
+
+## Compatibility work completed before activation
+
+The runtime is now being exercised against an injected canonical profile before the
+global activation target changes:
+
+- `GameStore` accepts an injected map profile and tags saves with `mapProfileId`;
+- march and siege preparation resolve cities through `store.mapProfile`;
+- transport destination discovery resolves through `store.mapProfile`;
+- deep visual-QA fixtures resolve owned/enemy cities through `store.mapProfile`;
+- strategy march composition, officer screens, duel and siege titles resolve current
+  city identities through the Store profile;
+- the HD strategy map and full-map view render profile villages when present;
+- full-map roads and strategy roads derive from the current profile graph;
+- runtime profile integrity validates city index identity, coordinate bounds,
+  symmetric neighbors and village bounds at the activation boundary.
+
+The evidence ledger also rejects ambiguous duplicate records: duplicate city
+coordinates, multiple ownership records for the same city, reverse duplicate routes,
+duplicate village coordinates and duplicate name-resolution records.
+
+This makes the eventual canonical switch an explicit activation change rather than a
+cross-cutting rewrite.
