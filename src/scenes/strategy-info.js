@@ -4,6 +4,7 @@ import { ensureMarchState } from '../game/march.js'
 import { drawMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
+import { createTerrainRelief, drawWorldTerrainRelief } from '../game/terrain-relief.js'
 import { mountainStampStyle } from '../game/terrain-style.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, isVisible, toScreen, worldPoint } from '../game/world.js'
 import { drawRoadNetwork, drawWorldRiver, uniqueRoadPairs } from '../game/world-art.js'
@@ -27,6 +28,7 @@ export class StrategyScene extends ParityStrategyScene {
   constructor(app) {
     super(app)
     this.mapSpeckles=createTerrainGrain({width:WORLD_W,height:WORLD_H,count:1500})
+    this.mapRelief=createTerrainRelief({width:WORLD_W,height:WORLD_H,count:22})
     this.profileRoadSegmentsWorld=Object.freeze(
       uniqueRoadPairs(this.mapCities()).map(([from,to])=>Object.freeze({
         a:Object.freeze(cityWorldPoint(this.cityById(from))),
@@ -78,6 +80,12 @@ export class StrategyScene extends ParityStrategyScene {
         visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=MAP_VIEW_H,
       })
     }
+
+    drawWorldTerrainRelief(r,this.mapRelief,{
+      camera,
+      viewWidth:MAP_VIEW_W,
+      viewHeight:MAP_VIEW_H,
+    })
 
     this.drawRiver(camera)
 
