@@ -40,14 +40,14 @@ export function compileScenarioEvidenceBundle(bundle={}, {scope='full'}={}){
       }))
     :[]
   const cityStates=(scope==='economy'||scope==='full')
-    ?[]
-    :[...report.verifiedCityStates]
+    ?[...report.verifiedCityStates]
       .sort(byCity)
       .map((record)=>({
         ...record,
         city:normalizeZhRomCityName(record.city),
         verified:true,
       }))
+    :[]
   const officerAssignments=(scope==='officers'||scope==='full')
     ?[...report.verifiedOfficerAssignments]
       .map((record)=>({
