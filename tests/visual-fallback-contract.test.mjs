@@ -97,7 +97,7 @@ test('strategy and full-map views share one world-space relief source',()=>{
 
 test('full-map frame is drawn after relief so terrain shading cannot wash out the border',()=>{
   const source=read('src/scenes/strategy-full-map.js')
-  const relief=source.indexOf('drawProjectedTerrainRelief')
+  const relief=source.indexOf('drawProjectedTerrainRelief(r,WORLD_TERRAIN_RELIEF')
   const frame=source.indexOf("r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)")
   const river=source.indexOf('this.drawFullMapRiver(bounds)')
   assert.ok(relief>=0&&frame>relief&&river>frame)
