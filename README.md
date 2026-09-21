@@ -93,7 +93,7 @@ npm run map:evidence:compile -- map-evidence.merged.json map-geometry.compiled.j
 npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.json --scope full
 ```
 
-其中 `audit` 负责指出缺项/冲突，`diff` 负责与仓库当前 canonical ledger 做语义差异。`geometry` scope 只要求 40 城坐标、地名异体、村庄与路线 coverage 完成；`full` scope 还要求 189 ownership 完成。即使 full evidence 齐全，生产开局仍必须独立校准城市经济/兵力与武将城市配属，不能从地图坐标推导。
+其中 `audit` 负责指出缺项/冲突，`diff` 负责与仓库当前 canonical ledger 做语义差异。`geometry` scope 只要求 40 城坐标、地名异体、村庄与路线 coverage 完成。`full` scope 中的 `ownership189` 仅作为旧 map-evidence 文件的迁移兼容检查；生产运行时不再从 map evidence 读取城市归属。189 / 200 / 215 的 ownership、城市数值与武将配属全部由独立 scenario evidence 校准。
 
 
 运行 `npm run map:report` 可以查看：
@@ -105,7 +105,7 @@ npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.j
 - 地名异体、村庄与道路网络 gate；
 - 当前 scaffold 与 Chinese-ROM 目标城市 identity 的差异。
 
-即使 evidence 全部齐全，项目也不会自动切换 canonical 地图；还必须显式通过 `map-activation.js` 的第二道 activation gate，并完成 Store / 行军 / 存档兼容性验证。
+即使 geometry evidence 齐全，项目也不会自动切换 canonical 地图；仍必须显式通过 `map-activation.js` 的 activation target。地图几何启用与剧本开局是两道独立门禁：GameStore 只有在对应年份 scenario evidence 完成后才能启动 canonical 剧本。
 
 ## GitHub Pages
 
@@ -149,3 +149,27 @@ See `docs/SCENARIO_EVIDENCE_CAPTURE.md` for the full workflow.
 
 The playable scaffold still contains quarantined coordinate-derived economy values.
 They are engineering placeholders only and cannot enter canonical scenario evidence.
+
+
+## March evidence calibration
+
+Current march movement values are explicit engineering baselines, not original-game claims:
+
+- route step: 8 world units;
+- one route node: 1 calendar day;
+- even-month execution window: 30 days;
+- enemy-army adjacency: 8 world units;
+- enemy-city proximity: 24 world units.
+
+Use the static workbench at `tools/march-evidence-capture.html` to record direct Chinese-ROM observations from a local video/image. All output remains `verified:false`.
+
+```bash
+npm run march:evidence:merge -- batch-a.json batch-b.json --out march.merged.json
+npm run march:evidence:audit -- march.merged.json
+npm run march:evidence:audit -- march.merged.json --require-route-step-ready
+npm run march:evidence:audit -- march.merged.json --require-timing-ready
+npm run march:evidence:audit -- march.merged.json --require-month-ready
+npm run march:evidence:audit -- march.merged.json --require-adjacency-ready
+```
+
+The inference layer refuses inconsistent observations instead of averaging them into a guessed value. See `docs/MARCH_EVIDENCE_CAPTURE.md`.
