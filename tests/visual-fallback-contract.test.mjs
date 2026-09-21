@@ -256,3 +256,11 @@ test('duel proximity cue is presentation-only and derives from existing fighter 
   assert.match(source,/leftX:this\.px,rightX:this\.ex/)
   assert.doesNotMatch(source,/duelSpacingCueGeometry.*damage/)
 })
+
+
+test('siege wall weathering remains a deterministic presentation layer',()=>{
+  const source=read('src/game/battle-art.js')
+  assert.ok(source.includes('siegeWeatheringGeometry'))
+  assert.match(source,/weather\.stains/)
+  assert.match(source,/weather\.cracks/)
+})
