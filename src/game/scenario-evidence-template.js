@@ -1,4 +1,4 @@
-import { CITY_ECONOMY_FIELDS } from './scenario-start-state.js'
+import { CITY_ECONOMY_FIELDS } from './scenario-fields.js'
 import { ZH_ROM_CANONICAL_CITY_SET } from './original-data.js'
 import { targetScenario } from './scenario-target.js'
 
