@@ -55,7 +55,8 @@
           "all five visible faces in one facial-structure pass",
           "headgear trim, studs, ribbons and cap-wing detail",
           "silhouette separation edges and shoulder contact depth",
-          "five-portrait local lighting and jaw-edge highlights"
+          "five-portrait local lighting and jaw-edge highlights",
+          "robe and collar contour highlights"
         ],
         "forbidden": "low-resolution raster upscale"
       }
@@ -456,7 +457,9 @@
         "compact full-map city and village ground shadows",
         "strategy-fort ground shadows",
         "army-flag finials and tie cords",
-        "forest canopy edge highlights"
+        "forest canopy edge highlights",
+        "shoreline accent shared by strategy and full-map river rendering",
+        "strategy-fort roof tile and gate stud micro-detail"
       ],
       "boundary": "Presentation fallback geometry must never be promoted as Chinese-ROM map evidence."
     },
@@ -475,7 +478,8 @@
         "helmet plume, shoulder plates and waist tassels",
         "arena lantern and pennant accents",
         "attack arcs, guard braces and attack dust from existing duel state",
-        "localized hit sparks anchored to the struck fighter"
+        "localized hit sparks anchored to the struck fighter",
+        "proximity ground-contact cue derived only from fighter spacing"
       ]
     },
     "siege": {
@@ -489,7 +493,8 @@
         "foreground dust depth",
         "attacker and defender confrontation standards",
         "foreground earth, stones and haze depth below confrontation standards",
-        "inner gate arch, plank seams and threshold depth"
+        "inner gate arch, plank seams and threshold depth",
+        "subtle deterministic wall stains and cracks"
       ]
     }
   }
