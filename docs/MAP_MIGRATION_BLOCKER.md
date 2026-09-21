@@ -62,7 +62,7 @@ The map may move from scaffold to canonical only when we can establish, with dir
 - the coordinate of every city in the original logical map;
 - village coordinates;
 - enough terrain reference to preserve route/navigation semantics;
-- 189 opening ownership for all relevant lords/neutral territories.
+Scenario ownership is not a map-geometry migration prerequisite; it is calibrated separately for each scenario year.
 
 The road graph used by the scaffold is not a migration source. The original game supports free cursor route drawing, so modern/historical city adjacency must not be imported as a substitute.
 
@@ -72,7 +72,7 @@ The road graph used by the scaffold is not a migration source. The original game
 
 `tests/map-parity.test.mjs` deliberately fails if somebody marks the current map parity-complete or silently turns the identity mismatch into a "canonical" claim without updating the migration contract.
 
-`canonicalMapMigrationReadiness()` adds a second hard gate: matching the 40 names is not enough. Migration remains blocked until all 40 canonical city coordinates are evidence-backed, the unresolved 薊縣/蘇縣 and 姑藏/故藏 display-name variants are resolved, village coordinates are verified, and the 189 ownership layer is verified. This prevents a future refactor from turning a visually plausible rename into a false 1:1 claim.
+`canonicalMapMigrationReadiness()` adds a second hard gate: matching the 40 names is not enough. Migration remains blocked until all 40 canonical city coordinates are evidence-backed, the unresolved 薊縣/蘇縣 and 姑藏/故藏 display-name variants are resolved, village coverage is verified, and route-network coverage is verified. Scenario ownership is validated separately. This prevents a future refactor from turning a visually plausible rename into a false 1:1 claim.
 
 
 ## Evidence ledger contract
@@ -95,8 +95,7 @@ The migration gate cannot be opened by setting booleans manually. It requires al
 1. 40 source-backed canonical city coordinates with no duplicate identities;
 2. source-backed resolution of the unresolved 薊縣/蘇縣 and 姑藏/故藏 display-name variants;
 3. source-backed village coverage verification;
-4. 40 source-backed 189 ownership records;
-5. source-backed route-network coverage verification.
+4. source-backed route-network coverage verification.
 
 The ledger intentionally starts empty and blocked. A screenshot, memory, historical map,
 another Three Kingdoms game, or the current runtime scaffold is not sufficient evidence.
@@ -109,8 +108,8 @@ self-certified evidence fails CI before a canonical migration can be claimed.
 
 Evidence readiness and runtime activation are deliberately separate.
 
-- `src/game/map-profile-selection.js` selects a canonical profile only when the
-  evidence ledger is complete.
+- `src/game/map-profile-selection.js` selects a canonical geometry profile only when the
+  geometry evidence ledger is complete.
 - `src/game/map-activation.js` adds a second explicit activation target.
 - The current target remains `scaffold`.
 - `src/game/data.js` exports `MAP_PROFILE`, `CITIES` and `CITY_BY_ID` from
@@ -186,9 +185,7 @@ Scenario ownership/economy/officer readiness is reported separately by
 `canonicalScenarioStartReadiness()`. This prevents 189 ownership from leaking back into
 map activation or being duplicated in two ledgers.
 
-When geometry is ready but scenario data is not, `selectRuntimeMapProfile()` keeps
-the live game on `runtime-scaffold` but exposes a read-only canonical
-`geometryPreview` for QA.
+When geometry is ready, `selectRuntimeMapProfile()` can build the canonical geometry profile regardless of scenario ownership. The separate `MAP_ACTIVATION_TARGET` still decides whether the live game actually uses it.
 
 The evidence compiler supports the same split:
 
@@ -197,8 +194,7 @@ npm run map:evidence:compile -- capture.json geometry.json --scope geometry
 npm run map:evidence:compile -- capture.json full.json --scope full
 ```
 
-A geometry artifact never carries partial ownership. Full compilation still requires
-all activation evidence.
+A geometry artifact never carries ownership. `full` compilation is retained only as a legacy compatibility export for older map-evidence bundles; it is not activation evidence.
 
 ## Remaining production start-state blocker
 
