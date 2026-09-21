@@ -427,6 +427,9 @@ export function fullMapCitySymbolGeometry(size=4){
     flagHeight:s*1.9,
     mastX:s*.34,
     pennantWidth:s*.72,
+    shadowRx:s*.72,
+    shadowRy:s*.22,
+    shadowY:s*.54,
   })
 }
 
@@ -434,6 +437,12 @@ export function drawFullMapCitySymbol(r,x,y,color,size=4){
   const c=r.ctx,S=r.S,g=fullMapCitySymbolGeometry(size)
   c.save()
   c.translate(x*S,y*S)
+
+  c.fillStyle='rgba(33,22,15,.26)'
+  c.beginPath()
+  c.ellipse(0,g.shadowY*S,g.shadowRx*S,g.shadowRy*S,0,0,Math.PI*2)
+  c.fill()
+
   c.fillStyle='#20150f'
   c.beginPath()
   c.arc(0,0,g.outer*S/2,0,Math.PI*2)
