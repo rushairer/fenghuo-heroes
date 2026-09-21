@@ -99,8 +99,8 @@ test('source-backed scenario officer placement overrides the provisional faction
     state:{
       scenarioOfficerPlacementStatus:'source-backed-189',
       cities:{
-        dai:{owner:'liu',officers:['劉備','關羽']},
-        other:{owner:'liu',officers:['張飛']},
+        dai:{owner:'liu',officers:[{name:'劉備',role:'ruler'},{name:'關羽',role:'officer'}]},
+        other:{owner:'liu',officers:[{name:'張飛',role:'officer'}]},
       },
       openingRosters:{
         liu:{ruler:'劉備',officers:['關羽','張飛']},
@@ -132,4 +132,26 @@ test('provisional scaffold officer projection never claims city assignment verif
   assert.equal(projection.cityAssignmentVerified,false)
   assert.equal(projection.evidence,'opening-faction-roster')
   assert.deepEqual(projection.rows.map((row)=>row.name),['劉備','關羽','張飛'])
+})
+
+
+test('source-backed officer roles do not depend on an opening-roster name heuristic',()=>{
+  const store={
+    state:{
+      scenarioOfficerPlacementStatus:'source-backed-200',
+      cities:{
+        city:{owner:'custom',officers:[
+          {name:'甲',role:'ruler'},
+          {name:'乙',role:'officer'},
+        ]},
+      },
+      openingRosters:{},
+    },
+  }
+  const projection=openingOfficerListForCity(store,'city')
+  assert.equal(projection.cityAssignmentVerified,true)
+  assert.deepEqual(projection.rows,[
+    {name:'甲',role:'君主'},
+    {name:'乙',role:'武將'},
+  ])
 })
