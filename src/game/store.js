@@ -1,22 +1,12 @@
 import { MAP_PROFILE } from './data.js'
 import { assertRuntimeMapProfile } from './map-profile-validation.js'
 import { ORIGINAL_189_RULERS } from './original-data.js'
+import { defaultScenarioStartStateFactory } from './scenario-start-state.js'
 import { isTaxRate } from './tax-parity.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 
 const SAVE_KEY = 'fenghuo-heroes.cleanroom.v4'
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
-const baseCities = (cities) => Object.fromEntries(cities.map((c) => [c.id, {
-  id: c.id,
-  owner: c.owner,
-  gold: 300 + ((c.x * 7 + c.y * 3) % 700),
-  food: 500 + ((c.x * 11 + c.y * 5) % 1100),
-  troops: 2500 + ((c.x * 73 + c.y * 37) % 9500),
-  development: 40 + ((c.x + c.y) % 80),
-  rule: 80,
-  defense: 40,
-  training: 35,
-}]))
 const UNVERIFIED_INSPECTION_EFFECT_MESSAGES = Object.freeze({
   develop:'開發：投入金額、執行武將與產值公式尚未校準，本次不修改數值。',
   welfare:'福利：執行武將、投入金額與統治效果公式尚未校準，本次不修改數值。',
@@ -48,17 +38,25 @@ const openingRosters = (year) => year === 189
   : {}
 
 export class GameStore {
-  constructor(storage = null, {mapProfile=MAP_PROFILE} = {}) { this.storage = storage; this.mapProfile = assertRuntimeMapProfile(mapProfile); this.state = null; this.pendingConflict = null }
+  constructor(storage = null, {mapProfile=MAP_PROFILE,scenarioStartStateFactory=defaultScenarioStartStateFactory} = {}) { this.storage = storage; this.mapProfile = assertRuntimeMapProfile(mapProfile); this.scenarioStartStateFactory = scenarioStartStateFactory; this.state = null; this.pendingConflict = null }
   newGame(options = {}) {
     const scenarioYear = Number(options.scenarioYear ?? 189)
     const humans = [...(options.humanFactions ?? ['liu'])]
     const primary = humans[0] ?? 'liu'
     const cities=this.mapProfile.cities
     const cityById=this.mapProfile.cityById
-    const firstCity=cities.find((city)=>city.owner===primary)??cities[0]
+    const scenarioState=this.scenarioStartStateFactory({
+      mapProfile:this.mapProfile,
+      scenarioYear,
+    })
+    if(!scenarioState||scenarioState.mapProfileId!==this.mapProfile.id||scenarioState.scenarioYear!==scenarioYear){
+      throw new Error('Scenario start state does not match the active map profile/year.')
+    }
+    const cityStates=scenarioState.cities??{}
+    const firstCity=cities.find((city)=>cityStates[city.id]?.owner===primary)??cities[0]
     if(!firstCity)throw new Error('Runtime map profile contains no cities.')
     const first=firstCity.id
-    this.state = { mapProfileId:this.mapProfile.id, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(cityById[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:baseCities(cities), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
+    this.state = { mapProfileId:this.mapProfile.id, scenarioStateId:scenarioState.id, scenarioOwnershipStatus:scenarioState.ownershipStatus, scenarioEconomyStatus:scenarioState.economyStatus, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(cityById[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:cityStates, log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
     this.pendingConflict = null
     this.save()
     return this.state
@@ -121,6 +119,11 @@ export class GameStore {
       const savedProfileId=parsed.mapProfileId??(this.mapProfile.id==='runtime-scaffold'?'runtime-scaffold':null)
       if(savedProfileId!==this.mapProfile.id)return false
       parsed.mapProfileId=savedProfileId
+      if(!parsed.scenarioStateId&&this.mapProfile.id==='runtime-scaffold'&&Number(parsed.scenarioYear)===189){
+        parsed.scenarioStateId='runtime-scaffold:189'
+        parsed.scenarioOwnershipStatus='provisional-scaffold'
+        parsed.scenarioEconomyStatus='provisional-coordinate-derived'
+      }
       this.state=parsed
       if(!this.state.inspectionCategories)this.state.inspectionCategories={}
       if(!this.state.openingRosters)this.state.openingRosters=openingRosters(this.state.scenarioYear)
