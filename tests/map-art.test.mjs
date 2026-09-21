@@ -56,6 +56,10 @@ test('full-map village symbol geometry stays compact and proportional',()=>{
   assert.equal(large.roof,small.roof*2)
   assert.equal(large.body,small.body*2)
   assert.equal(large.door,small.door*2)
+  assert.equal(large.window,small.window*2)
+  assert.equal(large.chimneyW,small.chimneyW*2)
+  assert.equal(large.chimneyH,small.chimneyH*2)
+  assert.equal(large.eave,small.eave*2)
   assert.ok(small.door<small.body)
 })
 
