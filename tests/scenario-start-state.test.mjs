@@ -67,7 +67,7 @@ test('canonical scenario numeric state and officer placement require their own s
   )
 })
 
-test('canonical 189 start state combines map ownership with source-backed economy and officer placement',()=>{
+test('canonical 189 start state combines source-backed ownership economy and officer placement',()=>{
   const mapEvidence=completeCanonicalMapEvidence()
   const scenarioEvidence=completeCanonicalScenarioEvidence()
   const profile=buildCanonicalRuntimeMap(mapEvidence)
