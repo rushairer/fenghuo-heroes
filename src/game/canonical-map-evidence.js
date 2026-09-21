@@ -1,7 +1,7 @@
 // Canonical Chinese-ROM map evidence ledger.
 //
 // This file is deliberately empty until direct, auditable evidence is captured.
-// Do not fill city coordinates, villages, ownership or name resolutions from
+// Do not fill city coordinates, villages, routes or name resolutions from
 // historical intuition, another Three Kingdoms title, or the provisional runtime
 // scaffold. Every accepted coordinate must reference a declared source and frame.
 //
@@ -26,6 +26,7 @@ export const CANONICAL_MAP_EVIDENCE=Object.freeze({
   cityCoordinates:Object.freeze([]),
   villages:Object.freeze([]),
   villageCoverage:null,
+  // Legacy capture compatibility only. Production ownership is scenario evidence.
   ownership189:Object.freeze([]),
   routes:Object.freeze([]),
   routeNetworkCoverage:null,
