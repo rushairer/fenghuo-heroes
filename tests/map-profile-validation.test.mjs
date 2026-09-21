@@ -36,3 +36,32 @@ test('profile validation rejects asymmetric and out-of-range geometry',()=>{
   assert.ok(report.errors.includes('city-out-of-range:b'))
   assert.ok(report.errors.includes('village-out-of-range:v1'))
 })
+
+
+test('profile validation treats scenario ownership as optional geometry metadata',()=>{
+  const city={id:'a',name:'A',x:10,y:10,neighbors:[]}
+  const profile={
+    id:'geometry-only',
+    canonical:true,
+    cities:[city],
+    cityById:{a:city},
+    villages:[],
+  }
+  const report=validateRuntimeMapProfile(profile)
+  assert.equal(report.ok,true)
+})
+
+test('runtime profile coordinates use strict half-open world bounds',()=>{
+  const edge={id:'edge',name:'Edge',x:640,y:447,neighbors:[]}
+  const profile={
+    id:'edge-profile',
+    canonical:true,
+    cities:[edge],
+    cityById:{edge},
+    villages:[{id:'v-edge',x:639,y:448}],
+  }
+  const report=validateRuntimeMapProfile(profile)
+  assert.equal(report.ok,false)
+  assert.ok(report.errors.includes('city-out-of-range:edge'))
+  assert.ok(report.errors.includes('village-out-of-range:v-edge'))
+})
