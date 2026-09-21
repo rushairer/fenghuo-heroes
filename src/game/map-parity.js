@@ -47,8 +47,8 @@ export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) 
   const cityCoordinatesComplete=
     coordinateNames.size===ZH_ROM_CANONICAL_CITY_SET.length&&
     report.duplicateCoordinateNames.length===0
-  const cityNamesResolved=unresolvedAfterEvidence.length===0
-  const ownership189Verified=report.ownership189EvidenceCount===ZH_ROM_CANONICAL_CITY_SET.length
+  const cityNamesResolved=unresolvedAfterEvidence.length===0&&report.duplicateNameResolutionKeys.length===0
+  const ownership189Verified=report.ownership189EvidenceCount===ZH_ROM_CANONICAL_CITY_SET.length&&report.duplicateOwnershipCities.length===0
   const villageCoordinatesVerified=report.villageCoverageVerified
   const routeNetworkVerified=report.routeNetworkVerified
   const ready=
@@ -69,6 +69,8 @@ export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) 
     villageCoordinatesVerified,
     ownership189Verified,
     verifiedOwnershipCityCount:report.ownership189EvidenceCount,
+    duplicateOwnershipCities:report.duplicateOwnershipCities,
+    duplicateNameResolutionKeys:report.duplicateNameResolutionKeys,
     routeNetworkVerified,
     routeEvidenceCount:report.routeEvidenceCount,
     evidenceReport:report,
