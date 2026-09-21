@@ -51,7 +51,9 @@
           "facial and beard micro-detail",
           "robe embroidery and cloth ridges",
           "rim lighting",
-          "right brocade strip"
+          "right brocade strip",
+          "all five visible faces in one facial-structure pass",
+          "headgear trim, studs, ribbons and cap-wing detail"
         ],
         "forbidden": "low-resolution raster upscale"
       }
@@ -445,7 +447,9 @@
         "roof/window/detail villages",
         "full-map city masts, pennants and highlights",
         "full-map village window, chimney and eave detail",
-        "map cursor corner ticks, center point and corner glow"
+        "map cursor corner ticks, center point and corner glow",
+        "three-layer road edge, earth and highlight stroke",
+        "legend symbols shared with full-map city and village renderers"
       ],
       "boundary": "Presentation fallback geometry must never be promoted as Chinese-ROM map evidence."
     },
@@ -460,7 +464,9 @@
         "vector arena",
         "arena timber beams",
         "spectator depth rows",
-        "arena rope and dust depth"
+        "arena rope and dust depth",
+        "helmet plume, shoulder plates and waist tassels",
+        "arena lantern and pennant accents"
       ]
     },
     "siege": {
@@ -471,7 +477,8 @@
         "arrow slits",
         "corner tower roofs and eaves",
         "gatehouse beams and studs",
-        "foreground dust depth"
+        "foreground dust depth",
+        "attacker and defender confrontation standards"
       ]
     }
   }
