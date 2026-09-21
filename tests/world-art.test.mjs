@@ -48,8 +48,10 @@ test('river stroke style keeps bank water and highlight widths ordered',()=>{
   for(const style of [world,projected]){
     assert.ok(style.bankOuterWidth>style.bankInnerWidth)
     assert.ok(style.bankInnerWidth>style.waterWidth)
-    assert.ok(style.bankHighlightWidth<style.bankInnerWidth)
+    assert.ok(style.bankOuterWidth>style.bankHighlightWidth)
+    assert.ok(style.bankHighlightWidth>style.bankInnerWidth)
     assert.ok(style.bankHighlightAlpha>0&&style.bankHighlightAlpha<1)
+    assert.ok(style.bankInnerWidth>style.waterWidth)
     assert.ok(style.waterWidth>style.highlightWidth)
     assert.ok(style.highlightAlpha>0&&style.highlightAlpha<=1)
   }
