@@ -78,6 +78,23 @@ npm run check
 
 ## 地图迁移审计
 
+### 地图证据采集工作台
+
+构建后的静态站点还包含 `tools/map-evidence-capture.html`。它允许加载本地原版截图，点击城市/村庄标记中心，并按截图固有尺寸转换成 evidence 坐标；所有候选默认保持 `verified:false`。
+
+推荐流程：
+
+```bash
+npm run map:evidence:template
+npm run map:evidence:merge -- batch-a.json batch-b.json --out map-evidence.merged.json
+npm run map:evidence:audit -- map-evidence.merged.json
+npm run map:evidence:diff -- map-evidence.compiled.json
+npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.json
+```
+
+其中 `audit` 负责指出缺项/冲突，`diff` 负责与仓库当前 canonical ledger 做语义差异，`compile` 只接受已经 ready 的 source-backed bundle。
+
+
 运行 `npm run map:report` 可以查看：
 
 - 当前实际启用的地图 profile；
