@@ -10,6 +10,13 @@ import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.
 
 function completeScenarioEvidence(year=189){
   const source={id:`scenario-${year}`,kind:'direct-capture',ref:`scenario-${year}.png`}
+  const ownership=ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
+    city,
+    factionId:index===0?'liu':index===1?'cao':'neutral',
+    sourceId:source.id,
+    frameRef:`frame#owner-${index}`,
+    verified:true,
+  }))
   const cityStates=ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
     city,
     gold:100+index,
@@ -31,6 +38,8 @@ function completeScenarioEvidence(year=189){
     status:'test-complete',
     scenarioYear:year,
     sources:[source],
+    ownership,
+    ownershipCoverage:{sourceId:source.id,frameRef:'frame#ownership',itemCount:40,verified:true},
     cityStates,
     cityStateCoverage:{sourceId:source.id,frameRef:'frame#cities',itemCount:40,verified:true},
     officerAssignments,
@@ -38,14 +47,15 @@ function completeScenarioEvidence(year=189){
   }
 }
 
-test('189 remains blocked by economy and officer placement even when map and ownership evidence are complete',()=>{
+test('189 remains blocked until scenario ownership, economy and officer placement are captured',()=>{
   const evidence=completeCanonicalMapEvidence()
   const report=canonicalScenarioStartReadiness(189,evidence)
   assert.equal(report.mapGeometryReady,true)
-  assert.equal(report.ownershipReady,true)
+  assert.equal(report.ownershipReady,false)
   assert.equal(report.economyReady,false)
   assert.equal(report.officerPlacementReady,false)
   assert.equal(report.ready,false)
+  assert.ok(report.blockers.includes('ownership-189-unverified'))
   assert.ok(report.blockers.includes('city-economy-189-unverified'))
   assert.ok(report.blockers.includes('officer-placement-189-unverified'))
 })
@@ -55,7 +65,7 @@ test('200 and 215 cannot inherit 189 ownership',()=>{
   for(const year of [200,215]){
     const report=canonicalScenarioStartReadiness(year,evidence)
     assert.equal(report.ownershipReady,false)
-    assert.equal(report.ownershipEvidenceStatus,'unverified')
+    assert.equal(report.ownershipEvidenceStatus,'incomplete')
     assert.ok(report.blockers.includes(`ownership-${year}-unverified`))
   }
 })
@@ -73,6 +83,7 @@ test('189 readiness opens only when map, ownership, city-state and officer evide
   const report=canonicalScenarioStartReadiness(189,mapEvidence,scenarioEvidence)
   assert.equal(report.mapGeometryReady,true)
   assert.equal(report.ownershipReady,true)
+  assert.equal(report.ownershipEvidenceCount,40)
   assert.equal(report.economyReady,true)
   assert.equal(report.officerPlacementReady,true)
   assert.equal(report.cityStateEvidenceCount,40)
@@ -81,15 +92,16 @@ test('189 readiness opens only when map, ownership, city-state and officer evide
   assert.deepEqual(report.blockers,[])
 })
 
-test('complete economy and officer evidence cannot make 200 ready without independent ownership',()=>{
+test('200 can open its scenario gate from independent ownership/economy/officer evidence',()=>{
   const report=canonicalScenarioStartReadiness(
     200,
     completeCanonicalMapEvidence(),
     completeScenarioEvidence(200),
   )
+  assert.equal(report.ownershipReady,true)
+  assert.equal(report.ownershipEvidenceStatus,'source-backed-200')
   assert.equal(report.economyReady,true)
   assert.equal(report.officerPlacementReady,true)
-  assert.equal(report.ownershipReady,false)
-  assert.equal(report.ready,false)
-  assert.deepEqual(report.blockers,['ownership-200-unverified'])
+  assert.equal(report.ready,true)
+  assert.deepEqual(report.blockers,[])
 })
