@@ -366,6 +366,24 @@ export function drawSiegeFortress(r,{
   c.fillStyle=wall
   c.fillRect((x+7)*S,(y+26)*S,(width-14)*S,(height-26)*S)
 
+  const weather=siegeWeatheringGeometry(width,height)
+  for(const stain of weather.stains){
+    c.fillStyle=`rgba(54,42,34,${stain.alpha})`
+    c.beginPath()
+    c.ellipse((x+stain.x)*S,(y+stain.y)*S,stain.rx*S,stain.ry*S,-.12,0,Math.PI*2)
+    c.fill()
+  }
+  c.strokeStyle='rgba(48,36,30,.28)'
+  c.lineWidth=.34*S
+  for(const crack of weather.cracks){
+    c.beginPath()
+    crack.forEach(([px,py],index)=>{
+      if(index===0)c.moveTo((x+px)*S,(y+py)*S)
+      else c.lineTo((x+px)*S,(y+py)*S)
+    })
+    c.stroke()
+  }
+
   // Battlements and towers.
   for(const offset of columns){
     const bx=x+8+offset
