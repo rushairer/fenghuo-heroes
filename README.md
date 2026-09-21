@@ -103,7 +103,7 @@ npm run map:evidence:compile -- map-evidence.merged.json map-geometry.compiled.j
 npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.json --scope full
 ```
 
-其中 `audit` 负责指出缺项/冲突，`diff` 负责与仓库当前 canonical ledger 做语义差异。`geometry` scope 只要求 40 城坐标、地名异体、村庄与路线 coverage 完成。`full` scope 中的 `ownership189` 仅作为旧 map-evidence 文件的迁移兼容检查；生产运行时不再从 map evidence 读取城市归属。189 / 200 / 215 的 ownership、城市数值与武将配属全部由独立 scenario evidence 校准。
+其中 `audit` 负责指出缺项/冲突，`diff` 负责与仓库当前 canonical ledger 做语义差异。`geometry` scope 只要求 40 城坐标、地名异体、村庄与路线 coverage 完成。`full` scope 中的 `ownership189` 仅作为旧 map-evidence 文件的迁移兼容检查，编译产物状态为 `ready-for-legacy-map-bundle`；它不是 scenario activation 产物。生产运行时不再从 map evidence 读取城市归属。189 / 200 / 215 的 ownership、城市数值与武将配属全部由独立 scenario evidence 校准。
 
 
 运行 `npm run map:report` 可以查看：
@@ -111,7 +111,6 @@ npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.j
 - 当前实际启用的地图 profile；
 - canonical evidence ledger 是否 ready；
 - 已验证 40 城坐标数量；
-- 189 年归属覆盖数量；
 - 地名异体、村庄与道路网络 gate；
 - 当前 scaffold 与 Chinese-ROM 目标城市 identity 的差异。
 
