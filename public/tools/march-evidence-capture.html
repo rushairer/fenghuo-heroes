@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>March Evidence Capture</title>
+  <link rel="stylesheet" href="./march-evidence-capture.css" />
+</head>
+<body>
+  <main class="capture-app">
+    <header>
+      <h1>Chinese-ROM March Evidence Capture</h1>
+      <p>用本地錄影或截圖記錄行軍格距、日數、月末、鄰接與缺糧觀測。所有輸出保持 <code>verified:false</code>。</p>
+    </header>
+
+    <section class="controls">
+      <label>參考媒體 <input id="media-input" type="file" accept="image/*,video/*" /></label>
+      <label>繼續既有批次 <input id="bundle-input" type="file" accept="application/json,.json" /></label>
+      <label>Source ID <input id="source-id" value="march-capture-001" /></label>
+      <label>Source Ref <input id="source-ref" placeholder="march-189.mp4" /></label>
+      <label>Frame Ref <input id="frame-ref" value="march-capture-001#frame-001" /></label>
+      <button id="use-time" type="button">使用目前影片時間</button>
+      <label>觀測類型
+        <select id="record-type">
+          <option value="route-step">一格座標</option>
+          <option value="movement-window">步數 ↔ 日數</option>
+          <option value="month-window">偶數月執行窗口</option>
+          <option value="adjacency">攻擊 / 攻城鄰接</option>
+          <option value="starvation">缺糧後果</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="editor-card" id="route-step-editor">
+      <h2>一格座標</h2>
+      <label>From X <input id="route-from-x" type="number" step="any" /></label>
+      <label>From Y <input id="route-from-y" type="number" step="any" /></label>
+      <label>To X <input id="route-to-x" type="number" step="any" /></label>
+      <label>To Y <input id="route-to-y" type="number" step="any" /></label>
+      <label>座標空間
+        <select id="route-space">
+          <option value="logical-320x224">logical-320x224</option>
+          <option value="world-640x448">world-640x448</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="editor-card" id="movement-window-editor" hidden>
+      <h2>步數 ↔ 日數</h2>
+      <label>移動格數 <input id="movement-steps" type="number" min="1" step="1" /></label>
+      <label>經過日數 <input id="movement-days" type="number" min="1" step="1" /></label>
+    </section>
+
+    <section class="editor-card" id="month-window-editor" hidden>
+      <h2>偶數月執行窗口</h2>
+      <label>日曆推進日數 <input id="month-days" type="number" min="1" step="1" /></label>
+      <label>實際移動格數 <input id="month-steps" type="number" min="0" step="1" /></label>
+      <label class="check-option"><input id="month-continued" type="checkbox" /> 月末路線未完、下月繼續</label>
+    </section>
+
+    <section class="editor-card" id="adjacency-editor" hidden>
+      <h2>命令鄰接邊界</h2>
+      <label>目標
+        <select id="adjacency-target">
+          <option value="army">敵行軍部隊</option>
+          <option value="city">敵城</option>
+        </select>
+      </label>
+      <label>格距 <input id="adjacency-distance" type="number" min="0" step="1" /></label>
+      <label class="check-option"><input id="adjacency-available" type="checkbox" /> 此距離出現對應命令</label>
+    </section>
+
+    <section class="editor-card" id="starvation-editor" hidden>
+      <h2>缺糧後果</h2>
+      <label>缺糧日數 <input id="starvation-days" type="number" min="1" step="1" /></label>
+      <label>兵力 Before <input id="troops-before" type="number" min="0" step="1" /></label>
+      <label>兵力 After <input id="troops-after" type="number" min="0" step="1" /></label>
+      <label>武將體力 Before <input id="hp-before" type="number" min="0" step="any" /></label>
+      <label>武將體力 After <input id="hp-after" type="number" min="0" step="any" /></label>
+    </section>
+
+    <section class="actions">
+      <button id="save-record" type="button">記錄 / 覆蓋同 Frame 候選</button>
+      <button id="copy-output" type="button">複製 Capture Bundle</button>
+      <button id="undo-output" type="button">撤銷上一筆</button>
+      <button id="clear-output" type="button">清空候選</button>
+    </section>
+
+    <section class="workspace">
+      <div class="reference-shell">
+        <h2>原版參考</h2>
+        <div class="media-stage">
+          <video id="reference-video" controls hidden></video>
+          <img id="reference-image" alt="Local march evidence reference" hidden />
+          <p id="media-placeholder">載入本地錄影或截圖。媒體只作人工觀測，不會寫入 JSON。</p>
+        </div>
+      </div>
+      <aside>
+        <div class="output-heading">
+          <h2>Capture Bundle</h2>
+          <span id="capture-progress">格步 0 · 日數 0 · 月窗 0 · 鄰接 0 · 缺糧 0</span>
+        </div>
+        <pre id="output">{}</pre>
+      </aside>
+    </section>
+
+    <footer><span id="status">尚未建立候選。</span></footer>
+  </main>
+  <script type="module" src="./march-evidence-capture.js"></script>
+</body>
+</html>
