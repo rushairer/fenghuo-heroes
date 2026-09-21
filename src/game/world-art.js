@@ -17,6 +17,40 @@ export function worldRiverBounds(path=WORLD_RIVER_PATH){
   })
 }
 
+function cubicPoint(p0,p1,p2,p3,t){
+  const u=1-t
+  const tt=t*t
+  const uu=u*u
+  const uuu=uu*u
+  const ttt=tt*t
+  return {
+    x:uuu*p0.x+3*uu*t*p1.x+3*u*tt*p2.x+ttt*p3.x,
+    y:uuu*p0.y+3*uu*t*p1.y+3*u*tt*p2.y+ttt*p3.y,
+  }
+}
+
+export function riverSurfaceMarks(path=WORLD_RIVER_PATH){
+  const marks=[]
+  let start=path.start
+  const samples=[.28,.58,.82]
+  for(const curve of path.curves){
+    const [a,b,end]=curve
+    for(const t of samples){
+      const p=cubicPoint(start,a,b,end,t)
+      const next=cubicPoint(start,a,b,end,Math.min(.985,t+.025))
+      const angle=Math.atan2(next.y-p.y,next.x-p.x)
+      marks.push(Object.freeze({
+        x:Math.round(p.x*100)/100,
+        y:Math.round(p.y*100)/100,
+        angle,
+        length:8+(marks.length%3)*2,
+      }))
+    }
+    start=end
+  }
+  return Object.freeze(marks)
+}
+
 function traceRiver(ctx,S,path,project=(point)=>point){
   const start=project(path.start)
   ctx.beginPath()
