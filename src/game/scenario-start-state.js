@@ -1,7 +1,5 @@
-import { CANONICAL_MAP_EVIDENCE } from './canonical-map-evidence.js'
 import { CITY_ECONOMY_FIELDS } from './scenario-fields.js'
 import { canonicalScenarioEvidence } from './canonical-scenario-evidence.js'
-import { canonicalMapMigrationReadiness } from './map-parity.js'
 import { validateScenarioStartEvidence } from './scenario-evidence.js'
 import { normalizeZhRomCityName } from './original-data.js'
 
@@ -44,20 +42,20 @@ export function buildScaffold189ScenarioStartState(mapProfile){
   }
 }
 
-export function canonical189OwnershipByCityId(
+export function canonicalScenarioOwnershipByCityId(
   mapProfile,
-  evidence=CANONICAL_MAP_EVIDENCE,
+  evidence,
 ){
   if(!mapProfile?.canonical){
-    throw new Error('Canonical 189 ownership requires a canonical map profile.')
+    throw new Error('Canonical scenario ownership requires a canonical map profile.')
   }
-  const readiness=canonicalMapMigrationReadiness(evidence)
-  if(!readiness.scenario189Ready){
-    throw new Error('Canonical 189 ownership evidence is incomplete.')
+  const report=validateScenarioStartEvidence(evidence)
+  if(!report.ownershipReady){
+    throw new Error('Canonical scenario ownership evidence is incomplete.')
   }
 
   const ownershipByName=new Map(
-    readiness.evidenceReport.verifiedOwnership.map((record)=>[
+    report.verifiedOwnership.map((record)=>[
       normalizeZhRomCityName(record.city),
       record.factionId,
     ]),
@@ -67,7 +65,7 @@ export function canonical189OwnershipByCityId(
     const identity=normalizeZhRomCityName(city.canonicalName??city.name)
     const owner=ownershipByName.get(identity)
     if(typeof owner!=='string'||!owner.trim()){
-      throw new Error(`Canonical 189 ownership is missing city: ${identity}`)
+      throw new Error(`Canonical scenario ownership is missing city: ${identity}`)
     }
     return [city.id,owner]
   })))
@@ -133,10 +131,9 @@ export function canonicalOfficerAssignmentsByCityId(
 
 export function buildCanonical189ScenarioStartState({
   mapProfile,
-  mapEvidence=CANONICAL_MAP_EVIDENCE,
   scenarioEvidence=canonicalScenarioEvidence(189),
 }={}){
-  const ownership=canonical189OwnershipByCityId(mapProfile,mapEvidence)
+  const ownership=canonicalScenarioOwnershipByCityId(mapProfile,scenarioEvidence)
   const cityState=canonicalScenarioStateByCityId(mapProfile,scenarioEvidence)
   const officerAssignments=canonicalOfficerAssignmentsByCityId(mapProfile,scenarioEvidence)
   const cities=Object.fromEntries(mapProfile.cities.map((city)=>[
