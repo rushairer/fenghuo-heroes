@@ -423,7 +423,10 @@ export function fullMapCitySymbolGeometry(size=4){
   return Object.freeze({
     outer:s,
     inner:s*.58,
+    ring:s*.16,
     flagHeight:s*1.9,
+    mastX:s*.34,
+    pennantWidth:s*.72,
   })
 }
 
@@ -442,6 +445,28 @@ export function drawFullMapCitySymbol(r,x,y,color,size=4){
   c.strokeStyle='rgba(255,229,177,.48)'
   c.lineWidth=.35*S
   c.stroke()
+
+  c.strokeStyle='rgba(31,20,14,.85)'
+  c.lineWidth=.32*S
+  c.beginPath()
+  c.moveTo(g.mastX*S,-g.outer*.3*S)
+  c.lineTo(g.mastX*S,-g.flagHeight*S)
+  c.stroke()
+  c.fillStyle=color
+  c.beginPath()
+  c.moveTo(g.mastX*S,-g.flagHeight*S)
+  c.lineTo((g.mastX+g.pennantWidth)*S,(-g.flagHeight+g.outer*.28)*S)
+  c.lineTo(g.mastX*S,(-g.flagHeight+g.outer*.55)*S)
+  c.closePath()
+  c.fill()
+  c.strokeStyle='rgba(255,235,194,.4)'
+  c.lineWidth=.22*S
+  c.stroke()
+
+  c.fillStyle='rgba(255,239,202,.52)'
+  c.beginPath()
+  c.arc(-g.inner*.2*S,-g.inner*.2*S,g.ring*S,0,Math.PI*2)
+  c.fill()
   c.restore()
   return true
 }
