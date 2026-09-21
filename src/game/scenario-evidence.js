@@ -1,5 +1,5 @@
 import { mapEvidenceSourceValid } from './map-evidence.js'
-import { CITY_ECONOMY_FIELDS } from './scenario-fields.js'
+import { CITY_ECONOMY_FIELDS, SCENARIO_OFFICER_ROLES } from './scenario-fields.js'
 import { targetScenario } from './scenario-target.js'
 import {
   ZH_ROM_CANONICAL_CITY_SET,
@@ -52,6 +52,7 @@ export function validateOfficerAssignmentRecord(record,{sources=[]}={}){
   const city=normalizeZhRomCityName(record?.city)
   const validSources=sourceIds(sources)
   if(typeof record?.officer!=='string'||!record.officer.trim())errors.push('missing-officer')
+  if(!SCENARIO_OFFICER_ROLES.includes(record?.role))errors.push('invalid-role')
   if(!canonicalCities.has(city))errors.push('unknown-city')
   if(typeof record?.sourceId!=='string'||!validSources.has(record.sourceId))errors.push('missing-source')
   if(typeof record?.frameRef!=='string'||!record.frameRef.trim())errors.push('missing-frame-ref')
@@ -60,6 +61,7 @@ export function validateOfficerAssignmentRecord(record,{sources=[]}={}){
     ok:errors.length===0,
     normalizedCity:city,
     officer:typeof record?.officer==='string'?record.officer.trim():'',
+    role:SCENARIO_OFFICER_ROLES.includes(record?.role)?record.role:null,
     errors:Object.freeze(errors),
   })
 }
