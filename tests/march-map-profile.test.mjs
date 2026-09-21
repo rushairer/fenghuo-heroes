@@ -11,6 +11,7 @@ import {
 } from '../src/game/march.js'
 import { cityWorldPoint } from '../src/game/world.js'
 import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
+import { canonical189TestScenarioFactory } from './fixtures/canonical-scenario-state.mjs'
 
 class MemoryStorage{
   constructor(){this.m=new Map()}
@@ -20,8 +21,12 @@ class MemoryStorage{
 }
 
 function canonicalMarchStore(){
-  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
-  const store=new GameStore(new MemoryStorage(),{mapProfile:profile})
+  const evidence=completeCanonicalMapEvidence()
+  const profile=buildCanonicalRuntimeMap(evidence)
+  const store=new GameStore(new MemoryStorage(),{
+    mapProfile:profile,
+    scenarioStartStateFactory:canonical189TestScenarioFactory(evidence),
+  })
   store.newGame({scenarioYear:189,humanFactions:['cao']})
   store.finishCurrentTurn()
   return {store,profile}
@@ -29,7 +34,7 @@ function canonicalMarchStore(){
 
 test('march queue resolves source city through injected canonical profile',()=>{
   const {store,profile}=canonicalMarchStore()
-  const source=profile.cities.find((city)=>city.owner==='cao')
+  const source=profile.cities.find((city)=>store.state.cities[city.id]?.owner==='cao')
   const start=cityWorldPoint(source)
   const army=queueMarch(store,{
     from:source.id,
@@ -45,8 +50,8 @@ test('march queue resolves source city through injected canonical profile',()=>{
 
 test('enemy-city proximity and siege use canonical profile identities',()=>{
   const {store,profile}=canonicalMarchStore()
-  const source=profile.cities.find((city)=>city.owner==='cao')
-  const target=profile.cities.find((city)=>city.owner==='liu')
+  const source=profile.cities.find((city)=>store.state.cities[city.id]?.owner==='cao')
+  const target=profile.cities.find((city)=>store.state.cities[city.id]?.owner==='liu')
   const start=cityWorldPoint(source)
   const end=cityWorldPoint(target)
   const army=queueMarch(store,{
