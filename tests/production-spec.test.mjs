@@ -92,3 +92,15 @@ test('production spec records fourth-pass HD depth and motion detail',()=>{
   assert.ok(fallback.strategyMap.layers.includes('shared four-layer river bank, water and highlight stroke'))
   assert.ok(fallback.strategyMap.layers.includes('compact full-map city and village ground shadows'))
 })
+
+
+test('production spec records fifth-pass HD focal and grounding detail',()=>{
+  const title=spec.assets['title.main'].vectorFallback.requiredLayers
+  const fallback=spec.presentationFallbacks
+  assert.ok(title.includes('five-portrait local lighting and jaw-edge highlights'))
+  assert.ok(fallback.duel.layers.includes('localized hit sparks anchored to the struck fighter'))
+  assert.ok(fallback.siege.layers.includes('inner gate arch, plank seams and threshold depth'))
+  assert.ok(fallback.strategyMap.layers.includes('strategy-fort ground shadows'))
+  assert.ok(fallback.strategyMap.layers.includes('army-flag finials and tie cords'))
+  assert.ok(fallback.strategyMap.layers.includes('forest canopy edge highlights'))
+})
