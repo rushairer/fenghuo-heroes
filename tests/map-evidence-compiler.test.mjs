@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { compileCanonicalEvidenceBundle } from '../src/game/map-evidence-compiler.js'
 import { createCanonicalEvidenceTemplate } from '../src/game/map-evidence-template.js'
+import { ZH_ROM_CANONICAL_CITY_SET } from '../src/game/original-data.js'
 import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
 
 test('compiler refuses incomplete capture bundles',()=>{
@@ -20,8 +21,8 @@ test('compiler emits stable 40-city canonical ordering and ready status',()=>{
   assert.equal(compiled.scope,'full')
   assert.equal(compiled.cityCoordinates.length,40)
   assert.equal(compiled.ownership189.length,40)
-  assert.equal(compiled.cityCoordinates[0].name,'代縣')
-  assert.equal(compiled.ownership189[0].city,'代縣')
+  assert.equal(compiled.cityCoordinates[0].name,ZH_ROM_CANONICAL_CITY_SET[0])
+  assert.equal(compiled.ownership189[0].city,ZH_ROM_CANONICAL_CITY_SET[0])
 })
 
 test('compiler removes unused sources and recomputes coverage item counts',()=>{
