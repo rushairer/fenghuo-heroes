@@ -84,10 +84,10 @@ test('canonical map migration opens only when every source-backed evidence gate 
     sources:[source],
     cityCoordinates,
     villages:[],
-    villageCoverage:{sourceId:source.id,frameRef:'frame#villages',verified:true},
+    villageCoverage:{sourceId:source.id,frameRef:'frame#villages',itemCount:0,verified:true},
     ownership189,
     routes:[],
-    routeNetworkCoverage:{sourceId:source.id,frameRef:'frame#routes',verified:true},
+    routeNetworkCoverage:{sourceId:source.id,frameRef:'frame#routes',itemCount:0,verified:true},
     nameResolutions,
   }
   const report=canonicalMapMigrationReadiness(complete)
