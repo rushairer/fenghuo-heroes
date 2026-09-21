@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaDetailGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterPose, siegeDetailGeometry } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaDetailGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterPose, siegeDetailGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -76,4 +76,20 @@ test('duel arena HD detail scales horizontal placement with width',()=>{
   assert.ok(narrow.dust.every((item)=>item.x>0&&item.x<240))
   assert.ok(narrow.crowdRows.every((row)=>row.y<132))
   assert.notDeepEqual(narrow.dust,wide.dust)
+})
+
+
+test('siege corner tower geometry stays symmetric and inside fortress width',()=>{
+  const detail=siegeTowerDetailGeometry(290)
+  assert.equal(detail.towers.length,2)
+  assert.equal(detail.eaves.length,2)
+  assert.equal(detail.towers[0].x,290-detail.towers[1].x)
+  assert.ok(detail.towers.every((tower)=>tower.x>0&&tower.x<290))
+})
+
+test('siege tower geometry adapts to narrower layouts without clipping',()=>{
+  const detail=siegeTowerDetailGeometry(180)
+  assert.ok(detail.towers.every((tower)=>tower.x-tower.bodyW*.68>=0))
+  assert.ok(detail.towers.every((tower)=>tower.x+tower.bodyW*.68<=180))
+  assert.ok(detail.eaves.every((eave)=>eave.x1>=0&&eave.x2<=180))
 })
