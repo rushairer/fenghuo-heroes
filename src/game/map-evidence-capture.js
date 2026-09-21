@@ -89,3 +89,23 @@ export function sourceEvidenceCandidate({
     note:String(note??'').trim(),
   })
 }
+
+
+export function captureEvidenceBundle({
+  source,
+  cityCoordinates=[],
+  villages=[],
+}={}){
+  const normalizedSource=sourceEvidenceCandidate(source)
+  return Object.freeze({
+    status:'capture-in-progress',
+    sources:Object.freeze([normalizedSource]),
+    cityCoordinates:Object.freeze(cityCoordinates.map((record)=>Object.freeze({...record,verified:false}))),
+    villages:Object.freeze(villages.map((record)=>Object.freeze({...record,verified:false}))),
+    villageCoverage:null,
+    ownership189:Object.freeze([]),
+    routes:Object.freeze([]),
+    routeNetworkCoverage:null,
+    nameResolutions:Object.freeze([]),
+  })
+}
