@@ -32,10 +32,9 @@ export function mapActivationReport(options={}){
     activationTarget:options.target??MAP_ACTIVATION_TARGET,
     activeProfileId:profile.id,
     activeCanonical:profile.canonical,
-    evidenceReady:selected.readiness.ready,
+    evidenceReady:selected.readiness.geometryReady,
     activationReady:selected.readiness.geometryReady,
     geometryReady:selected.readiness.geometryReady,
-    scenario189Ready:selected.readiness.scenario189Ready,
     sourceLedgerValid:selected.readiness.sourceLedgerValid,
     evidenceProfileId:selected.profile.id,
   })
