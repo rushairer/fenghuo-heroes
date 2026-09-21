@@ -7,6 +7,9 @@ const readiness=canonicalMapMigrationReadiness(CANONICAL_MAP_EVIDENCE)
 const failures=[]
 
 if(report.invalidSourceCount)failures.push(`invalid map evidence sources: ${report.invalidSourceCount}`)
+if(report.duplicateSourceIds.length){
+  failures.push(`duplicate map evidence source IDs: ${report.duplicateSourceIds.join(', ')}`)
+}
 if(report.duplicateCoordinateNames.length){
   failures.push(`duplicate canonical city coordinates: ${report.duplicateCoordinateNames.join(', ')}`)
 }
@@ -42,6 +45,8 @@ if(failures.length){
 }else{
   console.log(
     `canonical map evidence check passed: ${report.validCityCoordinateCount}/${readiness.requiredCityCoordinateCount} city coordinates, `+
-    `${report.ownership189EvidenceCount}/${readiness.requiredCityCoordinateCount} ownership records, migration=${readiness.ready?'ready':'blocked'}`,
+    `${report.ownership189EvidenceCount}/${readiness.requiredCityCoordinateCount} ownership records, `+
+    `geometry=${readiness.geometryReady?'ready':'blocked'}, scenario189=${readiness.scenario189Ready?'ready':'blocked'}, `+
+    `migration=${readiness.ready?'ready':'blocked'}`,
   )
 }
