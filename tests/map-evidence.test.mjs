@@ -181,3 +181,40 @@ test('duplicate village coordinates invalidate village coverage',()=>{
   assert.equal(report.duplicateVillageKeys.length,1)
   assert.equal(report.villageCoverageVerified,false)
 })
+
+
+test('coordinate evidence rejects points exactly on the exclusive canvas edge',()=>{
+  const logical=validateCityCoordinateRecord({
+    name:'代縣',
+    x:320,
+    y:223,
+    space:MAP_COORDINATE_SPACES.logical.id,
+    sourceId:'capture-001',
+    frameRef:'frame-edge#logical',
+    verified:true,
+  },{sources})
+  assert.equal(logical.ok,false)
+  assert.ok(logical.errors.includes('coordinate-out-of-range'))
+
+  const world=validateCityCoordinateRecord({
+    name:'代縣',
+    x:639,
+    y:448,
+    space:MAP_COORDINATE_SPACES.world.id,
+    sourceId:'capture-001',
+    frameRef:'frame-edge#world',
+    verified:true,
+  },{sources})
+  assert.equal(world.ok,false)
+  assert.ok(world.errors.includes('coordinate-out-of-range'))
+})
+
+test('duplicate evidence source IDs are surfaced as an ambiguous source ledger',()=>{
+  const report=validateCanonicalMapEvidence({
+    sources:[
+      {id:'capture-001',kind:'direct-capture',ref:'a.png'},
+      {id:'capture-001',kind:'direct-capture',ref:'b.png'},
+    ],
+  })
+  assert.deepEqual(report.duplicateSourceIds,['capture-001'])
+})
