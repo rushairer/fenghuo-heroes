@@ -143,6 +143,7 @@ export function buildCanonical189ScenarioStartState({
       owner:ownership[city.id],
       ...cityState[city.id],
       officers:[...officerAssignments[city.id]],
+      officerCount:officerAssignments[city.id].length,
     },
   ]))
   return {
