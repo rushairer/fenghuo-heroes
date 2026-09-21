@@ -509,6 +509,10 @@ export function fullMapVillageSymbolGeometry(size=3.6){
     roof:s,
     body:s*.72,
     door:s*.2,
+    window:s*.16,
+    chimneyW:s*.13,
+    chimneyH:s*.34,
+    eave:s*.78,
   })
 }
 
@@ -527,6 +531,19 @@ export function drawFullMapVillageSymbol(r,x,y,size=3.6){
   c.fillRect(-g.body*.5*S,0,g.body*S,g.body*.72*S)
   c.fillStyle='#3a281c'
   c.fillRect(-g.door*.5*S,g.body*.3*S,g.door*S,g.body*.42*S)
+
+  c.fillStyle='rgba(239,204,126,.78)'
+  c.fillRect((g.body*.18)*S,(g.body*.18)*S,g.window*S,g.window*S)
+
+  c.fillStyle='#4a3224'
+  c.fillRect((-g.roof*.28)*S,(-g.roof*.63-g.chimneyH)*S,g.chimneyW*S,g.chimneyH*S)
+
+  c.strokeStyle='rgba(241,205,147,.45)'
+  c.lineWidth=.24*S
+  c.beginPath()
+  c.moveTo(-g.eave*.5*S,.1*S)
+  c.lineTo(g.eave*.5*S,.1*S)
+  c.stroke()
   c.restore()
   return true
 }
