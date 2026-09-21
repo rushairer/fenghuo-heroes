@@ -20,6 +20,21 @@ export function duelFighterPose({
   })
 }
 
+export function duelArmorDetailGeometry(){
+  return Object.freeze({
+    verticalSeams:Object.freeze([-5.2,0,5.2]),
+    helmetRivets:Object.freeze([-4.2,0,4.2]),
+    beltY:-4,
+    face:Object.freeze({
+      eyeY:-38,
+      eyeOffset:2.2,
+      browY:-40.2,
+      mouthY:-33.7,
+    }),
+    spearBindings:Object.freeze([3.5,6.2,8.9]),
+  })
+}
+
 export function drawDuelFighter(r,{
   x,
   y,
@@ -84,6 +99,22 @@ export function drawDuelFighter(r,{
     c.stroke()
   }
 
+  const armorDetail=duelArmorDetailGeometry()
+  c.strokeStyle='rgba(41,29,23,.42)'
+  c.lineWidth=.34*S
+  for(const seam of armorDetail.verticalSeams){
+    c.beginPath()
+    c.moveTo(seam*S,-22*S)
+    c.lineTo((seam*.72)*S,-5*S)
+    c.stroke()
+  }
+  c.strokeStyle='rgba(246,217,160,.48)'
+  c.lineWidth=.5*S
+  c.beginPath()
+  c.moveTo(-9*S,armorDetail.beltY*S)
+  c.quadraticCurveTo(0,(armorDetail.beltY+1.2)*S,10*S,armorDetail.beltY*S)
+  c.stroke()
+
   // Head and face.
   c.fillStyle='#d4a06f'
   c.beginPath()
@@ -91,6 +122,27 @@ export function drawDuelFighter(r,{
   c.fill()
   c.strokeStyle='#3b251b'
   c.lineWidth=.8*S
+  c.stroke()
+
+  c.strokeStyle='#4a281f'
+  c.lineWidth=.42*S
+  c.beginPath()
+  c.moveTo(-4.2*S,armorDetail.face.browY*S)
+  c.lineTo(-.8*S,(armorDetail.face.browY-.5)*S)
+  c.moveTo(.8*S,(armorDetail.face.browY-.5)*S)
+  c.lineTo(4.2*S,armorDetail.face.browY*S)
+  c.stroke()
+  c.fillStyle='#17110f'
+  for(const eyeX of [-armorDetail.face.eyeOffset,armorDetail.face.eyeOffset]){
+    c.beginPath()
+    c.arc(eyeX*S,armorDetail.face.eyeY*S,.48*S,0,Math.PI*2)
+    c.fill()
+  }
+  c.strokeStyle='#7b4734'
+  c.lineWidth=.32*S
+  c.beginPath()
+  c.moveTo(-1.8*S,armorDetail.face.mouthY*S)
+  c.lineTo(2.2*S,armorDetail.face.mouthY*S)
   c.stroke()
 
   // Helmet.
@@ -104,6 +156,12 @@ export function drawDuelFighter(r,{
   c.fill()
   c.fillStyle='#b98a3a'
   c.fillRect(-1*S,-49*S,2*S,8*S)
+  c.fillStyle='rgba(233,194,112,.72)'
+  for(const rivetX of armorDetail.helmetRivets){
+    c.beginPath()
+    c.arc(rivetX*S,-40.5*S,.48*S,0,Math.PI*2)
+    c.fill()
+  }
 
   // Arms.
   c.strokeStyle=color
@@ -132,6 +190,14 @@ export function drawDuelFighter(r,{
   c.moveTo(-4*S,0)
   c.lineTo(39*S,0)
   c.stroke()
+  c.strokeStyle='#6b3f28'
+  c.lineWidth=.7*S
+  for(const bind of armorDetail.spearBindings){
+    c.beginPath()
+    c.moveTo(bind*S,-1.4*S)
+    c.lineTo((bind+1.1)*S,1.4*S)
+    c.stroke()
+  }
   c.fillStyle='#d7ad55'
   c.beginPath()
   c.moveTo(39*S,0)
