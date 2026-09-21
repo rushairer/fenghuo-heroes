@@ -1,12 +1,11 @@
-import { CITIES } from './data.js'
-
 export const COUNTRY_OVERVIEW_PAGE_SIZE=10
 
 export function countryOverviewRows(store,{revealAll=false}={}) {
   const state=store?.state
   if(!state?.cities)return []
   const humanFaction=store?.humanFaction??null
-  return CITIES.map((city,index)=>{
+  const cities=store?.mapProfile?.cities??[]
+  return cities.map((city,index)=>{
     const runtime=state.cities[city.id]??{}
     const owner=runtime.owner??'neutral'
     const visible=revealAll||owner===humanFaction
