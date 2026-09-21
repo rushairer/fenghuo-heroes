@@ -264,3 +264,16 @@ test('siege wall weathering remains a deterministic presentation layer',()=>{
   assert.match(source,/weather\.stains/)
   assert.match(source,/weather\.cracks/)
 })
+
+
+test('river shoreline accent is layered as a visible ring between outer and inner banks',()=>{
+  const source=read('src/game/world-art.js')
+  const worldStart=source.indexOf('export function drawWorldRiver')
+  const worldEnd=source.indexOf('export function drawProjectedRiver')
+  const block=source.slice(worldStart,worldEnd)
+  const outer=block.indexOf("c.strokeStyle='#6f5837'")
+  const shore=block.indexOf("c.strokeStyle='#d0a66b'")
+  const inner=block.indexOf("c.strokeStyle='#183d79'")
+  const water=block.indexOf("c.strokeStyle=pattern??'#064ac0'")
+  assert.ok(outer>=0&&shore>outer&&inner>shore&&water>inner)
+})
