@@ -1,5 +1,5 @@
 import { COLORS, SERIF } from '../game/constants.js'
-import { drawSiegeFortress, drawSiegeStandards } from '../game/battle-art.js'
+import { drawSiegeForegroundDepth, drawSiegeFortress, drawSiegeStandards } from '../game/battle-art.js'
 import { BATTLE_SPEEDS, MAX_SQUADS_PER_UNIT, battlePreparation, cycleBattleSpeed } from '../game/battle-prep.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
@@ -82,6 +82,7 @@ export class SiegeScene{
     const af=FACTION_BY_ID[this.conflict?.attacker]
     const df=FACTION_BY_ID[this.conflict?.defender]
     drawSiegeFortress(r,{x:15,y:48,width:290,height:105})
+    drawSiegeForegroundDepth(r,{x:15,y:48,width:290,height:105})
     drawSiegeStandards(r,{
       x:15,
       y:48,
