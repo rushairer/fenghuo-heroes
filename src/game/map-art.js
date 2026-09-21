@@ -321,8 +321,13 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
     c.fill()
   }
 
+  const banner=fortBannerDetailGeometry()
   c.fillStyle='#2b1a13'
   c.fillRect(4*S,-16*S,1.1*S,9*S)
+  c.fillStyle='rgba(220,174,88,.9)'
+  c.beginPath()
+  c.arc(banner.poleX*S,banner.poleTop*S,banner.finialRadius*S,0,Math.PI*2)
+  c.fill()
   c.fillStyle=color
   c.beginPath()
   c.moveTo(5*S,-16*S)
@@ -330,6 +335,18 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
   c.lineTo(11*S,-9*S)
   c.quadraticCurveTo(8*S,-11*S,5*S,-10.5*S)
   c.closePath()
+  c.fill()
+  c.strokeStyle='rgba(255,235,194,.34)'
+  c.lineWidth=.24*S
+  for(const fold of banner.folds){
+    c.beginPath()
+    c.moveTo(fold.x1*S,fold.y1*S)
+    c.quadraticCurveTo(((fold.x1+fold.x2)/2+.5)*S,((fold.y1+fold.y2)/2-.25)*S,fold.x2*S,fold.y2*S)
+    c.stroke()
+  }
+  c.fillStyle='rgba(233,194,117,.78)'
+  c.beginPath()
+  c.arc(banner.knot.x*S,banner.knot.y*S,banner.knot.r*S,0,Math.PI*2)
   c.fill()
   c.restore()
   return true
