@@ -109,3 +109,34 @@ export function captureEvidenceBundle({
     nameResolutions:Object.freeze([]),
   })
 }
+
+
+export function normalizeCaptureBundleForEditing(bundle={}){
+  const sources=Array.isArray(bundle.sources)?bundle.sources:[]
+  if(sources.length!==1){
+    throw new Error('Capture workbench import requires exactly one source.')
+  }
+  const source=sourceEvidenceCandidate(sources[0])
+  if(!source.id||!source.ref){
+    throw new Error('Capture workbench import requires a source ID and source ref.')
+  }
+
+  const cityCoordinates=(bundle.cityCoordinates??[]).map((record)=>{
+    if(record?.sourceId!==source.id){
+      throw new Error(`Imported city candidate uses another source: ${record?.sourceId??'missing'}`)
+    }
+    return Object.freeze({...record,verified:false})
+  })
+  const villages=(bundle.villages??[]).map((record)=>{
+    if(record?.sourceId!==source.id){
+      throw new Error(`Imported village candidate uses another source: ${record?.sourceId??'missing'}`)
+    }
+    return Object.freeze({...record,verified:false})
+  })
+
+  return Object.freeze({
+    source,
+    cityCoordinates:Object.freeze(cityCoordinates),
+    villages:Object.freeze(villages),
+  })
+}
