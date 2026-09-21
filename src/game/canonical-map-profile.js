@@ -31,20 +31,21 @@ export function buildCanonicalRuntimeMap(evidence){
     throw new Error('Canonical map evidence is incomplete; runtime migration remains blocked.')
   }
 
+  const report=readiness.evidenceReport
   const coordinateByName=new Map(
-    evidence.cityCoordinates.map((record)=>[
+    report.verifiedCityCoordinates.map((record)=>[
       normalizeZhRomCityName(record.name),
       record,
     ]),
   )
   const ownershipByName=new Map(
-    evidence.ownership189.map((record)=>[
+    report.verifiedOwnership.map((record)=>[
       normalizeZhRomCityName(record.city),
       record.factionId,
     ]),
   )
   const displayNameByIdentity=new Map(
-    (evidence.nameResolutions??[]).map((record)=>[
+    report.verifiedNameResolutions.map((record)=>[
       normalizeZhRomCityName(record.ram),
       record.chosen,
     ]),
@@ -56,7 +57,7 @@ export function buildCanonicalRuntimeMap(evidence){
     ZH_ROM_CANONICAL_CITY_SET.map((name)=>[nameToId.get(name),[]]),
   )
 
-  for(const route of evidence.routes??[]){
+  for(const route of report.verifiedRoutes){
     const from=normalizeZhRomCityName(route.from)
     const to=normalizeZhRomCityName(route.to)
     const fromId=nameToId.get(from)
@@ -85,7 +86,7 @@ export function buildCanonicalRuntimeMap(evidence){
     })
   })
 
-  const villages=Object.freeze((evidence.villages??[]).map((record,index)=>{
+  const villages=Object.freeze(report.verifiedVillages.map((record,index)=>{
     const point=toWorldPoint(record)
     return Object.freeze({
       id:`village-${String(index+1).padStart(2,'0')}`,
