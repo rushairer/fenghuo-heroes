@@ -12,12 +12,12 @@ npm run map:evidence:template
 This writes `map-evidence.capture.json` with:
 
 - all 40 canonical city identities;
-- 40 empty 189 ownership slots;
 - unresolved display-name variants;
+- a legacy 189 ownership compatibility section (not part of map readiness);
 - empty villages and routes;
 - empty coverage records.
 
-Coordinates and ownership are intentionally blank.
+Coordinates are intentionally blank. Legacy ownership slots remain only so older capture bundles can be migrated without data loss.
 
 ## 2. Register capture sources
 
@@ -59,8 +59,7 @@ Before setting `verified:true`, confirm:
 - the measured point corresponds to the marker center used consistently across the batch;
 - no interpolation from the current runtime scaffold was used.
 
-For 189 ownership, verify the owner from the same target profile or another declared
-direct-capture frame.
+Do not use map evidence to establish production scenario ownership. Record 189 / 200 / 215 ownership in the scenario-evidence workflow. Legacy map `ownership189` fields are compatibility-only.
 
 ## 5. Coverage declarations
 
@@ -85,7 +84,7 @@ npm run map:evidence:audit -- map-evidence.capture.json --require-ready
 The audit reports:
 
 - missing city coordinates;
-- missing 189 ownership;
+- legacy 189 ownership diagnostics (compatibility-only);
 - unresolved name variants;
 - malformed coordinates;
 - duplicate ownership;
@@ -101,7 +100,7 @@ npm run map:evidence:compile -- map-evidence.capture.json map-geometry.compiled.
 npm run map:evidence:compile -- map-evidence.capture.json map-evidence.compiled.json --scope full
 ```
 
-Compilation supports two scopes. `geometry` requires canonical map geometry readiness; `full` additionally requires 189 ownership readiness.
+Compilation supports two scopes. `geometry` is the canonical map artifact and requires only map geometry readiness. `full` is a legacy compatibility export that additionally requires the old 189 ownership slots to be complete; it is not an activation gate.
 
 - keeps only verified records;
 - sorts cities in canonical 40-city order;
@@ -110,7 +109,7 @@ Compilation supports two scopes. `geometry` requires canonical map geometry read
 - removes unused sources;
 - recomputes coverage counts.
 
-A geometry-only artifact intentionally emits no `ownership189` records. It can be used to review the canonical city/village/route profile while the live runtime remains on the scaffold. The full artifact is still subject to review before replacing the repository ledger.
+A geometry artifact intentionally emits no `ownership189` records and is the artifact used for canonical map review. The `full` artifact exists only to preserve/migrate older map-evidence files that still carry 189 ownership; production ownership comes from scenario evidence.
 
 ## Non-negotiable boundary
 
@@ -168,23 +167,21 @@ A geometry capture can become reviewable when all of the following are complete:
 - village coverage;
 - route-network coverage.
 
-189 ownership may still be incomplete at that point. Use:
+Legacy 189 ownership may be absent and does not block geometry readiness. Use:
 
 ```bash
 npm run map:evidence:audit -- map-evidence.capture.json --require-geometry-ready
 npm run map:evidence:compile -- map-evidence.capture.json map-geometry.compiled.json --scope geometry
 ```
 
-The live game remains on the scaffold. The selector only exposes a canonical
-`geometryPreview` for QA.
+The live game still remains on the scaffold until the explicit activation target changes. Once geometry evidence is complete, the selector can build the canonical geometry profile for QA without consulting scenario ownership.
 
-For full evidence:
+For legacy bundle migration only:
 
 ```bash
-npm run map:evidence:audit -- map-evidence.capture.json --require-scenario-189-ready
-npm run map:evidence:compile -- map-evidence.capture.json map-evidence.compiled.json --scope full
+npm run map:evidence:compile -- map-evidence.capture.json map-evidence.compat.json --scope full
 ```
 
-Full map evidence still does **not** imply a production-ready 189 start state.
+This compatibility export still does **not** imply a production-ready 189 start state.
 Starting gold/food/troops/development/rule/defense/training and officer-to-city
 placement are independent calibration work.
