@@ -36,3 +36,13 @@ test('canonical-profile saves reload only through a store using the same profile
   const scaffoldStore=new GameStore(storage)
   assert.equal(scaffoldStore.load(),false)
 })
+
+
+test('GameStore rejects structurally invalid injected map profiles at construction time',()=>{
+  assert.throws(
+    ()=>new GameStore(new MemoryStorage(),{
+      mapProfile:{id:'broken',canonical:false,cities:[],cityById:{},villages:[]},
+    }),
+    /Invalid runtime map profile/,
+  )
+})
