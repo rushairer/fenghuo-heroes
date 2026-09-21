@@ -69,7 +69,7 @@ test('active strategy and overview maps share centralized world-art river render
 
 test('full-map view projects the same provisional road graph as the strategy map',()=>{
   const source=read('src/scenes/strategy-full-map.js')
-  assert.match(source,/uniqueRoadPairs\(CITIES\)/)
+  assert.match(source,/uniqueRoadPairs\(this\.mapCities\(\)\)/)
   assert.match(source,/drawRoadNetwork\(r,roadSegments/)
   assert.match(source,/drawProjectedRiver/)
 })
