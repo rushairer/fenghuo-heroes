@@ -138,3 +138,12 @@ test('HD battle fallback keeps arena and fortress structural detail layers',()=>
     assert.ok(source.includes(symbol),symbol)
   }
 })
+
+
+test('full-map legend uses the same compact city and village symbol renderers as the map',()=>{
+  const source=read('src/scenes/strategy-full-map.js')
+  assert.match(source,/drawFullMapCitySymbol\(r,244,89/)
+  assert.match(source,/drawFullMapVillageSymbol\(r,244,111/)
+  assert.doesNotMatch(source,/drawVectorFort\(r,244/)
+  assert.doesNotMatch(source,/drawVectorVillage\(r,244/)
+})
