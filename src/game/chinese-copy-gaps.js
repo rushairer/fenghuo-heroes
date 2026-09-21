@@ -14,6 +14,11 @@ export const CHINESE_COPY_GAPS=Object.freeze({
     directFramePending:true,
     text:(city,category)=>`确定在「${city}」执行${category}？`,
   }),
+  foreignCityCommandRejected:Object.freeze({
+    status:'unverified-engineering-copy',
+    directFramePending:true,
+    text:()=> '只能向本国城池下令。',
+  }),
   commandEntryHint:Object.freeze({
     status:'unverified-engineering-copy',
     directFramePending:true,
