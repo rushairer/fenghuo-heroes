@@ -757,3 +757,60 @@ export function drawDuelMotionCue(r,{
   c.restore()
   return true
 }
+
+
+export function siegeForegroundGeometry(width=290,height=105){
+  const w=Math.max(160,Number(width)||290)
+  const h=Math.max(80,Number(height)||105)
+  return Object.freeze({
+    horizonY:h*.83,
+    foregroundY:h*.96,
+    stones:Object.freeze([
+      Object.freeze({x:w*.12,y:h*.92,rx:4.2,ry:1.7}),
+      Object.freeze({x:w*.31,y:h*.95,rx:3.1,ry:1.3}),
+      Object.freeze({x:w*.67,y:h*.94,rx:3.8,ry:1.5}),
+      Object.freeze({x:w*.88,y:h*.91,rx:4.5,ry:1.8}),
+    ]),
+    haze:Object.freeze([
+      Object.freeze({x:w*.26,y:h*.86,rx:34,ry:5,alpha:.07}),
+      Object.freeze({x:w*.72,y:h*.88,rx:42,ry:6,alpha:.06}),
+    ]),
+  })
+}
+
+export function drawSiegeForegroundDepth(r,{
+  x=15,
+  y=48,
+  width=290,
+  height=105,
+}={}){
+  const c=r.ctx,S=r.S
+  const detail=siegeForegroundGeometry(width,height)
+  c.save()
+
+  const ground=c.createLinearGradient(0,(y+detail.horizonY)*S,0,(y+height+8)*S)
+  ground.addColorStop(0,'rgba(92,66,43,.04)')
+  ground.addColorStop(1,'rgba(41,27,19,.34)')
+  c.fillStyle=ground
+  c.fillRect(x*S,(y+detail.horizonY)*S,width*S,(height-detail.horizonY+8)*S)
+
+  for(const haze of detail.haze){
+    c.fillStyle=`rgba(221,191,136,${haze.alpha})`
+    c.beginPath()
+    c.ellipse((x+haze.x)*S,(y+haze.y)*S,haze.rx*S,haze.ry*S,0,0,Math.PI*2)
+    c.fill()
+  }
+
+  c.fillStyle='rgba(53,37,25,.72)'
+  for(const stone of detail.stones){
+    c.beginPath()
+    c.ellipse((x+stone.x)*S,(y+stone.y)*S,stone.rx*S,stone.ry*S,-.12,0,Math.PI*2)
+    c.fill()
+    c.strokeStyle='rgba(229,194,139,.2)'
+    c.lineWidth=.22*S
+    c.stroke()
+  }
+
+  c.restore()
+  return true
+}
