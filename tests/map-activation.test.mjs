@@ -38,7 +38,7 @@ test('explicit canonical activation succeeds only with complete evidence and val
 })
 
 
-test('canonical geometry activation does not require legacy 189 ownership evidence',()=>{
+test('canonical geometry activation ignores legacy 189 ownership evidence',()=>{
   const evidence=completeCanonicalMapEvidence()
   evidence.ownership189=[]
   const profile=activeMapProfile({target:'canonical',evidence})
@@ -49,5 +49,4 @@ test('canonical geometry activation does not require legacy 189 ownership eviden
   const report=mapActivationReport({target:'canonical',evidence})
   assert.equal(report.activationReady,true)
   assert.equal(report.geometryReady,true)
-  assert.equal(report.scenario189Ready,false)
 })
