@@ -16,9 +16,11 @@ test('capture workbench loads screenshots locally and exposes city/village modes
   assert.match(html,/id="auto-next"/)
   assert.match(html,/id="undo-output"/)
   assert.match(html,/id="capture-progress"/)
+  assert.match(html,/id="source-ref"/)
 })
 
 test('capture workbench delegates coordinate math to the audited evidence module',()=>{
+  assert.match(js,/captureEvidenceBundle/)
   assert.match(js,/cityEvidenceCandidate/)
   assert.match(js,/villageEvidenceCandidate/)
   assert.match(js,/location\.pathname\.includes\('\/public\/tools\/'\)/)
@@ -67,4 +69,19 @@ test('capture workbench refuses exact duplicate village clicks in one frame',()=
   assert.match(js,/function addVillage/)
   assert.match(js,/Math\.abs\(item\.x-candidate\.x\)<\.01/)
   assert.match(js,/同一 frame 的這個村莊座標已存在/)
+})
+
+
+test('capture workbench emits merge-ready bundles rather than raw candidate arrays',()=>{
+  assert.match(js,/function currentBundle/)
+  assert.match(js,/captureEvidenceBundle\(\{/)
+  assert.match(js,/cityCoordinates:cityCandidates\(\)/)
+  assert.match(js,/villages:villageCandidates\(\)/)
+  assert.match(js,/JSON\.stringify\(currentBundle\(\),null,2\)/)
+})
+
+test('capture workbench keeps each batch on one source ID and derives source ref from the local file name',()=>{
+  assert.match(js,/batchSourceId&&batchSourceId!==requestedSourceId/)
+  assert.match(js,/請先複製\/清空批次後再切換 Source ID/)
+  assert.match(js,/sourceRef\.value=file\.name/)
 })
