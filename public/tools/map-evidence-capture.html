@@ -21,7 +21,15 @@
           <option value="village">村莊</option>
         </select>
       </label>
-      <label id="city-name-wrap">城市名 <input id="city-name" autocomplete="off" /></label>
+      <label id="city-name-wrap">城市名
+        <select id="city-name" aria-label="Canonical city">
+          <option value="">載入 canonical 40 城…</option>
+        </select>
+      </label>
+      <label class="check-option" id="auto-next-wrap">
+        <input id="auto-next" type="checkbox" checked />
+        城市標記後自動切到下一個未採集城市
+      </label>
       <label>Source ID <input id="source-id" value="capture-001" /></label>
       <label>Frame Ref <input id="frame-ref" value="capture-001#frame-001" /></label>
       <label>座標空間
@@ -31,6 +39,7 @@
         </select>
       </label>
       <button id="copy-output" type="button">複製候選 JSON</button>
+      <button id="undo-output" type="button">撤銷上一筆</button>
       <button id="clear-output" type="button">清空候選</button>
     </section>
 
@@ -40,7 +49,10 @@
         <p id="canvas-help">載入原版截圖後，在城市或村莊標記中心點擊。</p>
       </div>
       <aside>
-        <h2>候選記錄</h2>
+        <div class="output-heading">
+          <h2>候選記錄</h2>
+          <span id="capture-progress">城市 0/40 · 村莊 0</span>
+        </div>
         <pre id="output">[]</pre>
       </aside>
     </section>
