@@ -86,3 +86,22 @@ test('first real coordinate may replace the template coordinate-space hint',()=>
   assert.equal(merged.cityCoordinates[0].space,'world-640x448')
   assert.equal(merged.cityCoordinates[0].x,200)
 })
+
+
+test('merge normalizes known Chinese-ROM city-name variants before comparing identity',()=>{
+  const bundle=createCanonicalEvidenceTemplate()
+  const index=bundle.cityCoordinates.findIndex((item)=>item.name==='薊縣')
+  bundle.cityCoordinates[index]={
+    name:'蘇縣',
+    x:120,
+    y:80,
+    space:'logical-320x224',
+    sourceId:'cap-variant',
+    frameRef:'cap-variant#city',
+    verified:true,
+  }
+  const merged=mergeCanonicalEvidenceBundles(bundle)
+  const record=merged.cityCoordinates.find((item)=>item.name==='薊縣')
+  assert.equal(record.x,120)
+  assert.equal(record.sourceId,'cap-variant')
+})
