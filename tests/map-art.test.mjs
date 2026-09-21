@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainDetailGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
+import { flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -115,4 +115,14 @@ test('forest HD detail adds ground depth branches and undergrowth',()=>{
   assert.equal(detail.undergrowth.length,4)
   assert.ok(detail.ground.rx>detail.ground.ry)
   assert.ok(detail.branchGuides.every((branch)=>Number.isFinite(branch.dx)&&Number.isFinite(branch.dy)))
+})
+
+
+test('map cursor HD detail scales from requested cursor size',()=>{
+  const small=mapCursorDetailGeometry(16,12)
+  const large=mapCursorDetailGeometry(32,24)
+  assert.equal(large.tick,small.tick*2)
+  assert.equal(large.centerRadius,small.centerRadius*2)
+  assert.equal(large.cornerGlow,small.cornerGlow*2)
+  assert.equal(small.inset,2)
 })
