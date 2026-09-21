@@ -74,3 +74,14 @@ test('scenario workbench refuses copy when source or frame identity is incomplet
   assert.match(js,/Source Ref 不可為空/)
   assert.match(js,/Frame Ref 不可為空/)
 })
+
+
+test('scenario workbench shows RAM addresses only as observation hints',()=>{
+  assert.match(html,/id="ram-hint"/)
+  assert.match(js,/zh-rom-ram-evidence\.js/)
+  assert.match(js,/cityResourceRamAddress/)
+  assert.match(js,/RAM 觀測提示（僅地址，不是開局值）/)
+  assert.match(js,/hexAddress\(cityResourceRamAddress\(city,'gold'\)\)/)
+  assert.match(js,/hexAddress\(cityResourceRamAddress\(city,'food'\)\)/)
+  assert.match(js,/hexAddress\(cityResourceRamAddress\(city,'troops'\)\)/)
+})
