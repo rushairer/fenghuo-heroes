@@ -218,3 +218,23 @@ Still required:
 
 The repository now reports these separately through `canonicalScenarioStartReadiness`.
 200 and 215 remain independently blocked; they never inherit 189 ownership.
+
+
+## Scenario ownership moved out of map activation
+
+Scenario ownership is now a first-class scenario-evidence domain for **all** target
+years.
+
+The canonical map can be activated for geometry QA once `geometryReady` is true;
+it no longer needs 189 ownership merely to exist as a geometry profile.
+
+Starting a canonical game is a separate gate. The scenario ledger for that exact year
+must independently prove:
+
+- 40/40 ownership;
+- 40/40 city numeric start state;
+- complete officer placement.
+
+The legacy `ownership189` records in the map-evidence ledger remain only for
+compatibility while existing evidence files are migrated. Production canonical
+start-state construction no longer reads ownership from map evidence.
