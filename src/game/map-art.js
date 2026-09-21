@@ -220,6 +220,13 @@ export function fortDetailGeometry(){
       Object.freeze({x:4.6,y1:1.2,y2:4.2}),
     ]),
     roofRidges:Object.freeze([-5.5,0,5.5]),
+    roofTiles:Object.freeze([-6.2,-3.1,0,3.1,6.2]),
+    gateStuds:Object.freeze([
+      Object.freeze({x:-.9,y:2.6}),
+      Object.freeze({x:.9,y:2.6}),
+      Object.freeze({x:-.9,y:4.3}),
+      Object.freeze({x:.9,y:4.3}),
+    ]),
     ground:Object.freeze({rx:11.5,ry:3,y:6.7}),
   })
 }
@@ -283,6 +290,22 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
     c.lineTo(ridge*S,-9.7*S)
     c.lineTo((ridge+1.6)*S,-8.3*S)
     c.stroke()
+  }
+
+  c.strokeStyle='rgba(82,53,36,.46)'
+  c.lineWidth=.22*S
+  for(const tileX of detail.roofTiles){
+    c.beginPath()
+    c.moveTo(tileX*S,-8.8*S)
+    c.lineTo((tileX+.6)*S,-6.5*S)
+    c.stroke()
+  }
+
+  c.fillStyle='rgba(214,169,92,.72)'
+  for(const stud of detail.gateStuds){
+    c.beginPath()
+    c.arc(stud.x*S,stud.y*S,.32*S,0,Math.PI*2)
+    c.fill()
   }
 
   c.fillStyle='#2b1a13'
