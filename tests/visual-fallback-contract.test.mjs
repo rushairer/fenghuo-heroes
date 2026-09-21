@@ -248,3 +248,11 @@ test('localized duel hit spark is drawn above the screen flash and stale hit sid
   assert.ok(flash>=0&&spark>flash)
   assert.match(source,/if\(this\.hitFlash===0\)this\.hitSide=null/)
 })
+
+
+test('duel proximity cue is presentation-only and derives from existing fighter positions',()=>{
+  const source=read('src/scenes/duel.js')
+  assert.match(source,/drawDuelSpacingCue/)
+  assert.match(source,/leftX:this\.px,rightX:this\.ex/)
+  assert.doesNotMatch(source,/duelSpacingCueGeometry.*damage/)
+})
