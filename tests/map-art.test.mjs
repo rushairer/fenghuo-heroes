@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { flagFoldGuides, flagGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainVariant } from '../src/game/map-art.js'
+import { flagFoldGuides, flagGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -71,5 +71,22 @@ test('flag fold guides stay compact inside the logical army flag cloth',()=>{
   for(const fold of folds){
     assert.ok(fold.x1>=2&&fold.x2<=12)
     assert.ok(fold.y1<0&&fold.y2<0)
+  }
+})
+
+
+test('village HD detail exposes three distinct houses and a compact ground shadow',()=>{
+  const detail=villageDetailGeometry()
+  assert.equal(detail.houses.length,3)
+  assert.ok(detail.ground.rx>detail.ground.ry)
+  assert.ok(detail.houses.every((house)=>Number.isFinite(house.doorX)&&Number.isFinite(house.windowX)))
+})
+
+test('village house detail stays inside a compact map-symbol footprint',()=>{
+  const detail=villageDetailGeometry()
+  for(const house of detail.houses){
+    assert.ok(house.dx-house.w*.7>=-12)
+    assert.ok(house.dx+house.w*.7<=12)
+    assert.ok(house.dy>=-4&&house.dy+house.h<=10)
   }
 })
