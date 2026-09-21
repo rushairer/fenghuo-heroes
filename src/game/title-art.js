@@ -1,3 +1,4 @@
+import { drawTitleFaceStructure } from './title-face-art.js'
 import { drawTitleHdDetail } from './title-hd-detail.js'
 import { drawTitleMaterialPass } from './title-material-art.js'
 
@@ -207,6 +208,7 @@ export function drawTitleComposition(r) {
   drawLeftWarlord(r)
   drawFrontRightGeneral(r)
   drawTitleMaterialPass(r)
+  drawTitleFaceStructure(r)
   drawTitleHdDetail(r)
   drawBrocadeStrip(r)
 }
