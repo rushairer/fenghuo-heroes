@@ -39,12 +39,13 @@ Mega Drive 原版說明書的行軍章節明確描述：
 
 ## 仍待實機校準
 
-- 每一格實際代表多少行軍日數。当前先以一個路線節點消耗一天作工程基線，不宣稱為原版數值。
-- 一個偶數月內實際最多執行多少日/多少格。当前 30 節點只是月曆基線，待錄屏計時後替換。
+- 每一格實際代表多少行軍日數。当前由 `march-runtime-projection.js` 明確標記 `routeNodeDays=1` 為工程基線，不宣稱為原版數值。
+- 一個偶數月內實際最多執行多少日/多少格。当前 `executionDaysPerEvenMonth=30` 只是工程月曆基線，待 direct observation 校準後替換。
 - 缺糧後每一天的士兵脫落數與武將體力下降公式。
 - 全部村莊精確座標及各村補給內容。
 - 分散部隊的武將/兵/糧分配界面。
-- 「敵軍／敵城鄰接才出現攻擊／攻城」屬說明書直接確認；但目前空間投影仍是工程基線：敵軍用 8px 路線步長、敵城用 24px 城池容差、共同進軍暫以同一地圖座標判定。這些數值都不是原作數值，待 canonical 地圖遷移後重校。\n- 野戰/攻城的戰鬥速度與 15 小隊上限已建模；小隊兵力分配、實時移動、攻擊、傷害、勝負與戰後處理仍待校準。
+- 「敵軍／敵城鄰接才出現攻擊／攻城」屬說明書直接確認；但目前空間投影仍是工程基線：route step 8 world units、敵軍 8 world units、敵城 24 world units、共同進軍暫以同一地圖座標判定。這些數值集中在 `march-runtime-projection.js`，都不是原作數值。`march-evidence.js` 只有在正/負邊界觀測形成精確一格臨界時才接受新的 adjacency 值。
+- 野戰/攻城的戰鬥速度與 15 小隊上限已建模；小隊兵力分配、實時移動、攻擊、傷害、勝負與戰後處理仍待校準。
 - 運輸隊與截糧仍待校準。
 - 攻城失敗後部隊實際退卻路徑。
 
@@ -61,3 +62,30 @@ later siege entry.
 The legacy API is therefore a hard failure and must never be used as a compatibility
 shortcut. Tests explicitly require it to leave city state and pending-conflict state
 unchanged. Any future march work must extend the persistent route/army model instead.
+
+
+## Direct observation calibration pipeline
+
+The direct-observation ledger is `src/game/canonical-march-evidence.js` and is currently empty/blocked.
+
+The calibration workflow is:
+
+```text
+local Chinese-ROM image/video
+  -> tools/march-evidence-capture.html
+  -> single-source verified:false batch
+  -> march:evidence:merge
+  -> human review / source verification
+  -> march:evidence:audit
+  -> march-calibration runtime diff
+```
+
+Evidence inference is deliberately conservative:
+
+- route-cell size requires matching horizontal and vertical one-cell observations;
+- cell/day timing requires at least two equal integer ratios;
+- month execution length requires at least two unfinished-route monthly windows with the same day count;
+- attack/siege adjacency requires both the last visible-command distance and the next unavailable distance;
+- starvation observations are stored, but no casualty/HP formula is fitted yet.
+
+See `docs/MARCH_EVIDENCE_CAPTURE.md`.
