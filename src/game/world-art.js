@@ -61,6 +61,26 @@ function traceRiver(ctx,S,path,project=(point)=>point){
   }
 }
 
+function drawRiverSurfaceMarks(ctx,S,marks,project=(point)=>point,{
+  scale=1,
+  alpha=.28,
+}={}){
+  ctx.save()
+  ctx.lineCap='round'
+  ctx.strokeStyle=`rgba(211,243,248,${alpha})`
+  ctx.lineWidth=.42*scale*S
+  for(const mark of marks){
+    const p=project(mark)
+    const dx=Math.cos(mark.angle)*mark.length*.5*scale
+    const dy=Math.sin(mark.angle)*mark.length*.5*scale
+    ctx.beginPath()
+    ctx.moveTo((p.x-dx)*S,(p.y-dy)*S)
+    ctx.lineTo((p.x+dx)*S,(p.y+dy)*S)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
 export function riverStrokeStyle({projected=false,pattern=false}={}){
   if(projected){
     return Object.freeze({
@@ -122,6 +142,11 @@ export function drawWorldRiver(r,{
   c.lineWidth=style.highlightWidth*S
   c.globalAlpha=style.highlightAlpha
   c.stroke()
+  c.globalAlpha=1
+  drawRiverSurfaceMarks(c,S,riverSurfaceMarks(path),project,{
+    scale:1,
+    alpha:pattern?.16:.3,
+  })
   c.restore()
   return true
 }
@@ -176,6 +201,11 @@ export function drawProjectedRiver(r,{
   c.lineWidth=style.highlightWidth*innerScale*S
   c.globalAlpha=style.highlightAlpha
   c.stroke()
+  c.globalAlpha=1
+  drawRiverSurfaceMarks(c,S,riverSurfaceMarks(path),project,{
+    scale:Math.max(.32,innerScale*.62),
+    alpha:.24,
+  })
   c.restore()
   return true
 }
