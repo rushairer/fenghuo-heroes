@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { flagGeometry, forestLayout, fullMapCitySymbolGeometry, mountainVariant } from '../src/game/map-art.js'
+import { flagGeometry, forestLayout, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainVariant } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -44,4 +44,14 @@ test('full-map city symbol geometry scales proportionally',()=>{
   assert.equal(large.outer,small.outer*2)
   assert.equal(large.inner,small.inner*2)
   assert.equal(large.flagHeight,small.flagHeight*2)
+})
+
+
+test('full-map village symbol geometry stays compact and proportional',()=>{
+  const small=fullMapVillageSymbolGeometry(3.6)
+  const large=fullMapVillageSymbolGeometry(7.2)
+  assert.equal(large.roof,small.roof*2)
+  assert.equal(large.body,small.body*2)
+  assert.equal(large.door,small.door*2)
+  assert.ok(small.door<small.body)
 })
