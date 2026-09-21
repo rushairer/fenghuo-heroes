@@ -410,6 +410,7 @@ export function drawSiegeFortress(r,{
   }
 
   const towerDetail=siegeTowerDetailGeometry(width)
+  const towerMaterial=siegeTowerMaterialGeometry(width)
   for(const tower of towerDetail.towers){
     c.fillStyle='#66513f'
     c.fillRect((x+tower.x-tower.bodyW/2)*S,(y+tower.roofY+4)*S,tower.bodyW*S,tower.bodyH*S)
@@ -433,6 +434,27 @@ export function drawSiegeFortress(r,{
     c.moveTo((x+eave.x1)*S,(y+eave.y)*S)
     c.lineTo((x+eave.x2)*S,(y+eave.y)*S)
     c.stroke()
+  }
+
+  for(const tower of towerMaterial.towers){
+    c.fillStyle='rgba(28,22,18,.82)'
+    c.fillRect((x+tower.x-3.1)*S,(y+tower.windowY)*S,6.2*S,7*S)
+    c.fillStyle='rgba(213,177,117,.24)'
+    c.fillRect((x+tower.x-2.4)*S,(y+tower.windowY+.6)*S,.7*S,5.8*S)
+
+    c.strokeStyle='rgba(108,72,45,.62)'
+    c.lineWidth=.62*S
+    c.beginPath()
+    c.moveTo((x+tower.x-9)*S,(y+tower.beamY)*S)
+    c.lineTo((x+tower.x+9)*S,(y+tower.beamY)*S)
+    c.stroke()
+
+    for(const brace of towerMaterial.braces){
+      c.beginPath()
+      c.moveTo((x+tower.x+brace.dx1)*S,(y+brace.dy1)*S)
+      c.lineTo((x+tower.x+brace.dx2)*S,(y+brace.dy2)*S)
+      c.stroke()
+    }
   }
 
   const detail=siegeDetailGeometry(width,height)
