@@ -41,13 +41,18 @@ Before a screen is marked parity-complete it needs:
 
 - [x] 40-node runtime map scaffold, explicitly quarantined as non-canonical.
 - [x] Chinese-ROM canonical 40-city identity set is protected separately with an automated mismatch guard.
-- [ ] Replace runtime scaffold identities / coordinates / 189 ownership with verified Chinese-ROM map data.
+- [x] Separate canonical map geometry from scenario ownership/economy so 189 state cannot leak into 200/215.
+- [ ] Replace runtime scaffold identities / coordinates with verified Chinese-ROM map geometry.
+- [ ] Replace 189 ownership with a source-backed scenario start-state.
 - [x] Free map cursor.
 - [x] Blank-map C opens domestic / diplomacy / military command.
 - [x] Category selection returns to map to choose an owned city.
 - [x] Original command vocabulary restored.
 - [x] Odd-month inspection / even-month march state machine.
 - [ ] Exact 40-city coordinates, villages and spatial layout from original Chinese-ROM/manual evidence.
+- [ ] Calibrate 189 starting gold / food / troops / development / rule / defense / training independently from map coordinates.
+- [ ] Verify exact officer-to-city placement for the 189 opening state.
+- [ ] Capture independent 200 and 215 ownership/start-state evidence; never inherit 189.
 - [x] Transport destination targeting and original three fixed payload choices.
 - [x] Transport interception trigger is modeled as same-cell overlap, distinct from enemy-army adjacency.
 - [ ] Transport-unit route/speed/delivery lifecycle, villages and supply routes.
