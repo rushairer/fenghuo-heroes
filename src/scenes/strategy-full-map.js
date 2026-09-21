@@ -68,6 +68,11 @@ export class StrategyScene extends OfficerStrategyScene {
     }))
     drawRoadNetwork(r,roadSegments,{color:'#6b542f'})
 
+    c.save()
+    c.beginPath()
+    c.rect(bounds.x*S,bounds.y*S,bounds.w*S,bounds.h*S)
+    c.clip()
+
     for(const city of this.mapCities()){
       const point=fullMapPoint(cityWorldPoint(city),bounds)
       const runtime=state.cities[city.id]
@@ -82,6 +87,7 @@ export class StrategyScene extends OfficerStrategyScene {
 
     const cursor=fullMapPoint(state.cursor,bounds)
     drawMapCursor(r,cursor.x,cursor.y,{width:8,height:8,color:COLORS.cyan,inner:'#1d120c',scale:.75})
+    c.restore()
 
     const legendX=235
     r.text(`${state.year}年 ${state.month}月`,legendX,51,7,'#e6d7b7')
