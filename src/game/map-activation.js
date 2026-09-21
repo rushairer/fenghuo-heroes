@@ -15,10 +15,11 @@ export function activeMapProfile({
 }={}){
   const selected=selectRuntimeMapProfile(evidence)
   if(target==='canonical'){
-    if(!selected.readiness.ready){
-      throw new Error('Canonical map activation requested before evidence readiness.')
+    if(!selected.readiness.geometryReady){
+      throw new Error('Canonical map activation requested before geometry evidence readiness.')
     }
-    return assertRuntimeMapProfile(selected.profile)
+    const canonicalProfile=selected.geometryPreview??selected.profile
+    return assertRuntimeMapProfile(canonicalProfile)
   }
   if(target!=='scaffold')throw new Error(`Unknown map activation target: ${target}`)
   return assertRuntimeMapProfile(RUNTIME_SCAFFOLD_MAP_PROFILE)
@@ -32,6 +33,7 @@ export function mapActivationReport(options={}){
     activeProfileId:profile.id,
     activeCanonical:profile.canonical,
     evidenceReady:selected.readiness.ready,
+    activationReady:selected.readiness.geometryReady,
     geometryReady:selected.readiness.geometryReady,
     scenario189Ready:selected.readiness.scenario189Ready,
     sourceLedgerValid:selected.readiness.sourceLedgerValid,
