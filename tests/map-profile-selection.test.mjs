@@ -15,14 +15,14 @@ function completeEvidence(){
       name,x:(index*5)%320,y:(index*9)%224,space:'logical-320x224',
       sourceId:source.id,frameRef:`frame#city-${index}`,verified:true,
     })),
-    villages:[],
-    villageCoverage:{sourceId:source.id,frameRef:'frame#villages',itemCount:0,verified:true},
+    villages:[{x:12,y:14,space:'logical-320x224',sourceId:source.id,frameRef:'frame#village-1',verified:true}],
+    villageCoverage:{sourceId:source.id,frameRef:'frame#villages',itemCount:1,verified:true},
     ownership189:ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
       city,factionId:index===0?'liu':'neutral',
       sourceId:source.id,frameRef:`frame#owner-${index}`,verified:true,
     })),
-    routes:[],
-    routeNetworkCoverage:{sourceId:source.id,frameRef:'frame#routes',itemCount:0,verified:true},
+    routes:[{from:ZH_ROM_CANONICAL_CITY_SET[0],to:ZH_ROM_CANONICAL_CITY_SET[1],sourceId:source.id,frameRef:'frame#route-1',verified:true}],
+    routeNetworkCoverage:{sourceId:source.id,frameRef:'frame#routes',itemCount:1,verified:true},
     nameResolutions:ZH_ROM_CITY_NAME_VARIANTS
       .filter((item)=>item.status==='unresolved')
       .map((item,index)=>({
