@@ -72,6 +72,13 @@ export function drawWorldRiver(r,{
   c.stroke()
 
   traceRiver(c,S,path,project)
+  c.strokeStyle='#d0a66b'
+  c.lineWidth=style.bankHighlightWidth*S
+  c.globalAlpha=style.bankHighlightAlpha
+  c.stroke()
+  c.globalAlpha=1
+
+  traceRiver(c,S,path,project)
   c.strokeStyle=pattern??'#064ac0'
   c.lineWidth=style.waterWidth*S
   c.stroke()
