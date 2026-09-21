@@ -74,3 +74,17 @@ test('march workbench publishes progress and adapts to narrow viewports',()=>{
 test('static build publishes march workbench through public tools',()=>{
   assert.match(build,/cpSync\('public', 'dist', \{ recursive: true \}\)/)
 })
+
+
+test('march workbench rejects fractional values for integer observation fields',()=>{
+  assert.match(js,/function requiredInteger/)
+  assert.match(js,/必須是整數/)
+  assert.match(js,/requiredInteger\(fields\.movementSteps,'移動格數'\)/)
+  assert.match(js,/requiredInteger\(fields\.movementDays,'經過日數'\)/)
+  assert.match(js,/requiredInteger\(fields\.monthDays,'日曆推進日數'\)/)
+  assert.match(js,/requiredInteger\(fields\.monthSteps,'實際移動格數'\)/)
+  assert.match(js,/requiredInteger\(fields\.adjacencyDistance,'格距'\)/)
+  assert.match(js,/requiredInteger\(fields\.starvationDays,'缺糧日數'\)/)
+  assert.match(js,/requiredInteger\(fields\.troopsBefore,'兵力 Before'\)/)
+  assert.match(js,/requiredInteger\(fields\.troopsAfter,'兵力 After'\)/)
+})
