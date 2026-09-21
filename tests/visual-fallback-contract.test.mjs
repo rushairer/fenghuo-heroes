@@ -192,3 +192,15 @@ test('siege foreground depth stays between fortress and confrontation standards'
   const standards=source.indexOf('drawSiegeStandards(r')
   assert.ok(fortress>=0&&ground>fortress&&standards>ground)
 })
+
+
+test('strategy and full-map rivers share the layered river stroke helper',()=>{
+  const world=read('src/game/world-art.js')
+  assert.match(world,/riverStrokeStyle/)
+  assert.match(world,/bankOuterWidth/)
+  assert.match(world,/bankInnerWidth/)
+  assert.match(world,/waterWidth/)
+  assert.match(world,/highlightWidth/)
+  assert.match(world,/drawWorldRiver/)
+  assert.match(world,/drawProjectedRiver/)
+})
