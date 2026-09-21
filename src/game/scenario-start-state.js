@@ -1,18 +1,11 @@
 import { CANONICAL_MAP_EVIDENCE } from './canonical-map-evidence.js'
+import { CITY_ECONOMY_FIELDS } from './scenario-fields.js'
 import { canonicalScenarioEvidence } from './canonical-scenario-evidence.js'
 import { canonicalMapMigrationReadiness } from './map-parity.js'
 import { validateScenarioStartEvidence } from './scenario-evidence.js'
 import { normalizeZhRomCityName } from './original-data.js'
 
-export const CITY_ECONOMY_FIELDS=Object.freeze([
-  'gold',
-  'food',
-  'troops',
-  'development',
-  'rule',
-  'defense',
-  'training',
-])
+export { CITY_ECONOMY_FIELDS } from './scenario-fields.js'
 
 function provisionalScaffoldEconomy(city){
   return {
