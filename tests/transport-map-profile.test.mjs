@@ -8,6 +8,7 @@ import {
   transportTargetStatus,
 } from '../src/game/transport-parity.js'
 import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
+import { canonical189TestScenarioFactory } from './fixtures/canonical-scenario-state.mjs'
 
 class MemoryStorage{
   constructor(){this.m=new Map()}
@@ -23,14 +24,17 @@ function canonicalTransportStore(){
     factionId:index<2?'cao':'neutral',
   }))
   const profile=buildCanonicalRuntimeMap(evidence)
-  const store=new GameStore(new MemoryStorage(),{mapProfile:profile})
+  const store=new GameStore(new MemoryStorage(),{
+    mapProfile:profile,
+    scenarioStartStateFactory:canonical189TestScenarioFactory(evidence),
+  })
   store.newGame({scenarioYear:189,humanFactions:['cao']})
   return {store,profile}
 }
 
 test('transport discovers same-faction destinations from injected canonical profile',()=>{
   const {store,profile}=canonicalTransportStore()
-  const owned=profile.cities.filter((city)=>city.owner==='cao')
+  const owned=profile.cities.filter((city)=>store.state.cities[city.id]?.owner==='cao')
   assert.equal(owned.length,2)
   const destinations=transportEligibleDestinations(store,owned[0].id)
   assert.deepEqual(destinations,[owned[1].id])
@@ -39,7 +43,7 @@ test('transport discovers same-faction destinations from injected canonical prof
 
 test('transport source validation uses canonical profile identities',()=>{
   const {store,profile}=canonicalTransportStore()
-  const source=profile.cities.find((city)=>city.owner==='cao')
+  const source=profile.cities.find((city)=>store.state.cities[city.id]?.owner==='cao')
   store.state.cities[source.id].gold=20000
   store.state.cities[source.id].food=20000
   assert.equal(transportLoadStatus(store,source.id,'both').ok,true)
