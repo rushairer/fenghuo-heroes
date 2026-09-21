@@ -19,6 +19,13 @@ const cityState=(city,index)=>({
 })
 
 function completeEvidence(){
+  const ownership=ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
+    city,
+    factionId:index===0?'liu':index===1?'cao':'neutral',
+    sourceId:source.id,
+    frameRef:`frame#owner-${index}`,
+    verified:true,
+  }))
   const cityStates=ZH_ROM_CANONICAL_CITY_SET.map(cityState)
   const officerAssignments=[
     {
@@ -40,6 +47,13 @@ function completeEvidence(){
     status:'test-complete',
     scenarioYear:189,
     sources:[source],
+    ownership,
+    ownershipCoverage:{
+      sourceId:source.id,
+      frameRef:'frame#ownership-coverage',
+      itemCount:ownership.length,
+      verified:true,
+    },
     cityStates,
     cityStateCoverage:{
       sourceId:source.id,
@@ -60,6 +74,8 @@ function completeEvidence(){
 test('complete scenario evidence separates economy and officer placement readiness',()=>{
   const report=validateScenarioStartEvidence(completeEvidence())
   assert.equal(report.sourceLedgerValid,true)
+  assert.equal(report.ownershipEvidenceCount,40)
+  assert.equal(report.ownershipReady,true)
   assert.equal(report.cityStateEvidenceCount,40)
   assert.equal(report.officerAssignmentEvidenceCount,2)
   assert.equal(report.economyReady,true)
@@ -107,4 +123,25 @@ test('duplicate source IDs invalidate both scenario evidence gates',()=>{
   assert.deepEqual(report.duplicateSourceIds,['scenario-189'])
   assert.equal(report.economyReady,false)
   assert.equal(report.officerPlacementReady,false)
+})
+
+
+test('scenario ownership evidence requires all forty source-backed city assignments',()=>{
+  const evidence=completeEvidence()
+  evidence.ownership.pop()
+  evidence.ownershipCoverage.itemCount=39
+  const report=validateScenarioStartEvidence(evidence)
+  assert.equal(report.ownershipEvidenceCount,39)
+  assert.equal(report.ownershipCoverageVerified,false)
+  assert.equal(report.ownershipReady,false)
+  assert.equal(report.ready,false)
+})
+
+test('duplicate scenario ownership for one city invalidates ownership coverage',()=>{
+  const evidence=completeEvidence()
+  evidence.ownership.push({...evidence.ownership[0],frameRef:'frame#owner-duplicate'})
+  evidence.ownershipCoverage.itemCount=41
+  const report=validateScenarioStartEvidence(evidence)
+  assert.deepEqual(report.duplicateOwnershipCities,['襄平'])
+  assert.equal(report.ownershipReady,false)
 })
