@@ -1,5 +1,5 @@
 import { COLORS, SERIF } from '../game/constants.js'
-import { drawSiegeFortress } from '../game/battle-art.js'
+import { drawSiegeFortress, drawSiegeStandards } from '../game/battle-art.js'
 import { BATTLE_SPEEDS, MAX_SQUADS_PER_UNIT, battlePreparation, cycleBattleSpeed } from '../game/battle-prep.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
@@ -79,10 +79,17 @@ export class SiegeScene{
     const city=this.app.store.mapProfile?.cityById?.[this.conflict?.target]
     r.shadowText(`${city?.name??''} 攻城準備`,160,18,14,'#f2d174','center')
 
-    drawSiegeFortress(r,{x:15,y:48,width:290,height:105})
-
     const af=FACTION_BY_ID[this.conflict?.attacker]
     const df=FACTION_BY_ID[this.conflict?.defender]
+    drawSiegeFortress(r,{x:15,y:48,width:290,height:105})
+    drawSiegeStandards(r,{
+      x:15,
+      y:48,
+      width:290,
+      attackerColor:af?.color??'#587cc7',
+      defenderColor:df?.color??'#b75f52',
+    })
+
     r.panel(30,157,260,50,'#030303','#7e5315',smallPanel)
     r.text(`${af?.label??''} ${this.conflict?.attackerTroops??0}`,45,164,7,af?.color??'#fff')
     r.text(`${df?.label??''} ${this.conflict?.defenderTroops??0}`,275,164,7,df?.color??'#fff','right')
