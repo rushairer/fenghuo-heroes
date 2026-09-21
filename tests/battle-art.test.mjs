@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, duelHitSparkGeometry, duelMotionCueGeometry, siegeDetailGeometry, siegeForegroundGeometry, siegeStandardGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, duelHitSparkGeometry, duelMotionCueGeometry, siegeDetailGeometry, siegeForegroundGeometry, siegeGateDepthGeometry, siegeStandardGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -158,4 +158,15 @@ test('duel hit spark scales rays and ring with presentation intensity',()=>{
   assert.ok(strong.ringRadius>weak.ringRadius)
   assert.ok(strong.ringAlpha>weak.ringAlpha)
   assert.ok(strong.rays.every((ray)=>Math.hypot(ray.x2,ray.y2)>Math.hypot(ray.x1,ray.y1)))
+})
+
+
+test('siege gate-depth geometry stays centered and bounded inside fortress height',()=>{
+  const detail=siegeGateDepthGeometry(290,105)
+  assert.ok(detail.gateHalf>detail.innerHalf)
+  assert.ok(detail.gateTop>0&&detail.gateTop<105)
+  assert.ok(detail.innerTop>detail.gateTop&&detail.innerTop<105)
+  assert.ok(detail.thresholdY>detail.innerTop&&detail.thresholdY<=105)
+  assert.equal(detail.plankXs.length,4)
+  assert.ok(detail.plankXs.every((x)=>Math.abs(x)<detail.innerHalf))
 })
