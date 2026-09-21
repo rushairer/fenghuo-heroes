@@ -362,6 +362,9 @@ export function flagGeometry({
     flagRight:w*.48,
     flagTop:-h*.45,
     flagBottom:-h*.08,
+    finialRadius:Math.max(.7,Math.min(w,h)*.055),
+    knotY:-h*.22,
+    cordLength:h*.18,
     border:selected||starving,
   })
 }
@@ -386,6 +389,18 @@ export function drawVectorFlag(r,x,y,color,{
   c.beginPath()
   c.moveTo(g.poleX*S,g.poleTop*S)
   c.lineTo(g.poleX*S,g.poleBottom*S)
+  c.stroke()
+
+  c.fillStyle='rgba(214,169,86,.9)'
+  c.beginPath()
+  c.arc(g.poleX*S,(g.poleTop-g.finialRadius*.5)*S,g.finialRadius*S,0,Math.PI*2)
+  c.fill()
+
+  c.strokeStyle='rgba(225,191,124,.5)'
+  c.lineWidth=.28*S
+  c.beginPath()
+  c.moveTo(g.poleX*S,g.knotY*S)
+  c.quadraticCurveTo((g.poleX-2.3)*S,(g.knotY+g.cordLength*.45)*S,(g.poleX-1.2)*S,(g.knotY+g.cordLength)*S)
   c.stroke()
 
   const cloth=c.createLinearGradient(2*S,-8*S,g.flagRight*S,-2*S)
