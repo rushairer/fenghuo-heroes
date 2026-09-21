@@ -8,6 +8,8 @@ import {
 test('scenario template creates forty empty city-state slots without guessed values',()=>{
   const template=createScenarioEvidenceTemplate(189)
   assert.equal(template.scenarioYear,189)
+  assert.equal(template.ownership.length,40)
+  assert.equal(template.ownershipCoverage.itemCount,null)
   assert.equal(template.cityStates.length,40)
   assert.equal(template.officerAssignments.length,0)
   assert.ok(template.cityStates.every((record)=>
@@ -23,7 +25,10 @@ test('scenario template progress counts only fully entered city-state records',(
     gold:1,food:2,troops:3,development:4,rule:5,defense:6,training:7,
   })
   template.cityStates[1].gold=1
+  template.ownership[0].factionId='liu'
   const progress=scenarioTemplateProgress(template)
+  assert.equal(progress.ownershipSlots,40)
+  assert.equal(progress.ownershipEntered,1)
   assert.equal(progress.cityStateSlots,40)
   assert.equal(progress.cityStatesEntered,1)
   assert.equal(progress.officerAssignments,0)
