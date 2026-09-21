@@ -38,6 +38,7 @@ export function auditCanonicalEvidenceBundle(bundle={}){
 
   const blockers=[]
   if(report.invalidSourceCount)blockers.push('invalid-sources')
+  if(report.duplicateSourceIds.length)blockers.push('duplicate-source-ids')
   if(report.duplicateCoordinateNames.length)blockers.push('duplicate-city-coordinates')
   if(report.duplicateOwnershipCities.length)blockers.push('duplicate-ownership')
   if(report.duplicateRouteKeys.length)blockers.push('duplicate-routes')
@@ -51,6 +52,9 @@ export function auditCanonicalEvidenceBundle(bundle={}){
 
   return Object.freeze({
     ready:readiness.ready,
+    geometryReady:readiness.geometryReady,
+    scenario189Ready:readiness.scenario189Ready,
+    sourceLedgerValid:readiness.sourceLedgerValid,
     status:bundle.status??'unknown',
     blockers:Object.freeze(unique(blockers)),
     missingCityCoordinates:Object.freeze(
@@ -61,6 +65,7 @@ export function auditCanonicalEvidenceBundle(bundle={}){
     ),
     unresolvedNameVariants:readiness.unresolvedNameVariants,
     invalidCityCoordinates:Object.freeze(invalidCityCoordinates),
+    duplicateSourceIds:report.duplicateSourceIds,
     duplicateCoordinateNames:report.duplicateCoordinateNames,
     duplicateOwnershipCities:report.duplicateOwnershipCities,
     duplicateRouteKeys:report.duplicateRouteKeys,
