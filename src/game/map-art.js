@@ -238,6 +238,19 @@ export function flagFoldGuides(){
   ])
 }
 
+export function fortBannerDetailGeometry(){
+  return Object.freeze({
+    poleX:4.55,
+    poleTop:-16.6,
+    finialRadius:.58,
+    folds:Object.freeze([
+      Object.freeze({x1:5.5,y1:-14.9,x2:11.4,y2:-13.5}),
+      Object.freeze({x1:5.4,y1:-12.8,x2:10.5,y2:-11.2}),
+    ]),
+    knot:Object.freeze({x:4.6,y:-11.2,r:.42}),
+  })
+}
+
 export function drawVectorFort(r,x,y,color='#888',scale=1){
   const c=r.ctx,S=r.S*scale
   c.save()
