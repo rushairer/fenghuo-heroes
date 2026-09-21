@@ -5,7 +5,7 @@ import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 
 const SAVE_KEY = 'fenghuo-heroes.cleanroom.v4'
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
-const baseCities = () => Object.fromEntries(CITIES.map((c) => [c.id, {
+const baseCities = (cities) => Object.fromEntries(cities.map((c) => [c.id, {
   id: c.id,
   owner: c.owner,
   gold: 300 + ((c.x * 7 + c.y * 3) % 700),
@@ -47,15 +47,17 @@ const openingRosters = (year) => year === 189
   : {}
 
 export class GameStore {
-  constructor(storage = null) { this.storage = storage; this.state = null; this.pendingConflict = null }
+  constructor(storage = null, {mapProfile=MAP_PROFILE} = {}) { this.storage = storage; this.mapProfile = mapProfile; this.state = null; this.pendingConflict = null }
   newGame(options = {}) {
     const scenarioYear = Number(options.scenarioYear ?? 189)
     const humans = [...(options.humanFactions ?? ['liu'])]
     const primary = humans[0] ?? 'liu'
-    const firstCity=CITIES.find((city)=>city.owner===primary)??CITIES[0]
+    const cities=this.mapProfile?.cities??CITIES
+    const cityById=this.mapProfile?.cityById??CITY_BY_ID
+    const firstCity=cities.find((city)=>city.owner===primary)??cities[0]
     if(!firstCity)throw new Error('Runtime map profile contains no cities.')
     const first=firstCity.id
-    this.state = { mapProfileId:MAP_PROFILE.id, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(firstCity), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
+    this.state = { mapProfileId:this.mapProfile.id, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(cityById[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:baseCities(cities), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
     this.pendingConflict = null
     this.save()
     return this.state
@@ -66,12 +68,12 @@ export class GameStore {
   assertState(){if(!this.state)throw new Error('Game not initialized')}
   hasGame(){return Boolean(this.state)}
   addLog(msg){this.assertState();this.state.log.unshift(msg);this.state.log=this.state.log.slice(0,8)}
-  cityAt(x,y,tolerance=7){return CITIES.find((c)=>{const p=cityWorldPoint(c);return Math.abs(p.x-x)<=tolerance&&Math.abs(p.y-y)<=tolerance})??null}
+  cityAt(x,y,tolerance=7){return (this.mapProfile?.cities??CITIES).find((c)=>{const p=cityWorldPoint(c);return Math.abs(p.x-x)<=tolerance&&Math.abs(p.y-y)<=tolerance})??null}
   setCursor(x,y){this.assertState();this.state.cursor.x=clamp(x,8,WORLD_W-8);this.state.cursor.y=clamp(y,8,WORLD_H-8)}
   setActiveCity(id){this.assertState();this.state.activeCity=id}
   inspectionCategoryForActive(){this.assertState();return this.state.inspectionCategories?.[this.humanFaction]??null}
   lockInspectionCategory(category){this.assertState();if(this.mode!=='inspection')return false;if(!this.state.inspectionCategories)this.state.inspectionCategories={};const current=this.state.inspectionCategories[this.humanFaction];if(current&&current!==category)return false;this.state.inspectionCategories[this.humanFaction]=category;this.save();return true}
-  setTaxRate(cityId,rate){this.assertState();const city=this.state.cities[cityId];if(!city||city.owner!==this.humanFaction)throw new Error('只能設定本國城池稅率。');if(!isTaxRate(rate))throw new RangeError('稅率必須是 0 到 99 的整數。');city.taxRate=rate;this.addLog(`${CITY_BY_ID[cityId]?.name??cityId} 稅率設定為 ${rate}%。`);this.save();return rate}
+  setTaxRate(cityId,rate){this.assertState();const city=this.state.cities[cityId];if(!city||city.owner!==this.humanFaction)throw new Error('只能設定本國城池稅率。');if(!isTaxRate(rate))throw new RangeError('稅率必須是 0 到 99 的整數。');city.taxRate=rate;this.addLog(`${this.mapProfile?.cityById?.[cityId]?.name??CITY_BY_ID[cityId]?.name??cityId} 稅率設定為 ${rate}%。`);this.save();return rate}
   // Menu hierarchy is evidence-backed in inspection-command-parity.js.
   // Commands whose numerical effect is still unverified must never mutate game
   // state. Each effect is re-enabled only through an evidence-specific module.
@@ -115,8 +117,8 @@ export class GameStore {
       // Saves created before map-profile tagging are compatible only while the
       // scaffold remains active. Never reinterpret scaffold city IDs as a
       // future canonical profile.
-      const savedProfileId=parsed.mapProfileId??(MAP_PROFILE.id==='runtime-scaffold'?'runtime-scaffold':null)
-      if(savedProfileId!==MAP_PROFILE.id)return false
+      const savedProfileId=parsed.mapProfileId??(this.mapProfile.id==='runtime-scaffold'?'runtime-scaffold':null)
+      if(savedProfileId!==this.mapProfile.id)return false
       parsed.mapProfileId=savedProfileId
       this.state=parsed
       if(!this.state.inspectionCategories)this.state.inspectionCategories={}
