@@ -9,21 +9,19 @@ export function selectRuntimeMapProfile(evidence=CANONICAL_MAP_EVIDENCE){
     ?buildCanonicalRuntimeMap(evidence)
     :null
 
-  if(!readiness.ready){
+  if(!readiness.geometryReady){
     return Object.freeze({
       profile:RUNTIME_SCAFFOLD_MAP_PROFILE,
-      geometryPreview,
+      geometryPreview:null,
       readiness,
-      reason:readiness.geometryReady
-        ?'canonical-geometry-ready-scenario-incomplete'
-        :'canonical-evidence-incomplete',
+      reason:'canonical-geometry-incomplete',
     })
   }
   return Object.freeze({
     profile:geometryPreview,
     geometryPreview,
     readiness,
-    reason:'canonical-evidence-complete',
+    reason:'canonical-geometry-complete',
   })
 }
 
