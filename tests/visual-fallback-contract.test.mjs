@@ -183,3 +183,12 @@ test('duel scene renders motion cues from existing attack and guard state',()=>{
   assert.match(source,/guard:this\.guard/)
   assert.match(source,/attacking:this\.enemyCd>500/)
 })
+
+
+test('siege foreground depth stays between fortress and confrontation standards',()=>{
+  const source=read('src/scenes/siege.js')
+  const fortress=source.indexOf('drawSiegeFortress(r')
+  const ground=source.indexOf('drawSiegeForegroundDepth(r')
+  const standards=source.indexOf('drawSiegeStandards(r')
+  assert.ok(fortress>=0&&ground>fortress&&standards>ground)
+})
