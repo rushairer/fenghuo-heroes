@@ -306,3 +306,32 @@ export function drawMapCursor(r,x,y,{
   c.restore()
   return true
 }
+
+
+export function fullMapVillageSymbolGeometry(size=3.6){
+  const s=Math.max(2,Number(size)||3.6)
+  return Object.freeze({
+    roof:s,
+    body:s*.72,
+    door:s*.2,
+  })
+}
+
+export function drawFullMapVillageSymbol(r,x,y,size=3.6){
+  const c=r.ctx,S=r.S,g=fullMapVillageSymbolGeometry(size)
+  c.save()
+  c.translate(x*S,y*S)
+  c.fillStyle='#281a12'
+  c.beginPath()
+  c.moveTo(-g.roof*.62*S,0)
+  c.lineTo(0,-g.roof*.72*S)
+  c.lineTo(g.roof*.62*S,0)
+  c.closePath()
+  c.fill()
+  c.fillStyle=MAP_ART_PALETTE.villageWall
+  c.fillRect(-g.body*.5*S,0,g.body*S,g.body*.72*S)
+  c.fillStyle='#3a281c'
+  c.fillRect(-g.door*.5*S,g.body*.3*S,g.door*S,g.body*.42*S)
+  c.restore()
+  return true
+}
