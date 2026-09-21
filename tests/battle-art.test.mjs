@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, duelMotionCueGeometry, siegeDetailGeometry, siegeStandardGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, duelMotionCueGeometry, siegeDetailGeometry, siegeForegroundGeometry, siegeStandardGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -136,4 +136,15 @@ test('duel motion cues distinguish attack and guard presentation states',()=>{
   assert.equal(guard.attackArcs.length,0)
   assert.equal(idle.attackArcs.length,0)
   assert.equal(idle.guardBraces.length,0)
+})
+
+
+test('siege foreground depth scales stones and haze inside the fortress width',()=>{
+  const detail=siegeForegroundGeometry(290,105)
+  assert.equal(detail.stones.length,4)
+  assert.equal(detail.haze.length,2)
+  assert.ok(detail.horizonY>0&&detail.horizonY<105)
+  assert.ok(detail.foregroundY>detail.horizonY&&detail.foregroundY<=105)
+  assert.ok(detail.stones.every((stone)=>stone.x>0&&stone.x<290&&stone.rx>0&&stone.ry>0))
+  assert.ok(detail.haze.every((item)=>item.x>0&&item.x<290&&item.alpha>0))
 })
