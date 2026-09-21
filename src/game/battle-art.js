@@ -296,6 +296,20 @@ export function siegeDetailGeometry(width=290,height=105){
   })
 }
 
+export function siegeTowerMaterialGeometry(width=290){
+  const w=Math.max(120,Number(width)||290)
+  return Object.freeze({
+    towers:Object.freeze([
+      Object.freeze({x:26,windowY:36,beamY:44}),
+      Object.freeze({x:w-26,windowY:36,beamY:44}),
+    ]),
+    braces:Object.freeze([
+      Object.freeze({dx1:-8,dy1:25,dx2:0,dy2:33}),
+      Object.freeze({dx1:8,dy1:25,dx2:0,dy2:33}),
+    ]),
+  })
+}
+
 export function siegeTowerDetailGeometry(width=290){
   const w=Math.max(120,Number(width)||290)
   return Object.freeze({
