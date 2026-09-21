@@ -53,14 +53,13 @@ export class StrategyScene extends OfficerStrategyScene {
         alpha:.58,
       })
     }
-    r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
-
     drawProjectedTerrainRelief(r,WORLD_TERRAIN_RELIEF,{
       project:(point)=>fullMapPoint(point,bounds),
       scaleX:bounds.w/WORLD_W,
       scaleY:bounds.h/WORLD_H,
       clip:bounds,
     })
+    r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
 
     this.drawFullMapRiver(bounds)
     const roadSegments=uniqueRoadPairs(this.mapCities()).map(([from,to])=>({
