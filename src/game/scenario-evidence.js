@@ -1,5 +1,6 @@
 import { mapEvidenceSourceValid } from './map-evidence.js'
 import { CITY_ECONOMY_FIELDS } from './scenario-fields.js'
+import { targetScenario } from './scenario-target.js'
 import {
   ZH_ROM_CANONICAL_CITY_SET,
   normalizeZhRomCityName,
@@ -57,6 +58,7 @@ function sourceBackedCoverage(record,sources){
 
 export function validateScenarioStartEvidence(evidence={}){
   const year=Number(evidence.scenarioYear)
+  const scenarioYearValid=Boolean(targetScenario(year))
   const sources=Array.isArray(evidence.sources)?evidence.sources:[]
   const cityStates=Array.isArray(evidence.cityStates)?evidence.cityStates:[]
   const officerAssignments=Array.isArray(evidence.officerAssignments)?evidence.officerAssignments:[]
@@ -101,11 +103,12 @@ export function validateScenarioStartEvidence(evidence={}){
   )
 
   const sourceLedgerValid=invalidSources.length===0&&duplicateSourceIds.length===0
-  const economyReady=sourceLedgerValid&&cityStateCoverageVerified
-  const officerPlacementReady=sourceLedgerValid&&officerCoverageVerified
+  const economyReady=scenarioYearValid&&sourceLedgerValid&&cityStateCoverageVerified
+  const officerPlacementReady=scenarioYearValid&&sourceLedgerValid&&officerCoverageVerified
 
   return Object.freeze({
     scenarioYear:year,
+    scenarioYearValid,
     sourceLedgerValid,
     invalidSourceCount:invalidSources.length,
     duplicateSourceIds:Object.freeze(duplicateSourceIds),
