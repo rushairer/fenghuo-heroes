@@ -12,12 +12,36 @@ function byCanonicalName(a,b,key){
     -(canonicalOrder.get(normalizeZhRomCityName(b[key]))??999)
 }
 
+function legacyOwnershipCompatibilityReady(audit){
+  const legacy=audit.legacyOwnership189
+  return (
+    legacy.evidenceCount===ZH_ROM_CANONICAL_CITY_SET.length&&
+    legacy.duplicateCities.length===0&&
+    legacy.missingCities.length===0
+  )
+}
+
 export function compileCanonicalEvidenceBundle(bundle={}, {scope='full'}={}){
   if(!['geometry','full'].includes(scope))throw new Error(`Unknown canonical evidence compile scope: ${scope}`)
   const audit=auditCanonicalEvidenceBundle(bundle)
-  const scopeReady=scope==='geometry'?audit.geometryReady:audit.ready
+  const legacyOwnershipReady=legacyOwnershipCompatibilityReady(audit)
+  const scopeReady=scope==='geometry'
+    ?audit.geometryReady
+    :audit.geometryReady&&legacyOwnershipReady
   if(!scopeReady){
-    throw new Error(`Canonical ${scope} evidence bundle is not ready: ${audit.blockers.join(', ')}`)
+    const blockers=[...audit.blockers]
+    if(scope==='full'){
+      if(audit.legacyOwnership189.duplicateCities.length){
+        blockers.push('legacy-ownership-189-duplicates')
+      }
+      if(
+        audit.legacyOwnership189.evidenceCount!==ZH_ROM_CANONICAL_CITY_SET.length||
+        audit.legacyOwnership189.missingCities.length
+      ){
+        blockers.push('legacy-ownership-189-incomplete')
+      }
+    }
+    throw new Error(`Canonical ${scope} evidence bundle is not ready: ${[...new Set(blockers)].join(', ')}`)
   }
 
   const report=validateCanonicalMapEvidence(bundle)
@@ -71,7 +95,9 @@ export function compileCanonicalEvidenceBundle(bundle={}, {scope='full'}={}){
     .sort((a,b)=>a.id.localeCompare(b.id))
 
   return Object.freeze({
-    status:scope==='geometry'?'ready-for-canonical-geometry':'ready-for-canonical-activation',
+    status:scope==='geometry'
+      ?'ready-for-canonical-geometry'
+      :'ready-for-map-compatibility-export',
     scope,
     sources:Object.freeze(sources),
     cityCoordinates:Object.freeze(cityCoordinates),
