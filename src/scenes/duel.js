@@ -1,4 +1,5 @@
 import { drawDuelArena, drawDuelFighter, drawDuelHitSpark, drawDuelMotionCue } from '../game/battle-art.js'
+import { drawDuelWeaponContact } from '../game/duel-contact-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
 import { drawDuelSpacingCue } from '../game/duel-spacing-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
@@ -167,6 +168,13 @@ export class DuelScene{
       attacking:this.enemyCd>500,
       guard:false,
       color:df?.color??'#f0d28a',
+    })
+    drawDuelWeaponContact(r,{
+      leftX:this.px,
+      rightX:this.ex,
+      y:141,
+      playerAttacking:this.attackCd>160,
+      enemyAttacking:this.enemyCd>500,
     })
     if(this.hitFlash>0){c.save();c.globalAlpha=Math.min(.35,this.hitFlash/300);c.fillStyle='#fff2bf';c.fillRect(0,0,320*r.S,224*r.S);c.restore()}
     if(this.hitFlash>0&&this.hitSide){
