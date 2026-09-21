@@ -95,3 +95,14 @@ footer{padding-top:12px;color:#8fcfd1;font-size:12px}
   aside{max-height:none}
   .image-stage{min-height:180px}
 }
+
+.ram-hint{
+  grid-column:1/-1;
+  margin:0;
+  padding:9px 10px;
+  border:1px dashed #5f5139;
+  color:#8fcfd1;
+  background:rgba(12,22,22,.5);
+  font-size:12px;
+  line-height:1.5;
+}
