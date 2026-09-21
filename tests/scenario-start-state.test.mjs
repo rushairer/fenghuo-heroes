@@ -5,7 +5,7 @@ import { RUNTIME_SCAFFOLD_MAP_PROFILE } from '../src/game/runtime-map-scaffold.j
 import {
   buildCanonical189ScenarioStartState,
   buildScaffold189ScenarioStartState,
-  canonical189OwnershipByCityId,
+  canonicalScenarioOwnershipByCityId,
   canonicalOfficerAssignmentsByCityId,
   canonicalScenarioStateByCityId,
   defaultScenarioStartStateFactory,
@@ -32,10 +32,11 @@ test('default production start-state factory refuses canonical geometry while re
   )
 })
 
-test('canonical 189 ownership is resolved separately from map geometry',()=>{
+test('canonical scenario ownership is resolved separately from map geometry',()=>{
   const mapEvidence=completeCanonicalMapEvidence()
   const profile=buildCanonicalRuntimeMap(mapEvidence)
-  const ownership=canonical189OwnershipByCityId(profile,mapEvidence)
+  const scenarioEvidence=completeCanonicalScenarioEvidence()
+  const ownership=canonicalScenarioOwnershipByCityId(profile,scenarioEvidence)
   assert.equal(Object.keys(ownership).length,40)
   assert.equal(ownership['zh-01'],'liu')
   assert.equal(ownership['zh-02'],'cao')
@@ -72,7 +73,6 @@ test('canonical 189 start state combines map ownership with source-backed econom
   const profile=buildCanonicalRuntimeMap(mapEvidence)
   const state=buildCanonical189ScenarioStartState({
     mapProfile:profile,
-    mapEvidence,
     scenarioEvidence,
   })
   assert.equal(state.id,'zh-rom-canonical:189')
