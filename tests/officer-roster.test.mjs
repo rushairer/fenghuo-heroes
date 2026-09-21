@@ -91,3 +91,45 @@ test('officer status leaves unverified Chinese-ROM character values empty',()=>{
     evidence:'name-role-only; status-schema-jp-manual',
   })
 })
+
+
+test('source-backed scenario officer placement overrides the provisional faction roster',()=>{
+  const store={
+    humanFaction:'liu',
+    state:{
+      scenarioOfficerPlacementStatus:'source-backed-189',
+      cities:{
+        dai:{owner:'liu',officers:['劉備','關羽']},
+        other:{owner:'liu',officers:['張飛']},
+      },
+      openingRosters:{
+        liu:{ruler:'劉備',officers:['關羽','張飛']},
+      },
+    },
+  }
+  const dai=openingOfficerListForCity(store,'dai')
+  assert.equal(dai.cityAssignmentVerified,true)
+  assert.equal(dai.evidence,'scenario-officer-placement')
+  assert.deepEqual(dai.rows,[
+    {name:'劉備',role:'君主'},
+    {name:'關羽',role:'武將'},
+  ])
+
+  const other=openingOfficerListForCity(store,'other')
+  assert.deepEqual(other.rows,[{name:'張飛',role:'武將'}])
+})
+
+test('provisional scaffold officer projection never claims city assignment verification',()=>{
+  const store={
+    humanFaction:'liu',
+    state:{
+      scenarioOfficerPlacementStatus:'provisional-roster-only',
+      cities:{test_city:{owner:'liu'}},
+      openingRosters:{liu:{ruler:'劉備',officers:['關羽','張飛']}},
+    },
+  }
+  const projection=openingOfficerListForCity(store,'test_city')
+  assert.equal(projection.cityAssignmentVerified,false)
+  assert.equal(projection.evidence,'opening-faction-roster')
+  assert.deepEqual(projection.rows.map((row)=>row.name),['劉備','關羽','張飛'])
+})
