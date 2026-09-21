@@ -71,9 +71,18 @@ test('player-count and setup QA states reset deterministic controls',()=>{
 })
 
 function strategyApp() {
+  const mapCities=[
+    {id:'chengdu',name:'成都',x:20,y:20,neighbors:[]},
+    {id:'xiangping',name:'襄平',x:60,y:20,neighbors:[]},
+  ]
   const store={
     humanFaction:'liu',
     hasGame:()=>true,
+    mapProfile:{
+      cities:mapCities,
+      cityById:Object.fromEntries(mapCities.map((city)=>[city.id,city])),
+      villages:[],
+    },
     state:{
       cities:{chengdu:{owner:'liu',troops:5000,food:3000,gold:900},xiangping:{owner:'yuan',troops:4200}},
       armies:[],
