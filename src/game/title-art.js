@@ -1,3 +1,5 @@
+import { drawTitleHdDetail } from './title-hd-detail.js'
+
 // Clean-room title artwork inspired only by the observed composition of the
 // original Mega Drive title screen. It deliberately redraws the five-warrior
 // arrangement with new vector geometry instead of copying ROM pixels.
@@ -203,5 +205,6 @@ export function drawTitleComposition(r) {
   drawCenterGeneral(r)
   drawLeftWarlord(r)
   drawFrontRightGeneral(r)
+  drawTitleHdDetail(r)
   drawBrocadeStrip(r)
 }
