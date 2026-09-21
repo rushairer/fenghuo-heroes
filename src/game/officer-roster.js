@@ -34,19 +34,42 @@ export function openingOfficerRows(store, factionId = store?.humanFaction) {
   return rows
 }
 
-// The original manual confirms that country status can drill into that country's
-// officer list. We do not yet have evidence-backed per-city officer placement,
-// so this projection deliberately exposes only the owning faction's documented
-// opening roster and marks city assignment as unverified.
+function officerRole(store,name){
+  const normalized=String(name??'').trim()
+  if(!normalized)return'武將'
+  const rosters=Object.values(store?.state?.openingRosters??{})
+  return rosters.some((roster)=>roster?.ruler===normalized)?'君主':'武將'
+}
+
+// The country -> officer drilldown prefers source-backed per-city placement when
+// the active scenario start state provides it. The old faction-roster projection
+// remains only as an explicit scaffold fallback.
 export function openingOfficerListForCity(store, cityId) {
-  const factionId = store?.state?.cities?.[cityId]?.owner ?? null
-  const rows = factionId && factionId !== 'neutral' ? openingOfficerRows(store, factionId) : []
+  const runtime=store?.state?.cities?.[cityId]
+  const factionId=runtime?.owner??null
+  const placementVerified=String(store?.state?.scenarioOfficerPlacementStatus??'')
+    .startsWith('source-backed-')
+  if(placementVerified&&Array.isArray(runtime?.officers)){
+    const rows=runtime.officers
+      .map((name)=>String(name??'').trim())
+      .filter(Boolean)
+      .map((name)=>Object.freeze({name,role:officerRole(store,name)}))
+    return Object.freeze({
+      cityId:cityId??null,
+      factionId,
+      rows:Object.freeze(rows),
+      cityAssignmentVerified:true,
+      evidence:'scenario-officer-placement',
+    })
+  }
+
+  const rows=factionId&&factionId!=='neutral'?openingOfficerRows(store,factionId):[]
   return Object.freeze({
-    cityId:cityId ?? null,
+    cityId:cityId??null,
     factionId,
     rows:Object.freeze([...rows]),
     cityAssignmentVerified:false,
-    evidence:rows.length ? 'opening-faction-roster' : 'unverified',
+    evidence:rows.length?'opening-faction-roster':'unverified',
   })
 }
 
