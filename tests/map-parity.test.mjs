@@ -43,13 +43,11 @@ test('canonical map migration stays blocked while the evidence ledger is empty',
   const blocked=canonicalMapMigrationReadiness()
   assert.equal(blocked.ready,false)
   assert.equal(blocked.geometryReady,false)
-  assert.equal(blocked.scenario189Ready,false)
   assert.equal(blocked.cityCoordinatesComplete,false)
   assert.equal(blocked.verifiedCityCoordinateCount,0)
   assert.equal(blocked.requiredCityCoordinateCount,40)
   assert.equal(blocked.cityNamesResolved,false)
   assert.equal(blocked.villageCoordinatesVerified,false)
-  assert.equal(blocked.ownership189Verified,false)
   assert.equal(blocked.routeNetworkVerified,false)
 })
 
@@ -97,16 +95,14 @@ test('canonical map migration opens only when every source-backed evidence gate 
   assert.equal(report.verifiedCityCoordinateCount,40)
   assert.equal(report.cityNamesResolved,true)
   assert.equal(report.villageCoordinatesVerified,true)
-  assert.equal(report.ownership189Verified,true)
-  assert.equal(report.verifiedOwnershipCityCount,40)
+  assert.equal(report.legacyOwnership189EvidenceCount,40)
   assert.equal(report.routeNetworkVerified,true)
   assert.equal(report.geometryReady,true)
-  assert.equal(report.scenario189Ready,true)
   assert.equal(report.ready,true)
 })
 
 
-test('canonical geometry readiness is independent from 189 ownership readiness',()=>{
+test('canonical geometry readiness ignores legacy 189 ownership compatibility records',()=>{
   const source={id:'capture-geometry',kind:'direct-capture',ref:'capture-geometry.png'}
   const geometryOnly={
     status:'test-geometry-complete',
@@ -138,6 +134,6 @@ test('canonical geometry readiness is independent from 189 ownership readiness',
   }
   const report=canonicalMapMigrationReadiness(geometryOnly)
   assert.equal(report.geometryReady,true)
-  assert.equal(report.scenario189Ready,false)
-  assert.equal(report.ready,false)
+  assert.equal(report.ready,true)
+  assert.equal(report.legacyOwnership189EvidenceCount,0)
 })
