@@ -70,3 +70,9 @@ test('vector title fallback applies garment contours between local light and sil
   assert.match(titleArt,/drawTitleGarmentContour/)
   assert.match(titleArt,/drawTitleLocalLight\(r\)[\s\S]*drawTitleGarmentContour\(r\)[\s\S]*drawTitleSilhouetteDepth\(r\)/)
 })
+
+
+test('vector title fallback applies fabric texture before garment contours',()=>{
+  assert.match(titleArt,/drawTitleFabricPass/)
+  assert.match(titleArt,/drawTitleLocalLight\(r\)[\s\S]*drawTitleFabricPass\(r\)[\s\S]*drawTitleGarmentContour\(r\)/)
+})
