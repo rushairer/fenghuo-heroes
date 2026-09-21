@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaDetailGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, siegeDetailGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, siegeDetailGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -103,4 +103,13 @@ test('duel fighter ornaments provide plume shoulder plates and waist tassels',()
   assert.ok(detail.plume.every((point)=>point.y<0))
   assert.ok(detail.shoulderPlates.every((plate)=>plate.rx>0&&plate.ry>0))
   assert.ok(detail.tassels.every((tassel)=>tassel.dy>0))
+})
+
+
+test('duel arena ornaments keep lanterns and pennants inside the stage width',()=>{
+  const detail=duelArenaOrnamentGeometry(320)
+  assert.equal(detail.lanterns.length,2)
+  assert.equal(detail.pennants.length,3)
+  assert.ok(detail.lanterns.every((item)=>item.x>0&&item.x<320&&item.r>0))
+  assert.ok(detail.pennants.every((item)=>item.x>=0&&item.x+item.w<=320&&item.h>0))
 })
