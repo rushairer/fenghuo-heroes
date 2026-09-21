@@ -62,13 +62,11 @@ export function completeCanonicalScenarioEvidence({
   }
 }
 
-export function canonical189TestScenarioFactory(
-  mapEvidence,
-  {scenarioEvidence=completeCanonicalScenarioEvidence()}={},
-){
+export function canonical189TestScenarioFactory({
+  scenarioEvidence=completeCanonicalScenarioEvidence(),
+}={}){
   return ({mapProfile})=>buildCanonical189ScenarioStartState({
     mapProfile,
-    mapEvidence,
     scenarioEvidence,
   })
 }
