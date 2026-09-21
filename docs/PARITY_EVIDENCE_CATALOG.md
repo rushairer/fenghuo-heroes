@@ -140,19 +140,25 @@ Current protected fact:
 This remains sparse corroborating evidence and must not be expanded into a complete
 ownership map by historical inference.
 
-### Bahamut title page — Tier C / terminology lead
+### Chinese monthly command prompt — corroborated Tier C copy, direct frame pending
 
-Source:
+Independent Chinese-language recollections of the Chinese release preserve the same
+monthly prompt wording:
 
+- https://zazu.tw/talks/6419
+- https://black16bit.pixnet.net/blog/posts/5036126701
 - https://acg.gamer.com.tw/acgDetail.php?s=48215
 
-Useful lead:
+Protected copy:
 
-- the Chinese release is repeatedly associated with the memorable monthly prompt
-  「（君主名），本月想搞什麼？」.
+- 「（君主名），本月想搞什麼？」
 
-Do not replace current UI text solely from this page. Capture the Chinese-ROM screen or
-legible HK manual page first.
+The runtime already used this exact Traditional Chinese wording before it was moved
+into a protected copy contract. Multiple independent recollections now justify keeping
+that copy stable against casual modernization or Simplified-Chinese rewrites.
+
+Confidence remains below Tier A: a direct Chinese-ROM frame or legible Traditional
+Chinese manual page is still required before marking the copy frame-complete.
 
 ## Immediate acquisition order
 
