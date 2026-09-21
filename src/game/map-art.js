@@ -471,6 +471,17 @@ export function drawFullMapCitySymbol(r,x,y,color,size=4){
   return true
 }
 
+export function mapCursorDetailGeometry(width=16,height=12){
+  const w=Math.max(8,Number(width)||16)
+  const h=Math.max(8,Number(height)||12)
+  return Object.freeze({
+    tick:w*.18,
+    inset:2,
+    centerRadius:Math.max(.55,Math.min(w,h)*.055),
+    cornerGlow:Math.max(.8,Math.min(w,h)*.1),
+  })
+}
+
 export function drawMapCursor(r,x,y,{
   width=16,
   height=12,
@@ -498,6 +509,34 @@ export function drawMapCursor(r,x,y,{
   c.strokeStyle=inner
   c.lineWidth=.42*S
   c.strokeRect((-w+2)*S,(-h+2)*S,(width-4)*S,(height-4)*S)
+
+  const detail=mapCursorDetailGeometry(width,height)
+  c.strokeStyle='rgba(255,245,181,.62)'
+  c.lineWidth=.28*S
+  const ticks=[
+    [-w,-h,-w+detail.tick,-h],
+    [w,-h,w-detail.tick,-h],
+    [-w,h,-w+detail.tick,h],
+    [w,h,w-detail.tick,h],
+  ]
+  for(const [x1,y1,x2,y2] of ticks){
+    c.beginPath()
+    c.moveTo(x1*S,y1*S)
+    c.lineTo(x2*S,y2*S)
+    c.stroke()
+  }
+
+  c.fillStyle='rgba(255,245,181,.72)'
+  c.beginPath()
+  c.arc(0,0,detail.centerRadius*S,0,Math.PI*2)
+  c.fill()
+
+  c.fillStyle='rgba(255,245,181,.18)'
+  for(const [cx,cy] of [[-w,-h],[w,-h],[-w,h],[w,h]]){
+    c.beginPath()
+    c.arc(cx*S,cy*S,detail.cornerGlow*S,0,Math.PI*2)
+    c.fill()
+  }
   c.restore()
   return true
 }
