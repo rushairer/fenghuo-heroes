@@ -48,7 +48,6 @@ export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) 
     coordinateNames.size===ZH_ROM_CANONICAL_CITY_SET.length&&
     report.duplicateCoordinateNames.length===0
   const cityNamesResolved=unresolvedAfterEvidence.length===0&&report.duplicateNameResolutionKeys.length===0
-  const ownership189Verified=report.ownership189EvidenceCount===ZH_ROM_CANONICAL_CITY_SET.length&&report.duplicateOwnershipCities.length===0
   const villageCoordinatesVerified=report.villageCoverageVerified
   const routeNetworkVerified=report.routeNetworkVerified
   const sourceLedgerValid=
@@ -60,13 +59,11 @@ export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) 
     cityNamesResolved&&
     villageCoordinatesVerified&&
     routeNetworkVerified
-  const scenario189Ready=sourceLedgerValid&&ownership189Verified
-  const ready=geometryReady&&scenario189Ready
+  const ready=geometryReady
 
   return Object.freeze({
     ready,
     geometryReady,
-    scenario189Ready,
     sourceLedgerValid,
     ledgerStatus:evidence.status??'unknown',
     cityCoordinatesComplete,
@@ -75,9 +72,8 @@ export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) 
     cityNamesResolved,
     unresolvedNameVariants:Object.freeze(unresolvedAfterEvidence),
     villageCoordinatesVerified,
-    ownership189Verified,
-    verifiedOwnershipCityCount:report.ownership189EvidenceCount,
-    duplicateOwnershipCities:report.duplicateOwnershipCities,
+    legacyOwnership189EvidenceCount:report.ownership189EvidenceCount,
+    legacyDuplicateOwnershipCities:report.duplicateOwnershipCities,
     duplicateNameResolutionKeys:report.duplicateNameResolutionKeys,
     routeNetworkVerified,
     routeEvidenceCount:report.routeEvidenceCount,
