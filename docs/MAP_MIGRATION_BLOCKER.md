@@ -180,11 +180,11 @@ The canonical evidence gate now reports separate states:
 
 - `geometryReady`: 40 coordinates, name variants, village coverage and route
   coverage are source-backed;
-- `scenario189Ready`: 189 ownership is source-backed;
-- `ready`: both are true.
+- map `ready`: exactly the same geometry gate; ownership is not a map concern.
 
-This allows geometry calibration to finish and be reviewed before 189 ownership is
-complete.
+Scenario ownership/economy/officer readiness is reported separately by
+`canonicalScenarioStartReadiness()`. This prevents 189 ownership from leaking back into
+map activation or being duplicated in two ledgers.
 
 When geometry is ready but scenario data is not, `selectRuntimeMapProfile()` keeps
 the live game on `runtime-scaffold` but exposes a read-only canonical
