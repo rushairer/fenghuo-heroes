@@ -18,7 +18,7 @@ function canonicalQaStore(){
   const profile=buildCanonicalRuntimeMap(evidence)
   const store=new GameStore(new MemoryStorage(),{
     mapProfile:profile,
-    scenarioStartStateFactory:canonical189TestScenarioFactory(evidence),
+    scenarioStartStateFactory:canonical189TestScenarioFactory(),
   })
   store.newGame({scenarioYear:189,humanFactions:['liu']})
   return {store,profile}
