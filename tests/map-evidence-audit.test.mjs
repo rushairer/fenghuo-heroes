@@ -9,6 +9,7 @@ test('empty capture template reports all canonical map blockers without inventin
   assert.equal(audit.ready,false)
   assert.equal(audit.missingCityCoordinates.length,40)
   assert.equal(audit.missingOwnership189.length,40)
+  assert.equal(audit.invalidCityCoordinates.length,0)
   assert.ok(audit.blockers.includes('city-coordinates-incomplete'))
   assert.ok(audit.blockers.includes('ownership-189-incomplete'))
   assert.ok(audit.blockers.includes('route-network-unverified'))
@@ -36,7 +37,7 @@ test('invalid entered coordinate is reported with its original slot index',()=>{
     verified:true,
   }
   const audit=auditCanonicalEvidenceBundle(bundle)
-  assert.equal(audit.invalidCityCoordinates.length,40)
+  assert.equal(audit.invalidCityCoordinates.length,1)
   const entered=audit.invalidCityCoordinates.find((item)=>item.index===0)
   assert.ok(entered.errors.includes('coordinate-out-of-range'))
 })
