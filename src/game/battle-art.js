@@ -212,6 +212,27 @@ export function drawDuelFighter(r,{
   return true
 }
 
+export function siegeDetailGeometry(width=290,height=105){
+  const w=Math.max(120,Number(width)||290)
+  const h=Math.max(70,Number(height)||105)
+  const embrasures=[]
+  for(let x=26;x<w-24;x+=34)embrasures.push(Object.freeze({x,y:34+(x%3)*.8}))
+  const brickJoints=[]
+  for(let row=0,y=52;y<h-6;y+=9,row++){
+    const offset=row%2?12:0
+    for(let x=18+offset;x<w-16;x+=28)brickJoints.push(Object.freeze({x,y1:y,y2:Math.min(h-4,y+9)}))
+  }
+  return Object.freeze({
+    embrasures:Object.freeze(embrasures),
+    brickJoints:Object.freeze(brickJoints),
+    gateBeams:Object.freeze([-31,-16,16,31]),
+    dust:Object.freeze([
+      Object.freeze({x:w*.18,y:h-7,rx:28,ry:5,alpha:.12}),
+      Object.freeze({x:w*.76,y:h-5,rx:34,ry:6,alpha:.1}),
+    ]),
+  })
+}
+
 export function drawSiegeFortress(r,{
   x=15,
   y=48,
@@ -247,6 +268,17 @@ export function drawSiegeFortress(r,{
     c.fillRect((bx-5)*S,(y+19)*S,10*S,1.2*S)
   }
 
+  const detail=siegeDetailGeometry(width,height)
+
+  // Arrow slits and upper-wall articulation.
+  c.fillStyle='rgba(32,24,20,.76)'
+  for(const slit of detail.embrasures){
+    c.fillRect((x+slit.x-1)*S,(y+slit.y)*S,2*S,5*S)
+    c.fillStyle='rgba(225,194,145,.25)'
+    c.fillRect((x+slit.x-1)*S,(y+slit.y)*S,.45*S,5*S)
+    c.fillStyle='rgba(32,24,20,.76)'
+  }
+
   // Central gatehouse.
   const gateX=x+width/2
   c.fillStyle='#4a382d'
@@ -268,6 +300,42 @@ export function drawSiegeFortress(r,{
     c.moveTo((x+8)*S,yy*S)
     c.lineTo((x+width-8)*S,yy*S)
     c.stroke()
+  }
+
+  // Offset vertical joints keep the wall from reading as flat horizontal bands.
+  c.strokeStyle='rgba(58,45,36,.34)'
+  c.lineWidth=.35*S
+  for(const joint of detail.brickJoints){
+    c.beginPath()
+    c.moveTo((x+joint.x)*S,(y+joint.y1)*S)
+    c.lineTo((x+joint.x)*S,(y+joint.y2)*S)
+    c.stroke()
+  }
+
+  // Gatehouse beams and metal studs.
+  c.strokeStyle='rgba(122,83,48,.72)'
+  c.lineWidth=1.1*S
+  for(const beam of detail.gateBeams){
+    c.beginPath()
+    c.moveTo((gateX+beam)*S,(y+44)*S)
+    c.lineTo((gateX+beam*.72)*S,(y+height-5)*S)
+    c.stroke()
+  }
+  c.fillStyle='rgba(215,166,82,.68)'
+  for(const dx of [-13,0,13]){
+    for(const dy of [73,86,99]){
+      c.beginPath()
+      c.arc((gateX+dx)*S,(y+dy)*S,.65*S,0,Math.PI*2)
+      c.fill()
+    }
+  }
+
+  // Foreground dust adds depth without encoding any game-state fact.
+  for(const dust of detail.dust){
+    c.fillStyle=`rgba(218,188,134,${dust.alpha})`
+    c.beginPath()
+    c.ellipse((x+dust.x)*S,(y+dust.y)*S,dust.rx*S,dust.ry*S,0,0,Math.PI*2)
+    c.fill()
   }
 
   c.restore()
