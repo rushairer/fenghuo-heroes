@@ -1,6 +1,7 @@
 import { drawTitleFaceStructure } from './title-face-art.js'
 import { drawTitleHdDetail } from './title-hd-detail.js'
 import { drawTitleHeadgearDetail } from './title-headgear-art.js'
+import { drawTitleLocalLight } from './title-local-light.js'
 import { drawTitleMaterialPass } from './title-material-art.js'
 import { drawTitleSilhouetteDepth } from './title-silhouette-depth.js'
 
@@ -212,6 +213,7 @@ export function drawTitleComposition(r) {
   drawTitleMaterialPass(r)
   drawTitleFaceStructure(r)
   drawTitleHeadgearDetail(r)
+  drawTitleLocalLight(r)
   drawTitleSilhouetteDepth(r)
   drawTitleHdDetail(r)
   drawBrocadeStrip(r)
