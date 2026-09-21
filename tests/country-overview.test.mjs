@@ -4,6 +4,7 @@ import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow,
 import { buildCanonicalRuntimeMap } from '../src/game/canonical-map-profile.js'
 import { GameStore } from '../src/game/store.js'
 import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
+import { canonical189TestScenarioFactory } from './fixtures/canonical-scenario-state.mjs'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
 
@@ -82,8 +83,12 @@ test('verified officer-count and tax-rate slots remain available without fabrica
 
 
 test('country overview follows an injected canonical profile rather than global scaffold order',()=>{
-  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
-  const store=new GameStore(new MemoryStorage(),{mapProfile:profile})
+  const evidence=completeCanonicalMapEvidence()
+  const profile=buildCanonicalRuntimeMap(evidence)
+  const store=new GameStore(new MemoryStorage(),{
+    mapProfile:profile,
+    scenarioStartStateFactory:canonical189TestScenarioFactory(evidence),
+  })
   store.newGame({scenarioYear:189,humanFactions:['liu']})
   const rows=countryOverviewRows(store)
   assert.equal(rows.length,40)
