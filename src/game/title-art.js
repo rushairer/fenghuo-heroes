@@ -2,6 +2,7 @@ import { drawTitleFaceStructure } from './title-face-art.js'
 import { drawTitleHdDetail } from './title-hd-detail.js'
 import { drawTitleHeadgearDetail } from './title-headgear-art.js'
 import { drawTitleMaterialPass } from './title-material-art.js'
+import { drawTitleSilhouetteDepth } from './title-silhouette-depth.js'
 
 // Clean-room title artwork inspired only by the observed composition of the
 // original Mega Drive title screen. It deliberately redraws the five-warrior
@@ -211,6 +212,7 @@ export function drawTitleComposition(r) {
   drawTitleMaterialPass(r)
   drawTitleFaceStructure(r)
   drawTitleHeadgearDetail(r)
+  drawTitleSilhouetteDepth(r)
   drawTitleHdDetail(r)
   drawBrocadeStrip(r)
 }
