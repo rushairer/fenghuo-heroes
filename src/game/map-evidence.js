@@ -28,7 +28,7 @@ export function validateCityCoordinateRecord(record,{sources=[]}={}){
   if(!Number.isFinite(record?.x)||!Number.isFinite(record?.y))errors.push('invalid-coordinate')
   if(!space)errors.push('unknown-coordinate-space')
   if(space&&Number.isFinite(record?.x)&&Number.isFinite(record?.y)){
-    if(record.x<0||record.x>space.width||record.y<0||record.y>space.height)errors.push('coordinate-out-of-range')
+    if(record.x<0||record.x>=space.width||record.y<0||record.y>=space.height)errors.push('coordinate-out-of-range')
   }
   if(typeof record?.sourceId!=='string'||!sourceIds.has(record.sourceId))errors.push('missing-source')
   if(record?.verified!==true)errors.push('not-verified')
@@ -47,8 +47,8 @@ function pointRecordInRange(record){
     space&&
     Number.isFinite(record?.x)&&
     Number.isFinite(record?.y)&&
-    record.x>=0&&record.x<=space.width&&
-    record.y>=0&&record.y<=space.height
+    record.x>=0&&record.x<space.width&&
+    record.y>=0&&record.y<space.height
   )
 }
 
@@ -70,6 +70,9 @@ export function validateCanonicalMapEvidence(evidence={}){
   const routes=Array.isArray(evidence.routes)?evidence.routes:[]
 
   const invalidSources=sources.filter((source)=>!mapEvidenceSourceValid(source))
+  const validSourceIds=sources.filter(mapEvidenceSourceValid).map((source)=>source.id)
+  const duplicateSourceIds=[...new Set(validSourceIds)]
+    .filter((id)=>validSourceIds.filter((candidate)=>candidate===id).length>1)
   const coordinateReports=cityCoordinates.map((record)=>validateCityCoordinateRecord(record,{sources}))
   const validCoordinates=cityCoordinates.filter((_,index)=>coordinateReports[index].ok)
   const uniqueCoordinateNames=new Set(validCoordinates.map((record)=>normalizeZhRomCityName(record.name)))
@@ -136,6 +139,7 @@ export function validateCanonicalMapEvidence(evidence={}){
   return Object.freeze({
     sourceCount:sources.length,
     invalidSourceCount:invalidSources.length,
+    duplicateSourceIds:Object.freeze(duplicateSourceIds),
     coordinateReports:Object.freeze(coordinateReports),
     verifiedCityCoordinates:Object.freeze([...validCoordinates]),
     validCityCoordinateCount:uniqueCoordinateNames.size,
