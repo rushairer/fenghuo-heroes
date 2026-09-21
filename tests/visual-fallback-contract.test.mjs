@@ -83,3 +83,13 @@ test('strategy and full-map terrain fallbacks share deterministic grain art',()=
   assert.match(overview,/createTerrainGrain/)
   assert.match(overview,/drawTerrainGrain/)
 })
+
+
+test('strategy and full-map views share one world-space relief source',()=>{
+  const strategy=read('src/scenes/strategy-info.js')
+  const overview=read('src/scenes/strategy-full-map.js')
+  assert.match(strategy,/WORLD_TERRAIN_RELIEF/)
+  assert.match(strategy,/drawWorldTerrainRelief/)
+  assert.match(overview,/WORLD_TERRAIN_RELIEF/)
+  assert.match(overview,/drawProjectedTerrainRelief/)
+})
