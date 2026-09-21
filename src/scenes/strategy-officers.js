@@ -1,6 +1,6 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor } from '../game/country-overview.js'
-import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
+import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { OFFICER_STATUS_FIELDS, openingOfficerListForCity, officerStatusProjection } from '../game/officer-roster.js'
 import { StrategyScene as InfoStrategyScene } from './strategy-info.js'
@@ -195,7 +195,7 @@ export class StrategyScene extends InfoStrategyScene {
 
   drawCityStatus() {
     const r=this.app.r
-    const city=CITY_BY_ID[this.targetCity]
+    const city=this.app.store.mapProfile?.cityById?.[this.targetCity]
     const rt=this.app.store.state.cities[this.targetCity]
     const f=FACTION_BY_ID[rt?.owner]??FACTION_BY_ID.neutral
     r.panel(54,38,212,126,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
@@ -214,7 +214,7 @@ export class StrategyScene extends InfoStrategyScene {
   drawOfficerList() {
     const r=this.app.r
     const projection=this.officerListProjection()
-    const city=CITY_BY_ID[this.officerListCity]
+    const city=this.app.store.mapProfile?.cityById?.[this.officerListCity]
     const faction=FACTION_BY_ID[projection.factionId]??FACTION_BY_ID.neutral
     const rows=projection.rows
     r.panel(46,27,228,164,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
