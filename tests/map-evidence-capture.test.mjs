@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  captureEvidenceBundle,
   capturePoint,
   captureScale,
   cityEvidenceCandidate,
@@ -53,4 +54,29 @@ test('source candidates normalize capture metadata without inventing verificatio
   }),{
     id:'cap-1',kind:'direct-capture',ref:'frame.png',note:'189 map',
   })
+})
+
+
+test('capture workbench candidates can be wrapped directly as a merge-ready evidence bundle',()=>{
+  const city=cityEvidenceCandidate({
+    name:'代縣',imageX:400,imageY:200,imageWidth:1280,imageHeight:896,
+    sourceId:'capture-001',frameRef:'capture-001#frame-10',
+  })
+  const village=villageEvidenceCandidate({
+    imageX:300,imageY:300,imageWidth:1280,imageHeight:896,
+    sourceId:'capture-001',frameRef:'capture-001#frame-10',
+  })
+  const bundle=captureEvidenceBundle({
+    source:{id:'capture-001',kind:'direct-capture',ref:'frame-10.png'},
+    cityCoordinates:[city],
+    villages:[village],
+  })
+  assert.equal(bundle.status,'capture-in-progress')
+  assert.equal(bundle.sources.length,1)
+  assert.equal(bundle.cityCoordinates.length,1)
+  assert.equal(bundle.villages.length,1)
+  assert.equal(bundle.cityCoordinates[0].verified,false)
+  assert.equal(bundle.villageCoverage,null)
+  assert.deepEqual(bundle.ownership189,[])
+  assert.deepEqual(bundle.routes,[])
 })
