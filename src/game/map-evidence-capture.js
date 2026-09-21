@@ -27,7 +27,7 @@ export function capturePoint({
   if(!Number.isFinite(imageX)||!Number.isFinite(imageY)){
     throw new TypeError('Capture point must contain finite image coordinates.')
   }
-  if(imageX<0||imageX>imageWidth||imageY<0||imageY>imageHeight){
+  if(imageX<0||imageX>=imageWidth||imageY<0||imageY>=imageHeight){
     throw new RangeError('Capture point lies outside the source image.')
   }
   const scale=captureScale({imageWidth,imageHeight,targetSpace})
