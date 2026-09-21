@@ -13,6 +13,7 @@ const [
 ])
 
 const {
+  captureEvidenceBundle,
   cityEvidenceCandidate,
   villageEvidenceCandidate,
 }=captureModule
@@ -29,6 +30,7 @@ const cityName=document.querySelector('#city-name')
 const autoNextWrap=document.querySelector('#auto-next-wrap')
 const autoNext=document.querySelector('#auto-next')
 const sourceId=document.querySelector('#source-id')
+const sourceRef=document.querySelector('#source-ref')
 const frameRef=document.querySelector('#frame-ref')
 const targetSpace=document.querySelector('#target-space')
 const copyOutput=document.querySelector('#copy-output')
@@ -140,8 +142,22 @@ function selectNextMissingCity(){
   }
 }
 
+function currentBundle(){
+  const batchSourceId=candidates[0]?.sourceId??sourceId.value.trim()
+  return captureEvidenceBundle({
+    source:{
+      id:batchSourceId,
+      kind:'direct-capture',
+      ref:sourceRef.value.trim(),
+      note:'Chinese-ROM map capture workbench batch',
+    },
+    cityCoordinates:cityCandidates(),
+    villages:villageCandidates(),
+  })
+}
+
 function renderOutput(message=''){
-  output.textContent=JSON.stringify(candidates,null,2)
+  output.textContent=JSON.stringify(currentBundle(),null,2)
   const cityCount=capturedCityNames().size
   const villageCount=villageCandidates().length
   progress.textContent=`城市 ${cityCount}/${ZH_ROM_CANONICAL_CITY_SET.length} · 村莊 ${villageCount}`
@@ -197,6 +213,7 @@ for(const control of [sourceId,frameRef]){
 imageInput.addEventListener('change',()=>{
   const file=imageInput.files?.[0]
   if(!file)return
+  if(!sourceRef.value.trim())sourceRef.value=file.name
   const url=URL.createObjectURL(file)
   const next=new Image()
   next.onload=()=>{
@@ -221,6 +238,13 @@ canvas.addEventListener('click',(event)=>{
   const rawY=(event.clientY-rect.top)*(canvas.height/rect.height)
   const imageX=Math.max(0,Math.min(canvas.width-1e-6,rawX))
   const imageY=Math.max(0,Math.min(canvas.height-1e-6,rawY))
+  const batchSourceId=candidates[0]?.sourceId
+  const requestedSourceId=sourceId.value.trim()
+  if(batchSourceId&&batchSourceId!==requestedSourceId){
+    status.textContent=`目前批次使用 ${batchSourceId}；請先複製/清空批次後再切換 Source ID。`
+    return
+  }
+
   const common={
     imageX,
     imageY,
@@ -252,7 +276,7 @@ canvas.addEventListener('click',(event)=>{
 })
 
 copyOutput.addEventListener('click',async()=>{
-  const text=JSON.stringify(candidates,null,2)
+  const text=JSON.stringify(currentBundle(),null,2)
   try{
     await navigator.clipboard.writeText(text)
     status.textContent=`已複製 ${candidates.length} 筆候選 JSON；仍需人工驗證。`
