@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   WORLD_RIVER_PATH,
   riverStrokeStyle,
+  projectRiverSurfaceMark,
   riverSurfaceMarks,
   roadSegmentStyle,
   uniqueRoadPairs,
@@ -77,4 +78,15 @@ test('river surface marks are deterministic samples of the shared river path',()
   assert.deepEqual(marks,riverSurfaceMarks())
   assert.ok(marks.every((mark)=>Number.isFinite(mark.x)&&Number.isFinite(mark.y)&&Number.isFinite(mark.angle)))
   assert.ok(marks.every((mark)=>mark.length>=8&&mark.length<=12))
+})
+
+
+test('river surface mark angle follows non-uniform projected geometry',()=>{
+  const mark={x:10,y:20,angle:Math.PI/4,length:10}
+  const projected=projectRiverSurfaceMark(mark,(point)=>({x:point.x*2,y:point.y*.5}))
+  assert.equal(projected.x,20)
+  assert.equal(projected.y,10)
+  assert.ok(projected.angle<Math.PI/4)
+  assert.ok(projected.angle>0)
+  assert.equal(projected.length,10)
 })
