@@ -1,7 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { drawSiegeFortress } from '../game/battle-art.js'
 import { BATTLE_SPEEDS, MAX_SQUADS_PER_UNIT, battlePreparation, cycleBattleSpeed } from '../game/battle-prep.js'
-import { CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
+import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { cancelSiegeFromArmy } from '../game/march.js'
 
@@ -76,7 +76,7 @@ export class SiegeScene{
     const largeFrame=this.app.assets?.getNineSlice('ui.frames.large',{sourceSlice:48,destEdge:7})
     r.clear('#160d08')
     r.ornateFrame(3,3,314,218,largeFrame)
-    const city=CITY_BY_ID[this.conflict?.target]
+    const city=this.app.store.mapProfile?.cityById?.[this.conflict?.target]
     r.shadowText(`${city?.name??''} 攻城準備`,160,18,14,'#f2d174','center')
 
     drawSiegeFortress(r,{x:15,y:48,width:290,height:105})
