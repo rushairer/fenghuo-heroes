@@ -1,5 +1,6 @@
 import { drawDuelArena, drawDuelFighter, drawDuelHitSpark, drawDuelMotionCue } from '../game/battle-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
+import { drawDuelSpacingCue } from '../game/duel-spacing-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { DUEL_COMMANDS, DUEL_MODES, autoDuelIntent, cycleDuelMode } from '../game/duel-parity.js'
 import { mdButton } from '../game/input.js'
@@ -142,6 +143,7 @@ export class DuelScene{
     r.text(`${this.app.store.mapProfile?.cityById?.[this.c?.target]?.name??''} · 一騎討ち`,160,9,10,'#f1d477','center','top',SERIF,'700')
     r.text(`我方 ${String(this.php).padStart(3)}      敵方 ${String(this.ehp).padStart(3)}`,160,24,6.5,'#e8dec4','center')
     const af=FACTION_BY_ID[this.c?.attacker],df=FACTION_BY_ID[this.c?.defender]
+    drawDuelSpacingCue(r,{leftX:this.px,rightX:this.ex,y:171})
     drawDuelFighter(r,{
       x:this.px,y:160,color:af?.color??'#587cc7',flip:false,
       guard:this.guard,attacking:this.attackCd>160,
