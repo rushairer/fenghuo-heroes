@@ -150,3 +150,71 @@ duplicate village coordinates and duplicate name-resolution records.
 
 This makes the eventual canonical switch an explicit activation change rather than a
 cross-cutting rewrite.
+
+
+## Geometry and scenario state are now separate
+
+Canonical map geometry no longer carries a single `owner` field.
+
+That separation is intentional:
+
+- map geometry owns city identity, display name, coordinate, villages and route graph;
+- scenario start state owns city ownership and numeric city state;
+- 189 ownership cannot leak into 200 or 215 merely because the same geometry profile
+  is reused;
+- the old coordinate-derived gold/food/troops/development values are quarantined in
+  the scaffold 189 start-state only.
+
+`GameStore` now initializes city runtime state from an explicit scenario start-state
+factory. The default production factory supports only the provisional scaffold 189
+state. A canonical geometry profile cannot start a production game until an explicit
+canonical scenario start state exists.
+
+For compatibility tests, canonical 189 ownership can be built from source-backed
+ownership evidence while test-only economy values are injected explicitly. Those test
+values are never a production default.
+
+## Split readiness
+
+The canonical evidence gate now reports separate states:
+
+- `geometryReady`: 40 coordinates, name variants, village coverage and route
+  coverage are source-backed;
+- `scenario189Ready`: 189 ownership is source-backed;
+- `ready`: both are true.
+
+This allows geometry calibration to finish and be reviewed before 189 ownership is
+complete.
+
+When geometry is ready but scenario data is not, `selectRuntimeMapProfile()` keeps
+the live game on `runtime-scaffold` but exposes a read-only canonical
+`geometryPreview` for QA.
+
+The evidence compiler supports the same split:
+
+```bash
+npm run map:evidence:compile -- capture.json geometry.json --scope geometry
+npm run map:evidence:compile -- capture.json full.json --scope full
+```
+
+A geometry artifact never carries partial ownership. Full compilation still requires
+all activation evidence.
+
+## Remaining production start-state blocker
+
+Even after map geometry and 189 ownership are complete, canonical 189 is not yet a
+production-ready start state.
+
+Still required:
+
+- starting city gold;
+- starting city food;
+- starting troops;
+- development;
+- rule/governance;
+- defense;
+- training;
+- exact officer-to-city assignment.
+
+The repository now reports these separately through `canonicalScenarioStartReadiness`.
+200 and 215 remain independently blocked; they never inherit 189 ownership.
