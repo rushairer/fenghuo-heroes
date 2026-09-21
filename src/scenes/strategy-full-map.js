@@ -4,7 +4,8 @@ import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
 import { drawFullMapCitySymbol, drawFullMapVillageSymbol, drawMapCursor, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
-import { cityWorldPoint } from '../game/world.js'
+import { WORLD_TERRAIN_RELIEF, drawProjectedTerrainRelief } from '../game/terrain-relief.js'
+import { WORLD_H, WORLD_W, cityWorldPoint } from '../game/world.js'
 import { drawProjectedRiver, drawRoadNetwork, uniqueRoadPairs } from '../game/world-art.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
 
@@ -53,6 +54,13 @@ export class StrategyScene extends OfficerStrategyScene {
       })
     }
     r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
+
+    drawProjectedTerrainRelief(r,WORLD_TERRAIN_RELIEF,{
+      project:(point)=>fullMapPoint(point,bounds),
+      scaleX:bounds.w/WORLD_W,
+      scaleY:bounds.h/WORLD_H,
+      clip:bounds,
+    })
 
     this.drawFullMapRiver(bounds)
     const roadSegments=uniqueRoadPairs(this.mapCities()).map(([from,to])=>({
