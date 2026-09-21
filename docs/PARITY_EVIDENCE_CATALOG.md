@@ -77,6 +77,35 @@ Priority use:
 
 Every adopted string/value still needs a page reference.
 
+### Chinese-ROM EC / RAM table — Tier C layout lead
+
+Source:
+
+- https://www.ng173.com/thread-152866-1-1.html
+
+The published Traditional-Chinese Mega Drive memory-code table identifies:
+
+- a 40-entry city sequence matching the project's `ZH_ROM_RAM_CITY_ORDER`;
+- money table base `0xE000`, 4-byte city stride;
+- food table base `0xE0A0`, 4-byte city stride;
+- troop table base `0xE500`, 4-byte city stride;
+- ruler selector address `0xF67A` with explicit selector values.
+
+Allowed use:
+
+- memory-layout and capture-address planning;
+- corroborating the RAM city identity sequence;
+- identifying which runtime memory cell to observe in a lawful local session.
+
+Not allowed:
+
+- treating cheat "maximum" values as original starting values;
+- deriving map coordinates or route topology from address order;
+- treating RAM address order as visible country-number order;
+- deriving scenario ownership merely from selector IDs.
+
+Runtime contract: `src/game/zh-rom-ram-evidence.js`.
+
 ### 埼玉帝国 play log, part 1 — Tier B
 
 Source:
