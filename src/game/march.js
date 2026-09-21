@@ -1,4 +1,5 @@
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
+import { MARCH_RUNTIME_PROJECTION } from './march-runtime-projection.js'
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
@@ -24,8 +25,8 @@ export const MARCH_COMMAND_EVIDENCE = Object.freeze({
   source:'jp-manual-pages-24-25',
   conditionSemantics:'manual-confirmed',
   adjacencySemantics:'adjacent-on-original-map',
-  enemyArmyAdjacencyProjection:'provisional-8px-route-step',
-  enemyCityAdjacencyProjection:'provisional-24px-city-tolerance',
+  enemyArmyAdjacencyProjection:`provisional-${MARCH_RUNTIME_PROJECTION.enemyArmyAdjacencyWorld}px-route-step`,
+  enemyCityAdjacencyProjection:`provisional-${MARCH_RUNTIME_PROJECTION.enemyCityAdjacencyWorld}px-city-tolerance`,
   splitGroupingProjection:'same-map-point-engineering',
   villageProjection:'unimplemented',
 })
@@ -52,7 +53,7 @@ export function marchCommandOptions({
   options.push(Object.freeze({id:'end',label:'結束'}))
   return Object.freeze(options)
 }
-export const MARCH_ADJACENCY_STEP = 8
+export const MARCH_ADJACENCY_STEP = MARCH_RUNTIME_PROJECTION.enemyArmyAdjacencyWorld
 
 export function friendlyArmyStack(store, armyId) {
   const armies = ensureMarchState(store)
@@ -157,7 +158,7 @@ export function rerouteArmy(store, armyId, route) {
   return army
 }
 
-export function executeMarchTurn(store, days = 30) {
+export function executeMarchTurn(store, days = MARCH_RUNTIME_PROJECTION.executionDaysPerEvenMonth) {
   const events = []
   const maxDays = Math.max(0, Math.floor(days))
 
@@ -167,20 +168,28 @@ export function executeMarchTurn(store, days = 30) {
     const ration = dailyFoodFor(army.troops, army.officerCount)
     army.dailyFood = ration
     let steps = 0
+    let daysElapsed = 0
     let foodConsumed = 0
     let starvingDays = 0
+    const routeNodeDays=MARCH_RUNTIME_PROJECTION.routeNodeDays
 
-    while (steps < maxDays && army.routeIndex < army.route.length - 1) {
-      steps++
-      if (army.food >= ration) {
-        army.food -= ration
-        foodConsumed += ration
-      } else {
-        foodConsumed += Math.max(0, army.food)
-        army.food = 0
-        starvingDays++
+    while (
+      daysElapsed + routeNodeDays <= maxDays &&
+      army.routeIndex < army.route.length - 1
+    ) {
+      for(let day=0;day<routeNodeDays;day++){
+        if (army.food >= ration) {
+          army.food -= ration
+          foodConsumed += ration
+        } else {
+          foodConsumed += Math.max(0, army.food)
+          army.food = 0
+          starvingDays++
+        }
       }
 
+      daysElapsed += routeNodeDays
+      steps++
       army.routeIndex++
       const point = army.route[army.routeIndex]
       army.x = point.x
@@ -196,6 +205,7 @@ export function executeMarchTurn(store, days = 30) {
     events.push({
       armyId: army.id,
       steps,
+      daysElapsed,
       foodConsumed,
       starvingDays,
       status: army.status,
@@ -205,14 +215,14 @@ export function executeMarchTurn(store, days = 30) {
   return events
 }
 
-export function advanceMarchArmies(store, days = 30) {
+export function advanceMarchArmies(store, days = MARCH_RUNTIME_PROJECTION.executionDaysPerEvenMonth) {
   const events = executeMarchTurn(store, days)
   if (events.length) store.addLog(`行軍部隊移動：${events.length}隊。`)
   store.save()
   return events.map((event) => event.armyId)
 }
 
-export function enemyCityNearArmy(store, armyId, tolerance = 24) {
+export function enemyCityNearArmy(store, armyId, tolerance = MARCH_RUNTIME_PROJECTION.enemyCityAdjacencyWorld) {
   const army = ensureMarchState(store).find((item) => item.id === armyId)
   if (!army) return null
   return (store.mapProfile?.cities??[]).find((city) => {
