@@ -35,6 +35,26 @@ export function duelArmorDetailGeometry(){
   })
 }
 
+export function duelFighterOrnamentGeometry(){
+  return Object.freeze({
+    plume:Object.freeze([
+      Object.freeze({x:0,y:-49}),
+      Object.freeze({x:2.5,y:-55}),
+      Object.freeze({x:-1.5,y:-60}),
+      Object.freeze({x:3.2,y:-65}),
+    ]),
+    shoulderPlates:Object.freeze([
+      Object.freeze({x:-11.5,y:-23,rx:3.6,ry:2.2}),
+      Object.freeze({x:11.5,y:-23,rx:3.6,ry:2.2}),
+    ]),
+    tassels:Object.freeze([
+      Object.freeze({x:-5,y:-2,dx:-2.8,dy:9}),
+      Object.freeze({x:0,y:-1,dx:.8,dy:10}),
+      Object.freeze({x:5,y:-2,dx:3.1,dy:9}),
+    ]),
+  })
+}
+
 export function drawDuelFighter(r,{
   x,
   y,
@@ -115,6 +135,26 @@ export function drawDuelFighter(r,{
   c.quadraticCurveTo(0,(armorDetail.beltY+1.2)*S,10*S,armorDetail.beltY*S)
   c.stroke()
 
+  const ornament=duelFighterOrnamentGeometry()
+  c.fillStyle='rgba(92,61,40,.8)'
+  for(const plate of ornament.shoulderPlates){
+    c.beginPath()
+    c.ellipse(plate.x*S,plate.y*S,plate.rx*S,plate.ry*S,0,0,Math.PI*2)
+    c.fill()
+    c.strokeStyle='rgba(235,199,130,.45)'
+    c.lineWidth=.28*S
+    c.stroke()
+  }
+
+  c.strokeStyle='rgba(112,50,35,.75)'
+  c.lineWidth=.55*S
+  for(const tassel of ornament.tassels){
+    c.beginPath()
+    c.moveTo(tassel.x*S,tassel.y*S)
+    c.quadraticCurveTo((tassel.x+tassel.dx*.4)*S,(tassel.y+tassel.dy*.55)*S,(tassel.x+tassel.dx)*S,(tassel.y+tassel.dy)*S)
+    c.stroke()
+  }
+
   // Head and face.
   c.fillStyle='#d4a06f'
   c.beginPath()
@@ -156,6 +196,24 @@ export function drawDuelFighter(r,{
   c.fill()
   c.fillStyle='#b98a3a'
   c.fillRect(-1*S,-49*S,2*S,8*S)
+
+  c.strokeStyle='rgba(141,43,31,.82)'
+  c.lineWidth=1.35*S
+  c.beginPath()
+  ornament.plume.forEach((point,index)=>{
+    if(index===0)c.moveTo(point.x*S,point.y*S)
+    else c.quadraticCurveTo((point.x-1.2)*S,(point.y+1.5)*S,point.x*S,point.y*S)
+  })
+  c.stroke()
+  c.strokeStyle='rgba(244,173,111,.42)'
+  c.lineWidth=.42*S
+  c.beginPath()
+  ornament.plume.forEach((point,index)=>{
+    if(index===0)c.moveTo((point.x+.5)*S,point.y*S)
+    else c.lineTo((point.x+.5)*S,point.y*S)
+  })
+  c.stroke()
+
   c.fillStyle='rgba(233,194,112,.72)'
   for(const rivetX of armorDetail.helmetRivets){
     c.beginPath()
