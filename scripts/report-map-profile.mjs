@@ -14,6 +14,9 @@ console.log(JSON.stringify({
   },
   canonicalEvidence:{
     ready:readiness.ready,
+    geometryReady:readiness.geometryReady,
+    scenario189Ready:readiness.scenario189Ready,
+    sourceLedgerValid:readiness.sourceLedgerValid,
     ledgerStatus:readiness.ledgerStatus,
     cityCoordinates:`${readiness.verifiedCityCoordinateCount}/${readiness.requiredCityCoordinateCount}`,
     cityNamesResolved:readiness.cityNamesResolved,
