@@ -26,3 +26,33 @@ test('runtime consumers do not hardcode provisional scaffold city ids',()=>{
   }
   assert.deepEqual(failures,[])
 })
+
+
+test('profile-aware runtime consumers do not read the global city dictionary',()=>{
+  const paths=[
+    'src/game/march.js',
+    'src/game/transport-parity.js',
+    'src/game/qa-fixtures.js',
+    'src/scenes/strategy-parity.js',
+    'src/scenes/strategy-officers.js',
+    'src/scenes/strategy-info.js',
+    'src/scenes/strategy-full-map.js',
+    'src/scenes/siege.js',
+    'src/scenes/duel.js',
+  ]
+  const failures=[]
+  for(const path of paths){
+    const source=readFileSync(path,'utf8')
+    if(/\bCITY_BY_ID\b/.test(source))failures.push(path)
+  }
+  assert.deepEqual(failures,[])
+})
+
+test('HD strategy renderers source city collections from the current store profile',()=>{
+  const strategy=readFileSync('src/scenes/strategy-info.js','utf8')
+  const fullMap=readFileSync('src/scenes/strategy-full-map.js','utf8')
+  assert.match(strategy,/this\.mapCities\(\)/)
+  assert.match(strategy,/store\.mapProfile\?\.villages/)
+  assert.match(fullMap,/this\.mapCities\(\)/)
+  assert.match(fullMap,/store\.mapProfile\?\.villages/)
+})
