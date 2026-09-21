@@ -1,4 +1,4 @@
-import { drawDuelArena, drawDuelFighter, drawDuelMotionCue } from '../game/battle-art.js'
+import { drawDuelArena, drawDuelFighter, drawDuelHitSpark, drawDuelMotionCue } from '../game/battle-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { DUEL_COMMANDS, DUEL_MODES, autoDuelIntent, cycleDuelMode } from '../game/duel-parity.js'
@@ -12,7 +12,7 @@ export class DuelScene{
     this.px=78;this.ex=242;this.php=100;this.ehp=100
     this.attackCd=0;this.enemyCd=0;this.guard=false
     this.result=null;this.timer=0;this.commandOpen=false;this.commandIndex=0
-    this.message='';this.enemyRage=0;this.hitFlash=0
+    this.message='';this.enemyRage=0;this.hitFlash=0;this.hitSide=null
     this.modeSelect=true;this.modeIndex=0;this.autoMode=false;this.autoElapsed=0
   }
 
@@ -100,6 +100,7 @@ export class DuelScene{
       const dmg=this.guard?2:this.enemyRage>0?12:8
       this.php=Math.max(0,this.php-dmg)
       this.hitFlash=130
+      this.hitSide='player'
       this.app.audio.alert()
     }
   }
@@ -109,7 +110,7 @@ export class DuelScene{
     const d=this.ex-this.px,reach=stance==='middle'?47:43,damage=stance==='middle'?11:14
     this.message=stance==='high'?'上段！':stance==='low'?'下段！':'中段！'
     if(withSound)this.app.audio.confirm()
-    if(d<reach){this.ehp=Math.max(0,this.ehp-damage);this.hitFlash=120}
+    if(d<reach){this.ehp=Math.max(0,this.ehp-damage);this.hitFlash=120;this.hitSide='enemy'}
   }
 
   executeCommand(){
@@ -164,6 +165,14 @@ export class DuelScene{
       guard:false,
       color:df?.color??'#f0d28a',
     })
+    if(this.hitFlash>0&&this.hitSide){
+      drawDuelHitSpark(r,{
+        x:this.hitSide==='player'?this.px:this.ex,
+        y:126,
+        intensity:Math.min(1,this.hitFlash/120),
+        color:this.hitSide==='player'?'#ffe2a6':'#fff0bd',
+      })
+    }
     if(this.hitFlash>0){c.save();c.globalAlpha=Math.min(.35,this.hitFlash/300);c.fillStyle='#fff2bf';c.fillRect(0,0,320*r.S,224*r.S);c.restore()}
     r.fillRect(0,190,320,34,'rgba(10,8,6,.82)')
     r.text(this.autoMode&&!this.modeSelect?'自動一騎討ち中':'← → 移動　B+↑/↓ 上下段攻擊　B 中段　C 防禦　A 命令',160,197,6.2,'#eadbb9','center')
