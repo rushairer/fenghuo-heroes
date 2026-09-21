@@ -287,3 +287,11 @@ test('duel weapon contact cue reads only existing spacing and attack presentatio
   assert.match(source,/playerAttacking:this\.attackCd>160/)
   assert.match(source,/enemyAttacking:this\.enemyCd>500/)
 })
+
+
+test('siege corner towers retain window beam and brace material detail',()=>{
+  const source=read('src/game/battle-art.js')
+  assert.ok(source.includes('siegeTowerMaterialGeometry'))
+  assert.match(source,/towerMaterial\.towers/)
+  assert.match(source,/towerMaterial\.braces/)
+})
