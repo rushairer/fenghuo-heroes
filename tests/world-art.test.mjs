@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   WORLD_RIVER_PATH,
   riverStrokeStyle,
+  riverSurfaceMarks,
   roadSegmentStyle,
   uniqueRoadPairs,
   worldRiverBounds,
@@ -67,4 +68,13 @@ test('pattern-backed river lowers highlight opacity without changing geometry',(
   assert.equal(patterned.bankHighlightAlpha,plain.bankHighlightAlpha)
   assert.equal(patterned.highlightWidth,plain.highlightWidth)
   assert.ok(patterned.highlightAlpha<plain.highlightAlpha)
+})
+
+
+test('river surface marks are deterministic samples of the shared river path',()=>{
+  const marks=riverSurfaceMarks()
+  assert.equal(marks.length,WORLD_RIVER_PATH.curves.length*3)
+  assert.deepEqual(marks,riverSurfaceMarks())
+  assert.ok(marks.every((mark)=>Number.isFinite(mark.x)&&Number.isFinite(mark.y)&&Number.isFinite(mark.angle)))
+  assert.ok(marks.every((mark)=>mark.length>=8&&mark.length<=12))
 })
