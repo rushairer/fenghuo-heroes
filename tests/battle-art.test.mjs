@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, siegeDetailGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
+import { battlementColumns, duelArenaDetailGeometry, duelArenaOrnamentGeometry, duelArenaPosts, duelArmorDetailGeometry, duelFighterOrnamentGeometry, duelFighterPose, siegeDetailGeometry, siegeStandardGeometry, siegeTowerDetailGeometry } from '../src/game/battle-art.js'
 
 test('siege battlements are deterministic, ordered and stay inside the wall width',()=>{
   const values=battlementColumns(274,28)
@@ -112,4 +112,14 @@ test('duel arena ornaments keep lanterns and pennants inside the stage width',()
   assert.equal(detail.pennants.length,3)
   assert.ok(detail.lanterns.every((item)=>item.x>0&&item.x<320&&item.r>0))
   assert.ok(detail.pennants.every((item)=>item.x>=0&&item.x+item.w<=320&&item.h>0))
+})
+
+
+test('siege confrontation standards stay symmetric inside fortress width',()=>{
+  const standards=siegeStandardGeometry(290)
+  assert.equal(standards.length,2)
+  assert.equal(standards[0].x,290-standards[1].x)
+  assert.equal(standards[0].flip,false)
+  assert.equal(standards[1].flip,true)
+  assert.ok(standards.every((item)=>item.x>0&&item.x<290&&item.y>0))
 })
