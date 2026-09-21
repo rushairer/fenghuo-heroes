@@ -138,9 +138,12 @@ npm run scenario:evidence:template -- 189 scenario-189.capture.json
 npm run scenario:evidence:audit -- scenario-189.capture.json --require-ownership-ready
 npm run scenario:evidence:audit -- scenario-189.capture.json --require-economy-ready
 npm run scenario:evidence:audit -- scenario-189.capture.json --require-officer-ready
-npm run scenario:evidence:audit -- scenario-189.capture.json --require-ready
-npm run scenario:evidence:compile -- scenario-189.capture.json scenario-189.compiled.json --scope full
+npm run scenario:evidence:merge -- batch-a.json batch-b.json --out scenario-189.merged.json
+npm run scenario:evidence:audit -- scenario-189.merged.json --require-ready
+npm run scenario:evidence:compile -- scenario-189.merged.json scenario-189.compiled.json --scope full
 ```
+
+The static workbench is available at `tools/scenario-evidence-capture.html`; it outputs merge-ready single-source batches while keeping every candidate `verified:false`.
 
 See `docs/SCENARIO_EVIDENCE_CAPTURE.md` for the full workflow.
 
