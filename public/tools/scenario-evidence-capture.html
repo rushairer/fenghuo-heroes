@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Canonical Scenario Evidence Capture</title>
+  <link rel="stylesheet" href="./scenario-evidence-capture.css" />
+</head>
+<body>
+  <main class="capture-app">
+    <header>
+      <h1>Chinese-ROM Scenario Evidence Capture</h1>
+      <p>逐張原版截圖記錄 ownership、城市開局數值與武將城市配屬。工作台只產生 <code>verified:false</code> 候選。</p>
+    </header>
+
+    <section class="controls" aria-label="scenario capture controls">
+      <label>參考截圖 <input id="image-input" type="file" accept="image/*" /></label>
+      <label>繼續既有批次 <input id="bundle-input" type="file" accept="application/json,.json" /></label>
+      <label>劇本
+        <select id="scenario-year">
+          <option value="189">189</option>
+          <option value="200">200</option>
+          <option value="215">215</option>
+        </select>
+      </label>
+      <label>記錄類型
+        <select id="record-type">
+          <option value="ownership">城市歸屬</option>
+          <option value="city-state">城市數值</option>
+          <option value="officer">武將配屬</option>
+        </select>
+      </label>
+      <label>城市 <select id="city-name"></select></label>
+      <label>Source ID <input id="source-id" value="scenario-capture-001" /></label>
+      <label>Source Ref <input id="source-ref" placeholder="189-status-frame.png" /></label>
+      <label>Frame Ref <input id="frame-ref" value="scenario-capture-001#frame-001" /></label>
+    </section>
+
+    <section class="editor-card" id="ownership-editor">
+      <h2>城市歸屬</h2>
+      <label>Faction ID <input id="faction-id" autocomplete="off" placeholder="liu / cao / neutral / …" /></label>
+    </section>
+
+    <section class="editor-card" id="city-state-editor" hidden>
+      <h2>城市開局數值</h2>
+      <div class="numeric-grid" id="city-state-fields"></div>
+    </section>
+
+    <section class="editor-card" id="officer-editor" hidden>
+      <h2>武將城市配屬</h2>
+      <label>武將名 <input id="officer-name" autocomplete="off" /></label>
+      <label>角色
+        <select id="officer-role">
+          <option value="ruler">君主</option>
+          <option value="officer">武將</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="actions">
+      <label class="check-option">
+        <input id="auto-next" type="checkbox" checked />
+        城市歸屬 / 城市數值記錄後，自動切到下一個未採集城市
+      </label>
+      <button id="save-record" type="button">記錄 / 覆蓋候選</button>
+      <button id="copy-output" type="button">複製 Capture Bundle</button>
+      <button id="undo-output" type="button">撤銷上一筆</button>
+      <button id="clear-output" type="button">清空候選</button>
+    </section>
+
+    <section class="workspace">
+      <div class="reference-shell">
+        <h2>原版參考畫面</h2>
+        <div class="image-stage">
+          <img id="reference-image" alt="Local evidence screenshot" hidden />
+          <p id="image-placeholder">載入本地截圖作為人工抄錄參考。圖片不會寫入 evidence JSON。</p>
+        </div>
+      </div>
+
+      <aside>
+        <div class="output-heading">
+          <h2>Capture Bundle</h2>
+          <span id="capture-progress">歸屬 0/40 · 數值 0/40 · 武將 0</span>
+        </div>
+        <pre id="output">{}</pre>
+      </aside>
+    </section>
+
+    <footer><span id="status">尚未建立候選。</span></footer>
+  </main>
+  <script type="module" src="./scenario-evidence-capture.js"></script>
+</body>
+</html>
