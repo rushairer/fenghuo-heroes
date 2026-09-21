@@ -76,7 +76,8 @@ test('canonical runtime builder creates stable 40-city IDs only after every gate
   assert.equal(profile.cities[0].id,'zh-01')
   assert.equal(profile.cities[39].id,'zh-40')
   assert.equal(canonicalCityId(ZH_ROM_CANONICAL_CITY_SET[0]),'zh-01')
-  assert.equal(profile.cities[0].owner,'liu')
+  assert.equal('owner' in profile.cities[0],false)
+  assert.equal(profile.geometryOnly,true)
   assert.equal(profile.villages.length,1)
 })
 
@@ -105,4 +106,15 @@ test('evidence-resolved display names are preserved without changing canonical i
   const city=profile.cities.find((item)=>item.canonicalName===variant.ram)
   assert.equal(city.name,variant.numberedGuide)
   assert.equal(city.canonicalName,variant.ram)
+})
+
+
+test('canonical geometry can be built before 189 ownership is complete',()=>{
+  const evidence=completeEvidence()
+  evidence.ownership189=[]
+  const profile=buildCanonicalRuntimeMap(evidence)
+  assert.equal(profile.canonical,true)
+  assert.equal(profile.geometryOnly,true)
+  assert.equal(profile.cities.length,40)
+  assert.equal('owner' in profile.cities[0],false)
 })
