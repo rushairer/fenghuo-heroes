@@ -75,6 +75,8 @@ test('fort HD detail geometry provides masonry joints and roof ridges',()=>{
   assert.ok(detail.stoneRows.length>=4)
   assert.ok(detail.verticalJoints.length>=6)
   assert.ok(detail.roofRidges.length>=3)
+  assert.ok(detail.ground.rx>detail.ground.ry)
+  assert.ok(detail.ground.y>0)
   assert.ok(detail.stoneRows.every(Number.isFinite))
 })
 
