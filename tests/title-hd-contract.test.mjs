@@ -34,3 +34,9 @@ test('vector title fallback includes the scalable HD micro-detail pass',()=>{
   assert.match(titleArt,/drawTitleHdDetail/)
   assert.match(titleArt,/drawFrontRightGeneral\(r\)[\s\S]*drawTitleHdDetail\(r\)[\s\S]*drawBrocadeStrip\(r\)/)
 })
+
+
+test('vector title fallback applies material depth before micro-detail',()=>{
+  assert.match(titleArt,/drawTitleMaterialPass/)
+  assert.match(titleArt,/drawFrontRightGeneral\(r\)[\s\S]*drawTitleMaterialPass\(r\)[\s\S]*drawTitleHdDetail\(r\)[\s\S]*drawBrocadeStrip\(r\)/)
+})
