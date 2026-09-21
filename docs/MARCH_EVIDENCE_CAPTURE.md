@@ -121,6 +121,21 @@ The repository intentionally does **not** derive a loss formula yet. Starvation
 observations are counted, but `starvationEffects` remains not ready until a separate
 model-selection/calibration stage has enough evidence.
 
+## Merge multiple capture sources
+
+Keep each editable workbench batch on one source ID. Combine independent videos or frame families before audit:
+
+```bash
+npm run march:evidence:merge -- batch-a.json batch-b.json --out march.merged.json
+```
+
+The merge is conflict-aware:
+
+- identical same-source/frame observations deduplicate;
+- contradictory same-source/frame/type observations fail;
+- army and city adjacency checks may share a frame because target kind is part of the identity;
+- a ready-like status is downgraded to `capture-in-progress` when returned to an editable merged artifact.
+
 ## Audit
 
 ```bash
