@@ -126,6 +126,13 @@ export function drawProjectedRiver(r,{
   c.stroke()
 
   traceRiver(c,S,path,project)
+  c.strokeStyle='#d0a66b'
+  c.lineWidth=style.bankHighlightWidth*outerScale*S
+  c.globalAlpha=style.bankHighlightAlpha
+  c.stroke()
+  c.globalAlpha=1
+
+  traceRiver(c,S,path,project)
   c.strokeStyle=inner
   c.lineWidth=style.waterWidth*innerScale*S
   c.stroke()
