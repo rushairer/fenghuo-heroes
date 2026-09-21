@@ -1,0 +1,47 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { compileCanonicalEvidenceBundle } from '../src/game/map-evidence-compiler.js'
+import { createCanonicalEvidenceTemplate } from '../src/game/map-evidence-template.js'
+import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
+
+test('compiler refuses incomplete capture bundles',()=>{
+  assert.throws(
+    ()=>compileCanonicalEvidenceBundle(createCanonicalEvidenceTemplate()),
+    /not ready/,
+  )
+})
+
+test('compiler emits stable 40-city canonical ordering and ready status',()=>{
+  const bundle=completeCanonicalMapEvidence()
+  bundle.cityCoordinates.reverse()
+  bundle.ownership189.reverse()
+  const compiled=compileCanonicalEvidenceBundle(bundle)
+  assert.equal(compiled.status,'ready-for-canonical-activation')
+  assert.equal(compiled.cityCoordinates.length,40)
+  assert.equal(compiled.ownership189.length,40)
+  assert.equal(compiled.cityCoordinates[0].name,'代縣')
+  assert.equal(compiled.ownership189[0].city,'代縣')
+})
+
+test('compiler removes unused sources and recomputes coverage item counts',()=>{
+  const bundle=completeCanonicalMapEvidence()
+  bundle.sources.push({id:'unused',kind:'direct-capture',ref:'unused.png'})
+  bundle.villageCoverage.itemCount=1
+  bundle.routeNetworkCoverage.itemCount=1
+  const compiled=compileCanonicalEvidenceBundle(bundle)
+  assert.equal(compiled.sources.some((source)=>source.id==='unused'),false)
+  assert.equal(compiled.villageCoverage.itemCount,compiled.villages.length)
+  assert.equal(compiled.routeNetworkCoverage.itemCount,compiled.routes.length)
+})
+
+test('compiler output is deterministic for equivalent input ordering',()=>{
+  const a=completeCanonicalMapEvidence()
+  const b=completeCanonicalMapEvidence()
+  b.cityCoordinates.reverse()
+  b.ownership189.reverse()
+  b.routes.reverse()
+  assert.deepEqual(
+    compileCanonicalEvidenceBundle(a),
+    compileCanonicalEvidenceBundle(b),
+  )
+})
