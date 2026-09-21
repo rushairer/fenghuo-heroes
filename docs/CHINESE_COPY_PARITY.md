@@ -44,9 +44,10 @@ The following messages preserve current behavior but are **not** parity evidence
 | `commandCategoryLocked` | 本月已经决定执行「…」，不能再改成其他类别。 | unverified |
 | `ownCityRequired` | 请选择本国城池。 | unverified |
 | `confirmCategoryAtCity` | 确定在「…」执行…？ | unverified |
+| `foreignCityCommandRejected` | 只能向本国城池下令。 | unverified |
 | `retiredAdjacentMarchHint` | 舊版相鄰城市行軍入口已退休… | engineering diagnostic |
 
-The first four require direct Chinese-ROM copy evidence before they may be promoted.
+The first five require direct Chinese-ROM copy evidence before they may be promoted.
 The last item is deliberately a remake diagnostic and should eventually disappear from
 a strict parity player flow instead of being “translated into original copy”.
 
