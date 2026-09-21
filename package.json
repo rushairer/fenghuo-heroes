@@ -23,6 +23,7 @@
     "copy:report": "node scripts/report-chinese-copy-parity.mjs",
     "ram:capture-plan": "node scripts/report-ram-capture-plan.mjs",
     "parity:evidence-report": "node scripts/report-evidence-readiness.mjs",
-    "march:evidence:audit": "node scripts/audit-march-evidence.mjs"
+    "march:evidence:audit": "node scripts/audit-march-evidence.mjs",
+    "march:evidence:merge": "node scripts/merge-march-evidence.mjs"
   }
 }
