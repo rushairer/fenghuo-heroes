@@ -6,6 +6,13 @@ import { ZH_ROM_CANONICAL_CITY_SET } from '../src/game/original-data.js'
 
 function completeEvidence(){
   const source={id:'scenario-189',kind:'direct-capture',ref:'scenario-189.png'}
+  const ownership=ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
+    city,
+    factionId:index===0?'liu':index===1?'cao':'neutral',
+    sourceId:source.id,
+    frameRef:`frame#owner-${index}`,
+    verified:true,
+  }))
   const cityStates=ZH_ROM_CANONICAL_CITY_SET.map((city,index)=>({
     city,
     gold:100+index,
@@ -27,6 +34,8 @@ function completeEvidence(){
     status:'test-complete',
     scenarioYear:189,
     sources:[source,{id:'unused',kind:'direct-capture',ref:'unused.png'}],
+    ownership,
+    ownershipCoverage:{sourceId:source.id,frameRef:'frame#ownership',itemCount:40,verified:true},
     cityStates,
     cityStateCoverage:{sourceId:source.id,frameRef:'frame#cities',itemCount:40,verified:true},
     officerAssignments,
@@ -40,6 +49,8 @@ test('full scenario compiler emits stable canonical city order and officer order
   const compiled=compileScenarioEvidenceBundle(bundle)
   assert.equal(compiled.status,'ready-for-scenario-start')
   assert.equal(compiled.scope,'full')
+  assert.equal(compiled.ownership.length,40)
+  assert.equal(compiled.ownership[0].city,ZH_ROM_CANONICAL_CITY_SET[0])
   assert.equal(compiled.cityStates.length,40)
   assert.equal(compiled.cityStates[0].city,ZH_ROM_CANONICAL_CITY_SET[0])
   assert.deepEqual(compiled.officerAssignments.map((item)=>item.officer),['張飛','關羽'].sort((a,b)=>a.localeCompare(b)))
@@ -49,6 +60,8 @@ test('full scenario compiler emits stable canonical city order and officer order
 test('economy-only compilation excludes officer data',()=>{
   const compiled=compileScenarioEvidenceBundle(completeEvidence(),{scope:'economy'})
   assert.equal(compiled.status,'ready-for-scenario-economy')
+  assert.deepEqual(compiled.ownership,[])
+  assert.equal(compiled.ownershipCoverage,null)
   assert.equal(compiled.cityStates.length,40)
   assert.deepEqual(compiled.officerAssignments,[])
   assert.equal(compiled.officerCoverage,null)
@@ -57,6 +70,8 @@ test('economy-only compilation excludes officer data',()=>{
 test('officer-only compilation excludes city economy data',()=>{
   const compiled=compileScenarioEvidenceBundle(completeEvidence(),{scope:'officers'})
   assert.equal(compiled.status,'ready-for-officer-placement')
+  assert.deepEqual(compiled.ownership,[])
+  assert.equal(compiled.ownershipCoverage,null)
   assert.deepEqual(compiled.cityStates,[])
   assert.equal(compiled.cityStateCoverage,null)
   assert.equal(compiled.officerAssignments.length,2)
@@ -82,4 +97,16 @@ test('scenario compiler output is deterministic across input ordering',()=>{
     compileScenarioEvidenceBundle(a),
     compileScenarioEvidenceBundle(b),
   )
+})
+
+
+test('ownership-only compilation excludes economy and officer data',()=>{
+  const compiled=compileScenarioEvidenceBundle(completeEvidence(),{scope:'ownership'})
+  assert.equal(compiled.status,'ready-for-scenario-ownership')
+  assert.equal(compiled.ownership.length,40)
+  assert.equal(compiled.ownershipCoverage.itemCount,40)
+  assert.deepEqual(compiled.cityStates,[])
+  assert.equal(compiled.cityStateCoverage,null)
+  assert.deepEqual(compiled.officerAssignments,[])
+  assert.equal(compiled.officerCoverage,null)
 })
