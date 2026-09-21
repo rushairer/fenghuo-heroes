@@ -310,6 +310,21 @@ export function siegeTowerDetailGeometry(width=290){
   })
 }
 
+export function siegeGateDepthGeometry(width=290,height=105){
+  const w=Math.max(120,Number(width)||290)
+  const h=Math.max(70,Number(height)||105)
+  const gateHalf=Math.min(21,w*.08)
+  const gateTop=h*.62
+  return Object.freeze({
+    gateHalf,
+    gateTop,
+    innerHalf:gateHalf*.62,
+    innerTop:gateTop+8,
+    plankXs:Object.freeze([-gateHalf*.55,-gateHalf*.18,gateHalf*.18,gateHalf*.55]),
+    thresholdY:h-4,
+  })
+}
+
 export function drawSiegeFortress(r,{
   x=15,
   y=48,
@@ -386,14 +401,39 @@ export function drawSiegeFortress(r,{
   const gateX=x+width/2
   c.fillStyle='#4a382d'
   c.fillRect((gateX-47)*S,(y+39)*S,94*S,(height-39)*S)
+  const gateDepth=siegeGateDepthGeometry(width,height)
   c.fillStyle='#241a16'
   c.beginPath()
-  c.moveTo((gateX-21)*S,(y+height)*S)
-  c.lineTo((gateX-21)*S,(y+65)*S)
-  c.quadraticCurveTo(gateX*S,(y+48)*S,(gateX+21)*S,(y+65)*S)
-  c.lineTo((gateX+21)*S,(y+height)*S)
+  c.moveTo((gateX-gateDepth.gateHalf)*S,(y+height)*S)
+  c.lineTo((gateX-gateDepth.gateHalf)*S,(y+gateDepth.gateTop)*S)
+  c.quadraticCurveTo(gateX*S,(y+gateDepth.gateTop-17)*S,(gateX+gateDepth.gateHalf)*S,(y+gateDepth.gateTop)*S)
+  c.lineTo((gateX+gateDepth.gateHalf)*S,(y+height)*S)
   c.closePath()
   c.fill()
+
+  c.fillStyle='rgba(11,9,8,.62)'
+  c.beginPath()
+  c.moveTo((gateX-gateDepth.innerHalf)*S,(y+height)*S)
+  c.lineTo((gateX-gateDepth.innerHalf)*S,(y+gateDepth.innerTop)*S)
+  c.quadraticCurveTo(gateX*S,(y+gateDepth.innerTop-10)*S,(gateX+gateDepth.innerHalf)*S,(y+gateDepth.innerTop)*S)
+  c.lineTo((gateX+gateDepth.innerHalf)*S,(y+height)*S)
+  c.closePath()
+  c.fill()
+
+  c.strokeStyle='rgba(119,79,45,.58)'
+  c.lineWidth=.55*S
+  for(const dx of gateDepth.plankXs){
+    c.beginPath()
+    c.moveTo((gateX+dx)*S,(y+gateDepth.innerTop+2)*S)
+    c.lineTo((gateX+dx)*S,(y+height-2)*S)
+    c.stroke()
+  }
+  c.strokeStyle='rgba(222,184,121,.3)'
+  c.lineWidth=.7*S
+  c.beginPath()
+  c.moveTo((gateX-gateDepth.gateHalf-2)*S,(y+gateDepth.thresholdY)*S)
+  c.lineTo((gateX+gateDepth.gateHalf+2)*S,(y+gateDepth.thresholdY)*S)
+  c.stroke()
 
   // Stone courses.
   c.strokeStyle='rgba(214,188,145,.25)'
