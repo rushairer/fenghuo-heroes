@@ -1,3 +1,5 @@
+export const DUEL_CONTACT_PRESENTATION_RANGE=43
+
 export function duelWeaponContactGeometry({
   distance=999,
   playerAttacking=false,
@@ -5,8 +7,8 @@ export function duelWeaponContactGeometry({
 }={}){
   const d=Math.max(0,Number(distance)||0)
   const active=Boolean(playerAttacking||enemyAttacking)
-  const contact=active&&d<=52
-  const intensity=contact?Math.max(.2,Math.min(1,(52-d)/24+.25)):0
+  const contact=active&&d<DUEL_CONTACT_PRESENTATION_RANGE
+  const intensity=contact?Math.max(.2,Math.min(1,(DUEL_CONTACT_PRESENTATION_RANGE-d)/18+.25)):0
   return Object.freeze({
     active:contact,
     intensity,
