@@ -204,3 +204,11 @@ test('strategy and full-map rivers share the layered river stroke helper',()=>{
   assert.match(world,/drawWorldRiver/)
   assert.match(world,/drawProjectedRiver/)
 })
+
+
+test('full-map compact symbols retain proportional ground-shadow geometry',()=>{
+  const source=read('src/game/map-art.js')
+  assert.match(source,/fullMapCitySymbolGeometry[\s\S]*shadowRx:s\*\.72/)
+  assert.match(source,/fullMapVillageSymbolGeometry[\s\S]*shadowRx:s\*\.7/)
+  assert.match(source,/c\.ellipse\(0,g\.shadowY\*S,g\.shadowRx\*S,g\.shadowRy\*S/)
+})
