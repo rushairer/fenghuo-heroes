@@ -4,6 +4,7 @@ import { CITY_ECONOMY_FIELDS, SCENARIO_OFFICER_ROLES } from './scenario-fields.j
 import { targetScenario } from './scenario-target.js'
 
 const normalizedText=(value)=>String(value??'').trim()
+const normalizedCity=(value)=>normalizeZhRomCityName(normalizedText(value))
 
 function candidateBase({sourceId,frameRef}={}){
   return {
@@ -26,7 +27,7 @@ export function scenarioOwnershipCandidate({
   frameRef,
 }={}){
   return Object.freeze({
-    city:normalizeZhRomCityName(city),
+    city:normalizedCity(city),
     factionId:normalizedText(factionId),
     ...candidateBase({sourceId,frameRef}),
   })
@@ -39,7 +40,7 @@ export function scenarioCityStateCandidate({
   ...values
 }={}){
   const record={
-    city:normalizeZhRomCityName(city),
+    city:normalizedCity(city),
   }
   for(const field of CITY_ECONOMY_FIELDS){
     record[field]=numericCandidate(values[field])
@@ -60,7 +61,7 @@ export function scenarioOfficerCandidate({
   return Object.freeze({
     officer:normalizedText(officer),
     role:SCENARIO_OFFICER_ROLES.includes(role)?role:normalizedText(role),
-    city:normalizeZhRomCityName(city),
+    city:normalizedCity(city),
     ...candidateBase({sourceId,frameRef}),
   })
 }
