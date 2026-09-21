@@ -73,3 +73,13 @@ test('full-map view projects the same provisional road graph as the strategy map
   assert.match(source,/drawRoadNetwork\(r,roadSegments/)
   assert.match(source,/drawProjectedRiver/)
 })
+
+
+test('strategy and full-map terrain fallbacks share deterministic grain art',()=>{
+  const strategy=read('src/scenes/strategy-info.js')
+  const overview=read('src/scenes/strategy-full-map.js')
+  assert.match(strategy,/createTerrainGrain/)
+  assert.match(strategy,/drawTerrainGrain/)
+  assert.match(overview,/createTerrainGrain/)
+  assert.match(overview,/drawTerrainGrain/)
+})
