@@ -123,10 +123,36 @@ export function drawVectorMountain(r,x,y,index=0,scale=1){
   return true
 }
 
+export function forestDetailGeometry(index=0){
+  const layout=forestLayout(index)
+  return Object.freeze({
+    ground:Object.freeze({rx:13,ry:4.2,y:5.7}),
+    branchGuides:Object.freeze(layout.slice(0,4).map((tree,treeIndex)=>Object.freeze({
+      x:tree.x,
+      y:tree.y,
+      dx:treeIndex%2===0?-2.2:2,
+      dy:-2.4-(treeIndex%3)*.4,
+    }))),
+    undergrowth:Object.freeze([
+      Object.freeze({x:-8,y:5.5,r:1.8}),
+      Object.freeze({x:-3,y:6.2,r:1.5}),
+      Object.freeze({x:4,y:5.8,r:1.9}),
+      Object.freeze({x:9,y:6.1,r:1.4}),
+    ]),
+  })
+}
+
 export function drawVectorForest(r,x,y,index=0,scale=1){
   const c=r.ctx,S=r.S*scale
   c.save()
   c.translate(x*r.S,y*r.S)
+
+  const detail=forestDetailGeometry(index)
+  c.fillStyle='rgba(48,43,25,.25)'
+  c.beginPath()
+  c.ellipse(0,detail.ground.y*S,detail.ground.rx*S,detail.ground.ry*S,0,0,Math.PI*2)
+  c.fill()
+
   for(const tree of forestLayout(index)){
     c.fillStyle=MAP_ART_PALETTE.trunk
     c.fillRect((tree.x-.55)*S,(tree.y+tree.size*.45)*S,1.1*S,3.2*S)
@@ -148,6 +174,23 @@ export function drawVectorForest(r,x,y,index=0,scale=1){
     c.fill()
     c.globalAlpha=1
   }
+
+  c.strokeStyle='rgba(221,205,139,.32)'
+  c.lineWidth=.3*S
+  for(const branch of detail.branchGuides){
+    c.beginPath()
+    c.moveTo(branch.x*S,(branch.y+1.4)*S)
+    c.lineTo((branch.x+branch.dx)*S,(branch.y+branch.dy)*S)
+    c.stroke()
+  }
+
+  c.fillStyle='rgba(69,91,38,.72)'
+  for(const shrub of detail.undergrowth){
+    c.beginPath()
+    c.arc(shrub.x*S,shrub.y*S,shrub.r*S,0,Math.PI*2)
+    c.fill()
+  }
+
   c.restore()
   return true
 }
