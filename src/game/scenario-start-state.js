@@ -119,12 +119,15 @@ export function canonicalOfficerAssignmentsByCityId(
   for(const record of report.verifiedOfficerAssignments){
     const cityId=idByIdentity.get(normalizeZhRomCityName(record.city))
     if(!cityId)throw new Error(`Canonical officer placement references unknown city: ${record.city}`)
-    assignments[cityId].push(record.officer.trim())
+    assignments[cityId].push(Object.freeze({
+      name:record.officer.trim(),
+      role:record.role,
+    }))
   }
   return Object.freeze(Object.fromEntries(
     Object.entries(assignments).map(([cityId,officers])=>[
       cityId,
-      Object.freeze([...officers].sort((a,b)=>a.localeCompare(b))),
+      Object.freeze([...officers].sort((a,b)=>a.name.localeCompare(b.name))),
     ])
   ))
 }
