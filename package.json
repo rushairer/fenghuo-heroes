@@ -18,6 +18,7 @@
     "map:evidence:diff": "node scripts/diff-map-evidence.mjs",
     "scenario:evidence:template": "node scripts/create-scenario-evidence-template.mjs",
     "scenario:evidence:audit": "node scripts/audit-scenario-evidence.mjs",
-    "scenario:evidence:compile": "node scripts/compile-scenario-evidence.mjs"
+    "scenario:evidence:compile": "node scripts/compile-scenario-evidence.mjs",
+    "scenario:evidence:merge": "node scripts/merge-scenario-evidence.mjs"
   }
 }
