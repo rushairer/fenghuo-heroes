@@ -82,4 +82,6 @@ test('canonical 189 start state combines source-backed ownership economy and off
   assert.equal(state.cities['zh-01'].owner,'liu')
   assert.equal(state.cities['zh-01'].gold,20000)
   assert.deepEqual(state.cities['zh-03'].officers,['張飛','關羽'].sort((a,b)=>a.localeCompare(b)))
+  assert.equal(state.cities['zh-03'].officerCount,2)
+  assert.equal(state.cities['zh-01'].officerCount,0)
 })
