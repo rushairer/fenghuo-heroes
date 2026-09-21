@@ -17,6 +17,7 @@ test('capture workbench loads screenshots locally and exposes city/village modes
   assert.match(html,/id="undo-output"/)
   assert.match(html,/id="capture-progress"/)
   assert.match(html,/id="source-ref"/)
+  assert.match(html,/id="bundle-input"/)
 })
 
 test('capture workbench delegates coordinate math to the audited evidence module',()=>{
@@ -84,4 +85,14 @@ test('capture workbench keeps each batch on one source ID and derives source ref
   assert.match(js,/batchSourceId&&batchSourceId!==requestedSourceId/)
   assert.match(js,/請先複製\/清空批次後再切換 Source ID/)
   assert.match(js,/sourceRef\.value=file\.name/)
+})
+
+
+test('capture workbench can resume a prior single-source bundle without preserving verification',()=>{
+  assert.match(js,/normalizeCaptureBundleForEditing/)
+  assert.match(js,/bundleInput\.addEventListener\('change'/)
+  assert.match(js,/await file\.text\(\)/)
+  assert.match(js,/sourceId\.value=editable\.source\.id/)
+  assert.match(js,/sourceRef\.value=editable\.source\.ref/)
+  assert.match(js,/所有候選保持 verified:false/)
 })
