@@ -76,6 +76,16 @@ npm run check
 
 这些 QA 状态只固定画面入口，不改变默认玩家流程。武将 QA 状态只使用仓库现有 evidence-backed 开局名册投影；行军/攻城/单挑深层页面所需的临时军队与冲突明确标记为 `qaFixture`，仅用于确定性视觉复核，不属于 parity 证据，也不会被当作 canonical 游戏数据。
 
+## Parity evidence tools
+
+构建后的静态站点提供统一入口 `tools/index.html`，集中访问：
+
+- Canonical Map Capture
+- Scenario Start-State Capture
+- March Observation Capture
+
+这三个工具都只生成 `verified:false` 候选；不会自动把人工抄录提升为 canonical evidence。
+
 ## 地图迁移审计
 
 ### 地图证据采集工作台
