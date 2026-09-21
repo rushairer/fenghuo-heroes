@@ -22,7 +22,14 @@ export function auditCanonicalEvidenceBundle(bundle={}){
 
   const invalidCityCoordinates=(bundle.cityCoordinates??[])
     .map((record,index)=>({index,record,result:report.coordinateReports[index]}))
-    .filter((item)=>item.result&&!item.result.ok)
+    .filter((item)=>{
+      const record=item.record??{}
+      const entered=
+        record.x!==null||record.y!==null||
+        Boolean(record.sourceId)||Boolean(record.frameRef)||
+        record.verified===true
+      return entered&&item.result&&!item.result.ok
+    })
     .map((item)=>Object.freeze({
       index:item.index,
       name:item.record?.name??'',
