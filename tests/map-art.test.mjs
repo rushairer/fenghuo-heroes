@@ -44,6 +44,9 @@ test('full-map city symbol geometry scales proportionally',()=>{
   assert.equal(large.outer,small.outer*2)
   assert.equal(large.inner,small.inner*2)
   assert.equal(large.flagHeight,small.flagHeight*2)
+  assert.equal(large.mastX,small.mastX*2)
+  assert.equal(large.pennantWidth,small.pennantWidth*2)
+  assert.equal(large.ring,small.ring*2)
 })
 
 
