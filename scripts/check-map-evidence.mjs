@@ -10,6 +10,18 @@ if(report.invalidSourceCount)failures.push(`invalid map evidence sources: ${repo
 if(report.duplicateCoordinateNames.length){
   failures.push(`duplicate canonical city coordinates: ${report.duplicateCoordinateNames.join(', ')}`)
 }
+if(report.duplicateOwnershipCities.length){
+  failures.push(`duplicate 189 ownership records: ${report.duplicateOwnershipCities.join(', ')}`)
+}
+if(report.duplicateRouteKeys.length){
+  failures.push(`duplicate canonical routes: ${report.duplicateRouteKeys.join(', ')}`)
+}
+if(report.duplicateVillageKeys.length){
+  failures.push(`duplicate canonical villages: ${report.duplicateVillageKeys.join(', ')}`)
+}
+if(report.duplicateNameResolutionKeys.length){
+  failures.push(`duplicate name resolutions: ${report.duplicateNameResolutionKeys.join(', ')}`)
+}
 for(const [index,item] of report.coordinateReports.entries()){
   if(!item.ok)failures.push(`cityCoordinates[${index}]: ${item.errors.join(', ')}`)
 }
