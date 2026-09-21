@@ -42,6 +42,8 @@ test('evidence layer records Liu Bei at Dai County without forcing that fact ont
 test('canonical map migration stays blocked while the evidence ledger is empty',()=>{
   const blocked=canonicalMapMigrationReadiness()
   assert.equal(blocked.ready,false)
+  assert.equal(blocked.geometryReady,false)
+  assert.equal(blocked.scenario189Ready,false)
   assert.equal(blocked.cityCoordinatesComplete,false)
   assert.equal(blocked.verifiedCityCoordinateCount,0)
   assert.equal(blocked.requiredCityCoordinateCount,40)
@@ -98,5 +100,44 @@ test('canonical map migration opens only when every source-backed evidence gate 
   assert.equal(report.ownership189Verified,true)
   assert.equal(report.verifiedOwnershipCityCount,40)
   assert.equal(report.routeNetworkVerified,true)
+  assert.equal(report.geometryReady,true)
+  assert.equal(report.scenario189Ready,true)
   assert.equal(report.ready,true)
+})
+
+
+test('canonical geometry readiness is independent from 189 ownership readiness',()=>{
+  const source={id:'capture-geometry',kind:'direct-capture',ref:'capture-geometry.png'}
+  const geometryOnly={
+    status:'test-geometry-complete',
+    sources:[source],
+    cityCoordinates:ZH_ROM_CANONICAL_CITY_SET.map((name,index)=>({
+      name,
+      x:(index*7)%320,
+      y:(index*11)%224,
+      space:'logical-320x224',
+      sourceId:source.id,
+      frameRef:`frame#city-${index}`,
+      verified:true,
+    })),
+    villages:[{x:12,y:14,space:'logical-320x224',sourceId:source.id,frameRef:'frame#village-1',verified:true}],
+    villageCoverage:{sourceId:source.id,frameRef:'frame#villages',itemCount:1,verified:true},
+    ownership189:[],
+    routes:[{from:ZH_ROM_CANONICAL_CITY_SET[0],to:ZH_ROM_CANONICAL_CITY_SET[1],sourceId:source.id,frameRef:'frame#route-1',verified:true}],
+    routeNetworkCoverage:{sourceId:source.id,frameRef:'frame#routes',itemCount:1,verified:true},
+    nameResolutions:ZH_ROM_CITY_NAME_VARIANTS
+      .filter((item)=>item.status==='unresolved')
+      .map((item,index)=>({
+        ram:item.ram,
+        numberedGuide:item.numberedGuide,
+        chosen:item.ram,
+        sourceId:source.id,
+        frameRef:`frame#name-${index}`,
+        verified:true,
+      })),
+  }
+  const report=canonicalMapMigrationReadiness(geometryOnly)
+  assert.equal(report.geometryReady,true)
+  assert.equal(report.scenario189Ready,false)
+  assert.equal(report.ready,false)
 })
