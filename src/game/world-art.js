@@ -229,7 +229,7 @@ export function drawProjectedRiver(r,{
 export function roadSegmentStyle(index=0){
   const i=Math.abs(Math.floor(Number(index)||0))
   const width=.48+(i%3)*.04
-  const alpha=.34+(i%4)*.03
+  const alpha=Math.round((.34+(i%4)*.03)*100)/100
   return Object.freeze({
     width,
     alpha,
