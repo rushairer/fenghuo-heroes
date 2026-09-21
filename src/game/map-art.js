@@ -203,14 +203,39 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
   return true
 }
 
+export function villageDetailGeometry(){
+  return Object.freeze({
+    houses:Object.freeze([
+      Object.freeze({dx:-5,dy:0,w:7,h:5,doorX:-5,windowX:-2.8}),
+      Object.freeze({dx:4,dy:-2,w:8,h:6,doorX:4,windowX:1.4}),
+      Object.freeze({dx:0,dy:5,w:6,h:4,doorX:0,windowX:2}),
+    ]),
+    ground:Object.freeze({rx:11,ry:3.1,y:9}),
+  })
+}
+
 export function drawVectorVillage(r,x,y,scale=1){
   const c=r.ctx,S=r.S*scale
   c.save()
   c.translate(x*r.S,y*r.S)
 
-  const house=(dx,dy,w,h)=>{
+  const detail=villageDetailGeometry()
+  c.fillStyle='rgba(43,29,18,.28)'
+  c.beginPath()
+  c.ellipse(0,detail.ground.y*S,detail.ground.rx*S,detail.ground.ry*S,0,0,Math.PI*2)
+  c.fill()
+
+  const house=(item)=>{
+    const {dx,dy,w,h,doorX,windowX}=item
     c.fillStyle=MAP_ART_PALETTE.villageWall
     c.fillRect((dx-w/2)*S,dy*S,w*S,h*S)
+
+    const wallShade=c.createLinearGradient((dx-w/2)*S,dy*S,(dx+w/2)*S,(dy+h)*S)
+    wallShade.addColorStop(0,'rgba(255,229,181,.24)')
+    wallShade.addColorStop(1,'rgba(66,43,27,.24)')
+    c.fillStyle=wallShade
+    c.fillRect((dx-w/2)*S,dy*S,w*S,h*S)
+
     c.fillStyle=MAP_ART_PALETTE.villageRoof
     c.beginPath()
     c.moveTo((dx-w*.65)*S,dy*S)
@@ -218,10 +243,22 @@ export function drawVectorVillage(r,x,y,scale=1){
     c.lineTo((dx+w*.65)*S,dy*S)
     c.closePath()
     c.fill()
+
+    c.strokeStyle='rgba(235,198,139,.5)'
+    c.lineWidth=.28*S
+    c.beginPath()
+    c.moveTo((dx-w*.52)*S,(dy-.15)*S)
+    c.lineTo(dx*S,(dy-3.55)*S)
+    c.lineTo((dx+w*.52)*S,(dy-.15)*S)
+    c.stroke()
+
+    c.fillStyle='#3e291c'
+    c.fillRect((doorX-1)*S,(dy+h-2.4)*S,2*S,2.4*S)
+
+    c.fillStyle='rgba(238,201,124,.72)'
+    c.fillRect((windowX-.55)*S,(dy+1.5)*S,1.1*S,1.1*S)
   }
-  house(-5,0,7,5)
-  house(4,-2,8,6)
-  house(0,5,6,4)
+  for(const item of detail.houses)house(item)
   c.restore()
   return true
 }
