@@ -1,4 +1,3 @@
-import { CITIES, CITY_BY_ID } from './data.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
@@ -90,7 +89,7 @@ export function queueMarch(store, {
   store.assertState()
   if (store.mode !== 'march') throw new Error('偶數月才能下達行軍命令。')
   const source = store.state.cities[from]
-  const city = CITY_BY_ID[from]
+  const city = store.mapProfile?.cityById?.[from]
   if (!source || !city || source.owner !== store.humanFaction) throw new Error('必須從本國城池出陣。')
   if (!Array.isArray(route) || route.length < 2) throw new Error('請先用方框指定行軍路線。')
 
@@ -216,7 +215,7 @@ export function advanceMarchArmies(store, days = 30) {
 export function enemyCityNearArmy(store, armyId, tolerance = 24) {
   const army = ensureMarchState(store).find((item) => item.id === armyId)
   if (!army) return null
-  return CITIES.find((city) => {
+  return (store.mapProfile?.cities??[]).find((city) => {
     const runtime = store.state.cities[city.id]
     if (!runtime || runtime.owner === army.faction) return false
     const point = cityWorldPoint(city)
@@ -243,7 +242,7 @@ export function beginSiegeFromArmy(store, armyId, targetCityId) {
     defenderTroops: target.troops,
     attackerOfficers: [...(army.officerNames ?? [])],
   }
-  store.addLog(`${CITY_BY_ID[targetCityId].name}攻城準備。`)
+  store.addLog(`${store.mapProfile?.cityById?.[targetCityId]?.name??targetCityId}攻城準備。`)
   store.save()
   return store.pendingConflict
 }
@@ -254,7 +253,7 @@ export function cancelSiegeFromArmy(store) {
   const army = ensureMarchState(store).find((item) => item.id === conflict.armyId)
   if (army) army.status = 'waiting'
   store.pendingConflict = null
-  store.addLog(`${CITY_BY_ID[conflict.target]?.name ?? conflict.target}中止攻城。`)
+  store.addLog(`${store.mapProfile?.cityById?.[conflict.target]?.name ?? conflict.target}中止攻城。`)
   store.save()
   return true
 }
