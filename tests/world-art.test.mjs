@@ -48,6 +48,8 @@ test('river stroke style keeps bank water and highlight widths ordered',()=>{
   for(const style of [world,projected]){
     assert.ok(style.bankOuterWidth>style.bankInnerWidth)
     assert.ok(style.bankInnerWidth>style.waterWidth)
+    assert.ok(style.bankHighlightWidth<style.bankInnerWidth)
+    assert.ok(style.bankHighlightAlpha>0&&style.bankHighlightAlpha<1)
     assert.ok(style.waterWidth>style.highlightWidth)
     assert.ok(style.highlightAlpha>0&&style.highlightAlpha<=1)
   }
@@ -59,6 +61,8 @@ test('pattern-backed river lowers highlight opacity without changing geometry',(
   assert.equal(patterned.bankOuterWidth,plain.bankOuterWidth)
   assert.equal(patterned.bankInnerWidth,plain.bankInnerWidth)
   assert.equal(patterned.waterWidth,plain.waterWidth)
+  assert.equal(patterned.bankHighlightWidth,plain.bankHighlightWidth)
+  assert.equal(patterned.bankHighlightAlpha,plain.bankHighlightAlpha)
   assert.equal(patterned.highlightWidth,plain.highlightWidth)
   assert.ok(patterned.highlightAlpha<plain.highlightAlpha)
 })
