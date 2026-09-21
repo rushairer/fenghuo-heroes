@@ -173,6 +173,16 @@ function requiredNumber(input,label){
   }
   return value
 }
+function requiredInteger(input,label){
+  const value=requiredNumber(input,label)
+  if(value==null)return null
+  if(!Number.isInteger(value)){
+    status.textContent=label+' 必須是整數。'
+    input.focus()
+    return null
+  }
+  return value
+}
 function saveRouteStep(){
   const fromX=requiredNumber(fields.routeFromX,'From X')
   const fromY=requiredNumber(fields.routeFromY,'From Y')
@@ -186,8 +196,8 @@ function saveRouteStep(){
   return true
 }
 function saveMovementWindow(){
-  const stepsMoved=requiredNumber(fields.movementSteps,'移動格數')
-  const calendarDaysElapsed=requiredNumber(fields.movementDays,'經過日數')
+  const stepsMoved=requiredInteger(fields.movementSteps,'移動格數')
+  const calendarDaysElapsed=requiredInteger(fields.movementDays,'經過日數')
   if(stepsMoved==null||calendarDaysElapsed==null)return false
   upsertByFrame(movementWindows,marchMovementWindowCandidate({
     stepsMoved,calendarDaysElapsed,sourceId:sourceId.value,frameRef:frameRef.value,
@@ -195,8 +205,8 @@ function saveMovementWindow(){
   return true
 }
 function saveMonthWindow(){
-  const calendarDaysAdvanced=requiredNumber(fields.monthDays,'日曆推進日數')
-  const routeStepsMoved=requiredNumber(fields.monthSteps,'實際移動格數')
+  const calendarDaysAdvanced=requiredInteger(fields.monthDays,'日曆推進日數')
+  const routeStepsMoved=requiredInteger(fields.monthSteps,'實際移動格數')
   if(calendarDaysAdvanced==null||routeStepsMoved==null)return false
   upsertByFrame(monthlyExecutionWindows,marchMonthlyExecutionCandidate({
     calendarDaysAdvanced,
@@ -208,7 +218,7 @@ function saveMonthWindow(){
   return true
 }
 function saveAdjacency(){
-  const gridDistance=requiredNumber(fields.adjacencyDistance,'格距')
+  const gridDistance=requiredInteger(fields.adjacencyDistance,'格距')
   if(gridDistance==null)return false
   upsertByFrame(adjacencyChecks,marchAdjacencyCandidate({
     targetKind:fields.adjacencyTarget.value,
@@ -220,9 +230,9 @@ function saveAdjacency(){
   return true
 }
 function saveStarvation(){
-  const daysStarved=requiredNumber(fields.starvationDays,'缺糧日數')
-  const troopsBefore=requiredNumber(fields.troopsBefore,'兵力 Before')
-  const troopsAfter=requiredNumber(fields.troopsAfter,'兵力 After')
+  const daysStarved=requiredInteger(fields.starvationDays,'缺糧日數')
+  const troopsBefore=requiredInteger(fields.troopsBefore,'兵力 Before')
+  const troopsAfter=requiredInteger(fields.troopsAfter,'兵力 After')
   if(daysStarved==null||troopsBefore==null||troopsAfter==null)return false
   upsertByFrame(starvationObservations,marchStarvationCandidate({
     daysStarved,
