@@ -52,8 +52,10 @@ export class GameStore {
     const scenarioYear = Number(options.scenarioYear ?? 189)
     const humans = [...(options.humanFactions ?? ['liu'])]
     const primary = humans[0] ?? 'liu'
-    const first = CITIES.find((c) => c.owner === primary)?.id ?? 'xuchang'
-    this.state = { scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(CITY_BY_ID[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
+    const firstCity=CITIES.find((city)=>city.owner===primary)??CITIES[0]
+    if(!firstCity)throw new Error('Runtime map profile contains no cities.')
+    const first=firstCity.id
+    this.state = { scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(firstCity), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:baseCities(), log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
     this.pendingConflict = null
     this.save()
     return this.state
