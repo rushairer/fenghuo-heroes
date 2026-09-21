@@ -9,8 +9,8 @@ const positional=args.filter((arg,index)=>index!==scopeIndex&&index!==scopeIndex
 const input=positional[0]
 const output=positional[1]??'scenario-evidence.compiled.json'
 
-if(!input||!['economy','officers','full'].includes(scope)){
-  console.error('usage: node scripts/compile-scenario-evidence.mjs <capture.json> [output.json] [--scope economy|officers|full]')
+if(!input||!['ownership','economy','officers','full'].includes(scope)){
+  console.error('usage: node scripts/compile-scenario-evidence.mjs <capture.json> [output.json] [--scope ownership|economy|officers|full]')
   process.exitCode=2
 }else{
   try{
