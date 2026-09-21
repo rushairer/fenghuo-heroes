@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { flagFoldGuides, flagGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
+import { flagFoldGuides, flagGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainDetailGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -89,4 +89,14 @@ test('village house detail stays inside a compact map-symbol footprint',()=>{
     assert.ok(house.dx+house.w*.7<=12)
     assert.ok(house.dy>=-4&&house.dy+house.h<=10)
   }
+})
+
+
+test('mountain HD detail adds deterministic ridges and scree',()=>{
+  const detail=mountainDetailGeometry(3)
+  assert.deepEqual(detail,mountainDetailGeometry(3))
+  assert.equal(detail.ridgeOffsets.length,3)
+  assert.equal(detail.scree.length,4)
+  assert.ok(detail.ridgeOffsets.every((ridge)=>ridge.len>0))
+  assert.ok(detail.scree.every((stone)=>stone.r>0))
 })
