@@ -123,8 +123,10 @@ test('mountain HD detail adds deterministic ridges and scree',()=>{
 test('forest HD detail adds ground depth branches and undergrowth',()=>{
   const detail=forestDetailGeometry(4)
   assert.equal(detail.branchGuides.length,4)
+  assert.equal(detail.canopyHighlights.length,3)
   assert.equal(detail.undergrowth.length,4)
   assert.ok(detail.ground.rx>detail.ground.ry)
+  assert.ok(detail.canopyHighlights.every((item)=>item.r>0&&Number.isFinite(item.x)&&Number.isFinite(item.y)))
   assert.ok(detail.branchGuides.every((branch)=>Number.isFinite(branch.dx)&&Number.isFinite(branch.dy)))
 })
 
