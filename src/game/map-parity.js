@@ -51,15 +51,18 @@ export function canonicalMapMigrationReadiness(evidence=CANONICAL_MAP_EVIDENCE) 
   const ownership189Verified=report.ownership189EvidenceCount===ZH_ROM_CANONICAL_CITY_SET.length&&report.duplicateOwnershipCities.length===0
   const villageCoordinatesVerified=report.villageCoverageVerified
   const routeNetworkVerified=report.routeNetworkVerified
-  const ready=
+  const geometryReady=
     cityCoordinatesComplete&&
     cityNamesResolved&&
     villageCoordinatesVerified&&
-    ownership189Verified&&
     routeNetworkVerified
+  const scenario189Ready=ownership189Verified
+  const ready=geometryReady&&scenario189Ready
 
   return Object.freeze({
     ready,
+    geometryReady,
+    scenario189Ready,
     ledgerStatus:evidence.status??'unknown',
     cityCoordinatesComplete,
     verifiedCityCoordinateCount:coordinateNames.size,
