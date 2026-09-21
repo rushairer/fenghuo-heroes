@@ -17,7 +17,7 @@ export function validateRuntimeMapProfile(profile){
     cityIds.add(city.id)
     if(typeof city.name!=='string'||!city.name.trim())errors.push(`missing-city-name:${city.id}`)
     if(!Number.isFinite(city.x)||!Number.isFinite(city.y))errors.push(`invalid-city-coordinate:${city.id}`)
-    else if(city.x<0||city.x>WORLD_W||city.y<0||city.y>WORLD_H)errors.push(`city-out-of-range:${city.id}`)
+    else if(city.x<0||city.x>=WORLD_W||city.y<0||city.y>=WORLD_H)errors.push(`city-out-of-range:${city.id}`)
     if('owner' in city&&(typeof city.owner!=='string'||!city.owner.trim()))errors.push(`invalid-city-owner:${city.id}`)
   }
 
@@ -54,7 +54,7 @@ export function validateRuntimeMapProfile(profile){
     villageIds.add(village.id)
     if(!Number.isFinite(village.x)||!Number.isFinite(village.y)){
       errors.push(`invalid-village-coordinate:${village.id}`)
-    }else if(village.x<0||village.x>WORLD_W||village.y<0||village.y>WORLD_H){
+    }else if(village.x<0||village.x>=WORLD_W||village.y<0||village.y>=WORLD_H){
       errors.push(`village-out-of-range:${village.id}`)
     }
   }
