@@ -1,4 +1,5 @@
-import { CITIES, CITY_BY_ID, MAP_PROFILE } from './data.js'
+import { MAP_PROFILE } from './data.js'
+import { assertRuntimeMapProfile } from './map-profile-validation.js'
 import { ORIGINAL_189_RULERS } from './original-data.js'
 import { isTaxRate } from './tax-parity.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
@@ -47,13 +48,13 @@ const openingRosters = (year) => year === 189
   : {}
 
 export class GameStore {
-  constructor(storage = null, {mapProfile=MAP_PROFILE} = {}) { this.storage = storage; this.mapProfile = mapProfile; this.state = null; this.pendingConflict = null }
+  constructor(storage = null, {mapProfile=MAP_PROFILE} = {}) { this.storage = storage; this.mapProfile = assertRuntimeMapProfile(mapProfile); this.state = null; this.pendingConflict = null }
   newGame(options = {}) {
     const scenarioYear = Number(options.scenarioYear ?? 189)
     const humans = [...(options.humanFactions ?? ['liu'])]
     const primary = humans[0] ?? 'liu'
-    const cities=this.mapProfile?.cities??CITIES
-    const cityById=this.mapProfile?.cityById??CITY_BY_ID
+    const cities=this.mapProfile.cities
+    const cityById=this.mapProfile.cityById
     const firstCity=cities.find((city)=>city.owner===primary)??cities[0]
     if(!firstCity)throw new Error('Runtime map profile contains no cities.')
     const first=firstCity.id
@@ -68,12 +69,12 @@ export class GameStore {
   assertState(){if(!this.state)throw new Error('Game not initialized')}
   hasGame(){return Boolean(this.state)}
   addLog(msg){this.assertState();this.state.log.unshift(msg);this.state.log=this.state.log.slice(0,8)}
-  cityAt(x,y,tolerance=7){return (this.mapProfile?.cities??CITIES).find((c)=>{const p=cityWorldPoint(c);return Math.abs(p.x-x)<=tolerance&&Math.abs(p.y-y)<=tolerance})??null}
+  cityAt(x,y,tolerance=7){return this.mapProfile.cities.find((c)=>{const p=cityWorldPoint(c);return Math.abs(p.x-x)<=tolerance&&Math.abs(p.y-y)<=tolerance})??null}
   setCursor(x,y){this.assertState();this.state.cursor.x=clamp(x,8,WORLD_W-8);this.state.cursor.y=clamp(y,8,WORLD_H-8)}
   setActiveCity(id){this.assertState();this.state.activeCity=id}
   inspectionCategoryForActive(){this.assertState();return this.state.inspectionCategories?.[this.humanFaction]??null}
   lockInspectionCategory(category){this.assertState();if(this.mode!=='inspection')return false;if(!this.state.inspectionCategories)this.state.inspectionCategories={};const current=this.state.inspectionCategories[this.humanFaction];if(current&&current!==category)return false;this.state.inspectionCategories[this.humanFaction]=category;this.save();return true}
-  setTaxRate(cityId,rate){this.assertState();const city=this.state.cities[cityId];if(!city||city.owner!==this.humanFaction)throw new Error('只能設定本國城池稅率。');if(!isTaxRate(rate))throw new RangeError('稅率必須是 0 到 99 的整數。');city.taxRate=rate;this.addLog(`${this.mapProfile?.cityById?.[cityId]?.name??CITY_BY_ID[cityId]?.name??cityId} 稅率設定為 ${rate}%。`);this.save();return rate}
+  setTaxRate(cityId,rate){this.assertState();const city=this.state.cities[cityId];if(!city||city.owner!==this.humanFaction)throw new Error('只能設定本國城池稅率。');if(!isTaxRate(rate))throw new RangeError('稅率必須是 0 到 99 的整數。');city.taxRate=rate;this.addLog(`${this.mapProfile.cityById[cityId]?.name??cityId} 稅率設定為 ${rate}%。`);this.save();return rate}
   // Menu hierarchy is evidence-backed in inspection-command-parity.js.
   // Commands whose numerical effect is still unverified must never mutate game
   // state. Each effect is re-enabled only through an evidence-specific module.
