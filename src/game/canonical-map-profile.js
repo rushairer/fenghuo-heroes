@@ -43,6 +43,12 @@ export function buildCanonicalRuntimeMap(evidence){
       record.factionId,
     ]),
   )
+  const displayNameByIdentity=new Map(
+    (evidence.nameResolutions??[]).map((record)=>[
+      normalizeZhRomCityName(record.ram),
+      record.chosen,
+    ]),
+  )
   const nameToId=new Map(
     ZH_ROM_CANONICAL_CITY_SET.map((name)=>[name,cityIdFor(name)]),
   )
@@ -66,7 +72,8 @@ export function buildCanonicalRuntimeMap(evidence){
     const id=nameToId.get(name)
     return Object.freeze({
       id,
-      name,
+      name:displayNameByIdentity.get(name)??name,
+      canonicalName:name,
       x:point.x,
       y:point.y,
       owner:ownershipByName.get(name)??'neutral',
