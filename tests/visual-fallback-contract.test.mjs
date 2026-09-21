@@ -174,3 +174,12 @@ test('full-map city village and cursor symbols are clipped to map bounds',()=>{
   const restore=source.indexOf('c.restore()',cursor)
   assert.ok(clip>=0&&city>clip&&village>city&&cursor>village&&restore>cursor)
 })
+
+
+test('duel scene renders motion cues from existing attack and guard state',()=>{
+  const source=read('src/scenes/duel.js')
+  assert.match(source,/drawDuelMotionCue/)
+  assert.match(source,/attacking:this\.attackCd>160/)
+  assert.match(source,/guard:this\.guard/)
+  assert.match(source,/attacking:this\.enemyCd>500/)
+})
