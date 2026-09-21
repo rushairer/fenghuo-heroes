@@ -277,3 +277,13 @@ test('river shoreline accent is layered as a visible ring between outer and inne
   const water=block.indexOf("c.strokeStyle=pattern??'#064ac0'")
   assert.ok(outer>=0&&shore>outer&&inner>shore&&water>inner)
 })
+
+
+test('duel weapon contact cue reads only existing spacing and attack presentation state',()=>{
+  const source=read('src/scenes/duel.js')
+  assert.match(source,/drawDuelWeaponContact/)
+  assert.match(source,/leftX:this\.px/)
+  assert.match(source,/rightX:this\.ex/)
+  assert.match(source,/playerAttacking:this\.attackCd>160/)
+  assert.match(source,/enemyAttacking:this\.enemyCd>500/)
+})
