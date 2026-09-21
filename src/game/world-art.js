@@ -27,6 +27,25 @@ function traceRiver(ctx,S,path,project=(point)=>point){
   }
 }
 
+export function riverStrokeStyle({projected=false,pattern=false}={}){
+  if(projected){
+    return Object.freeze({
+      bankOuterWidth:5,
+      bankInnerWidth:4.15,
+      waterWidth:3.4,
+      highlightWidth:.72,
+      highlightAlpha:.52,
+    })
+  }
+  return Object.freeze({
+    bankOuterWidth:23,
+    bankInnerWidth:19,
+    waterWidth:13,
+    highlightWidth:3,
+    highlightAlpha:pattern?.24:.55,
+  })
+}
+
 export function drawWorldRiver(r,{
   camera={x:0,y:0},
   pattern=null,
@@ -34,28 +53,29 @@ export function drawWorldRiver(r,{
 }={}){
   const c=r.ctx,S=r.S
   const project=(point)=>({x:point.x-camera.x,y:point.y-camera.y})
+  const style=riverStrokeStyle({pattern:Boolean(pattern)})
   c.save()
   c.lineCap='round'
   c.lineJoin='round'
   traceRiver(c,S,path,project)
   c.strokeStyle='#6f5837'
-  c.lineWidth=23*S
+  c.lineWidth=style.bankOuterWidth*S
   c.stroke()
 
   traceRiver(c,S,path,project)
-  c.strokeStyle='#082d92'
-  c.lineWidth=19*S
+  c.strokeStyle='#183d79'
+  c.lineWidth=style.bankInnerWidth*S
   c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle=pattern??'#064ac0'
-  c.lineWidth=13*S
+  c.lineWidth=style.waterWidth*S
   c.stroke()
 
   traceRiver(c,S,path,project)
-  c.strokeStyle=pattern?'#b8e7ef':'#0d63d7'
-  c.lineWidth=3*S
-  c.globalAlpha=pattern?.24:.55
+  c.strokeStyle=pattern?'#d1f4f4':'#6fc8ed'
+  c.lineWidth=style.highlightWidth*S
+  c.globalAlpha=style.highlightAlpha
   c.stroke()
   c.restore()
   return true
@@ -80,15 +100,29 @@ export function drawProjectedRiver(r,{
   }
   c.lineCap='round'
   c.lineJoin='round'
+  const style=riverStrokeStyle({projected:true})
+  const outerScale=outerWidth/5
+  const innerScale=innerWidth/3.4
 
   traceRiver(c,S,path,project)
   c.strokeStyle=outer
-  c.lineWidth=outerWidth*S
+  c.lineWidth=style.bankOuterWidth*outerScale*S
+  c.stroke()
+
+  traceRiver(c,S,path,project)
+  c.strokeStyle='#244a79'
+  c.lineWidth=style.bankInnerWidth*outerScale*S
   c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle=inner
-  c.lineWidth=innerWidth*S
+  c.lineWidth=style.waterWidth*innerScale*S
+  c.stroke()
+
+  traceRiver(c,S,path,project)
+  c.strokeStyle='#8fd6ed'
+  c.lineWidth=style.highlightWidth*innerScale*S
+  c.globalAlpha=style.highlightAlpha
   c.stroke()
   c.restore()
   return true
