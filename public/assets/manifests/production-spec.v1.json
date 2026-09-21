@@ -46,6 +46,7 @@
           "five-warrior composition",
           "horizontal weave",
           "skin volume and material depth",
+          "facial structure highlights and cheek depth",
           "headgear stitching and metal glints",
           "facial and beard micro-detail",
           "robe embroidery and cloth ridges",
@@ -437,9 +438,14 @@
         "deterministic sand grain",
         "subtle non-canonical relief wash only when raster terrain is unavailable",
         "centralized river and road vectors",
+        "mountain ridge and scree micro-detail",
+        "forest branches, undergrowth and ground depth",
         "masonry-detail forts",
         "fold-detail faction flags",
-        "roof/window/detail villages"
+        "roof/window/detail villages",
+        "full-map city masts, pennants and highlights",
+        "full-map village window, chimney and eave detail",
+        "map cursor corner ticks, center point and corner glow"
       ],
       "boundary": "Presentation fallback geometry must never be promoted as Chinese-ROM map evidence."
     },
@@ -451,7 +457,10 @@
         "helmet rivets",
         "face micro-detail",
         "spear bindings",
-        "vector arena"
+        "vector arena",
+        "arena timber beams",
+        "spectator depth rows",
+        "arena rope and dust depth"
       ]
     },
     "siege": {
@@ -460,6 +469,7 @@
         "battlements",
         "stone courses and offset joints",
         "arrow slits",
+        "corner tower roofs and eaves",
         "gatehouse beams and studs",
         "foreground dust depth"
       ]
