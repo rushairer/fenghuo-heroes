@@ -1,5 +1,4 @@
 import { CANONICAL_MAP_EVIDENCE } from './canonical-map-evidence.js'
-import { CITY_ECONOMY_FIELDS } from './scenario-state-schema.js'
 import { CITY_ECONOMY_FIELDS } from './scenario-fields.js'
 import { canonicalScenarioEvidence } from './canonical-scenario-evidence.js'
 import { canonicalMapMigrationReadiness } from './map-parity.js'
