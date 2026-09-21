@@ -176,3 +176,54 @@ startable.
 - completing 189 does not raise 200/215 readiness.
 
 This rule is enforced by the validator, readiness report and tests.
+
+
+## Browser workbench
+
+A local/static capture UI is published with the app:
+
+`tools/scenario-evidence-capture.html`
+
+It supports:
+
+- 189 / 200 / 215 batch isolation;
+- canonical 40-city selection;
+- ownership capture;
+- all seven city-state numeric fields;
+- officer city placement with explicit `ruler` / `officer` role;
+- local screenshot display for human transcription;
+- overwrite-by-city / overwrite-by-officer instead of accidental duplicates;
+- auto-next for city sweeps;
+- undo;
+- progress counters;
+- importing a prior single-source batch and continuing it;
+- merge-ready Capture Bundle JSON.
+
+The local screenshot is only a visual reference. The workbench does not embed the
+image into the JSON and does not mark any candidate verified.
+
+Each editable batch is locked to one scenario year and one source ID. Start a new
+batch when the source screenshot/frame family changes, then merge batches:
+
+```bash
+npm run scenario:evidence:merge -- \
+  scenario-189-map.capture.json \
+  scenario-189-status.capture.json \
+  scenario-189-officers.capture.json \
+  --out scenario-189.merged.json
+```
+
+Then audit the merged result before any verification or compilation.
+
+## Officer role evidence
+
+Officer placement records now include an explicit role:
+
+- `ruler`
+- `officer`
+
+The runtime does not infer later-scenario ruler identity from the 189 opening roster.
+A 200/215 officer placement record without a source-backed role is invalid.
+
+This is required so completing later scenario placement does not silently borrow
+ruler/officer classification from another scenario.
