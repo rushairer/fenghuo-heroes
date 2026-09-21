@@ -30,6 +30,7 @@ function completeEvidence(){
   const officerAssignments=[
     {
       officer:'關羽',
+      role:'officer',
       city:'代縣',
       sourceId:source.id,
       frameRef:'frame#officer-guan-yu',
@@ -37,6 +38,7 @@ function completeEvidence(){
     },
     {
       officer:'張飛',
+      role:'officer',
       city:'代縣',
       sourceId:source.id,
       frameRef:'frame#officer-zhang-fei',
