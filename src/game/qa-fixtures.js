@@ -1,4 +1,3 @@
-import { CITIES, CITY_BY_ID } from './data.js'
 import { ensureMarchState } from './march.js'
 import { cityWorldPoint } from './world.js'
 
@@ -26,7 +25,7 @@ export function isBattleVisualQaState(value) {
 
 function firstCityByOwner(store, predicate) {
   const faction=store?.humanFaction
-  return CITIES.find((city)=>predicate(store?.state?.cities?.[city.id]?.owner,faction))??null
+  return (store?.mapProfile?.cities??[]).find((city)=>predicate(store?.state?.cities?.[city.id]?.owner,faction))??null
 }
 
 export function qaOwnedCity(store) {
