@@ -69,3 +69,20 @@ test('merge never keeps ready status merely because one input was compiled',()=>
   })
   assert.equal(merged.status,'capture-in-progress')
 })
+
+
+test('first real coordinate may replace the template coordinate-space hint',()=>{
+  const bundle=createCanonicalEvidenceTemplate()
+  bundle.cityCoordinates[0]={
+    ...bundle.cityCoordinates[0],
+    x:200,
+    y:120,
+    space:'world-640x448',
+    sourceId:'cap-world',
+    frameRef:'cap-world#city-1',
+    verified:true,
+  }
+  const merged=mergeCanonicalEvidenceBundles(bundle)
+  assert.equal(merged.cityCoordinates[0].space,'world-640x448')
+  assert.equal(merged.cityCoordinates[0].x,200)
+})
