@@ -9,6 +9,7 @@
     "build": "node scripts/build.mjs",
     "check": "npm run lint && npm test && npm run build",
     "dev": "python3 -m http.server 4173",
-    "preview": "python3 -m http.server 4173 -d dist"
+    "preview": "python3 -m http.server 4173 -d dist",
+    "map:report": "node scripts/report-map-profile.mjs"
   }
 }
