@@ -1,4 +1,5 @@
 import { drawTitleFaceStructure } from './title-face-art.js'
+import { drawTitleGarmentContour } from './title-garment-contour.js'
 import { drawTitleHdDetail } from './title-hd-detail.js'
 import { drawTitleHeadgearDetail } from './title-headgear-art.js'
 import { drawTitleLocalLight } from './title-local-light.js'
@@ -214,6 +215,7 @@ export function drawTitleComposition(r) {
   drawTitleFaceStructure(r)
   drawTitleHeadgearDetail(r)
   drawTitleLocalLight(r)
+  drawTitleGarmentContour(r)
   drawTitleSilhouetteDepth(r)
   drawTitleHdDetail(r)
   drawBrocadeStrip(r)
