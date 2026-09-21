@@ -104,17 +104,33 @@ export function validateCanonicalMapEvidence(evidence={}){
     (record.chosen===record.ram||record.chosen===record.numberedGuide)
   )
 
+  const duplicateVillageKeys=[...new Set(verifiedVillages.map((record)=>`${record.space}:${record.x}:${record.y}`))]
+    .filter((key)=>verifiedVillages.filter((record)=>`${record.space}:${record.x}:${record.y}`===key).length>1)
+  const duplicateOwnershipCities=[...new Set(verifiedOwnership.map((record)=>normalizeZhRomCityName(record.city)))]
+    .filter((name)=>verifiedOwnership.filter((record)=>normalizeZhRomCityName(record.city)===name).length>1)
+  const routeKeys=verifiedRoutes.map((record)=>[
+    normalizeZhRomCityName(record.from),
+    normalizeZhRomCityName(record.to),
+  ].sort().join('|'))
+  const duplicateRouteKeys=[...new Set(routeKeys)]
+    .filter((key)=>routeKeys.filter((item)=>item===key).length>1)
+  const nameResolutionKeys=verifiedNameResolutions.map((record)=>`${record.ram}|${record.numberedGuide}`)
+  const duplicateNameResolutionKeys=[...new Set(nameResolutionKeys)]
+    .filter((key)=>nameResolutionKeys.filter((item)=>item===key).length>1)
+
   const villageCoverageVerified=Boolean(
     sourceBackedVerification(evidence.villageCoverage,sources)&&
     Number.isInteger(evidence.villageCoverage?.itemCount)&&
     evidence.villageCoverage.itemCount>0&&
-    evidence.villageCoverage.itemCount===verifiedVillages.length
+    evidence.villageCoverage.itemCount===verifiedVillages.length&&
+    duplicateVillageKeys.length===0
   )
   const routeNetworkVerified=Boolean(
     sourceBackedVerification(evidence.routeNetworkCoverage,sources)&&
     Number.isInteger(evidence.routeNetworkCoverage?.itemCount)&&
     evidence.routeNetworkCoverage.itemCount>0&&
-    evidence.routeNetworkCoverage.itemCount===verifiedRoutes.length
+    evidence.routeNetworkCoverage.itemCount===verifiedRoutes.length&&
+    duplicateRouteKeys.length===0
   )
 
   return Object.freeze({
@@ -124,6 +140,10 @@ export function validateCanonicalMapEvidence(evidence={}){
     verifiedCityCoordinates:Object.freeze([...validCoordinates]),
     validCityCoordinateCount:uniqueCoordinateNames.size,
     duplicateCoordinateNames:Object.freeze(duplicateCoordinateNames),
+    duplicateVillageKeys:Object.freeze(duplicateVillageKeys),
+    duplicateOwnershipCities:Object.freeze(duplicateOwnershipCities),
+    duplicateRouteKeys:Object.freeze(duplicateRouteKeys),
+    duplicateNameResolutionKeys:Object.freeze(duplicateNameResolutionKeys),
     villageEvidenceCount:verifiedVillages.length,
     ownership189EvidenceCount:new Set(verifiedOwnership.map((record)=>normalizeZhRomCityName(record.city))).size,
     routeEvidenceCount:verifiedRoutes.length,
