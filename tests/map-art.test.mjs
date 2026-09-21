@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { flagGeometry, forestLayout, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainVariant } from '../src/game/map-art.js'
+import { flagFoldGuides, flagGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainVariant } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -54,4 +54,22 @@ test('full-map village symbol geometry stays compact and proportional',()=>{
   assert.equal(large.body,small.body*2)
   assert.equal(large.door,small.door*2)
   assert.ok(small.door<small.body)
+})
+
+
+test('fort HD detail geometry provides masonry joints and roof ridges',()=>{
+  const detail=fortDetailGeometry()
+  assert.ok(detail.stoneRows.length>=4)
+  assert.ok(detail.verticalJoints.length>=6)
+  assert.ok(detail.roofRidges.length>=3)
+  assert.ok(detail.stoneRows.every(Number.isFinite))
+})
+
+test('flag fold guides stay compact inside the logical army flag cloth',()=>{
+  const folds=flagFoldGuides()
+  assert.ok(folds.length>=2)
+  for(const fold of folds){
+    assert.ok(fold.x1>=2&&fold.x2<=12)
+    assert.ok(fold.y1<0&&fold.y2<0)
+  }
 })
