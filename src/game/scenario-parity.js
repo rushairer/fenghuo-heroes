@@ -1,10 +1,16 @@
 import { CANONICAL_MAP_EVIDENCE } from './canonical-map-evidence.js'
+import {
+  CANONICAL_SCENARIO_EVIDENCE,
+  canonicalScenarioEvidence,
+} from './canonical-scenario-evidence.js'
 import { canonicalMapMigrationReadiness } from './map-parity.js'
+import { validateScenarioStartEvidence } from './scenario-evidence.js'
 import { targetScenario } from './scenario-target.js'
 
 export function canonicalScenarioStartReadiness(
   year,
-  evidence=CANONICAL_MAP_EVIDENCE,
+  mapEvidence=CANONICAL_MAP_EVIDENCE,
+  scenarioEvidence=canonicalScenarioEvidence(year),
 ){
   const scenario=targetScenario(year)
   if(!scenario){
@@ -16,15 +22,14 @@ export function canonicalScenarioStartReadiness(
     })
   }
 
-  const map=canonicalMapMigrationReadiness(evidence)
+  const map=canonicalMapMigrationReadiness(mapEvidence)
+  const scenarioReport=validateScenarioStartEvidence(
+    scenarioEvidence??{scenarioYear:scenario.year},
+  )
   const is189=scenario.year===189
   const ownershipReady=is189?map.scenario189Ready:false
-
-  // The current repository protects the 189 ruler/officer transcription, but
-  // exact city assignment and starting numeric state are not calibrated. Do not
-  // convert those community records into a production start-state implicitly.
-  const officerPlacementReady=false
-  const economyReady=false
+  const officerPlacementReady=scenarioReport.officerPlacementReady
+  const economyReady=scenarioReport.economyReady
   const ownershipEvidenceStatus=is189
     ?(ownershipReady?'source-backed-189':'incomplete')
     :'unverified'
@@ -41,17 +46,26 @@ export function canonicalScenarioStartReadiness(
     mapGeometryReady:map.geometryReady,
     ownershipReady,
     ownershipEvidenceStatus,
+    scenarioEvidenceStatus:scenarioEvidence?.status??'missing',
+    scenarioSourceLedgerValid:scenarioReport.sourceLedgerValid,
     officerPlacementReady,
+    officerAssignmentEvidenceCount:scenarioReport.officerAssignmentEvidenceCount,
     economyReady,
+    cityStateEvidenceCount:scenarioReport.cityStateEvidenceCount,
     ready:blockers.length===0,
     blockers:Object.freeze(blockers),
   })
 }
 
 export function canonicalScenarioReadinessReport(
-  evidence=CANONICAL_MAP_EVIDENCE,
+  mapEvidence=CANONICAL_MAP_EVIDENCE,
+  scenarioEvidenceByYear=CANONICAL_SCENARIO_EVIDENCE,
 ){
   return Object.freeze([189,200,215].map((year)=>
-    canonicalScenarioStartReadiness(year,evidence)
+    canonicalScenarioStartReadiness(
+      year,
+      mapEvidence,
+      scenarioEvidenceByYear?.[year]??null,
+    )
   ))
 }
