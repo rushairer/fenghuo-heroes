@@ -2,7 +2,25 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildCanonicalRuntimeMap } from '../src/game/canonical-map-profile.js'
 import { GameStore } from '../src/game/store.js'
+import { buildCanonical189ScenarioStartState } from '../src/game/scenario-start-state.js'
 import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
+
+const fixtureEconomy=()=>({
+  gold:100,
+  food:200,
+  troops:3000,
+  development:50,
+  rule:80,
+  defense:40,
+  training:35,
+})
+
+const canonicalFactory=(evidence)=>(args)=>buildCanonical189ScenarioStartState({
+  ...args,
+  evidence,
+  economyForCity:fixtureEconomy,
+  economyStatus:'test-fixture',
+})
 
 class MemoryStorage{
   constructor(){this.m=new Map()}
@@ -13,7 +31,7 @@ class MemoryStorage{
 
 test('GameStore can initialize directly against an injected canonical profile',()=>{
   const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
-  const store=new GameStore(new MemoryStorage(),{mapProfile:profile})
+  const store=new GameStore(new MemoryStorage(),{mapProfile:profile,scenarioStartStateFactory:canonicalFactory(evidence)})
   store.newGame({scenarioYear:189,humanFactions:['liu']})
   assert.equal(store.state.mapProfileId,'zh-rom-canonical')
   assert.equal(Object.keys(store.state.cities).length,40)
@@ -26,10 +44,10 @@ test('canonical-profile saves reload only through a store using the same profile
   const evidence=completeCanonicalMapEvidence()
   const profile=buildCanonicalRuntimeMap(evidence)
   const storage=new MemoryStorage()
-  const original=new GameStore(storage,{mapProfile:profile})
+  const original=new GameStore(storage,{mapProfile:profile,scenarioStartStateFactory:canonicalFactory(evidence)})
   original.newGame({scenarioYear:189,humanFactions:['liu']})
 
-  const sameProfile=new GameStore(storage,{mapProfile:profile})
+  const sameProfile=new GameStore(storage,{mapProfile:profile,scenarioStartStateFactory:canonicalFactory(evidence)})
   assert.equal(sameProfile.load(),true)
   assert.equal(sameProfile.state.mapProfileId,'zh-rom-canonical')
 
@@ -45,4 +63,29 @@ test('GameStore rejects structurally invalid injected map profiles at constructi
     }),
     /Invalid runtime map profile/,
   )
+})
+
+
+test('GameStore refuses to start canonical geometry with the default provisional scenario factory',()=>{
+  const evidence=completeCanonicalMapEvidence()
+  const profile=buildCanonicalRuntimeMap(evidence)
+  const store=new GameStore(new MemoryStorage(),{mapProfile:profile})
+  assert.throws(
+    ()=>store.newGame({scenarioYear:189,humanFactions:['liu']}),
+    /No production scenario start state is calibrated/,
+  )
+})
+
+test('new games record scenario-state provenance separately from map profile provenance',()=>{
+  const evidence=completeCanonicalMapEvidence()
+  const profile=buildCanonicalRuntimeMap(evidence)
+  const store=new GameStore(new MemoryStorage(),{
+    mapProfile:profile,
+    scenarioStartStateFactory:canonicalFactory(evidence),
+  })
+  store.newGame({scenarioYear:189,humanFactions:['liu']})
+  assert.equal(store.state.mapProfileId,'zh-rom-canonical')
+  assert.equal(store.state.scenarioStateId,'zh-rom-canonical:189')
+  assert.equal(store.state.scenarioOwnershipStatus,'source-backed-189')
+  assert.equal(store.state.scenarioEconomyStatus,'test-fixture')
 })
