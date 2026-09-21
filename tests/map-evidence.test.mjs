@@ -149,8 +149,8 @@ test('reverse duplicate routes invalidate route-network coverage',()=>{
   const report=validateCanonicalMapEvidence({
     sources,
     routes:[
-      {from:'代縣',to:'鄴',sourceId:'capture-001',frameRef:'frame#route-1',verified:true},
-      {from:'鄴',to:'代縣',sourceId:'capture-001',frameRef:'frame#route-2',verified:true},
+      {from:'代縣',to:'信都',sourceId:'capture-001',frameRef:'frame#route-1',verified:true},
+      {from:'信都',to:'代縣',sourceId:'capture-001',frameRef:'frame#route-2',verified:true},
     ],
     routeNetworkCoverage:{
       sourceId:'capture-001',
@@ -159,7 +159,7 @@ test('reverse duplicate routes invalidate route-network coverage',()=>{
       verified:true,
     },
   })
-  assert.deepEqual(report.duplicateRouteKeys,['代縣|鄴'])
+  assert.deepEqual(report.duplicateRouteKeys,[['代縣','信都'].sort().join('|')])
   assert.equal(report.routeNetworkVerified,false)
 })
 
