@@ -116,3 +116,41 @@ The compiled file is still subject to review before replacing the repository led
 A plausible map is not canonical evidence. HD artwork, historical geography and the
 current runtime scaffold may help humans navigate the project, but none of them can
 supply missing Chinese-ROM coordinates, ownership, village positions or routes.
+
+
+## Browser workbench
+
+The static build publishes `tools/map-evidence-capture.html`.
+
+Use it to:
+
+- load a local screenshot without uploading it;
+- click the intrinsic marker center;
+- convert the click into logical/world evidence coordinates;
+- generate city or village candidate JSON;
+- keep every generated candidate at `verified:false`.
+
+The browser workbench is a measurement helper, not a verification authority.
+
+## Multi-batch merge
+
+When capture work is split across several frames or operators:
+
+```bash
+npm run map:evidence:merge -- batch-a.json batch-b.json --out map-evidence.merged.json
+```
+
+Merge is conflict-aware. Two non-empty contradictory values for the same canonical
+record fail instead of applying last-write-wins semantics.
+
+## Candidate-vs-ledger diff
+
+Before replacing the repository ledger:
+
+```bash
+npm run map:evidence:diff -- map-evidence.compiled.json
+```
+
+The semantic diff keys records by canonical identity, so array ordering does not create
+noise. It reports added, removed and changed city coordinates, ownership, routes,
+villages, sources, name resolutions and coverage declarations separately.
