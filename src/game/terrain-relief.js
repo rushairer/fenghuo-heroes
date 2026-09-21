@@ -107,3 +107,11 @@ export function drawProjectedTerrainRelief(r,patches,{
   c.restore()
   return drawn
 }
+
+
+export const WORLD_TERRAIN_RELIEF=createTerrainRelief({
+  width:640,
+  height:448,
+  count:22,
+  seed:0x31415926,
+})
