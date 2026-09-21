@@ -1,7 +1,7 @@
 import { COLORS } from '../game/constants.js'
-import { CITIES, CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
+import { FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
-import { drawMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain } from '../game/map-art.js'
+import { drawMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
 import { mountainStampStyle } from '../game/terrain-style.js'
@@ -22,17 +22,17 @@ const FOREST_REFS = Object.freeze([
 ])
 
 const ARMY_SELECTED_VIEWS = new Set(['army-menu','march-route','march-route-prompt'])
-const ROAD_SEGMENTS_WORLD = Object.freeze(
-  uniqueRoadPairs(CITIES).map(([from,to])=>Object.freeze({
-    a:Object.freeze(cityWorldPoint(CITY_BY_ID[from])),
-    b:Object.freeze(cityWorldPoint(CITY_BY_ID[to])),
-  })),
-)
 
 export class StrategyScene extends ParityStrategyScene {
   constructor(app) {
     super(app)
     this.mapSpeckles=createTerrainGrain({width:WORLD_W,height:WORLD_H,count:1500})
+    this.profileRoadSegmentsWorld=Object.freeze(
+      uniqueRoadPairs(this.mapCities()).map(([from,to])=>Object.freeze({
+        a:Object.freeze(cityWorldPoint(this.cityById(from))),
+        b:Object.freeze(cityWorldPoint(this.cityById(to))),
+      })),
+    )
   }
 
   drawInfo() {
@@ -81,7 +81,7 @@ export class StrategyScene extends ParityStrategyScene {
 
     this.drawRiver(camera)
 
-    const roadSegments=ROAD_SEGMENTS_WORLD
+    const roadSegments=this.profileRoadSegmentsWorld
       .map(({a,b})=>({a:toScreen(a,camera),b:toScreen(b,camera)}))
       .filter(({a,b})=>!(
         (a.x<-24&&b.x<-24)||
@@ -104,11 +104,20 @@ export class StrategyScene extends ParityStrategyScene {
       this.drawForest(p.x,p.y,index)
     })
 
-    for(const city of CITIES){
+    for(const city of this.mapCities()){
       const wp=cityWorldPoint(city)
       if(!isVisible(wp,camera,18))continue
       const p=toScreen(wp,camera)
       this.drawCity(city,p.x,p.y)
+    }
+
+    for(const village of this.app.store.mapProfile?.villages??[]){
+      if(!isVisible(village,camera,14))continue
+      const p=toScreen(village,camera)
+      const image=this.app.assets?.getForDisplay('map.villages.neutral',18,18)
+      if(!image||!r.drawImageCentered(image,p.x,p.y,18,18)){
+        drawVectorVillage(r,p.x,p.y,.8)
+      }
     }
 
     for(const army of ensureMarchState(this.app.store)){
