@@ -7,3 +7,5 @@ export const CITY_ECONOMY_FIELDS=Object.freeze([
   'defense',
   'training',
 ])
+
+export const SCENARIO_OFFICER_ROLES=Object.freeze(['ruler','officer'])
