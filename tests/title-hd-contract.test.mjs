@@ -40,3 +40,9 @@ test('vector title fallback applies material depth before micro-detail',()=>{
   assert.match(titleArt,/drawTitleMaterialPass/)
   assert.match(titleArt,/drawFrontRightGeneral\(r\)[\s\S]*drawTitleMaterialPass\(r\)[\s\S]*drawTitleHdDetail\(r\)[\s\S]*drawBrocadeStrip\(r\)/)
 })
+
+
+test('vector title fallback applies facial structure between material and micro-detail',()=>{
+  assert.match(titleArt,/drawTitleFaceStructure/)
+  assert.match(titleArt,/drawTitleMaterialPass\(r\)[\s\S]*drawTitleFaceStructure\(r\)[\s\S]*drawTitleHdDetail\(r\)/)
+})
