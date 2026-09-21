@@ -25,7 +25,7 @@ function canonicalMarchStore(){
   const profile=buildCanonicalRuntimeMap(evidence)
   const store=new GameStore(new MemoryStorage(),{
     mapProfile:profile,
-    scenarioStartStateFactory:canonical189TestScenarioFactory(evidence),
+    scenarioStartStateFactory:canonical189TestScenarioFactory(),
   })
   store.newGame({scenarioYear:189,humanFactions:['cao']})
   store.finishCurrentTurn()
