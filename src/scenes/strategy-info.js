@@ -3,6 +3,7 @@ import { CITIES, CITY_BY_ID, FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
 import { drawMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
+import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
 import { mountainStampStyle } from '../game/terrain-style.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, isVisible, toScreen, worldPoint } from '../game/world.js'
 import { drawRoadNetwork, drawWorldRiver, uniqueRoadPairs } from '../game/world-art.js'
@@ -31,22 +32,7 @@ const ROAD_SEGMENTS_WORLD = Object.freeze(
 export class StrategyScene extends ParityStrategyScene {
   constructor(app) {
     super(app)
-    this.mapSpeckles = this.createMapSpeckles()
-  }
-
-  createMapSpeckles() {
-    const items=[]
-    let seed=0x19910429
-    const tones=['#9f7548','#c49a64','#8f693f','#d0aa75']
-    for(let i=0;i<1500;i++){
-      seed=(Math.imul(seed,1664525)+1013904223)>>>0
-      const x=seed%WORLD_W
-      seed=(Math.imul(seed,1664525)+1013904223)>>>0
-      const y=seed%WORLD_H
-      seed=(Math.imul(seed,1664525)+1013904223)>>>0
-      items.push(Object.freeze({x,y,tone:tones[seed%tones.length],size:.35+((seed>>>8)%4)*.14}))
-    }
-    return Object.freeze(items)
+    this.mapSpeckles=createTerrainGrain({width:WORLD_W,height:WORLD_H,count:1500})
   }
 
   drawInfo() {
@@ -87,14 +73,10 @@ export class StrategyScene extends ParityStrategyScene {
 
     if(!sand||!r.drawImageTiled(sand,0,0,MAP_VIEW_W,MAP_VIEW_H,64,64,camera.x,camera.y)){
       r.fillRect(0,0,MAP_VIEW_W,MAP_VIEW_H,'#b48855')
-      for(const dot of this.mapSpeckles){
-        const p=toScreen(dot,camera)
-        if(p.x<0||p.x>MAP_VIEW_W||p.y<0||p.y>MAP_VIEW_H)continue
-        c.fillStyle=dot.tone
-        c.beginPath()
-        c.arc(p.x*r.S,p.y*r.S,dot.size*r.S,0,Math.PI*2)
-        c.fill()
-      }
+      drawTerrainGrain(r,this.mapSpeckles,{
+        project:(dot)=>toScreen(dot,camera),
+        visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=MAP_VIEW_H,
+      })
     }
 
     this.drawRiver(camera)
