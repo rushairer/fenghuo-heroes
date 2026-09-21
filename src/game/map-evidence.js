@@ -107,11 +107,13 @@ export function validateCanonicalMapEvidence(evidence={}){
   const villageCoverageVerified=Boolean(
     sourceBackedVerification(evidence.villageCoverage,sources)&&
     Number.isInteger(evidence.villageCoverage?.itemCount)&&
+    evidence.villageCoverage.itemCount>0&&
     evidence.villageCoverage.itemCount===verifiedVillages.length
   )
   const routeNetworkVerified=Boolean(
     sourceBackedVerification(evidence.routeNetworkCoverage,sources)&&
     Number.isInteger(evidence.routeNetworkCoverage?.itemCount)&&
+    evidence.routeNetworkCoverage.itemCount>0&&
     evidence.routeNetworkCoverage.itemCount===verifiedRoutes.length
   )
 
