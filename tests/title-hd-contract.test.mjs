@@ -58,3 +58,9 @@ test('vector title fallback separates overlapping silhouettes before micro-detai
   assert.match(titleArt,/drawTitleSilhouetteDepth/)
   assert.match(titleArt,/drawTitleHeadgearDetail\(r\)[\s\S]*drawTitleSilhouetteDepth\(r\)[\s\S]*drawTitleHdDetail\(r\)/)
 })
+
+
+test('vector title fallback applies local portrait lighting before silhouette separation',()=>{
+  assert.match(titleArt,/drawTitleLocalLight/)
+  assert.match(titleArt,/drawTitleHeadgearDetail\(r\)[\s\S]*drawTitleLocalLight\(r\)[\s\S]*drawTitleSilhouetteDepth\(r\)[\s\S]*drawTitleHdDetail\(r\)/)
+})
