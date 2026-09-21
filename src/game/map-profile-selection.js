@@ -5,15 +5,23 @@ import { RUNTIME_SCAFFOLD_MAP_PROFILE } from './runtime-map-scaffold.js'
 
 export function selectRuntimeMapProfile(evidence=CANONICAL_MAP_EVIDENCE){
   const readiness=canonicalMapMigrationReadiness(evidence)
+  const geometryPreview=readiness.geometryReady
+    ?buildCanonicalRuntimeMap(evidence)
+    :null
+
   if(!readiness.ready){
     return Object.freeze({
       profile:RUNTIME_SCAFFOLD_MAP_PROFILE,
+      geometryPreview,
       readiness,
-      reason:'canonical-evidence-incomplete',
+      reason:readiness.geometryReady
+        ?'canonical-geometry-ready-scenario-incomplete'
+        :'canonical-evidence-incomplete',
     })
   }
   return Object.freeze({
-    profile:buildCanonicalRuntimeMap(evidence),
+    profile:geometryPreview,
+    geometryPreview,
     readiness,
     reason:'canonical-evidence-complete',
   })
@@ -27,6 +35,8 @@ export function runtimeMapSelectionReport(evidence=CANONICAL_MAP_EVIDENCE){
     cityCount:selected.profile.cities.length,
     villageCount:selected.profile.villages.length,
     reason:selected.reason,
+    geometryPreviewAvailable:Boolean(selected.geometryPreview),
+    geometryPreviewProfileId:selected.geometryPreview?.id??null,
     readiness:selected.readiness,
   })
 }
