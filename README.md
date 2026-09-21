@@ -76,6 +76,19 @@ npm run check
 
 这些 QA 状态只固定画面入口，不改变默认玩家流程。武将 QA 状态只使用仓库现有 evidence-backed 开局名册投影；行军/攻城/单挑深层页面所需的临时军队与冲突明确标记为 `qaFixture`，仅用于确定性视觉复核，不属于 parity 证据，也不会被当作 canonical 游戏数据。
 
+## 地图迁移审计
+
+运行 `npm run map:report` 可以查看：
+
+- 当前实际启用的地图 profile；
+- canonical evidence ledger 是否 ready；
+- 已验证 40 城坐标数量；
+- 189 年归属覆盖数量；
+- 地名异体、村庄与道路网络 gate；
+- 当前 scaffold 与 Chinese-ROM 目标城市 identity 的差异。
+
+即使 evidence 全部齐全，项目也不会自动切换 canonical 地图；还必须显式通过 `map-activation.js` 的第二道 activation gate，并完成 Store / 行军 / 存档兼容性验证。
+
 ## GitHub Pages
 
 `main` 每次 push 会触发 CI 与 GitHub Pages 部署。
