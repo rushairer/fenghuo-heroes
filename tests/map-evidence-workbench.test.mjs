@@ -96,3 +96,13 @@ test('capture workbench can resume a prior single-source bundle without preservi
   assert.match(js,/sourceRef\.value=editable\.source\.ref/)
   assert.match(js,/所有候選保持 verified:false/)
 })
+
+
+test('map workbench validates source identity before capturing or copying candidates',()=>{
+  assert.match(js,/function ensureBatchIdentity/)
+  assert.match(js,/Source ID 不可為空/)
+  assert.match(js,/Source Ref 不可為空/)
+  assert.match(js,/Frame Ref 不可為空/)
+  assert.match(js,/canvas\.addEventListener\('click',[\s\S]*if\(!ensureBatchIdentity\(\)\)return/)
+  assert.match(js,/copyOutput\.addEventListener\('click',async\(\)=>\{\n  if\(!ensureBatchIdentity\(\)\)return/)
+})
