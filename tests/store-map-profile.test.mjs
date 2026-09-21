@@ -30,7 +30,8 @@ class MemoryStorage{
 }
 
 test('GameStore can initialize directly against an injected canonical profile',()=>{
-  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
+  const evidence=completeCanonicalMapEvidence()
+  const profile=buildCanonicalRuntimeMap(evidence)
   const store=new GameStore(new MemoryStorage(),{mapProfile:profile,scenarioStartStateFactory:canonicalFactory(evidence)})
   store.newGame({scenarioYear:189,humanFactions:['liu']})
   assert.equal(store.state.mapProfileId,'zh-rom-canonical')
