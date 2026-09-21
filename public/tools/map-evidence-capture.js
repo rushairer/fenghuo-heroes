@@ -15,6 +15,7 @@ const [
 const {
   captureEvidenceBundle,
   cityEvidenceCandidate,
+  normalizeCaptureBundleForEditing,
   villageEvidenceCandidate,
 }=captureModule
 const {
@@ -24,6 +25,7 @@ const {
 const {MAP_COORDINATE_SPACES}=evidenceModule
 
 const imageInput=document.querySelector('#image-input')
+const bundleInput=document.querySelector('#bundle-input')
 const recordType=document.querySelector('#record-type')
 const cityNameWrap=document.querySelector('#city-name-wrap')
 const cityName=document.querySelector('#city-name')
@@ -209,6 +211,32 @@ recordType.addEventListener('change',()=>{
 for(const control of [sourceId,frameRef]){
   control.addEventListener('input',()=>drawCanvas())
 }
+
+
+bundleInput.addEventListener('change',async()=>{
+  const file=bundleInput.files?.[0]
+  if(!file)return
+  try{
+    const parsed=JSON.parse(await file.text())
+    const editable=normalizeCaptureBundleForEditing(parsed)
+    candidates=[
+      ...editable.cityCoordinates.map((item)=>({...item})),
+      ...editable.villages.map((item)=>({...item})),
+    ]
+    history=[]
+    sourceId.value=editable.source.id
+    sourceRef.value=editable.source.ref
+    const firstFrame=candidates.find((item)=>item.frameRef)?.frameRef
+    if(firstFrame)frameRef.value=firstFrame
+    const firstMissing=ZH_ROM_CANONICAL_CITY_SET.find((name)=>!capturedCityNames().has(name))
+    if(firstMissing)cityName.value=firstMissing
+    renderOutput(`已載入批次 ${editable.source.id}；所有候選保持 verified:false。`)
+  }catch(error){
+    status.textContent=error instanceof Error?error.message:String(error)
+  }finally{
+    bundleInput.value=''
+  }
+})
 
 imageInput.addEventListener('change',()=>{
   const file=imageInput.files?.[0]
