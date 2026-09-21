@@ -683,3 +683,77 @@ export function drawSiegeStandards(r,{
   c.restore()
   return true
 }
+
+
+export function duelMotionCueGeometry({
+  attacking=false,
+  guard=false,
+}={}){
+  return Object.freeze({
+    attackArcs:attacking?Object.freeze([
+      Object.freeze({r:23,start:-.58,end:.12}),
+      Object.freeze({r:28,start:-.46,end:.2}),
+    ]):Object.freeze([]),
+    guardBraces:guard?Object.freeze([
+      Object.freeze({x1:12,y1:-29,x2:19,y2:-20}),
+      Object.freeze({x1:9,y1:-25,x2:17,y2:-15}),
+    ]):Object.freeze([]),
+    dust:attacking?Object.freeze([
+      Object.freeze({x:-8,y:13,rx:7,ry:2.2,alpha:.1}),
+      Object.freeze({x:6,y:13,rx:9,ry:2.6,alpha:.08}),
+    ]):Object.freeze([]),
+  })
+}
+
+export function drawDuelMotionCue(r,{
+  x,
+  y,
+  flip=false,
+  attacking=false,
+  guard=false,
+  color='#f0d28a',
+}={}){
+  if(!attacking&&!guard)return false
+  const c=r.ctx,S=r.S
+  const detail=duelMotionCueGeometry({attacking,guard})
+  c.save()
+  c.translate(x*S,y*S)
+  c.scale(flip?-1:1,1)
+
+  if(attacking){
+    c.lineCap='round'
+    detail.attackArcs.forEach((arc,index)=>{
+      c.strokeStyle=index===0?'rgba(255,235,174,.48)':'rgba(255,255,236,.24)'
+      c.lineWidth=(index===0?.72:.34)*S
+      c.beginPath()
+      c.arc(4*S,-10*S,arc.r*S,arc.start,arc.end)
+      c.stroke()
+    })
+    for(const dust of detail.dust){
+      c.fillStyle=`rgba(209,176,119,${dust.alpha})`
+      c.beginPath()
+      c.ellipse(dust.x*S,dust.y*S,dust.rx*S,dust.ry*S,0,0,Math.PI*2)
+      c.fill()
+    }
+  }
+
+  if(guard){
+    c.strokeStyle=color
+    c.lineWidth=.46*S
+    for(const brace of detail.guardBraces){
+      c.beginPath()
+      c.moveTo(brace.x1*S,brace.y1*S)
+      c.lineTo(brace.x2*S,brace.y2*S)
+      c.stroke()
+    }
+    c.fillStyle='rgba(255,245,206,.74)'
+    for(const [gx,gy] of [[18,-21],[15,-16]]){
+      c.beginPath()
+      c.arc(gx*S,gy*S,.7*S,0,Math.PI*2)
+      c.fill()
+    }
+  }
+
+  c.restore()
+  return true
+}
