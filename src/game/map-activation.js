@@ -32,6 +32,9 @@ export function mapActivationReport(options={}){
     activeProfileId:profile.id,
     activeCanonical:profile.canonical,
     evidenceReady:selected.readiness.ready,
+    geometryReady:selected.readiness.geometryReady,
+    scenario189Ready:selected.readiness.scenario189Ready,
+    sourceLedgerValid:selected.readiness.sourceLedgerValid,
     evidenceProfileId:selected.profile.id,
   })
 }
