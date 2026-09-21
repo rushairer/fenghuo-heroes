@@ -18,7 +18,7 @@
 
 当前主线是 **HD parity**：原作 320×224 只作为参考坐标系，浏览器以 6× 高清 backing store 起步，并根据实际显示尺寸与设备像素比自适应提升，最高 10×；同时保持原作界面几何和操作节奏。HD 模式追求高分辨率重绘，不再把固定低分辨率画布用 CSS 二次放大冒充高清。运行时普通 raster 素材还必须达到至少约 5× 的实际显示像素密度，否则自动退回 Canvas/vector 绘制。nine-slice UI 则按角/边切片本身的源像素密度验收，避免把可安全拉伸的面板误判为低清，也避免低分边框被强行放大。 当前场景代码还禁止直接 `assets.get(...)` 绕过高清门禁；地图地形/城池/旗帜、Setup 选择框、标题提示板以及单挑/攻城画面都具备可随 backing store 原生重绘的 vector fallback。
 
-> **地图状态警告**：当前可玩战略地图仍是迁移前的 40 节点工程脚手架，不是中文版原作 40 城地图。原作城市身份已进入独立 evidence layer；在坐标、村庄与 189 归属完成证据校准前，不得把当前地图称为 1:1。详见 `docs/MAP_MIGRATION_BLOCKER.md`。
+> **地图状态警告**：当前可玩战略地图仍是迁移前的 40 节点工程脚手架，不是中文版原作 40 城地图。原作城市身份已进入独立 evidence layer；在坐标、村庄、道路网络和地名异体完成几何证据校准前，不得把当前地图称为 1:1；189 / 200 / 215 的归属与开局数据由独立 scenario evidence 管理。详见 `docs/MAP_MIGRATION_BLOCKER.md`。
 
 ### 防误操作约定
 
@@ -111,7 +111,7 @@ npm run map:evidence:compile -- map-evidence.merged.json map-evidence.compiled.j
 - 当前实际启用的地图 profile；
 - canonical evidence ledger 是否 ready；
 - 已验证 40 城坐标数量；
-- 189 年归属覆盖数量；
+- legacy `ownership189` 兼容记录（仅诊断，不参与地图 readiness）；
 - 地名异体、村庄与道路网络 gate；
 - 当前 scaffold 与 Chinese-ROM 目标城市 identity 的差异。
 
