@@ -67,3 +67,10 @@ test('scenario workbench supports local screenshot reference progress undo and r
 test('static build publishes scenario capture workbench with the public tools directory',()=>{
   assert.match(build,/cpSync\('public', 'dist', \{ recursive: true \}\)/)
 })
+
+
+test('scenario workbench refuses copy when source or frame identity is incomplete',()=>{
+  assert.match(js,/copyOutput\.addEventListener\('click',async\(\)=>\{\n  if\(!ensureBatchIdentity\(\)\)return/)
+  assert.match(js,/Source Ref 不可為空/)
+  assert.match(js,/Frame Ref 不可為空/)
+})
