@@ -109,3 +109,26 @@ test('name resolutions cannot choose an arbitrary third spelling',()=>{
   })
   assert.equal(report.nameResolutionCount,0)
 })
+
+
+test('coverage records cannot certify an empty village or route set',()=>{
+  const report=validateCanonicalMapEvidence({
+    sources,
+    villages:[],
+    villageCoverage:{
+      sourceId:'capture-001',
+      frameRef:'frame-001#villages',
+      itemCount:0,
+      verified:true,
+    },
+    routes:[],
+    routeNetworkCoverage:{
+      sourceId:'capture-001',
+      frameRef:'frame-001#routes',
+      itemCount:0,
+      verified:true,
+    },
+  })
+  assert.equal(report.villageCoverageVerified,false)
+  assert.equal(report.routeNetworkVerified,false)
+})
