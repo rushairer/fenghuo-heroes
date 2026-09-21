@@ -13,9 +13,6 @@ if(report.duplicateSourceIds.length){
 if(report.duplicateCoordinateNames.length){
   failures.push(`duplicate canonical city coordinates: ${report.duplicateCoordinateNames.join(', ')}`)
 }
-if(report.duplicateOwnershipCities.length){
-  failures.push(`duplicate 189 ownership records: ${report.duplicateOwnershipCities.join(', ')}`)
-}
 if(report.duplicateRouteKeys.length){
   failures.push(`duplicate canonical routes: ${report.duplicateRouteKeys.join(', ')}`)
 }
@@ -31,9 +28,6 @@ for(const [index,item] of report.coordinateReports.entries()){
 if(report.validCityCoordinateCount>readiness.requiredCityCoordinateCount){
   failures.push('verified city coordinate count exceeds canonical 40-city target')
 }
-if(report.ownership189EvidenceCount>readiness.requiredCityCoordinateCount){
-  failures.push('verified 189 ownership count exceeds canonical 40-city target')
-}
 if(CANONICAL_MAP_EVIDENCE.status?.startsWith('blocked')&&readiness.ready){
   failures.push('blocked evidence ledger unexpectedly opens canonical migration gate')
 }
@@ -45,8 +39,7 @@ if(failures.length){
 }else{
   console.log(
     `canonical map evidence check passed: ${report.validCityCoordinateCount}/${readiness.requiredCityCoordinateCount} city coordinates, `+
-    `${report.ownership189EvidenceCount}/${readiness.requiredCityCoordinateCount} ownership records, `+
-    `geometry=${readiness.geometryReady?'ready':'blocked'}, scenario189=${readiness.scenario189Ready?'ready':'blocked'}, `+
-    `migration=${readiness.ready?'ready':'blocked'}`,
+    `geometry=${readiness.geometryReady?'ready':'blocked'}, `+
+    `migration=${readiness.ready?'ready':'blocked'}; scenario ownership is checked by scenario evidence`,
   )
 }
