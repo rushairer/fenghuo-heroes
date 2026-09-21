@@ -133,6 +133,11 @@ export function forestDetailGeometry(index=0){
       dx:treeIndex%2===0?-2.2:2,
       dy:-2.4-(treeIndex%3)*.4,
     }))),
+    canopyHighlights:Object.freeze(layout.slice(0,3).map((tree)=>Object.freeze({
+      x:tree.x-tree.size*.35,
+      y:tree.y-tree.size*.5,
+      r:Math.max(1.2,tree.size*.48),
+    }))),
     undergrowth:Object.freeze([
       Object.freeze({x:-8,y:5.5,r:1.8}),
       Object.freeze({x:-3,y:6.2,r:1.5}),
@@ -173,6 +178,14 @@ export function drawVectorForest(r,x,y,index=0,scale=1){
     c.arc((tree.x-1.5)*S,(tree.y-1.5)*S,(tree.size*.3)*S,0,Math.PI*2)
     c.fill()
     c.globalAlpha=1
+  }
+
+  c.strokeStyle='rgba(229,220,160,.26)'
+  c.lineWidth=.34*S
+  for(const highlight of detail.canopyHighlights){
+    c.beginPath()
+    c.arc(highlight.x*S,highlight.y*S,highlight.r*S,Math.PI*.92,Math.PI*1.62)
+    c.stroke()
   }
 
   c.strokeStyle='rgba(221,205,139,.32)'
