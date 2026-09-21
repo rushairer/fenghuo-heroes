@@ -310,6 +310,23 @@ export function siegeTowerDetailGeometry(width=290){
   })
 }
 
+export function siegeWeatheringGeometry(width=290,height=105){
+  const w=Math.max(120,Number(width)||290)
+  const h=Math.max(70,Number(height)||105)
+  return Object.freeze({
+    stains:Object.freeze([
+      Object.freeze({x:w*.18,y:h*.46,rx:12,ry:5,alpha:.08}),
+      Object.freeze({x:w*.44,y:h*.58,rx:15,ry:6,alpha:.07}),
+      Object.freeze({x:w*.72,y:h*.5,rx:13,ry:5.5,alpha:.08}),
+    ]),
+    cracks:Object.freeze([
+      Object.freeze([[w*.12,h*.42],[w*.14,h*.49],[w*.13,h*.56]]),
+      Object.freeze([[w*.58,h*.44],[w*.56,h*.5],[w*.57,h*.57]]),
+      Object.freeze([[w*.84,h*.39],[w*.82,h*.46],[w*.835,h*.53]]),
+    ]),
+  })
+}
+
 export function siegeGateDepthGeometry(width=290,height=105){
   const w=Math.max(120,Number(width)||290)
   const h=Math.max(70,Number(height)||105)
