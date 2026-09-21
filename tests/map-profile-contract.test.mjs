@@ -56,3 +56,19 @@ test('HD strategy renderers source city collections from the current store profi
   assert.match(fullMap,/this\.mapCities\(\)/)
   assert.match(fullMap,/store\.mapProfile\?\.villages/)
 })
+
+
+test('runtime game and scene modules do not import global CITIES or CITY_BY_ID',()=>{
+  const failures=[]
+  for(const path of [...walk('src/game'),...walk('src/scenes')]){
+    if(!path.endsWith('.js'))continue
+    if(path.endsWith('data.js'))continue
+    if(path.endsWith('runtime-map-scaffold.js'))continue
+    if(path.endsWith('map-parity.js'))continue
+    const source=readFileSync(path,'utf8')
+    if(/import\s*\{[^}]*\b(?:CITIES|CITY_BY_ID)\b[^}]*\}\s*from\s*['"][^'"]*data\.js['"]/.test(source)){
+      failures.push(path)
+    }
+  }
+  assert.deepEqual(failures,[])
+})
