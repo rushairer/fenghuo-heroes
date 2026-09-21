@@ -1,4 +1,3 @@
-import { CITIES, CITY_BY_ID } from './data.js'
 
 export const TRANSPORT_LOAD_UNIT = 10000
 export const TRANSPORT_LOAD_OPTIONS = Object.freeze([
@@ -25,7 +24,7 @@ export function transportLoadOption(loadId) {
 }
 
 export function transportLoadStatus(store, sourceId, loadId) {
-  if(!store?.state?.cities||!CITY_BY_ID[sourceId])return Object.freeze({ok:false,reason:'來源城市不存在。'})
+  if(!store?.state?.cities||!store.mapProfile?.cityById?.[sourceId])return Object.freeze({ok:false,reason:'來源城市不存在。'})
   const source=store.state.cities[sourceId]
   if(!source||source.owner!==store.humanFaction)return Object.freeze({ok:false,reason:'只能從本國城市發出運輸。'})
   const load=transportLoadOption(loadId)
@@ -40,15 +39,15 @@ export function transportEligibleDestinations(store, sourceId) {
   const source=store.state.cities[sourceId]
   if(!source||source.owner!==store.humanFaction)return Object.freeze([])
   return Object.freeze(
-    CITIES
+    store.mapProfile.cities
       .filter((city)=>city.id!==sourceId&&store.state.cities[city.id]?.owner===store.humanFaction)
       .map((city)=>city.id),
   )
 }
 
 export function transportTargetStatus(store, sourceId, targetId) {
-  if(!CITY_BY_ID[sourceId])return Object.freeze({ok:false,reason:'來源城市不存在。'})
-  if(!CITY_BY_ID[targetId])return Object.freeze({ok:false,reason:'請選擇目的城市。'})
+  if(!store?.mapProfile?.cityById?.[sourceId])return Object.freeze({ok:false,reason:'來源城市不存在。'})
+  if(!store?.mapProfile?.cityById?.[targetId])return Object.freeze({ok:false,reason:'請選擇目的城市。'})
   const eligible=transportEligibleDestinations(store,sourceId)
   if(!eligible.includes(targetId))return Object.freeze({ok:false,reason:'運輸目的地必須是另一座本國城市。'})
   return Object.freeze({ok:true,reason:''})
