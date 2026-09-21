@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { flagFoldGuides, flagGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainDetailGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
+import { flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mountainDetailGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -99,4 +99,13 @@ test('mountain HD detail adds deterministic ridges and scree',()=>{
   assert.equal(detail.scree.length,4)
   assert.ok(detail.ridgeOffsets.every((ridge)=>ridge.len>0))
   assert.ok(detail.scree.every((stone)=>stone.r>0))
+})
+
+
+test('forest HD detail adds ground depth branches and undergrowth',()=>{
+  const detail=forestDetailGeometry(4)
+  assert.equal(detail.branchGuides.length,4)
+  assert.equal(detail.undergrowth.length,4)
+  assert.ok(detail.ground.rx>detail.ground.ry)
+  assert.ok(detail.branchGuides.every((branch)=>Number.isFinite(branch.dx)&&Number.isFinite(branch.dy)))
 })
