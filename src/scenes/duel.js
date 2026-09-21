@@ -23,6 +23,7 @@ export class DuelScene{
     this.enemyCd=Math.max(0,this.enemyCd-dt)
     this.enemyRage=Math.max(0,this.enemyRage-dt)
     this.hitFlash=Math.max(0,this.hitFlash-dt)
+    if(this.hitFlash===0)this.hitSide=null
 
     if(this.commandOpen){this.updateCommandMenu(input);return}
 
@@ -165,6 +166,7 @@ export class DuelScene{
       guard:false,
       color:df?.color??'#f0d28a',
     })
+    if(this.hitFlash>0){c.save();c.globalAlpha=Math.min(.35,this.hitFlash/300);c.fillStyle='#fff2bf';c.fillRect(0,0,320*r.S,224*r.S);c.restore()}
     if(this.hitFlash>0&&this.hitSide){
       drawDuelHitSpark(r,{
         x:this.hitSide==='player'?this.px:this.ex,
@@ -173,7 +175,6 @@ export class DuelScene{
         color:this.hitSide==='player'?'#ffe2a6':'#fff0bd',
       })
     }
-    if(this.hitFlash>0){c.save();c.globalAlpha=Math.min(.35,this.hitFlash/300);c.fillStyle='#fff2bf';c.fillRect(0,0,320*r.S,224*r.S);c.restore()}
     r.fillRect(0,190,320,34,'rgba(10,8,6,.82)')
     r.text(this.autoMode&&!this.modeSelect?'自動一騎討ち中':'← → 移動　B+↑/↓ 上下段攻擊　B 中段　C 防禦　A 命令',160,197,6.2,'#eadbb9','center')
     if(this.message)r.text(this.message,160,211,6.5,this.enemyRage>0?'#ff9d72':'#cfc19f','center')
