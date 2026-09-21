@@ -103,3 +103,26 @@ another Three Kingdoms game, or the current runtime scaffold is not sufficient e
 
 `npm run check` now includes the map-evidence validator, so malformed or silently
 self-certified evidence fails CI before a canonical migration can be claimed.
+
+
+## Runtime activation gate
+
+Evidence readiness and runtime activation are deliberately separate.
+
+- `src/game/map-profile-selection.js` selects a canonical profile only when the
+  evidence ledger is complete.
+- `src/game/map-activation.js` adds a second explicit activation target.
+- The current target remains `scaffold`.
+- `src/game/data.js` exports `MAP_PROFILE`, `CITIES` and `CITY_BY_ID` from
+  that activation gate.
+
+This means completing the evidence ledger does **not** silently replace the live map.
+After the ledger becomes ready, the remaining migration sequence is:
+
+1. run canonical profile compatibility tests against Store, march, siege, QA and save/load;
+2. inspect the 40-city / village / route output;
+3. verify save migration behavior;
+4. explicitly change the activation target to `canonical`;
+5. run the complete test/build/visual-QA matrix before deployment.
+
+Use `npm run map:report` to inspect current evidence readiness and the active map profile.
