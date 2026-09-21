@@ -295,3 +295,13 @@ test('siege corner towers retain window beam and brace material detail',()=>{
   assert.match(source,/towerMaterial\.towers/)
   assert.match(source,/towerMaterial\.braces/)
 })
+
+
+test('strategy and full-map rivers share deterministic surface micro-reflections',()=>{
+  const source=read('src/game/world-art.js')
+  assert.match(source,/riverSurfaceMarks/)
+  const world=source.slice(source.indexOf('export function drawWorldRiver'),source.indexOf('export function drawProjectedRiver'))
+  const projected=source.slice(source.indexOf('export function drawProjectedRiver'),source.indexOf('export function roadSegmentStyle'))
+  assert.match(world,/drawRiverSurfaceMarks/)
+  assert.match(projected,/drawRiverSurfaceMarks/)
+})
