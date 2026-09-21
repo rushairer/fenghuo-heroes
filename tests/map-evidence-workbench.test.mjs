@@ -17,7 +17,9 @@ test('capture workbench loads screenshots locally and exposes city/village modes
 test('capture workbench delegates coordinate math to the audited evidence module',()=>{
   assert.match(js,/cityEvidenceCandidate/)
   assert.match(js,/villageEvidenceCandidate/)
+  assert.match(js,/location\.pathname\.includes\('\/public\/tools\/'\)/)
   assert.match(js,/\.\.\/\.\.\/src\/game\/map-evidence-capture\.js/)
+  assert.match(js,/\.\.\/src\/game\/map-evidence-capture\.js/)
   assert.doesNotMatch(js,/verified\s*:\s*true/)
 })
 
