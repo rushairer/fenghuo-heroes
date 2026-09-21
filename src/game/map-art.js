@@ -49,6 +49,24 @@ function pathFill(ctx,points,S,fill){
   ctx.fill()
 }
 
+export function mountainDetailGeometry(index=0){
+  const v=mountainVariant(index)
+  return Object.freeze({
+    ridgeOffsets:Object.freeze([
+      Object.freeze({x:-6,y:1.5,len:4.2}),
+      Object.freeze({x:1,y:-1,len:6}),
+      Object.freeze({x:8,y:1.2,len:3.8}),
+    ]),
+    scree:Object.freeze([
+      Object.freeze({x:-8,y:5.2,r:.7}),
+      Object.freeze({x:-2,y:6.1,r:.55}),
+      Object.freeze({x:5,y:5.8,r:.65}),
+      Object.freeze({x:11,y:5.1,r:.5}),
+    ]),
+    lean:v.lean,
+  })
+}
+
 export function drawVectorMountain(r,x,y,index=0,scale=1){
   const c=r.ctx,S=r.S*scale,v=mountainVariant(index)
   c.save()
@@ -79,6 +97,22 @@ export function drawVectorMountain(r,x,y,index=0,scale=1){
   peak(-6,6,12,v.leftHeight)
   peak(2,7,17,v.mainHeight)
   peak(10,6,11,v.rightHeight)
+
+  const detail=mountainDetailGeometry(index)
+  c.strokeStyle='rgba(51,35,27,.5)'
+  c.lineWidth=.28*S
+  for(const ridge of detail.ridgeOffsets){
+    c.beginPath()
+    c.moveTo(ridge.x*S,ridge.y*S)
+    c.lineTo((ridge.x+ridge.len+detail.lean*.4)*S,(ridge.y-3.2)*S)
+    c.stroke()
+  }
+  c.fillStyle='rgba(58,39,29,.42)'
+  for(const stone of detail.scree){
+    c.beginPath()
+    c.arc(stone.x*S,stone.y*S,stone.r*S,0,Math.PI*2)
+    c.fill()
+  }
 
   c.globalAlpha=.5
   c.fillStyle=MAP_ART_PALETTE.mountainDust
