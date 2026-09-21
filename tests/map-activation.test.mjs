@@ -9,8 +9,8 @@ test('runtime map stays on scaffold until explicit activation changes',()=>{
   assert.equal(profile.canonical,false)
 })
 
-test('canonical activation cannot bypass evidence readiness',()=>{
-  assert.throws(()=>activeMapProfile({target:'canonical'}),/before evidence readiness/)
+test('canonical activation cannot bypass geometry evidence readiness',()=>{
+  assert.throws(()=>activeMapProfile({target:'canonical'}),/before geometry evidence readiness/)
 })
 
 test('activation report separates evidence readiness from active profile',()=>{
@@ -19,6 +19,7 @@ test('activation report separates evidence readiness from active profile',()=>{
   assert.equal(report.activeProfileId,'runtime-scaffold')
   assert.equal(report.activeCanonical,false)
   assert.equal(report.evidenceReady,false)
+  assert.equal(report.activationReady,false)
 })
 
 
@@ -31,6 +32,22 @@ test('explicit canonical activation succeeds only with complete evidence and val
 
   const report=mapActivationReport({target:'canonical',evidence})
   assert.equal(report.activeCanonical,true)
+  assert.equal(report.activationReady,true)
   assert.equal(report.evidenceReady,true)
   assert.equal(report.activeProfileId,'zh-rom-canonical')
+})
+
+
+test('canonical geometry activation does not require legacy 189 ownership evidence',()=>{
+  const evidence=completeCanonicalMapEvidence()
+  evidence.ownership189=[]
+  const profile=activeMapProfile({target:'canonical',evidence})
+  assert.equal(profile.id,'zh-rom-canonical')
+  assert.equal(profile.canonical,true)
+  assert.equal(profile.geometryOnly,true)
+
+  const report=mapActivationReport({target:'canonical',evidence})
+  assert.equal(report.activationReady,true)
+  assert.equal(report.geometryReady,true)
+  assert.equal(report.scenario189Ready,false)
 })
