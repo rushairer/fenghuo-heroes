@@ -97,10 +97,11 @@ The audit reports:
 ## 7. Compile only after ready
 
 ```bash
-npm run map:evidence:compile -- map-evidence.capture.json map-evidence.compiled.json
+npm run map:evidence:compile -- map-evidence.capture.json map-geometry.compiled.json --scope geometry
+npm run map:evidence:compile -- map-evidence.capture.json map-evidence.compiled.json --scope full
 ```
 
-Compilation fails unless every migration gate is open. The compiler:
+Compilation supports two scopes. `geometry` requires canonical map geometry readiness; `full` additionally requires 189 ownership readiness.
 
 - keeps only verified records;
 - sorts cities in canonical 40-city order;
@@ -109,7 +110,7 @@ Compilation fails unless every migration gate is open. The compiler:
 - removes unused sources;
 - recomputes coverage counts.
 
-The compiled file is still subject to review before replacing the repository ledger.
+A geometry-only artifact intentionally emits no `ownership189` records. It can be used to review the canonical city/village/route profile while the live runtime remains on the scaffold. The full artifact is still subject to review before replacing the repository ledger.
 
 ## Non-negotiable boundary
 
@@ -154,3 +155,36 @@ npm run map:evidence:diff -- map-evidence.compiled.json
 The semantic diff keys records by canonical identity, so array ordering does not create
 noise. It reports added, removed and changed city coordinates, ownership, routes,
 villages, sources, name resolutions and coverage declarations separately.
+
+
+## Geometry-first calibration
+
+Map geometry and scenario state are separate evidence domains.
+
+A geometry capture can become reviewable when all of the following are complete:
+
+- 40 city coordinates;
+- unresolved display-name variants;
+- village coverage;
+- route-network coverage.
+
+189 ownership may still be incomplete at that point. Use:
+
+```bash
+npm run map:evidence:audit -- map-evidence.capture.json --require-geometry-ready
+npm run map:evidence:compile -- map-evidence.capture.json map-geometry.compiled.json --scope geometry
+```
+
+The live game remains on the scaffold. The selector only exposes a canonical
+`geometryPreview` for QA.
+
+For full evidence:
+
+```bash
+npm run map:evidence:audit -- map-evidence.capture.json --require-scenario-189-ready
+npm run map:evidence:compile -- map-evidence.capture.json map-evidence.compiled.json --scope full
+```
+
+Full map evidence still does **not** imply a production-ready 189 start state.
+Starting gold/food/troops/development/rule/defense/training and officer-to-city
+placement are independent calibration work.
