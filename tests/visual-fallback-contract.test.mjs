@@ -163,3 +163,14 @@ test('duel and siege art retain their second-pass ornament helpers',()=>{
   assert.ok(source.includes('duelArenaOrnamentGeometry'))
   assert.ok(source.includes('siegeStandardGeometry'))
 })
+
+
+test('full-map city village and cursor symbols are clipped to map bounds',()=>{
+  const source=read('src/scenes/strategy-full-map.js')
+  const clip=source.indexOf('c.rect(bounds.x*S,bounds.y*S,bounds.w*S,bounds.h*S)')
+  const city=source.indexOf('drawFullMapCitySymbol(r,point.x,point.y')
+  const village=source.indexOf('drawFullMapVillageSymbol(r,point.x,point.y')
+  const cursor=source.indexOf('drawMapCursor(r,cursor.x,cursor.y')
+  const restore=source.indexOf('c.restore()',cursor)
+  assert.ok(clip>=0&&city>clip&&village>city&&cursor>village&&restore>cursor)
+})
