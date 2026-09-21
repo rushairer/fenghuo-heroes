@@ -54,6 +54,7 @@ test('full scenario compiler emits stable canonical city order and officer order
   assert.equal(compiled.cityStates.length,40)
   assert.equal(compiled.cityStates[0].city,ZH_ROM_CANONICAL_CITY_SET[0])
   assert.deepEqual(compiled.officerAssignments.map((item)=>item.officer),['張飛','關羽'].sort((a,b)=>a.localeCompare(b)))
+  assert.ok(compiled.officerAssignments.every((item)=>item.role==='officer'))
   assert.equal(compiled.sources.some((source)=>source.id==='unused'),false)
 })
 
