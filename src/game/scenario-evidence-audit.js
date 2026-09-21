@@ -38,6 +38,7 @@ export function auditScenarioEvidenceBundle(bundle={}){
     }))
 
   const blockers=[]
+  if(!report.scenarioYearValid)blockers.push('unknown-scenario')
   if(report.invalidSourceCount)blockers.push('invalid-sources')
   if(report.duplicateSourceIds.length)blockers.push('duplicate-source-ids')
   if(report.duplicateCityStates.length)blockers.push('duplicate-city-states')
@@ -48,6 +49,7 @@ export function auditScenarioEvidenceBundle(bundle={}){
   return Object.freeze({
     ready:report.ready,
     scenarioYear:report.scenarioYear,
+    scenarioYearValid:report.scenarioYearValid,
     status:bundle.status??'unknown',
     sourceLedgerValid:report.sourceLedgerValid,
     economyReady:report.economyReady,
