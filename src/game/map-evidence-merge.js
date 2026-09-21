@@ -35,12 +35,24 @@ function mergeSources(bundles){
 
 function mergeNamedSlots(templateRows,bundles,field,arrayName){
   const byName=new Map(templateRows.map((row)=>[normalizeZhRomCityName(row[field]),{...row}]))
+  const touched=new Set()
   for(const bundle of bundles){
     for(const record of bundle?.[arrayName]??[]){
       const identity=normalizeZhRomCityName(record?.[field])
       if(!identity)continue
       const previous=byName.get(identity)
-      byName.set(identity,previous?mergeRecord(previous,record,`${arrayName}:${identity}`):{...record,[field]:identity})
+      let base=previous
+      if(previous&&!touched.has(identity)){
+        // Template defaults are workflow hints, not evidence. A first real record
+        // may legitimately choose another supported coordinate space.
+        base={...previous}
+        for(const [key,value] of Object.entries(record)){
+          if(key===field||key==='verified'||blank(value))continue
+          base[key]=''
+        }
+      }
+      byName.set(identity,base?mergeRecord(base,record,`${arrayName}:${identity}`):{...record,[field]:identity})
+      touched.add(identity)
     }
   }
   return [...byName.values()]
