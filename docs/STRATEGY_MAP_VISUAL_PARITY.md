@@ -2,6 +2,21 @@
 
 Status: active parity blocker.
 
+## Implementation status — 2026-09-22
+
+First structural correction is now implemented in the runtime:
+
+- root inspection view uses the full logical 320×224 map area;
+- the legacy 48px bottom instruction panel is suppressed in that target-parity state;
+- a compact upper-left `視察情況` plaque is rendered over the map;
+- provisional city-neighbor graph edges are no longer rendered in local or full-map views;
+- the target-parity view avoids the seam-prone sand tile path;
+- local river width, landmark scale, coherent mountain asset use and the bright bracket
+  cursor have received a first calibration pass.
+
+This does **not** close camera/landmark, terrain, river, fort/flag or canonical map
+evidence work. Those remain open until more direct frames are measured.
+
 This ledger records observations from a user-supplied direct reference screenshot of
 the target Mega Drive game and a user-supplied screenshot of the current Web runtime.
 The screenshots themselves are not committed.

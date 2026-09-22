@@ -124,6 +124,7 @@ export function drawWorldRiver(r,{
   camera={x:0,y:0},
   pattern=null,
   path=WORLD_RIVER_PATH,
+  widthScale=1,
 }={}){
   const c=r.ctx,S=r.S
   const project=(point)=>({x:point.x-camera.x,y:point.y-camera.y})
@@ -133,34 +134,34 @@ export function drawWorldRiver(r,{
   c.lineJoin='round'
   traceRiver(c,S,path,project)
   c.strokeStyle='#6f5837'
-  c.lineWidth=style.bankOuterWidth*S
+  c.lineWidth=style.bankOuterWidth*widthScale*S
   c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle='#d0a66b'
-  c.lineWidth=style.bankHighlightWidth*S
+  c.lineWidth=style.bankHighlightWidth*widthScale*S
   c.globalAlpha=style.bankHighlightAlpha
   c.stroke()
   c.globalAlpha=1
 
   traceRiver(c,S,path,project)
   c.strokeStyle='#183d79'
-  c.lineWidth=style.bankInnerWidth*S
+  c.lineWidth=style.bankInnerWidth*widthScale*S
   c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle=pattern??'#064ac0'
-  c.lineWidth=style.waterWidth*S
+  c.lineWidth=style.waterWidth*widthScale*S
   c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle=pattern?'#d1f4f4':'#6fc8ed'
-  c.lineWidth=style.highlightWidth*S
+  c.lineWidth=style.highlightWidth*widthScale*S
   c.globalAlpha=style.highlightAlpha
   c.stroke()
   c.globalAlpha=1
   drawRiverSurfaceMarks(c,S,riverSurfaceMarks(path),project,{
-    scale:1,
+    scale:widthScale,
     alpha:pattern?.16:.3,
   })
   c.restore()

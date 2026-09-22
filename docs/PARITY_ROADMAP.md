@@ -7,14 +7,23 @@ has a structural visual mismatch, not merely missing HD detail. See
 
 Before more map micro-detail work:
 
-- [ ] Rebuild inspection composition as map-first with compact upper-left status plaque.
-- [ ] Remove the large bottom instruction panel from the target-parity inspection state.
-- [ ] Disable visible provisional node-link road rendering unless direct evidence proves it.
+- [x] Rebuild inspection composition as map-first with compact upper-left status plaque.
+- [x] Remove the large bottom instruction panel from the target-parity inspection state.
+- [x] Disable visible provisional node-link road rendering unless direct evidence proves it.
 - [ ] Calibrate camera scale and landmark bounding-box ratios from direct target frames.
 - [ ] Replace mixed blue/purple mountain assets with a coherent target-derived terrain language.
 - [ ] Eliminate visible terrain tiling seams.
 - [ ] Calibrate deep-blue river width and irregular bank silhouette from reference frames.
 - [ ] Rebuild fort/flag/cursor silhouettes from direct target screenshots before further micro-detail.
+
+### Structural reset implementation note — 2026-09-22
+
+The first code pass now makes the root inspection state map-first at 320×224 logical
+coverage, suppresses the legacy bottom instruction panel there, and removes the
+provisional adjacency graph from both local and full-map presentation. The local river,
+landmark scale and bright bracket cursor received an initial direct-reference
+calibration pass; exact camera/landmark ratios remain open until more target frames are
+measured.
 
 # Parity Roadmap v0.2
 

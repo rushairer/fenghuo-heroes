@@ -6,7 +6,7 @@ import { drawFullMapCitySymbol, drawFullMapVillageSymbol, drawMapCursor, drawVec
 import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawProjectedTerrainRelief } from '../game/terrain-relief.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from '../game/world.js'
-import { drawProjectedRiver, drawRoadNetwork, uniqueRoadPairs } from '../game/world-art.js'
+import { drawProjectedRiver } from '../game/world-art.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
 
 const FULL_MAP_GRAIN=createTerrainGrain({width:194,height:112,count:360,seed:0x21500189})
@@ -62,11 +62,6 @@ export class StrategyScene extends OfficerStrategyScene {
     r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
 
     this.drawFullMapRiver(bounds)
-    const roadSegments=uniqueRoadPairs(this.mapCities()).map(([from,to])=>({
-      a:fullMapPoint(cityWorldPoint(this.cityById(from)),bounds),
-      b:fullMapPoint(cityWorldPoint(this.cityById(to)),bounds),
-    }))
-    drawRoadNetwork(r,roadSegments,{color:'#6b542f'})
 
     c.save()
     c.beginPath()

@@ -61,16 +61,17 @@ test('active strategy and overview maps share centralized world-art river render
   const strategy=read('src/scenes/strategy-info.js')
   const overview=read('src/scenes/strategy-full-map.js')
   assert.match(strategy,/drawWorldRiver/)
-  assert.match(strategy,/drawRoadNetwork/)
+  assert.doesNotMatch(strategy,/drawRoadNetwork/)
+  assert.doesNotMatch(strategy,/uniqueRoadPairs/)
   assert.match(overview,/drawProjectedRiver/)
   assert.doesNotMatch(strategy,/bezierCurveTo\(229\*S,48\*S/)
 })
 
 
-test('full-map view projects the same provisional road graph as the strategy map',()=>{
+test('full-map view keeps provisional adjacency graph invisible',()=>{
   const source=read('src/scenes/strategy-full-map.js')
-  assert.match(source,/uniqueRoadPairs\(this\.mapCities\(\)\)/)
-  assert.match(source,/drawRoadNetwork\(r,roadSegments/)
+  assert.doesNotMatch(source,/uniqueRoadPairs/)
+  assert.doesNotMatch(source,/drawRoadNetwork/)
   assert.match(source,/drawProjectedRiver/)
 })
 
@@ -313,4 +314,23 @@ test('strategy fort banner retains finial fold and knot micro-detail',()=>{
   assert.match(source,/banner\.finialRadius/)
   assert.match(source,/banner\.folds/)
   assert.match(source,/banner\.knot/)
+})
+
+
+test('inspection root uses the target-parity map-first composition',()=>{
+  const source=read('src/scenes/strategy-info.js')
+  assert.ok(source.includes('const TARGET_PARITY_VIEW_H = 224'))
+  assert.ok(source.includes("return this.stage==='survey'&&this.view==='map'"))
+  assert.ok(source.includes("r.text('視察情況'"))
+  assert.ok(source.includes('if(this.isTargetParityInspection())return'))
+  assert.ok(source.includes('width:19'))
+  assert.doesNotMatch(source,/drawRoadNetwork/)
+  assert.doesNotMatch(source,/uniqueRoadPairs/)
+})
+
+test('inspection parity view avoids seam-prone tiled sand and widens the local river',()=>{
+  const source=read('src/scenes/strategy-info.js')
+  assert.match(source,/const tiled=!mapFirst&&sand&&r\.drawImageTiled/)
+  assert.match(source,/this\.drawRiver\(camera,mapFirst\?1\.28:1\)/)
+  assert.match(source,/mountainStampStyle\(index,false\)/)
 })
