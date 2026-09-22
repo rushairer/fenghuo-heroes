@@ -69,15 +69,18 @@ export function drawWorldTerrainRelief(r,patches,{
   camera={x:0,y:0},
   viewWidth=320,
   viewHeight=176,
+  viewScale=1,
 }={}){
   const c=r.ctx,S=r.S
   let drawn=0
   c.save()
   for(const patch of patches??[]){
-    const x=patch.x-camera.x
-    const y=patch.y-camera.y
-    if(x+patch.rx<0||x-patch.rx>viewWidth||y+patch.ry<0||y-patch.ry>viewHeight)continue
-    drawPatch(c,S,patch,TERRAIN_RELIEF_TONES[patch.tone],x,y)
+    const x=(patch.x-camera.x)*viewScale
+    const y=(patch.y-camera.y)*viewScale
+    const rx=patch.rx*viewScale
+    const ry=patch.ry*viewScale
+    if(x+rx<0||x-rx>viewWidth||y+ry<0||y-ry>viewHeight)continue
+    drawPatch(c,S,patch,TERRAIN_RELIEF_TONES[patch.tone],x,y,viewScale,viewScale)
     drawn++
   }
   c.restore()

@@ -24,17 +24,27 @@ const FOREST_REFS = Object.freeze([
 
 const ARMY_SELECTED_VIEWS = new Set(['army-menu','march-route','march-route-prompt'])
 const TARGET_PARITY_VIEW_H = 224
+const TARGET_PARITY_SCALE = 1.18
 
-function cameraForView(point,viewHeight=MAP_VIEW_H){
-  if(viewHeight===MAP_VIEW_H)return cameraFor(point)
+function cameraForView(point,viewHeight=MAP_VIEW_H,viewScale=1){
+  if(viewHeight===MAP_VIEW_H&&viewScale===1)return cameraFor(point)
+  const worldViewWidth=MAP_VIEW_W/viewScale
+  const worldViewHeight=viewHeight/viewScale
   return {
-    x:Math.max(0,Math.min(WORLD_W-MAP_VIEW_W,Math.round(point.x-MAP_VIEW_W/2))),
-    y:Math.max(0,Math.min(WORLD_H-viewHeight,Math.round(point.y-viewHeight/2))),
+    x:Math.max(0,Math.min(WORLD_W-worldViewWidth,Math.round(point.x-worldViewWidth/2))),
+    y:Math.max(0,Math.min(WORLD_H-worldViewHeight,Math.round(point.y-worldViewHeight/2))),
   }
 }
 
-function isVisibleInView(point,camera,viewHeight,padding=16){
-  const p=toScreen(point,camera)
+function projectToView(point,camera,viewScale=1){
+  return {
+    x:(point.x-camera.x)*viewScale,
+    y:(point.y-camera.y)*viewScale,
+  }
+}
+
+function isVisibleInView(point,camera,viewHeight,padding=16,viewScale=1){
+  const p=projectToView(point,camera,viewScale)
   return p.x>=-padding&&p.x<=MAP_VIEW_W+padding&&p.y>=-padding&&p.y<=viewHeight+padding
 }
 
@@ -95,45 +105,46 @@ export class StrategyScene extends ParityStrategyScene {
     const state=this.app.store.state
     const mapFirst=this.isTargetParityInspection()
     const viewHeight=mapFirst?TARGET_PARITY_VIEW_H:MAP_VIEW_H
-    const camera=cameraForView(state.cursor,viewHeight)
+    const viewScale=mapFirst?TARGET_PARITY_SCALE:1
+    const camera=cameraForView(state.cursor,viewHeight,viewScale)
     const sand=this.app.assets?.getForDisplay('map.terrain.sandBase',64,64)
     const tiled=!mapFirst&&sand&&r.drawImageTiled(sand,0,0,MAP_VIEW_W,viewHeight,64,64,camera.x,camera.y)
 
     if(!tiled){
       r.fillRect(0,0,MAP_VIEW_W,viewHeight,'#aa8050')
       drawTerrainGrain(r,this.mapSpeckles,{
-        project:(dot)=>toScreen(dot,camera),
+        project:(dot)=>projectToView(dot,camera,viewScale),
         visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
         alpha:mapFirst?.72:.62,
       })
-      drawWorldTerrainRelief(r,this.mapRelief,{camera,viewWidth:MAP_VIEW_W,viewHeight})
+      drawWorldTerrainRelief(r,this.mapRelief,{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale})
     }
 
-    this.drawRiver(camera,mapFirst?1.28:1)
+    this.drawRiver(camera,mapFirst?1.28:1,viewScale)
 
     MOUNTAIN_REFS.forEach((ref,index)=>{
       const wp=worldPoint({x:ref[0],y:ref[1]})
-      if(!isVisibleInView(wp,camera,viewHeight,22))return
-      const p=toScreen(wp,camera)
+      if(!isVisibleInView(wp,camera,viewHeight,22,viewScale))return
+      const p=projectToView(wp,camera,viewScale)
       this.drawMountain(p.x,p.y,index,mapFirst)
     })
     FOREST_REFS.forEach((ref,index)=>{
       const wp=worldPoint({x:ref[0],y:ref[1]})
-      if(!isVisibleInView(wp,camera,viewHeight,18))return
-      const p=toScreen(wp,camera)
+      if(!isVisibleInView(wp,camera,viewHeight,18,viewScale))return
+      const p=projectToView(wp,camera,viewScale)
       this.drawForest(p.x,p.y,index,mapFirst)
     })
 
     for(const city of this.mapCities()){
       const wp=cityWorldPoint(city)
-      if(!isVisibleInView(wp,camera,viewHeight,22))continue
-      const p=toScreen(wp,camera)
+      if(!isVisibleInView(wp,camera,viewHeight,22,viewScale))continue
+      const p=projectToView(wp,camera,viewScale)
       this.drawCity(city,p.x,p.y,mapFirst)
     }
 
     for(const village of this.app.store.mapProfile?.villages??[]){
-      if(!isVisibleInView(village,camera,viewHeight,16))continue
-      const p=toScreen(village,camera)
+      if(!isVisibleInView(village,camera,viewHeight,16,viewScale))continue
+      const p=projectToView(village,camera,viewScale)
       const size=mapFirst?20:18
       const image=this.app.assets?.getForDisplay('map.villages.neutral',size,size)
       if(!image||!r.drawImageCentered(image,p.x,p.y,size,size))drawVectorVillage(r,p.x,p.y,mapFirst?.9:.8)
@@ -141,8 +152,8 @@ export class StrategyScene extends ParityStrategyScene {
 
     for(const army of ensureMarchState(this.app.store)){
       const wp={x:army.x,y:army.y}
-      if(!isVisibleInView(wp,camera,viewHeight,16))continue
-      const p=toScreen(wp,camera)
+      if(!isVisibleInView(wp,camera,viewHeight,16,viewScale))continue
+      const p=projectToView(wp,camera,viewScale)
       const faction=FACTION_BY_ID[army.faction]
       const selected=this.marchArmyId===army.id&&ARMY_SELECTED_VIEWS.has(this.view)
       this.drawArmyFlag(p.x,p.y,faction?.color??'#888',army.starving,army.faction,selected)
@@ -150,13 +161,13 @@ export class StrategyScene extends ParityStrategyScene {
 
     if(this.view==='march-route'&&this.marchRoute.length>1){
       for(let i=1;i<this.marchRoute.length;i++){
-        const a=toScreen(this.marchRoute[i-1],camera)
-        const b=toScreen(this.marchRoute[i],camera)
+        const a=projectToView(this.marchRoute[i-1],camera,viewScale)
+        const b=projectToView(this.marchRoute[i],camera,viewScale)
         r.line(a.x,a.y,b.x,b.y,'#fff0a0',1.15,.95)
       }
     }
 
-    const cursor=toScreen(state.cursor,camera)
+    const cursor=projectToView(state.cursor,camera,viewScale)
     if(mapFirst){
       drawTargetMapCursor(r,cursor.x,cursor.y)
       this.drawInspectionPlaque()
@@ -165,16 +176,16 @@ export class StrategyScene extends ParityStrategyScene {
     }
   }
 
-  drawRiver(camera,widthScale=1) {
+  drawRiver(camera,widthScale=1,viewScale=1) {
     const water=this.app.assets?.getForDisplay('map.terrain.riverA',42,20)
     const pattern=water?this.app.r.ctx.createPattern(water,'repeat'):null
-    drawWorldRiver(this.app.r,{camera,pattern,widthScale})
+    drawWorldRiver(this.app.r,{camera,pattern,widthScale,viewScale})
   }
 
   drawMountain(x,y,index=0,mapFirst=false) {
     const r=this.app.r
     const style=mountainStampStyle(index,false)
-    const scale=mapFirst?1.12:1
+    const scale=mapFirst?1.12*TARGET_PARITY_SCALE:1
     const width=Math.round(style.width*scale)
     const height=Math.round(style.height*scale)
     if(mapFirst){
@@ -191,7 +202,7 @@ export class StrategyScene extends ParityStrategyScene {
     const width=mapFirst?24:22
     const height=mapFirst?20:18
     if(mapFirst){
-      drawTargetHillCluster(r,x,y,index,1.08)
+      drawTargetHillCluster(r,x,y,index,1.08*TARGET_PARITY_SCALE)
       return
     }
     const image=this.app.assets?.getForDisplay('map.terrain.forestA',width,height)
@@ -205,7 +216,7 @@ export class StrategyScene extends ParityStrategyScene {
     const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
     const size=mapFirst?28:24
     if(mapFirst){
-      drawTargetInspectionFort(r,x,y,faction.color,1.08)
+      drawTargetInspectionFort(r,x,y,faction.color,1.08*TARGET_PARITY_SCALE)
       return
     }
     const image=this.app.assets?.getForDisplay(`map.cities.${runtime.owner}`,size,size)

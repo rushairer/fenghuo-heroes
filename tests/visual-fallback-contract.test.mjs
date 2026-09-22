@@ -320,6 +320,7 @@ test('strategy fort banner retains finial fold and knot micro-detail',()=>{
 test('inspection root uses the target-parity map-first composition',()=>{
   const source=read('src/scenes/strategy-info.js')
   assert.ok(source.includes('const TARGET_PARITY_VIEW_H = 224'))
+  assert.ok(source.includes('const TARGET_PARITY_SCALE = 1.18'))
   assert.ok(source.includes("return this.stage==='survey'&&this.view==='map'"))
   assert.ok(source.includes("r.text('視察情況'"))
   assert.ok(source.includes('if(this.isTargetParityInspection())return'))
@@ -342,4 +343,14 @@ test('target inspection map uses dedicated earth-language vector symbols instead
   assert.match(source,/drawTargetInspectionFort/)
   assert.match(source,/drawTargetMapCursor/)
   assert.match(source,/drawVectorMountain\(r,x,y,index,scale,TARGET_INSPECTION_PALETTE\)/)
+})
+
+
+test('target inspection zoom is presentation-only and projects every local landmark through one helper',()=>{
+  const source=read('src/scenes/strategy-info.js')
+  assert.match(source,/function projectToView\(point,camera,viewScale=1\)/)
+  assert.match(source,/cameraForView\(state\.cursor,viewHeight,viewScale\)/)
+  assert.match(source,/drawWorldTerrainRelief\(r,this\.mapRelief,\{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale\}\)/)
+  assert.match(source,/drawWorldRiver\(this\.app\.r,\{camera,pattern,widthScale,viewScale\}\)/)
+  assert.doesNotMatch(source,/setCursor\([^\n]*TARGET_PARITY_SCALE/)
 })

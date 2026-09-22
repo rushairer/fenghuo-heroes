@@ -125,38 +125,40 @@ export function drawWorldRiver(r,{
   pattern=null,
   path=WORLD_RIVER_PATH,
   widthScale=1,
+  viewScale=1,
 }={}){
   const c=r.ctx,S=r.S
-  const project=(point)=>({x:point.x-camera.x,y:point.y-camera.y})
+  const project=(point)=>({x:(point.x-camera.x)*viewScale,y:(point.y-camera.y)*viewScale})
   const style=riverStrokeStyle({pattern:Boolean(pattern)})
+  const strokeScale=widthScale*viewScale
   c.save()
   c.lineCap='round'
   c.lineJoin='round'
   traceRiver(c,S,path,project)
   c.strokeStyle='#6f5837'
-  c.lineWidth=style.bankOuterWidth*widthScale*S
+  c.lineWidth=style.bankOuterWidth*strokeScale*S
   c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle='#d0a66b'
-  c.lineWidth=style.bankHighlightWidth*widthScale*S
+  c.lineWidth=style.bankHighlightWidth*strokeScale*S
   c.globalAlpha=style.bankHighlightAlpha
   c.stroke()
   c.globalAlpha=1
 
   traceRiver(c,S,path,project)
   c.strokeStyle='#183d79'
-  c.lineWidth=style.bankInnerWidth*widthScale*S
+  c.lineWidth=style.bankInnerWidth*strokeScale*S
   c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle=pattern??'#064ac0'
-  c.lineWidth=style.waterWidth*widthScale*S
+  c.lineWidth=style.waterWidth*strokeScale*S
   c.stroke()
 
   traceRiver(c,S,path,project)
   c.strokeStyle=pattern?'#d1f4f4':'#6fc8ed'
-  c.lineWidth=style.highlightWidth*widthScale*S
+  c.lineWidth=style.highlightWidth*strokeScale*S
   c.globalAlpha=style.highlightAlpha
   c.stroke()
   c.globalAlpha=1

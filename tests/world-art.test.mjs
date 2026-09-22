@@ -91,3 +91,11 @@ test('river surface mark angle follows non-uniform projected geometry',()=>{
   assert.ok(projected.length>10)
   assert.ok(projected.length<15)
 })
+
+
+test('world river renderer exposes presentation zoom independently from canonical path data',()=>{
+  const source=readFileSync(new URL('../src/game/world-art.js',import.meta.url),'utf8')
+  assert.match(source,/viewScale=1/)
+  assert.match(source,/const strokeScale=widthScale\*viewScale/)
+  assert.deepEqual(WORLD_RIVER_PATH.curves.length,3)
+})
