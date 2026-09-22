@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, villageDetailGeometry } from '../src/game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, targetHillClusterGeometry, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -151,4 +151,22 @@ test('strategy fort banner detail keeps finial folds and knot compact',()=>{
   assert.ok(detail.poleTop<0)
   assert.ok(detail.knot.r>0)
   assert.ok(detail.folds.every((fold)=>fold.x2>fold.x1&&fold.y1<0&&fold.y2<0))
+})
+
+
+test('target inspection palette stays in the observed earth green pink gold language',()=>{
+  assert.match(TARGET_INSPECTION_PALETTE.mountainDark,/^#[0-9a-f]{6}$/i)
+  assert.match(TARGET_INSPECTION_PALETTE.forestMid,/^#[0-9a-f]{6}$/i)
+  assert.equal(TARGET_INSPECTION_PALETTE.flag,'#e14a99')
+  assert.equal(TARGET_INSPECTION_PALETTE.flagHighlight,'#ffd04f')
+  assert.equal(TARGET_INSPECTION_PALETTE.cursor,'#fffdf4')
+})
+
+test('target hill cluster geometry is deterministic compact and multi-lobed',()=>{
+  for(let index=0;index<9;index++){
+    const hills=targetHillClusterGeometry(index)
+    assert.deepEqual(hills,targetHillClusterGeometry(index))
+    assert.equal(hills.length,4)
+    assert.ok(hills.every((hill)=>hill.rx>hill.ry&&hill.rx<=9&&Math.abs(hill.x)<=10))
+  }
 })

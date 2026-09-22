@@ -1,7 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
-import { drawMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, drawMapCursor, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawWorldTerrainRelief } from '../game/terrain-relief.js'
@@ -158,7 +158,7 @@ export class StrategyScene extends ParityStrategyScene {
 
     const cursor=toScreen(state.cursor,camera)
     if(mapFirst){
-      drawMapCursor(r,cursor.x,cursor.y,{width:19,height:15,color:'#fffdf4',inner:'rgba(255,255,255,.34)'})
+      drawTargetMapCursor(r,cursor.x,cursor.y)
       this.drawInspectionPlaque()
     }else{
       drawMapCursor(r,cursor.x,cursor.y)
@@ -177,6 +177,10 @@ export class StrategyScene extends ParityStrategyScene {
     const scale=mapFirst?1.12:1
     const width=Math.round(style.width*scale)
     const height=Math.round(style.height*scale)
+    if(mapFirst){
+      drawVectorMountain(r,x,y,index,scale,TARGET_INSPECTION_PALETTE)
+      return
+    }
     const image=this.app.assets?.getForDisplay('map.terrain.mountainA',width,height)
     if(image&&r.drawImageCentered(image,x,y+style.offsetY,width,height,style.alpha,style.mirror))return
     drawVectorMountain(r,x,y,index,scale)
@@ -186,9 +190,13 @@ export class StrategyScene extends ParityStrategyScene {
     const r=this.app.r
     const width=mapFirst?24:22
     const height=mapFirst?20:18
+    if(mapFirst){
+      drawTargetHillCluster(r,x,y,index,1.08)
+      return
+    }
     const image=this.app.assets?.getForDisplay('map.terrain.forestA',width,height)
     if(image&&r.drawImageCentered(image,x,y,width,height,.96))return
-    drawVectorForest(r,x,y,index,mapFirst?1.08:1)
+    drawVectorForest(r,x,y,index,1)
   }
 
   drawCity(city,x,y,mapFirst=false) {
@@ -196,10 +204,14 @@ export class StrategyScene extends ParityStrategyScene {
     const runtime=this.app.store.state.cities[city.id]
     const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
     const size=mapFirst?28:24
+    if(mapFirst){
+      drawTargetInspectionFort(r,x,y,faction.color,1.08)
+      return
+    }
     const image=this.app.assets?.getForDisplay(`map.cities.${runtime.owner}`,size,size)
       ??(runtime.owner==='neutral'?this.app.assets?.getForDisplay('map.cities.neutral',size,size):null)
     if(image&&r.drawImageStretch(image,x-size/2,y-Math.round(size*.67),size,size))return
-    drawVectorFort(r,x,y,faction.color,mapFirst?1.08:1)
+    drawVectorFort(r,x,y,faction.color,1)
   }
 
   drawArmyFlag(x,y,color,starving=false,factionId=null,selected=false) {

@@ -15,6 +15,24 @@ export const MAP_ART_PALETTE=Object.freeze({
   villageRoof:'#5a3926',
 })
 
+export const TARGET_INSPECTION_PALETTE=Object.freeze({
+  mountainDark:'#43261d',
+  mountainMid:'#6b3b27',
+  mountainLight:'#a9653d',
+  mountainDust:'#c38d59',
+  forestDark:'#263c1b',
+  forestMid:'#3c5f26',
+  forestLight:'#6e8738',
+  trunk:'#3d2a1d',
+  fortDark:'#341f16',
+  fortStone:'#80502f',
+  fortLight:'#c49454',
+  roof:'#4e3021',
+  flag:'#e14a99',
+  flagHighlight:'#ffd04f',
+  cursor:'#fffdf4',
+})
+
 export function mountainVariant(index=0){
   const i=Math.abs(Math.floor(Number(index)||0))
   return Object.freeze({
@@ -67,7 +85,7 @@ export function mountainDetailGeometry(index=0){
   })
 }
 
-export function drawVectorMountain(r,x,y,index=0,scale=1){
+export function drawVectorMountain(r,x,y,index=0,scale=1,palette=MAP_ART_PALETTE){
   const c=r.ctx,S=r.S*scale,v=mountainVariant(index)
   c.save()
   c.translate(x*r.S,y*r.S)
@@ -79,14 +97,14 @@ export function drawVectorMountain(r,x,y,index=0,scale=1){
       [dx-width/2,base],
       [dx+lean,base-height],
       [dx+width/2,base],
-    ],S,MAP_ART_PALETTE.mountainDark)
+    ],S,palette.mountainDark)
     pathFill(c,[
       [dx+lean,base-height],
       [dx+width*.08,base-height*.48],
       [dx+width*.38,base],
       [dx+width*.06,base-height*.18],
-    ],S,MAP_ART_PALETTE.mountainLight)
-    c.strokeStyle=MAP_ART_PALETTE.mountainMid
+    ],S,palette.mountainLight)
+    c.strokeStyle=palette.mountainMid
     c.lineWidth=.45*S
     c.beginPath()
     c.moveTo((dx-width*.35)*S,(base-height*.18)*S)
@@ -115,7 +133,7 @@ export function drawVectorMountain(r,x,y,index=0,scale=1){
   }
 
   c.globalAlpha=.5
-  c.fillStyle=MAP_ART_PALETTE.mountainDust
+  c.fillStyle=palette.mountainDust
   c.beginPath()
   c.ellipse(2*S,6.4*S,13*S,1.6*S,0,0,Math.PI*2)
   c.fill()
@@ -147,7 +165,7 @@ export function forestDetailGeometry(index=0){
   })
 }
 
-export function drawVectorForest(r,x,y,index=0,scale=1){
+export function drawVectorForest(r,x,y,index=0,scale=1,palette=MAP_ART_PALETTE){
   const c=r.ctx,S=r.S*scale
   c.save()
   c.translate(x*r.S,y*r.S)
@@ -159,20 +177,20 @@ export function drawVectorForest(r,x,y,index=0,scale=1){
   c.fill()
 
   for(const tree of forestLayout(index)){
-    c.fillStyle=MAP_ART_PALETTE.trunk
+    c.fillStyle=palette.trunk
     c.fillRect((tree.x-.55)*S,(tree.y+tree.size*.45)*S,1.1*S,3.2*S)
 
-    c.fillStyle=MAP_ART_PALETTE.forestDark
+    c.fillStyle=palette.forestDark
     c.beginPath()
     c.arc(tree.x*S,(tree.y+.8)*S,tree.size*S,0,Math.PI*2)
     c.fill()
 
-    c.fillStyle=MAP_ART_PALETTE.forestMid
+    c.fillStyle=palette.forestMid
     c.beginPath()
     c.arc((tree.x-.8)*S,(tree.y-.5)*S,(tree.size*.72)*S,0,Math.PI*2)
     c.fill()
 
-    c.fillStyle=MAP_ART_PALETTE.forestLight
+    c.fillStyle=palette.forestLight
     c.globalAlpha=.72
     c.beginPath()
     c.arc((tree.x-1.5)*S,(tree.y-1.5)*S,(tree.size*.3)*S,0,Math.PI*2)
@@ -251,7 +269,7 @@ export function fortBannerDetailGeometry(){
   })
 }
 
-export function drawVectorFort(r,x,y,color='#888',scale=1){
+export function drawVectorFort(r,x,y,color='#888',scale=1,palette=MAP_ART_PALETTE,bannerColor=color){
   const c=r.ctx,S=r.S*scale
   c.save()
   c.translate(x*r.S,y*r.S)
@@ -262,16 +280,16 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
   c.ellipse(0,detail.ground.y*S,detail.ground.rx*S,detail.ground.ry*S,0,0,Math.PI*2)
   c.fill()
 
-  c.fillStyle=MAP_ART_PALETTE.fortDark
+  c.fillStyle=palette.fortDark
   c.fillRect(-9*S,-3*S,18*S,9*S)
 
-  c.fillStyle=MAP_ART_PALETTE.fortStone
+  c.fillStyle=palette.fortStone
   c.fillRect(-7*S,-7*S,14*S,5*S)
   c.fillRect(-8*S,-9*S,4*S,3*S)
   c.fillRect(-2*S,-10*S,4*S,4*S)
   c.fillRect(4*S,-9*S,4*S,3*S)
 
-  c.fillStyle=MAP_ART_PALETTE.fortLight
+  c.fillStyle=palette.fortLight
   c.fillRect(-5.8*S,-6*S,11.6*S,1.4*S)
 
   c.fillStyle='#21150f'
@@ -328,7 +346,7 @@ export function drawVectorFort(r,x,y,color='#888',scale=1){
   c.beginPath()
   c.arc(banner.poleX*S,banner.poleTop*S,banner.finialRadius*S,0,Math.PI*2)
   c.fill()
-  c.fillStyle=color
+  c.fillStyle=bannerColor
   c.beginPath()
   c.moveTo(5*S,-16*S)
   c.quadraticCurveTo(11*S,-15*S,13*S,-13*S)
@@ -633,6 +651,90 @@ export function drawMapCursor(r,x,y,{
     c.arc(cx*S,cy*S,detail.cornerGlow*S,0,Math.PI*2)
     c.fill()
   }
+  c.restore()
+  return true
+}
+
+
+
+export function targetHillClusterGeometry(index=0){
+  const i=Math.abs(Math.floor(Number(index)||0))
+  const shift=(i%3)-1
+  return Object.freeze([
+    Object.freeze({x:-9,y:3,rx:6.5,ry:4.2}),
+    Object.freeze({x:-3,y:-1+shift*.4,rx:8.2,ry:5.7}),
+    Object.freeze({x:5,y:1,rx:7.4,ry:5}),
+    Object.freeze({x:10,y:4-shift*.3,rx:5.4,ry:3.5}),
+  ])
+}
+
+export function drawTargetHillCluster(r,x,y,index=0,scale=1){
+  const c=r.ctx,S=r.S*scale
+  const p=TARGET_INSPECTION_PALETTE
+  c.save()
+  c.translate(x*r.S,y*r.S)
+  c.fillStyle='rgba(47,34,22,.22)'
+  c.beginPath()
+  c.ellipse(0,6*S,14*S,3.2*S,0,0,Math.PI*2)
+  c.fill()
+  for(const [hillIndex,hill] of targetHillClusterGeometry(index).entries()){
+    const tone=hillIndex%2===0?p.forestDark:p.forestMid
+    c.fillStyle=tone
+    c.beginPath()
+    c.ellipse(hill.x*S,hill.y*S,hill.rx*S,hill.ry*S,0,0,Math.PI*2)
+    c.fill()
+    c.strokeStyle='rgba(181,190,103,.36)'
+    c.lineWidth=.3*S
+    c.beginPath()
+    c.arc((hill.x-hill.rx*.18)*S,(hill.y-hill.ry*.15)*S,hill.rx*.55*S,Math.PI*.9,Math.PI*1.55)
+    c.stroke()
+  }
+  c.fillStyle=p.forestLight
+  c.globalAlpha=.42
+  c.beginPath()
+  c.ellipse(-4*S,-2*S,4.8*S,2.1*S,-.2,0,Math.PI*2)
+  c.fill()
+  c.restore()
+  return true
+}
+
+export function drawTargetInspectionFort(r,x,y,factionColor='#888',scale=1){
+  const p=TARGET_INSPECTION_PALETTE
+  drawVectorFort(r,x,y,factionColor,scale,p,p.flag)
+  const c=r.ctx,S=r.S*scale
+  c.save()
+  c.translate(x*r.S,y*r.S)
+  c.strokeStyle=p.flagHighlight
+  c.lineWidth=.5*S
+  c.beginPath()
+  c.moveTo(6*S,-14.7*S)
+  c.lineTo(11.2*S,-13*S)
+  c.stroke()
+  c.fillStyle=factionColor
+  c.fillRect(-1.2*S,4.5*S,2.4*S,1.1*S)
+  c.restore()
+  return true
+}
+
+export function drawTargetMapCursor(r,x,y,{width=19,height=15,scale=1}={}){
+  const c=r.ctx,S=r.S*scale
+  const w=width/2,h=height/2,tick=Math.max(3,Math.min(width,height)*.28)
+  c.save()
+  c.translate(x*r.S,y*r.S)
+  c.strokeStyle=TARGET_INSPECTION_PALETTE.cursor
+  c.lineWidth=1.25*S
+  c.lineCap='square'
+  for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
+    const cx=sx*w,cy=sy*h
+    c.beginPath()
+    c.moveTo(cx*S,(cy-sy*tick)*S)
+    c.lineTo(cx*S,cy*S)
+    c.lineTo((cx-sx*tick)*S,cy*S)
+    c.stroke()
+  }
+  c.strokeStyle='rgba(255,255,255,.34)'
+  c.lineWidth=.35*S
+  c.strokeRect((-w+1.5)*S,(-h+1.5)*S,(width-3)*S,(height-3)*S)
   c.restore()
   return true
 }

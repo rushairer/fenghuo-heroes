@@ -334,3 +334,12 @@ test('inspection parity view avoids seam-prone tiled sand and widens the local r
   assert.match(source,/this\.drawRiver\(camera,mapFirst\?1\.28:1\)/)
   assert.match(source,/mountainStampStyle\(index,false\)/)
 })
+
+
+test('target inspection map uses dedicated earth-language vector symbols instead of mixed raster families',()=>{
+  const source=read('src/scenes/strategy-info.js')
+  assert.match(source,/drawTargetHillCluster/)
+  assert.match(source,/drawTargetInspectionFort/)
+  assert.match(source,/drawTargetMapCursor/)
+  assert.match(source,/drawVectorMountain\(r,x,y,index,scale,TARGET_INSPECTION_PALETTE\)/)
+})
