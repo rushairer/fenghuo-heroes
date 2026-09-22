@@ -324,7 +324,7 @@ test('inspection root uses the target-parity map-first composition',()=>{
   assert.ok(source.includes("return this.stage==='survey'&&this.view==='map'"))
   assert.ok(source.includes("r.text('視察情況'"))
   assert.ok(source.includes('if(this.isTargetParityInspection())return'))
-  assert.ok(source.includes('width:19'))
+  assert.match(source,/drawTargetMapCursor\(r,cursor\.x,cursor\.y\)/)
   assert.doesNotMatch(source,/drawRoadNetwork/)
   assert.doesNotMatch(source,/uniqueRoadPairs/)
 })
@@ -332,7 +332,7 @@ test('inspection root uses the target-parity map-first composition',()=>{
 test('inspection parity view avoids seam-prone tiled sand and widens the local river',()=>{
   const source=read('src/scenes/strategy-info.js')
   assert.match(source,/const tiled=!mapFirst&&sand&&r\.drawImageTiled/)
-  assert.match(source,/this\.drawRiver\(camera,mapFirst\?1\.28:1\)/)
+  assert.match(source,/this\.drawRiver\(camera,mapFirst\?1\.28:1,viewScale\)/)
   assert.match(source,/mountainStampStyle\(index,false\)/)
 })
 
