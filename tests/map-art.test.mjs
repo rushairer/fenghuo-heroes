@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { TARGET_INSPECTION_PALETTE, flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, targetHillClusterGeometry, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
@@ -169,4 +170,12 @@ test('target hill cluster geometry is deterministic compact and multi-lobed',()=
     assert.equal(hills.length,4)
     assert.ok(hills.every((hill)=>hill.rx>hill.ry&&hill.rx<=9&&Math.abs(hill.x)<=10))
   }
+})
+
+
+test('target army flag wrapper keeps faction identity as a small accent rather than replacing target cloth language',()=>{
+  const source=readFileSync(new URL('../src/game/map-art.js',import.meta.url),'utf8')
+  assert.match(source,/drawTargetArmyFlag/)
+  assert.match(source,/TARGET_INSPECTION_PALETTE\.flag/)
+  assert.match(source,/c\.fillStyle=factionColor/)
 })

@@ -1,9 +1,9 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
-import { TARGET_INSPECTION_PALETTE, drawMapCursor, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, drawMapCursor, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
-import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
+import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawWorldTerrainRelief } from '../game/terrain-relief.js'
 import { mountainStampStyle } from '../game/terrain-style.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, toScreen, worldPoint } from '../game/world.js'
@@ -95,9 +95,13 @@ export class StrategyScene extends ParityStrategyScene {
 
   drawInspectionPlaque() {
     const r=this.app.r
-    const panel=this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:5})
-    r.panel(5,5,78,23,'#24170f','#d2a44a',panel)
-    r.text('視察情況',44,10,8.5,'#f3d985','center','top',SERIF,'700')
+    r.fillRect(5,5,80,24,'#1c100b')
+    r.strokeRect(5.5,5.5,79,23,'#e0b25e',1)
+    r.strokeRect(8,8,74,18,'#6f3d20',.65)
+    r.fillRect(9.5,9.5,71,15,'#3b2114')
+    r.line(13,22.5,77,22.5,'#9b6631',.45,.72)
+    for(const [x,y] of [[7,7],[82,7],[7,26],[82,26]])r.fillRect(x-1,y-1,2,2,'#d3a14d')
+    r.text('視察情況',45,10.5,8.5,'#f3d985','center','top',SERIF,'700')
   }
 
   drawWorld() {
@@ -118,6 +122,14 @@ export class StrategyScene extends ParityStrategyScene {
         alpha:mapFirst?.72:.62,
       })
       drawWorldTerrainRelief(r,this.mapRelief,{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale})
+      if(mapFirst){
+        drawTerrainEtching(r,this.mapSpeckles,{
+          project:(dot)=>projectToView(dot,camera,viewScale),
+          visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
+          alpha:.18,
+          stride:8,
+        })
+      }
     }
 
     this.drawRiver(camera,mapFirst?1.28:1,viewScale)
@@ -146,8 +158,12 @@ export class StrategyScene extends ParityStrategyScene {
       if(!isVisibleInView(village,camera,viewHeight,16,viewScale))continue
       const p=projectToView(village,camera,viewScale)
       const size=mapFirst?20:18
+      if(mapFirst){
+        drawVectorVillage(r,p.x,p.y,.9)
+        continue
+      }
       const image=this.app.assets?.getForDisplay('map.villages.neutral',size,size)
-      if(!image||!r.drawImageCentered(image,p.x,p.y,size,size))drawVectorVillage(r,p.x,p.y,mapFirst?.9:.8)
+      if(!image||!r.drawImageCentered(image,p.x,p.y,size,size))drawVectorVillage(r,p.x,p.y,.8)
     }
 
     for(const army of ensureMarchState(this.app.store)){
@@ -156,7 +172,11 @@ export class StrategyScene extends ParityStrategyScene {
       const p=projectToView(wp,camera,viewScale)
       const faction=FACTION_BY_ID[army.faction]
       const selected=this.marchArmyId===army.id&&ARMY_SELECTED_VIEWS.has(this.view)
-      this.drawArmyFlag(p.x,p.y,faction?.color??'#888',army.starving,army.faction,selected)
+      if(mapFirst){
+        drawTargetArmyFlag(r,p.x,p.y,faction?.color??'#888',{starving:army.starving,selected,scale:1.04*TARGET_PARITY_SCALE})
+      }else{
+        this.drawArmyFlag(p.x,p.y,faction?.color??'#888',army.starving,army.faction,selected)
+      }
     }
 
     if(this.view==='march-route'&&this.marchRoute.length>1){

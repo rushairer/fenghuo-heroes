@@ -740,6 +740,25 @@ export function drawTargetMapCursor(r,x,y,{width=19,height=15,scale=1}={}){
 }
 
 
+
+export function drawTargetArmyFlag(r,x,y,factionColor='#888',{
+  selected=false,
+  starving=false,
+  scale=1,
+}={}){
+  drawVectorFlag(r,x,y,TARGET_INSPECTION_PALETTE.flag,{selected,starving,scale})
+  const c=r.ctx,S=r.S*scale
+  c.save()
+  c.translate(x*r.S,y*r.S)
+  c.fillStyle=TARGET_INSPECTION_PALETTE.flagHighlight
+  c.fillRect(4.2*S,-6.9*S,5.2*S,.65*S)
+  c.fillStyle=factionColor
+  c.fillRect(3.2*S,-4.15*S,2.1*S,1.1*S)
+  c.restore()
+  return true
+}
+
+
 export function fullMapVillageSymbolGeometry(size=3.6){
   const s=Math.max(2,Number(size)||3.6)
   return Object.freeze({

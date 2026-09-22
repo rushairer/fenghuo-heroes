@@ -354,3 +354,13 @@ test('target inspection zoom is presentation-only and projects every local landm
   assert.match(source,/drawWorldRiver\(this\.app\.r,\{camera,pattern,widthScale,viewScale\}\)/)
   assert.doesNotMatch(source,/setCursor\([^\n]*TARGET_PARITY_SCALE/)
 })
+
+
+test('target inspection surface avoids mixed raster villages and uses dedicated flag and plaque language',()=>{
+  const source=read('src/scenes/strategy-info.js')
+  assert.match(source,/drawTargetArmyFlag/)
+  assert.match(source,/drawTerrainEtching/)
+  assert.match(source,/if\(mapFirst\)\{\n        drawVectorVillage/)
+  assert.doesNotMatch(source,/drawInspectionPlaque[\s\S]*getNineSlice/)
+  assert.match(source,/r\.text\('視察情況'/)
+})

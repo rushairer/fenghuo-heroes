@@ -50,3 +50,34 @@ export function drawTerrainGrain(r,items,{
   c.restore()
   return drawn
 }
+
+
+export function drawTerrainEtching(r,items,{
+  project=(point)=>point,
+  visible=()=>true,
+  alpha=.22,
+  stride=9,
+}={}){
+  const c=r.ctx,S=r.S
+  const step=Math.max(1,Math.floor(Number(stride)||1))
+  let drawn=0
+  c.save()
+  c.globalAlpha=alpha
+  c.lineCap='round'
+  for(let i=0;i<(items??[]).length;i+=step){
+    const item=items[i]
+    const point=project(item)
+    if(!visible(point,item))continue
+    const length=1.4+(i%4)*.35
+    const slope=((i>>1)%3-1)*.32
+    c.strokeStyle=i%2===0?'#6f482e':'#d0a06a'
+    c.lineWidth=.24*S
+    c.beginPath()
+    c.moveTo((point.x-length*.5)*S,(point.y-slope)*S)
+    c.lineTo((point.x+length*.5)*S,(point.y+slope)*S)
+    c.stroke()
+    drawn++
+  }
+  c.restore()
+  return drawn
+}
