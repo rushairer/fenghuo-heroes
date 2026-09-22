@@ -14,8 +14,18 @@ First structural correction is now implemented in the runtime:
 - local river width, landmark scale, coherent mountain asset use and the bright bracket
   cursor have received a first calibration pass.
 
+Second visual calibration pass:
+
+- inspection-only camera density is now 1.18× and is strictly presentation-layer;
+- target inspection mountains/hills/forts/flags/cursor use one coherent vector palette;
+- ground texture uses deterministic non-tiled grain plus subtle earth etching;
+- the river keeps the same provisional center path while receiving broader, irregular
+  presentation-only bank modulation.
+
 This does **not** close camera/landmark, terrain, river, fort/flag or canonical map
-evidence work. Those remain open until more direct frames are measured.
+evidence work. Those remain open until more direct frames are measured. In particular,
+the 1.18× zoom and river-width factors are calibration hypotheses, not claimed original
+game constants.
 
 This ledger records observations from a user-supplied direct reference screenshot of
 the target Mega Drive game and a user-supplied screenshot of the current Web runtime.

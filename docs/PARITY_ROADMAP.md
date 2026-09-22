@@ -20,10 +20,14 @@ Before more map micro-detail work:
 
 The first code pass now makes the root inspection state map-first at 320×224 logical
 coverage, suppresses the legacy bottom instruction panel there, and removes the
-provisional adjacency graph from both local and full-map presentation. The local river,
-landmark scale and bright bracket cursor received an initial direct-reference
-calibration pass; exact camera/landmark ratios remain open until more target frames are
-measured.
+provisional adjacency graph from both local and full-map presentation. A presentation-only
+1.18× inspection camera calibration now increases target-frame information density
+without mutating world coordinates. Target inspection rendering also uses one earth/green
+vector language for mountains, hills, forts, villages, army flags and cursor rather than
+mixing unrelated raster families. The river keeps the same provisional center path but
+now has a broader, lightly irregular bank silhouette. Exact camera ratios, landmark
+bounding boxes and canonical river/world geometry remain open until more target frames
+are measured.
 
 # Parity Roadmap v0.2
 

@@ -51,6 +51,45 @@ export function riverSurfaceMarks(path=WORLD_RIVER_PATH){
   return Object.freeze(marks)
 }
 
+
+export function riverBankModulations(path=WORLD_RIVER_PATH){
+  return Object.freeze(riverSurfaceMarks(path).map((mark,index)=>Object.freeze({
+    x:mark.x,
+    y:mark.y,
+    angle:mark.angle,
+    side:index%2===0?-1:1,
+    offsetFactor:.3+(index%3)*.035,
+    radiusFactor:.15+(index%4)*.018,
+    squash:.48+(index%2)*.08,
+  })))
+}
+
+function drawRiverBankModulations(ctx,S,mods,project,bankWidth,color,alpha=.72){
+  ctx.save()
+  ctx.fillStyle=color
+  ctx.globalAlpha=alpha
+  for(const mod of mods){
+    const p=projectRiverSurfaceMark({...mod,length:1},project)
+    const normalX=-Math.sin(p.angle)
+    const normalY=Math.cos(p.angle)
+    const offset=bankWidth*mod.offsetFactor*mod.side
+    const rx=Math.max(.8,bankWidth*mod.radiusFactor)
+    const ry=Math.max(.5,rx*mod.squash)
+    ctx.beginPath()
+    ctx.ellipse(
+      (p.x+normalX*offset)*S,
+      (p.y+normalY*offset)*S,
+      rx*S,
+      ry*S,
+      p.angle,
+      0,
+      Math.PI*2,
+    )
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
 function traceRiver(ctx,S,path,project=(point)=>point){
   const start=project(path.start)
   ctx.beginPath()
@@ -134,6 +173,7 @@ export function drawWorldRiver(r,{
   c.save()
   c.lineCap='round'
   c.lineJoin='round'
+  drawRiverBankModulations(c,S,riverBankModulations(path),project,style.bankOuterWidth*strokeScale,'#6f5837',.76)
   traceRiver(c,S,path,project)
   c.strokeStyle='#6f5837'
   c.lineWidth=style.bankOuterWidth*strokeScale*S
@@ -192,6 +232,7 @@ export function drawProjectedRiver(r,{
   const style=riverStrokeStyle({projected:true})
   const outerScale=outerWidth/5
   const innerScale=innerWidth/3.4
+  drawRiverBankModulations(c,S,riverBankModulations(path),project,style.bankOuterWidth*outerScale,outer,.66)
 
   traceRiver(c,S,path,project)
   c.strokeStyle=outer

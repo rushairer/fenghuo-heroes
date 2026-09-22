@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import {
   WORLD_RIVER_PATH,
   riverStrokeStyle,
+  riverBankModulations,
   projectRiverSurfaceMark,
   riverSurfaceMarks,
   roadSegmentStyle,
@@ -98,5 +99,17 @@ test('world river renderer exposes presentation zoom independently from canonica
   const source=readFileSync(new URL('../src/game/world-art.js',import.meta.url),'utf8')
   assert.match(source,/viewScale=1/)
   assert.match(source,/const strokeScale=widthScale\*viewScale/)
+  assert.deepEqual(WORLD_RIVER_PATH.curves.length,3)
+})
+
+
+test('river bank modulation adds deterministic irregularity without changing the canonical center path',()=>{
+  const mods=riverBankModulations()
+  assert.equal(mods.length,riverSurfaceMarks().length)
+  assert.deepEqual(mods,riverBankModulations())
+  assert.ok(mods.some((item)=>item.side<0))
+  assert.ok(mods.some((item)=>item.side>0))
+  assert.ok(mods.every((item)=>item.offsetFactor>=.3&&item.offsetFactor<.4))
+  assert.ok(mods.every((item)=>item.radiusFactor>.14&&item.radiusFactor<.22))
   assert.deepEqual(WORLD_RIVER_PATH.curves.length,3)
 })
