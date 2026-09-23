@@ -14,7 +14,15 @@ Before more map micro-detail work:
 - [ ] Replace mixed blue/purple mountain assets with a coherent target-derived terrain language.
 - [ ] Eliminate visible terrain tiling seams.
 - [~] Calibrate deep-blue river width and irregular bank silhouette from reference frames.
-- [ ] Rebuild fort/flag/cursor silhouettes from direct target screenshots before further micro-detail.
+- [~] Rebuild fort/flag/cursor silhouettes from direct target screenshots before further micro-detail.
+
+### Fort and cursor silhouette pass — 2026-09-23
+
+The target fort no longer delegates to the generic rectangular fort renderer. It now has
+a compact wall, central keep, two side towers, three roof silhouettes and a dedicated
+hot-pink/gold banner, with faction color reduced to a small gate identity mark. The
+target cursor drops its faint inner rectangle and is now a high-contrast four-corner
+white bracket with a dark under-stroke.
 
 ### River silhouette pass — 2026-09-23
 

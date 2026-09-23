@@ -22,6 +22,15 @@ Second visual calibration pass:
 - the river keeps the same provisional center path while receiving broader, irregular
   presentation-only bank modulation.
 
+Fort/cursor silhouette convergence:
+
+- target forts now use a dedicated compact city-gate/keep/tower silhouette rather than
+  the generic rectangular fort renderer;
+- the hot-pink/gold banner is structural to the target fort, while faction color is a
+  small identity accent;
+- the target cursor is now bracket-only with no faint inner rectangular box;
+- a dark under-stroke keeps the white corner brackets readable over river or terrain.
+
 River silhouette convergence:
 
 - shoreline modulation density increased from 9 to 15 deterministic samples;

@@ -784,43 +784,126 @@ export function drawTargetHillCluster(r,x,y,index=0,scale=1){
   return true
 }
 
+export function targetFortGeometry(){
+  return Object.freeze({
+    ground:Object.freeze({x:0,y:6.2,rx:10.6,ry:2.6}),
+    wall:Object.freeze({x:-8,y:-2,w:16,h:8}),
+    keep:Object.freeze({x:-4.8,y:-7.5,w:9.6,h:7.2}),
+    towers:Object.freeze([
+      Object.freeze({x:-8.5,y:-6,w:4.8,h:10}),
+      Object.freeze({x:3.7,y:-6,w:4.8,h:10}),
+    ]),
+    roofs:Object.freeze([
+      Object.freeze({x:-6.1,y:-6.2,w:6.2,h:3}),
+      Object.freeze({x:0,y:-8.1,w:11.2,h:3.8}),
+      Object.freeze({x:6.1,y:-6.2,w:6.2,h:3}),
+    ]),
+    gate:Object.freeze({x:-1.7,y:1.2,w:3.4,h:4.8}),
+    banner:Object.freeze({poleX:4.2,poleTop:-16.2,poleBottom:-7.3,flagRight:12.2,flagTop:-15.7,flagBottom:-10.4}),
+  })
+}
+
 export function drawTargetInspectionFort(r,x,y,factionColor='#888',scale=1){
   const p=TARGET_INSPECTION_PALETTE
-  drawVectorFort(r,x,y,factionColor,scale,p,p.flag)
+  const g=targetFortGeometry()
   const c=r.ctx,S=r.S*scale
   c.save()
   c.translate(x*r.S,y*r.S)
-  c.strokeStyle=p.flagHighlight
+
+  c.fillStyle='rgba(42,27,18,.3)'
+  c.beginPath()
+  c.ellipse(g.ground.x*S,g.ground.y*S,g.ground.rx*S,g.ground.ry*S,0,0,Math.PI*2)
+  c.fill()
+
+  c.fillStyle=p.fortDark
+  c.fillRect(g.wall.x*S,g.wall.y*S,g.wall.w*S,g.wall.h*S)
+
+  c.fillStyle=p.fortStone
+  for(const tower of g.towers)c.fillRect(tower.x*S,tower.y*S,tower.w*S,tower.h*S)
+  c.fillRect(g.keep.x*S,g.keep.y*S,g.keep.w*S,g.keep.h*S)
+
+  c.fillStyle=p.roof
+  for(const roof of g.roofs){
+    c.beginPath()
+    c.moveTo((roof.x-roof.w/2)*S,roof.y*S)
+    c.lineTo(roof.x*S,(roof.y-roof.h)*S)
+    c.lineTo((roof.x+roof.w/2)*S,roof.y*S)
+    c.closePath()
+    c.fill()
+  }
+
+  c.strokeStyle=p.fortLight
   c.lineWidth=.5*S
   c.beginPath()
-  c.moveTo(6*S,-14.7*S)
-  c.lineTo(11.2*S,-13*S)
+  c.moveTo(-7.2*S,-.5*S)
+  c.lineTo(7.2*S,-.5*S)
+  c.moveTo(-4.1*S,-6.2*S)
+  c.lineTo(4.1*S,-6.2*S)
   c.stroke()
+
+  c.fillStyle='#21150f'
+  c.fillRect(g.gate.x*S,g.gate.y*S,g.gate.w*S,g.gate.h*S)
   c.fillStyle=factionColor
-  c.fillRect(-1.2*S,4.5*S,2.4*S,1.1*S)
+  c.fillRect(-1.05*S,3.8*S,2.1*S,1.15*S)
+
+  c.fillStyle='#2b1a13'
+  c.fillRect((g.banner.poleX-.5)*S,g.banner.poleTop*S,1*S,(g.banner.poleBottom-g.banner.poleTop)*S)
+  c.fillStyle='rgba(220,174,88,.92)'
+  c.beginPath()
+  c.arc(g.banner.poleX*S,(g.banner.poleTop-.45)*S,.58*S,0,Math.PI*2)
+  c.fill()
+
+  c.fillStyle=p.flag
+  c.beginPath()
+  c.moveTo(g.banner.poleX*S,g.banner.flagTop*S)
+  c.quadraticCurveTo(8.7*S,-15.2*S,g.banner.flagRight*S,-13.4*S)
+  c.lineTo(10.8*S,g.banner.flagBottom*S)
+  c.quadraticCurveTo(7.5*S,-11.8*S,g.banner.poleX*S,-12.1*S)
+  c.closePath()
+  c.fill()
+
+  c.strokeStyle=p.flagHighlight
+  c.lineWidth=.48*S
+  c.beginPath()
+  c.moveTo(5.1*S,-14.9*S)
+  c.lineTo(10.8*S,-13.4*S)
+  c.stroke()
+
+  c.strokeStyle='rgba(237,204,150,.42)'
+  c.lineWidth=.28*S
+  c.strokeRect(g.wall.x*S,g.wall.y*S,g.wall.w*S,g.wall.h*S)
   c.restore()
   return true
 }
 
 export function drawTargetMapCursor(r,x,y,{width=19,height=15,scale=1}={}){
   const c=r.ctx,S=r.S*scale
-  const w=width/2,h=height/2,tick=Math.max(3,Math.min(width,height)*.28)
+  const w=width/2,h=height/2,tick=Math.max(3,Math.min(width,height)*.3)
+  const corners=[[-1,-1],[1,-1],[-1,1],[1,1]]
+  const traceCorners=()=>{
+    for(const [sx,sy] of corners){
+      const cx=sx*w,cy=sy*h
+      c.beginPath()
+      c.moveTo(cx*S,(cy-sy*tick)*S)
+      c.lineTo(cx*S,cy*S)
+      c.lineTo((cx-sx*tick)*S,cy*S)
+      c.stroke()
+    }
+  }
   c.save()
   c.translate(x*r.S,y*r.S)
-  c.strokeStyle=TARGET_INSPECTION_PALETTE.cursor
-  c.lineWidth=1.25*S
   c.lineCap='square'
-  for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
-    const cx=sx*w,cy=sy*h
-    c.beginPath()
-    c.moveTo(cx*S,(cy-sy*tick)*S)
-    c.lineTo(cx*S,cy*S)
-    c.lineTo((cx-sx*tick)*S,cy*S)
-    c.stroke()
-  }
-  c.strokeStyle='rgba(255,255,255,.34)'
-  c.lineWidth=.35*S
-  c.strokeRect((-w+1.5)*S,(-h+1.5)*S,(width-3)*S,(height-3)*S)
+
+  c.strokeStyle='rgba(34,21,14,.76)'
+  c.lineWidth=2.35*S
+  traceCorners()
+
+  c.strokeStyle=TARGET_INSPECTION_PALETTE.cursor
+  c.lineWidth=1.18*S
+  traceCorners()
+
+  c.fillStyle=TARGET_INSPECTION_PALETTE.cursor
+  for(const [sx,sy] of corners)c.fillRect((sx*w-.55)*S,(sy*h-.55)*S,1.1*S,1.1*S)
   c.restore()
   return true
 }

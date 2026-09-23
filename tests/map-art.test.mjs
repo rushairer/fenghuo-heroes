@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { TARGET_INSPECTION_PALETTE, flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, targetHillClusterGeometry, targetMountainMassGeometry, villageDetailGeometry } from '../src/game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, targetFortGeometry, targetHillClusterGeometry, targetMountainMassGeometry, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -193,4 +193,28 @@ test('target mountain mass geometry is deterministic broad and non-iconic',()=>{
     assert.ok(g.lobes.some((lobe)=>lobe.ry>10))
     assert.ok(g.lobes.every((lobe)=>lobe.rx>=5&&lobe.rx<10))
   }
+})
+
+
+test('target fort geometry stays compact with a tall pink-banner anchor',()=>{
+  const g=targetFortGeometry()
+  assert.ok(g.wall.w<=16)
+  assert.ok(g.wall.h<=8)
+  assert.equal(g.towers.length,2)
+  assert.equal(g.roofs.length,3)
+  assert.ok(g.ground.rx<12)
+  assert.ok(g.banner.poleTop<-15)
+  assert.ok(g.banner.flagRight<=13)
+  assert.ok(g.gate.w<4)
+})
+
+test('target cursor renderer is bracket-only with no inner rectangular box',()=>{
+  const source=readFileSync(new URL('../src/game/map-art.js',import.meta.url),'utf8')
+  const start=source.indexOf('export function drawTargetMapCursor')
+  const end=source.indexOf('export function drawTargetArmyFlag',start)
+  const block=source.slice(start,end)
+  assert.match(block,/traceCorners/)
+  assert.match(block,/lineWidth=2\.35\*S/)
+  assert.match(block,/lineWidth=1\.18\*S/)
+  assert.doesNotMatch(block,/strokeRect/)
 })

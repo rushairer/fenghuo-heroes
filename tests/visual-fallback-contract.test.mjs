@@ -398,3 +398,25 @@ test('river edge irregularity is shared by local and overview rendering',()=>{
   assert.match(world,/drawRiverEdgeScallops/)
   assert.match(projected,/drawRiverEdgeScallops/)
 })
+
+
+test('target fort no longer delegates to generic rectangular fort art',()=>{
+  const source=read('src/game/map-art.js')
+  const start=source.indexOf('export function drawTargetInspectionFort')
+  const end=source.indexOf('export function drawTargetMapCursor',start)
+  const block=source.slice(start,end)
+  assert.match(source,/targetFortGeometry/)
+  assert.doesNotMatch(block,/drawVectorFort/)
+  assert.match(block,/p\.flag/)
+  assert.match(block,/p\.flagHighlight/)
+  assert.match(block,/factionColor/)
+})
+
+test('target map cursor is a pure four-corner bracket silhouette',()=>{
+  const source=read('src/game/map-art.js')
+  const start=source.indexOf('export function drawTargetMapCursor')
+  const end=source.indexOf('export function drawTargetArmyFlag',start)
+  const block=source.slice(start,end)
+  assert.match(block,/corners=\[\[-1,-1\],\[1,-1\],\[-1,1\],\[1,1\]\]/)
+  assert.doesNotMatch(block,/strokeRect/)
+})
