@@ -74,7 +74,7 @@ export class StrategyScene extends OfficerStrategyScene {
       const point=fullMapPoint(cityWorldPoint(city),bounds)
       const runtime=state.cities[city.id]
       const faction=FACTION_BY_ID[runtime?.owner]??FACTION_BY_ID.neutral
-      drawFullMapCitySymbol(r,point.x,point.y,faction.color,4.2)
+      drawFullMapCitySymbol(r,point.x,point.y,faction.color,4.2,{flagColor:TARGET_INSPECTION_PALETTE.flag,flagHighlight:TARGET_INSPECTION_PALETTE.flagHighlight})
     }
 
     for(const village of this.app.store.mapProfile?.villages??[]){
@@ -89,7 +89,7 @@ export class StrategyScene extends OfficerStrategyScene {
     const legendX=235
     r.text(`${state.year}年 ${state.month}月`,legendX,51,7,'#e6d7b7')
     r.text('地圖符號',legendX,68,6,'#9e947e')
-    drawFullMapCitySymbol(r,244,89,FACTION_BY_ID.neutral.color,7)
+    drawFullMapCitySymbol(r,244,89,FACTION_BY_ID.neutral.color,7,{flagColor:TARGET_INSPECTION_PALETTE.flag,flagHighlight:TARGET_INSPECTION_PALETTE.flagHighlight})
     r.text('城',258,84,7,'#e8dfc8')
 
     drawFullMapVillageSymbol(r,244,111,5.6,TARGET_INSPECTION_PALETTE)

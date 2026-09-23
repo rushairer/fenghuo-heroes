@@ -540,7 +540,7 @@ export function fullMapCitySymbolGeometry(size=4){
   })
 }
 
-export function drawFullMapCitySymbol(r,x,y,color,size=4){
+export function drawFullMapCitySymbol(r,x,y,color,size=4,{flagColor=color,flagHighlight=null}={}){
   const c=r.ctx,S=r.S,g=fullMapCitySymbolGeometry(size)
   c.save()
   c.translate(x*S,y*S)
@@ -568,7 +568,7 @@ export function drawFullMapCitySymbol(r,x,y,color,size=4){
   c.moveTo(g.mastX*S,-g.outer*.3*S)
   c.lineTo(g.mastX*S,-g.flagHeight*S)
   c.stroke()
-  c.fillStyle=color
+  c.fillStyle=flagColor
   c.beginPath()
   c.moveTo(g.mastX*S,-g.flagHeight*S)
   c.lineTo((g.mastX+g.pennantWidth)*S,(-g.flagHeight+g.outer*.28)*S)
@@ -578,6 +578,14 @@ export function drawFullMapCitySymbol(r,x,y,color,size=4){
   c.strokeStyle='rgba(255,235,194,.4)'
   c.lineWidth=.22*S
   c.stroke()
+  if(flagHighlight){
+    c.strokeStyle=flagHighlight
+    c.lineWidth=.28*S
+    c.beginPath()
+    c.moveTo((g.mastX+g.pennantWidth*.18)*S,(-g.flagHeight+g.outer*.2)*S)
+    c.lineTo((g.mastX+g.pennantWidth*.72)*S,(-g.flagHeight+g.outer*.34)*S)
+    c.stroke()
+  }
 
   c.fillStyle='rgba(255,239,202,.52)'
   c.beginPath()

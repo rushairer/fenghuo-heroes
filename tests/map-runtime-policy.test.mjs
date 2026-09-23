@@ -16,11 +16,12 @@ function leaves(value,prefix=''){
   return out
 }
 
-test('map runtime policy is vector-only and no map raster is preloadable',()=>{
+test('map runtime policy is vector-only and raster archive is reference-only',()=>{
   assert.equal(manifest.policy.mapRuntime,'vector')
+  assert.equal(manifest.policy.mapRasterArchive,'reference-only')
   const mapAssets=leaves(manifest.map,'map')
   assert.ok(mapAssets.length>0)
-  assert.ok(mapAssets.every((entry)=>entry.status!=='ready'))
+  assert.ok(mapAssets.every((entry)=>entry.status==='disabled'))
 })
 
 test('strategy map scenes do not request raster map assets',()=>{

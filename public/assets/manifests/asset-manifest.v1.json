@@ -3,7 +3,8 @@
   "policy": {
     "fallback": "canvas",
     "loadOnlyReady": true,
-    "mapRuntime": "vector"
+    "mapRuntime": "vector",
+    "mapRasterArchive": "reference-only"
   },
   "title": {
     "main": {
