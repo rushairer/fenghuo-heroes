@@ -56,8 +56,8 @@ test('planned title menu frame is already bound to the future nine-slice runtime
 test('production spec records the current HD presentation fallback detail layers',()=>{
   const fallback=spec.presentationFallbacks
   assert.equal(fallback.strategyMap.canonical,false)
-  assert.ok(fallback.strategyMap.layers.includes('mountain ridge and scree micro-detail'))
-  assert.ok(fallback.strategyMap.layers.includes('full-map city masts, pennants and highlights'))
+  assert.ok(fallback.strategyMap.layers.includes('target four-lobe dark-brown mountain masses'))
+  assert.ok(fallback.strategyMap.layers.includes('full-map compact city and village symbols sharing the target palette'))
   assert.ok(fallback.duel.layers.includes('spectator depth rows'))
   assert.ok(fallback.siege.layers.includes('corner tower roofs and eaves'))
 })
@@ -78,8 +78,8 @@ test('production spec records third-pass HD ornaments and symbol consistency',()
   assert.ok(fallback.duel.layers.includes('helmet plume, shoulder plates and waist tassels'))
   assert.ok(fallback.duel.layers.includes('arena lantern and pennant accents'))
   assert.ok(fallback.siege.layers.includes('attacker and defender confrontation standards'))
-  assert.ok(fallback.strategyMap.layers.includes('three-layer road edge, earth and highlight stroke'))
-  assert.ok(fallback.strategyMap.layers.includes('legend symbols shared with full-map city and village renderers'))
+  assert.ok(fallback.strategyMap.layers.includes('no visible provisional node-link road rendering'))
+  assert.ok(fallback.strategyMap.layers.includes('full-map compact city and village symbols sharing the target palette'))
 })
 
 
@@ -89,8 +89,8 @@ test('production spec records fourth-pass HD depth and motion detail',()=>{
   assert.ok(title.includes('silhouette separation edges and shoulder contact depth'))
   assert.ok(fallback.duel.layers.includes('attack arcs, guard braces and attack dust from existing duel state'))
   assert.ok(fallback.siege.layers.includes('foreground earth, stones and haze depth below confrontation standards'))
-  assert.ok(fallback.strategyMap.layers.includes('shared four-layer river bank, water and highlight stroke'))
-  assert.ok(fallback.strategyMap.layers.includes('compact full-map city and village ground shadows'))
+  assert.ok(fallback.strategyMap.layers.includes('deep-blue layered river with deterministic shoreline modulation and scallops'))
+  assert.ok(fallback.strategyMap.layers.includes('full-map compact city and village symbols sharing the target palette'))
 })
 
 
@@ -100,9 +100,9 @@ test('production spec records fifth-pass HD focal and grounding detail',()=>{
   assert.ok(title.includes('five-portrait local lighting and jaw-edge highlights'))
   assert.ok(fallback.duel.layers.includes('localized hit sparks anchored to the struck fighter'))
   assert.ok(fallback.siege.layers.includes('inner gate arch, plank seams and threshold depth'))
-  assert.ok(fallback.strategyMap.layers.includes('strategy-fort ground shadows'))
-  assert.ok(fallback.strategyMap.layers.includes('army-flag finials and tie cords'))
-  assert.ok(fallback.strategyMap.layers.includes('forest canopy edge highlights'))
+  assert.ok(fallback.strategyMap.layers.includes('compact target fort with hot-pink and gold banner'))
+  assert.ok(fallback.strategyMap.layers.includes('hot-pink army flags with small faction identity accents'))
+  assert.ok(fallback.strategyMap.layers.includes('green multi-lobe hill clusters'))
 })
 
 
@@ -112,8 +112,8 @@ test('production spec records sixth-pass HD contour spacing and material detail'
   assert.ok(title.includes('robe and collar contour highlights'))
   assert.ok(fallback.duel.layers.includes('proximity ground-contact cue derived only from fighter spacing'))
   assert.ok(fallback.siege.layers.includes('subtle deterministic wall stains and cracks'))
-  assert.ok(fallback.strategyMap.layers.includes('shoreline accent shared by strategy and full-map river rendering'))
-  assert.ok(fallback.strategyMap.layers.includes('strategy-fort roof tile and gate stud micro-detail'))
+  assert.ok(fallback.strategyMap.layers.includes('deep-blue layered river with deterministic shoreline modulation and scallops'))
+  assert.ok(fallback.strategyMap.layers.includes('compact target fort with hot-pink and gold banner'))
 })
 
 
@@ -123,6 +123,6 @@ test('production spec records seventh-pass HD texture and contact detail',()=>{
   assert.ok(title.includes('low-opacity robe weave and seam texture'))
   assert.ok(fallback.duel.layers.includes('weapon proximity/contact cue derived only from existing spacing and attack state'))
   assert.ok(fallback.siege.layers.includes('corner tower windows, timber beams and braces'))
-  assert.ok(fallback.strategyMap.layers.includes('deterministic river surface micro-reflections sampled from the shared path'))
-  assert.ok(fallback.strategyMap.layers.includes('strategy-fort banner finial, folds and knot detail'))
+  assert.ok(fallback.strategyMap.layers.includes('deterministic river surface micro-reflections'))
+  assert.ok(fallback.strategyMap.layers.includes('compact target fort with hot-pink and gold banner'))
 })

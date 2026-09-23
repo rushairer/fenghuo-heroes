@@ -15,10 +15,6 @@ assets/
   manifests/
   title/hd/
   title/slices/
-  map/terrain/
-  map/cities/
-  map/villages/
-  map/flags/
   ui/panels/
   ui/frames/
   ui/cursors/
@@ -36,10 +32,10 @@ assets/
 
 ## 地图运行时策略
 
-`manifest.policy.mapRuntime = "vector"` 表示战略地图运行时必须使用 Canvas
-矢量/程序化绘制。历史 `assets/map/**` WebP 可以暂留用于来源追踪和视觉对照，
-但必须保持 `disabled` / `planned`，不得被运行时预加载。
+`manifest.policy.mapRuntime = "vector"` 表示战略地图运行时只能使用 Canvas
+矢量/程序化绘制；`manifest.policy.mapRasterResources = "forbidden"` 表示生产仓库
+和构建产物中都不允许存在 `assets/map/**` raster 地图资源。
 
-这样可以避免视察、行军和全国地图在不同状态间混用不同 raster 美术语言。
-若未来确有经过直接参考验证的高清 raster 地图资产，需要先修改本策略与对应
-parity 契约，而不是直接把某个 `map.*` 条目改回 `ready`。
+旧沙地、蓝紫山、树林、城寨和军旗 WebP 及其 generated base64 源已从生产链路
+物理删除。若未来确需引入新的 raster 地图资源，必须先明确改变这项策略、补充
+直接参考证据并建立新的 parity 契约，不能恢复历史素材。

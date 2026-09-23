@@ -329,7 +329,7 @@ test('inspection root uses the target-parity map-first composition',()=>{
   assert.ok(source.includes("return this.stage==='survey'&&this.view==='map'"))
   assert.ok(source.includes("r.text('視察情況'"))
   assert.ok(source.includes('if(this.isTargetParityInspection())return'))
-  assert.match(source,/drawTargetMapCursor\(r,cursor\.x,cursor\.y\)/)
+  assert.match(source,/drawTargetMapCursor\(r,cursor\.x,cursor\.y,\{/)
   assert.doesNotMatch(source,/drawRoadNetwork/)
   assert.doesNotMatch(source,/uniqueRoadPairs/)
 })

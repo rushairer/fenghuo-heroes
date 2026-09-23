@@ -14,161 +14,13 @@
         "assets/generated/title-main-hd-v1.part07.b64"
       ],
       "sourceGenId": "f0e1fab6-5f93-49da-8455-1239d7f118b7",
-      "runtimeSize": { "width": 640, "height": 448 },
+      "runtimeSize": {
+        "width": 640,
+        "height": 448
+      },
       "byteLength": 28550,
       "sha256": "1f95f2345714d9ba779d16a15e345ded412fad39cf5ddfabfb711d0e1d7e7573",
       "note": "Connector-compatible source representation. Build materializes the concatenated base64 into the runtime WebP."
-    },
-    "map.terrain.sandBase": {
-      "output": "assets/map/terrain/map-terrain-sand-base-v1.webp",
-      "mime": "image/webp",
-      "parts": [
-        "assets/generated/map-terrain-sand-base-v1.part01.b64",
-        "assets/generated/map-terrain-sand-base-v1.part02.b64",
-        "assets/generated/map-terrain-sand-base-v1.part03.b64",
-        "assets/generated/map-terrain-sand-base-v1.part04.b64",
-        "assets/generated/map-terrain-sand-base-v1.part05.b64",
-        "assets/generated/map-terrain-sand-base-v1.part06.b64"
-      ],
-      "sourceGenId": "97109680-a41d-441a-a5b5-34a31e317fbe",
-      "runtimeSize": { "width": 512, "height": 512 },
-      "byteLength": 22676,
-      "sha256": "d4a15c3f20e49be814752d1a1b1bdc1b66e7745187cbcd2d89c2f68e5dc17566",
-      "note": "Image 2.5 sandy terrain source cropped square, resized to 512x512 and edge-blended into a repeat-friendly runtime tile."
-    },
-    "map.terrain.mountainA": {
-      "output": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp",
-      "mime": "image/webp",
-      "parts": [
-        "assets/generated/map-terrain-mountain-cluster-a-v1.part01.b64",
-        "assets/generated/map-terrain-mountain-cluster-a-v1.part02.b64",
-        "assets/generated/map-terrain-mountain-cluster-a-v1.part03.b64",
-        "assets/generated/map-terrain-mountain-cluster-a-v1.part04.b64",
-        "assets/generated/map-terrain-mountain-cluster-a-v1.part05.b64",
-        "assets/generated/map-terrain-mountain-cluster-a-v1.part06.b64"
-      ],
-      "sourceGenId": "1a1fdfe6-1d77-4d2e-9545-813e555fbd19",
-      "runtimeSize": { "width": 512, "height": 512 },
-      "byteLength": 35333,
-      "sha256": "7baced082ee5c0a594d13c3576ca5d482e15c81ed03e990d7c86c7a8b96f17a5",
-      "note": "Image 2.5 transparent mountain cluster trimmed to alpha bounds, resized within 448x448 and centered on a 512x512 transparent WebP runtime canvas. Verified by CI integrity gate."
-    },
-    "map.terrain.mountainB": {
-      "output": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp",
-      "mime": "image/webp",
-      "parts": [
-        "assets/generated/map-terrain-mountain-cluster-b-v1.part01.b64",
-        "assets/generated/map-terrain-mountain-cluster-b-v1.part02.b64",
-        "assets/generated/map-terrain-mountain-cluster-b-v1.part03.b64"
-      ],
-      "sourceGenId": "aa621b8b-fd6a-4422-9530-ecf7febe6ced",
-      "runtimeSize": { "width": 256, "height": 256 },
-      "byteLength": 8324,
-      "sha256": "3d5bfb76b3001f416a3ccbf519b1b47b13ce9a4f686283ebb42db69d9d702e8b",
-      "note": "Image 2.5 secondary transparent mountain range. Three connector-safe source chunks are materialized into the verified runtime WebP during build."
-    },
-    "map.terrain.forestA": {
-      "output": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp",
-      "mime": "image/webp",
-      "parts": [
-        "assets/generated/map-terrain-forest-cluster-a-v1.part01.b64",
-        "assets/generated/map-terrain-forest-cluster-a-v1.part02.b64",
-        "assets/generated/map-terrain-forest-cluster-a-v1.part03.b64",
-        "assets/generated/map-terrain-forest-cluster-a-v1.part04.b64",
-        "assets/generated/map-terrain-forest-cluster-a-v1.part05.b64",
-        "assets/generated/map-terrain-forest-cluster-a-v1.part06.b64"
-      ],
-      "sourceGenId": "4d431137-a279-4330-a30f-51b57d3fd9f0",
-      "runtimeSize": { "width": 256, "height": 256 },
-      "byteLength": 14042,
-      "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c",
-      "note": "Image 2.5 forest cluster cropped from the transparent HD production atlas, alpha-cleaned, resized within 224x224 and centered on a 256x256 transparent WebP canvas."
-    },
-    "map.cities.neutral": {
-      "output": "assets/map/cities/city-fort-neutral-v1.webp",
-      "mime": "image/webp",
-      "parts": [
-        "assets/generated/city-fort-neutral-v1.part01.b64",
-        "assets/generated/city-fort-neutral-v1.part02.b64"
-      ],
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 256, "height": 256 },
-      "byteLength": 4794,
-      "sha256": "0e19fa9169bcae6037dd921f2b7cab36db86fee7d8de0af08c22b468d08e2e3c",
-      "note": "Image 2.5 HD asset-atlas neutral fort crop, background flood-cleaned, trimmed, resized and centered on a transparent 256x256 WebP runtime canvas."
-    },
-    "map.flags.liu": {
-      "output": "assets/map/flags/army-flag-liubei-v1.webp",
-      "mime": "image/webp",
-      "parts": [
-        "assets/generated/army-flag-base-v1.part01.b64",
-        "assets/generated/army-flag-base-v1.part02.b64"
-      ],
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 128, "height": 128 },
-      "byteLength": 2992,
-      "sha256": "f06526531c154be76139dea3ffb7b7ff0138ea599ca8f99a5cda854e9c8bdd94",
-      "note": "Image 2.5 HD asset-atlas Liu Bei marching flag crop, background flood-cleaned, trimmed and centered on a transparent 128x128 WebP runtime canvas."
-    },
-    "map.flags.cao": {
-      "output": "assets/map/flags/army-flag-caocao-v1.webp",
-      "mime": "image/webp",
-      "parts": ["assets/generated/army-flag-caocao-v1.b64"],
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 128, "height": 128 },
-      "byteLength": 2732,
-      "sha256": "9c8f0f2b357bbec7980637d73ec3e7bcad554ff939180458662b15780508bc30",
-      "note": "Image 2.5 HD asset-atlas Cao Cao marching flag crop, background cleaned and centered on transparent runtime canvas."
-    },
-    "map.flags.sun": {
-      "output": "assets/map/flags/army-flag-sunjian-v1.webp",
-      "mime": "image/webp",
-      "parts": ["assets/generated/army-flag-sunjian-v1.b64"],
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 128, "height": 128 },
-      "byteLength": 2756,
-      "sha256": "27224f03616f9d4e5c3b6e8cb7e6e9f7ff3d5c51546495684c839b92291d2e3f",
-      "note": "Image 2.5 HD asset-atlas Sun Jian marching flag crop, background cleaned and centered on transparent runtime canvas."
-    },
-    "map.flags.yuan": {
-      "output": "assets/map/flags/army-flag-yuanshao-v1.webp",
-      "mime": "image/webp",
-      "parts": ["assets/generated/army-flag-yuanshao-v1.b64"],
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 128, "height": 128 },
-      "byteLength": 2666,
-      "sha256": "1bb39753a50241369ac5ac0fd2f2e981d456dd8ef79d2c10e154debd3f36739b",
-      "note": "Image 2.5 HD asset-atlas Yuan Shao marching flag crop, background cleaned and centered on transparent runtime canvas."
-    },
-    "map.flags.dong": {
-      "output": "assets/map/flags/army-flag-dongzhuo-v1.webp",
-      "mime": "image/webp",
-      "parts": ["assets/generated/army-flag-dongzhuo-v1.b64"],
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 128, "height": 128 },
-      "byteLength": 2974,
-      "sha256": "512027afea3215e8a0ca34f4328048f8cb6f0f7915a606b9baa2f47990b62dfb",
-      "note": "Image 2.5 HD asset-atlas Dong Zhuo marching flag, recalibrated crop with neighboring flag excluded."
-    },
-    "map.flags.liu_biao": {
-      "output": "assets/map/flags/army-flag-liubiao-v1.webp",
-      "mime": "image/webp",
-      "parts": ["assets/generated/army-flag-liubiao-v1.b64"],
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 128, "height": 128 },
-      "byteLength": 2692,
-      "sha256": "99c6af42683a5608b0c948eb92e568956489d712fa491a42f1f00168155f93d3",
-      "note": "Image 2.5 HD asset-atlas Liu Biao marching flag, narrow recalibrated crop excluding the adjacent Ma Teng pole."
-    },
-    "map.flags.ma": {
-      "output": "assets/map/flags/army-flag-mateng-v1.webp",
-      "mime": "image/webp",
-      "parts": ["assets/generated/army-flag-mateng-v1.b64"],
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 128, "height": 128 },
-      "byteLength": 2898,
-      "sha256": "8b023db4f1041462b8c09db4490473f69e0c3202789bfaeab5f4ffcaff904acf",
-      "note": "Image 2.5 HD asset-atlas Ma Teng marching flag crop from the right edge of the production atlas."
     },
     "ui.frames.large": {
       "output": "assets/ui/frames/ui-frame-large-v1.webp",
@@ -180,7 +32,10 @@
         "assets/generated/ui-frame-large-v1.part04.b64"
       ],
       "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 320, "height": 260 },
+      "runtimeSize": {
+        "width": 320,
+        "height": 260
+      },
       "byteLength": 11624,
       "sha256": "8589051101c00fd9873f7402f47ac0a40ec91afd5053c1cc2f72d0b0863e719d",
       "note": "Image 2.5 black-and-gold large UI frame crop, 2x resized for nine-slice rendering."
@@ -188,9 +43,14 @@
     "ui.cursors.box": {
       "output": "assets/ui/cursors/ui-cursor-box-v1.webp",
       "mime": "image/webp",
-      "parts": ["assets/generated/ui-cursor-box-v1.part01.b64"],
+      "parts": [
+        "assets/generated/ui-cursor-box-v1.part01.b64"
+      ],
       "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "runtimeSize": { "width": 128, "height": 128 },
+      "runtimeSize": {
+        "width": 128,
+        "height": 128
+      },
       "byteLength": 1972,
       "sha256": "1abd510502d460992e97a65566bd9440c00a7a9de70eb8fed6eca15bf5980e9f",
       "note": "Image 2.5 gold corner selector crop with atlas background removed and centered on transparent runtime canvas."

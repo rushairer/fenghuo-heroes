@@ -185,205 +185,6 @@
         "HUD"
       ]
     },
-    "map.terrain.sandBase": {
-      "target": "assets/map/terrain/map-terrain-sand-base-v1.webp",
-      "sourceGenId": "97109680-a41d-441a-a5b5-34a31e317fbe",
-      "sourceRole": "Image 2.5 text-free sandy strategy-map terrain texture",
-      "nativeTarget": {
-        "width": 2048,
-        "height": 1434
-      },
-      "runtimeTarget": {
-        "width": 512,
-        "height": 512
-      },
-      "minimumRuntime": {
-        "width": 512,
-        "height": 512
-      },
-      "tileablePreferred": true,
-      "preprocess": "center-square crop; 512x512 Lanczos resize; 48px opposite-edge blend; WebP q48",
-      "forbiddenBakedUI": [
-        "city labels",
-        "flags",
-        "roads",
-        "HUD",
-        "text"
-      ]
-    },
-    "map.terrain.mountainA": {
-      "target": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp",
-      "sourceGenId": "1a1fdfe6-1d77-4d2e-9545-813e555fbd19",
-      "sourceRole": "Image 2.5 transparent painterly mountain cluster for strategy-map stamping",
-      "nativeTarget": {
-        "width": 1024,
-        "height": 1024
-      },
-      "runtimeTarget": {
-        "width": 512,
-        "height": 512
-      },
-      "minimumRuntime": {
-        "width": 256,
-        "height": 256
-      },
-      "transparentPreferred": true,
-      "preprocess": "trim alpha bounds; resize within 448x448; center on 512x512 transparent canvas; WebP q82",
-      "integrity": {
-        "byteLength": 35333,
-        "sha256": "7baced082ee5c0a594d13c3576ca5d482e15c81ed03e990d7c86c7a8b96f17a5"
-      },
-      "forbiddenBakedUI": [
-        "text",
-        "city",
-        "flag"
-      ]
-    },
-    "map.terrain.mountainB": {
-      "target": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp",
-      "sourceGenId": "aa621b8b-fd6a-4422-9530-ecf7febe6ced",
-      "sourceRole": "Image 2.5 transparent secondary mountain range for alternating strategy-map stamps",
-      "nativeTarget": {
-        "width": 1536,
-        "height": 1024
-      },
-      "runtimeTarget": {
-        "width": 256,
-        "height": 256
-      },
-      "minimumRuntime": {
-        "width": 256,
-        "height": 256
-      },
-      "transparentPreferred": true,
-      "preprocess": "trim alpha using >8 threshold; resize alpha bounds within 224x224; center on 256x256 transparent canvas; WebP q55",
-      "integrity": {
-        "byteLength": 8324,
-        "sha256": "3d5bfb76b3001f416a3ccbf519b1b47b13ce9a4f686283ebb42db69d9d702e8b"
-      },
-      "forbiddenBakedUI": [
-        "text",
-        "city",
-        "flag"
-      ]
-    },
-    "map.terrain.riverA": {
-      "target": "assets/map/terrain/map-terrain-river-segment-a-v1.webp",
-      "nativeTarget": {
-        "width": 1024,
-        "height": 512
-      },
-      "minimumRuntime": {
-        "width": 256,
-        "height": 128
-      },
-      "transparentPreferred": true,
-      "notes": "Reserved for a later river-path compositor; the current world-space bezier river remains the fallback."
-    },
-    "map.terrain.forestA": {
-      "target": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp",
-      "sourceGenId": "4d431137-a279-4330-a30f-51b57d3fd9f0",
-      "sourceRole": "Image 2.5 transparent HD asset-atlas crop containing a standalone forest cluster",
-      "crop": {
-        "x": 1190,
-        "y": 10,
-        "width": 335,
-        "height": 208
-      },
-      "nativeTarget": {
-        "width": 1536,
-        "height": 1024
-      },
-      "runtimeTarget": {
-        "width": 256,
-        "height": 256
-      },
-      "minimumRuntime": {
-        "width": 256,
-        "height": 256
-      },
-      "transparentPreferred": true,
-      "preprocess": "crop forest cluster from transparent atlas; zero alpha <=8; trim alpha bounds; resize within 224x224; center on 256x256 transparent WebP canvas; WebP q62",
-      "integrity": {
-        "byteLength": 14042,
-        "sha256": "719d4615953ee2279cf1b368ba322e6ff8d4ba3ac0358451b9922ecaf022b28c"
-      },
-      "forbiddenBakedUI": [
-        "text",
-        "city",
-        "flag",
-        "river",
-        "HUD"
-      ]
-    },
-    "map.cities.neutral": {
-      "target": "assets/map/cities/city-fort-neutral-v1.webp",
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "sourceRole": "Image 2.5 HD asset-atlas crop containing the neutral city fort",
-      "crop": {
-        "x": 418,
-        "y": 248,
-        "width": 72,
-        "height": 94
-      },
-      "nativeTarget": {
-        "width": 1536,
-        "height": 1024
-      },
-      "runtimeTarget": {
-        "width": 256,
-        "height": 256
-      },
-      "minimumRuntime": {
-        "width": 256,
-        "height": 256
-      },
-      "transparentPreferred": true,
-      "preprocess": "crop neutral fort; flood-clear atlas background from four corners; trim alpha bounds; resize within 200x200; center on 256x256 transparent canvas; WebP q82",
-      "integrity": {
-        "byteLength": 4794,
-        "sha256": "0e19fa9169bcae6037dd921f2b7cab36db86fee7d8de0af08c22b468d08e2e3c"
-      },
-      "forbiddenBakedUI": [
-        "text",
-        "city label",
-        "HUD"
-      ]
-    },
-    "map.flags.liu": {
-      "target": "assets/map/flags/army-flag-liubei-v1.webp",
-      "sourceGenId": "9679b986-2c9b-45ac-a597-2261b4514a9b",
-      "sourceRole": "Image 2.5 HD asset-atlas crop containing the Liu Bei marching flag",
-      "crop": {
-        "x": 1158,
-        "y": 242,
-        "width": 52,
-        "height": 78
-      },
-      "nativeTarget": {
-        "width": 1536,
-        "height": 1024
-      },
-      "runtimeTarget": {
-        "width": 128,
-        "height": 128
-      },
-      "minimumRuntime": {
-        "width": 128,
-        "height": 128
-      },
-      "transparentPreferred": true,
-      "preprocess": "crop flag only; flood-clear atlas background; trim alpha bounds; resize within 112x112; center on 128x128 transparent canvas; WebP q80",
-      "integrity": {
-        "byteLength": 2992,
-        "sha256": "f06526531c154be76139dea3ffb7b7ff0138ea599ca8f99a5cda854e9c8bdd94"
-      },
-      "forbiddenBakedUI": [
-        "player label",
-        "HUD",
-        "status text"
-      ]
-    },
     "portraits.rulers.liu": {
       "target": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp",
       "nativeTarget": {
@@ -439,32 +240,21 @@
   "presentationFallbacks": {
     "strategyMap": {
       "canonical": false,
-      "purpose": "HD presentation fallback only",
+      "purpose": "vector/procedural HD presentation only",
       "layers": [
-        "deterministic sand grain",
-        "subtle non-canonical relief wash only when raster terrain is unavailable",
-        "centralized river and road vectors",
-        "mountain ridge and scree micro-detail",
-        "forest branches, undergrowth and ground depth",
-        "masonry-detail forts",
-        "fold-detail faction flags",
-        "roof/window/detail villages",
-        "full-map city masts, pennants and highlights",
-        "full-map village window, chimney and eave detail",
-        "map cursor corner ticks, center point and corner glow",
-        "three-layer road edge, earth and highlight stroke",
-        "legend symbols shared with full-map city and village renderers",
-        "shared four-layer river bank, water and highlight stroke",
-        "compact full-map city and village ground shadows",
-        "strategy-fort ground shadows",
-        "army-flag finials and tie cords",
-        "forest canopy edge highlights",
-        "shoreline accent shared by strategy and full-map river rendering",
-        "strategy-fort roof tile and gate stud micro-detail",
-        "deterministic river surface micro-reflections sampled from the shared path",
-        "strategy-fort banner finial, folds and knot detail"
+        "ochre procedural terrain grain and etching",
+        "target four-lobe dark-brown mountain masses",
+        "green multi-lobe hill clusters",
+        "compact target fort with hot-pink and gold banner",
+        "vector villages in the target earth palette",
+        "hot-pink army flags with small faction identity accents",
+        "pure four-corner white bracket cursor with dark under-stroke",
+        "deep-blue layered river with deterministic shoreline modulation and scallops",
+        "deterministic river surface micro-reflections",
+        "full-map compact city and village symbols sharing the target palette",
+        "no visible provisional node-link road rendering"
       ],
-      "boundary": "Presentation fallback geometry must never be promoted as Chinese-ROM map evidence."
+      "boundary": "Presentation geometry must never be promoted as Chinese-ROM map evidence."
     },
     "duel": {
       "mode": "scalable-vector",

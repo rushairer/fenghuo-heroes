@@ -54,15 +54,16 @@ now has a broader, lightly irregular bank silhouette. Exact camera ratios, landm
 bounding boxes and canonical river/world geometry remain open until more target frames
 are measured.
 
-### Map runtime asset convergence — 2026-09-23
+### Map runtime asset convergence — 2026-09-24
 
-The strategic map runtime is now vector/procedural-only across inspection, command,
-march and full-map presentation. Historical map WebP entries remain tracked but are
-disabled in the manifest, and the asset checker rejects any `map.*` raster entry that
-is switched back to `ready` while `policy.mapRuntime` is `vector`.
+The strategic map runtime is vector/procedural-only across inspection, command, march
+and full-map presentation. Historical map WebP files, generated base64 sources,
+manifest entries, production specs and the retired terrain-style selector have been
+physically removed from the production tree.
 
-This removes a major source of cross-state art-language drift. UI frames/icons remain
-independent raster assets.
+The asset checker now rejects any reintroduction of `map.*` raster manifest/spec/
+generated entries or a recreated `public/assets/map` directory while
+`policy.mapRuntime` is `vector`. UI frames/icons remain independent raster assets.
 
 # Parity Roadmap v0.2
 

@@ -4,7 +4,7 @@
     "fallback": "canvas",
     "loadOnlyReady": true,
     "mapRuntime": "vector",
-    "mapRasterArchive": "reference-only"
+    "mapRasterResources": "forbidden"
   },
   "title": {
     "main": {
@@ -18,108 +18,6 @@
     "rightBorder": {
       "src": "assets/title/slices/title-border-right-v1.webp",
       "status": "planned"
-    }
-  },
-  "map": {
-    "terrain": {
-      "sandBase": {
-        "src": "assets/map/terrain/map-terrain-sand-base-v1.webp",
-        "status": "disabled"
-      },
-      "mountainA": {
-        "src": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp",
-        "status": "disabled"
-      },
-      "mountainB": {
-        "src": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp",
-        "status": "disabled"
-      },
-      "riverA": {
-        "src": "assets/map/terrain/map-terrain-river-segment-a-v1.webp",
-        "status": "disabled"
-      },
-      "forestA": {
-        "src": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp",
-        "status": "disabled"
-      }
-    },
-    "cities": {
-      "neutral": {
-        "src": "assets/map/cities/city-fort-neutral-v1.webp",
-        "status": "disabled"
-      },
-      "liu": {
-        "src": "assets/map/cities/city-fort-liubei-v1.webp",
-        "status": "disabled"
-      },
-      "cao": {
-        "src": "assets/map/cities/city-fort-caocao-v1.webp",
-        "status": "disabled"
-      },
-      "sun": {
-        "src": "assets/map/cities/city-fort-sunjian-v1.webp",
-        "status": "disabled"
-      },
-      "yuan": {
-        "src": "assets/map/cities/city-fort-yuanshao-v1.webp",
-        "status": "disabled"
-      },
-      "dong": {
-        "src": "assets/map/cities/city-fort-dongzhuo-v1.webp",
-        "status": "disabled"
-      },
-      "liu_biao": {
-        "src": "assets/map/cities/city-fort-liubiao-v1.webp",
-        "status": "disabled"
-      },
-      "ma": {
-        "src": "assets/map/cities/city-fort-mateng-v1.webp",
-        "status": "disabled"
-      }
-    },
-    "villages": {
-      "neutral": {
-        "src": "assets/map/villages/village-neutral-v1.webp",
-        "status": "disabled"
-      }
-    },
-    "flags": {
-      "liu": {
-        "src": "assets/map/flags/army-flag-liubei-v1.webp",
-        "status": "disabled"
-      },
-      "cao": {
-        "src": "assets/map/flags/army-flag-caocao-v1.webp",
-        "status": "disabled"
-      },
-      "sun": {
-        "src": "assets/map/flags/army-flag-sunjian-v1.webp",
-        "status": "disabled"
-      },
-      "yuan": {
-        "src": "assets/map/flags/army-flag-yuanshao-v1.webp",
-        "status": "disabled"
-      },
-      "dong": {
-        "src": "assets/map/flags/army-flag-dongzhuo-v1.webp",
-        "status": "disabled"
-      },
-      "liu_biao": {
-        "src": "assets/map/flags/army-flag-liubiao-v1.webp",
-        "status": "disabled"
-      },
-      "ma": {
-        "src": "assets/map/flags/army-flag-mateng-v1.webp",
-        "status": "disabled"
-      },
-      "selected": {
-        "src": "assets/map/flags/army-flag-selected-v1.webp",
-        "status": "disabled"
-      },
-      "lowFood": {
-        "src": "assets/map/flags/army-flag-low-food-v1.webp",
-        "status": "disabled"
-      }
     }
   },
   "ui": {

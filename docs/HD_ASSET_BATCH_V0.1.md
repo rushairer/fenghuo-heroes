@@ -19,10 +19,6 @@
 | `title-menu-frame-v1` | 1024×512 | WebP/PNG | 待生成 |
 | `title-border-right-v1` | 512×1434 | WebP/PNG | 待生成 |
 | `ui-panel-black-gold-a-v1` | 1024×1024 | PNG/WebP + 9-slice | 待生成 |
-| `map-terrain-sand-base-v1` | ≥2048×1434 | WebP | 待生成 |
-| `map-terrain-mountain-cluster-a-v1` | 1024×1024 | transparent WebP/PNG | 待生成 |
-| `map-terrain-river-segment-a-v1` | 1024×512 | transparent WebP/PNG | 待生成 |
-| `city-fort-neutral-v1` | 512×512 | transparent WebP/PNG | 待生成 |
 
 ## 生产约束
 
@@ -38,9 +34,7 @@
 1. Title background → `title.main`
 2. Title menu frame → `title.menuFrame`
 3. UI panel family → Setup / message / march compose
-4. Map terrain → strategy world renderer
-5. Fort / village / flags → map entities
-6. 189 ruler portraits → setup / officer info
+4. 189 ruler portraits → setup / officer info
 
 
 ## Runtime HD acceptance rule
@@ -72,3 +66,12 @@ engineering rectangles.
 
 This does **not** change the evidence boundary. Vector artwork improves HD presentation;
 it does not make the provisional runtime map or uncalibrated battle behavior canonical.
+
+
+## 2026-09-24 map raster retirement
+
+The experimental sandy tile, blue/purple mountain, forest, fort, village and army-flag
+raster families have been retired from production. Strategic-map visuals are now
+vector/procedural-only, and the old WebP/generated-source pipeline must not be restored.
+This batch document therefore no longer tracks raster map assets as future deliverables.
+
