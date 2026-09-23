@@ -22,6 +22,13 @@ Second visual calibration pass:
 - the river keeps the same provisional center path while receiving broader, irregular
   presentation-only bank modulation.
 
+Full-map visual language convergence:
+
+- full-map ground now uses the same ochre procedural language and etched texture family;
+- full-map villages and mountain legend use the same target-derived earth palette;
+- the overview cursor now uses the same white bracket language;
+- overview river banks/water use the same brown/deep-blue hierarchy as the local map.
+
 This does **not** close camera/landmark, terrain, river, fort/flag or canonical map
 evidence work. Those remain open until more direct frames are measured. In particular,
 the 1.18× zoom and river-width factors are calibration hypotheses, not claimed original

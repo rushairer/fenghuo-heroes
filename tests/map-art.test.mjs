@@ -158,6 +158,8 @@ test('strategy fort banner detail keeps finial folds and knot compact',()=>{
 test('target inspection palette stays in the observed earth green pink gold language',()=>{
   assert.match(TARGET_INSPECTION_PALETTE.mountainDark,/^#[0-9a-f]{6}$/i)
   assert.match(TARGET_INSPECTION_PALETTE.forestMid,/^#[0-9a-f]{6}$/i)
+  assert.equal(TARGET_INSPECTION_PALETTE.villageWall,'#8f633c')
+  assert.equal(TARGET_INSPECTION_PALETTE.villageRoof,'#4a2c1e')
   assert.equal(TARGET_INSPECTION_PALETTE.flag,'#e14a99')
   assert.equal(TARGET_INSPECTION_PALETTE.flagHighlight,'#ffd04f')
   assert.equal(TARGET_INSPECTION_PALETTE.cursor,'#fffdf4')

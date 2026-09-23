@@ -152,7 +152,7 @@ export class StrategyScene extends ParityStrategyScene {
     for(const village of this.app.store.mapProfile?.villages??[]){
       if(!isVisibleInView(village,camera,viewHeight,16,viewScale))continue
       const p=projectToView(village,camera,viewScale)
-      drawVectorVillage(r,p.x,p.y,mapFirst?.9:.8)
+      drawVectorVillage(r,p.x,p.y,mapFirst?.9:.8,mapFirst?TARGET_INSPECTION_PALETTE:undefined)
     }
 
     for(const army of ensureMarchState(this.app.store)){

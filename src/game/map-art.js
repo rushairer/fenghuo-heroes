@@ -28,6 +28,8 @@ export const TARGET_INSPECTION_PALETTE=Object.freeze({
   fortStone:'#80502f',
   fortLight:'#c49454',
   roof:'#4e3021',
+  villageWall:'#8f633c',
+  villageRoof:'#4a2c1e',
   flag:'#e14a99',
   flagHighlight:'#ffd04f',
   cursor:'#fffdf4',
@@ -381,7 +383,7 @@ export function villageDetailGeometry(){
   })
 }
 
-export function drawVectorVillage(r,x,y,scale=1){
+export function drawVectorVillage(r,x,y,scale=1,palette=MAP_ART_PALETTE){
   const c=r.ctx,S=r.S*scale
   c.save()
   c.translate(x*r.S,y*r.S)
@@ -394,7 +396,7 @@ export function drawVectorVillage(r,x,y,scale=1){
 
   const house=(item)=>{
     const {dx,dy,w,h,doorX,windowX}=item
-    c.fillStyle=MAP_ART_PALETTE.villageWall
+    c.fillStyle=palette.villageWall
     c.fillRect((dx-w/2)*S,dy*S,w*S,h*S)
 
     const wallShade=c.createLinearGradient((dx-w/2)*S,dy*S,(dx+w/2)*S,(dy+h)*S)
@@ -403,7 +405,7 @@ export function drawVectorVillage(r,x,y,scale=1){
     c.fillStyle=wallShade
     c.fillRect((dx-w/2)*S,dy*S,w*S,h*S)
 
-    c.fillStyle=MAP_ART_PALETTE.villageRoof
+    c.fillStyle=palette.villageRoof
     c.beginPath()
     c.moveTo((dx-w*.65)*S,dy*S)
     c.lineTo(dx*S,(dy-4)*S)
@@ -775,7 +777,7 @@ export function fullMapVillageSymbolGeometry(size=3.6){
   })
 }
 
-export function drawFullMapVillageSymbol(r,x,y,size=3.6){
+export function drawFullMapVillageSymbol(r,x,y,size=3.6,palette=MAP_ART_PALETTE){
   const c=r.ctx,S=r.S,g=fullMapVillageSymbolGeometry(size)
   c.save()
   c.translate(x*S,y*S)
@@ -785,14 +787,14 @@ export function drawFullMapVillageSymbol(r,x,y,size=3.6){
   c.ellipse(0,g.shadowY*S,g.shadowRx*S,g.shadowRy*S,0,0,Math.PI*2)
   c.fill()
 
-  c.fillStyle='#281a12'
+  c.fillStyle=palette.villageRoof
   c.beginPath()
   c.moveTo(-g.roof*.62*S,0)
   c.lineTo(0,-g.roof*.72*S)
   c.lineTo(g.roof*.62*S,0)
   c.closePath()
   c.fill()
-  c.fillStyle=MAP_ART_PALETTE.villageWall
+  c.fillStyle=palette.villageWall
   c.fillRect(-g.body*.5*S,0,g.body*S,g.body*.72*S)
   c.fillStyle='#3a281c'
   c.fillRect(-g.door*.5*S,g.body*.3*S,g.door*S,g.body*.42*S)

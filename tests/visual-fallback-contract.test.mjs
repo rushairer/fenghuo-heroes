@@ -364,3 +364,15 @@ test('target inspection surface avoids mixed raster villages and uses dedicated 
   assert.doesNotMatch(source,/drawInspectionPlaque[\s\S]*getNineSlice/)
   assert.match(source,/r\.text\('視察情況'/)
 })
+
+
+test('full-map presentation shares the target earth-language vector palette',()=>{
+  const source=read('src/scenes/strategy-full-map.js')
+  assert.match(source,/TARGET_INSPECTION_PALETTE/)
+  assert.match(source,/drawTerrainEtching/)
+  assert.match(source,/drawTargetMapCursor/)
+  assert.match(source,/drawFullMapVillageSymbol\(r,point\.x,point\.y,3\.6,TARGET_INSPECTION_PALETTE\)/)
+  assert.match(source,/drawVectorMountain\(r,244,137,0,\.72,TARGET_INSPECTION_PALETTE\)/)
+  assert.doesNotMatch(source,/drawMapCursor\(/)
+  assert.doesNotMatch(source,/getForDisplay\(['`"]map\./)
+})

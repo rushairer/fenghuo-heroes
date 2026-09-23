@@ -1,9 +1,9 @@
-import { COLORS, SERIF } from '../game/constants.js'
+import { SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
-import { drawFullMapCitySymbol, drawFullMapVillageSymbol, drawMapCursor, drawVectorMountain } from '../game/map-art.js'
-import { createTerrainGrain, drawTerrainGrain } from '../game/terrain-art.js'
+import { TARGET_INSPECTION_PALETTE, drawFullMapCitySymbol, drawFullMapVillageSymbol, drawTargetMapCursor, drawVectorMountain } from '../game/map-art.js'
+import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawProjectedTerrainRelief } from '../game/terrain-relief.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from '../game/world.js'
 import { drawProjectedRiver } from '../game/world-art.js'
@@ -45,10 +45,15 @@ export class StrategyScene extends OfficerStrategyScene {
     r.text('全體地圖',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(28,44,292,44,'#72501b',.7)
 
-    r.fillRect(bounds.x,bounds.y,bounds.w,bounds.h,'#a98654')
+    r.fillRect(bounds.x,bounds.y,bounds.w,bounds.h,'#aa8050')
     drawTerrainGrain(r,FULL_MAP_GRAIN,{
       project:(dot)=>({x:bounds.x+dot.x,y:bounds.y+dot.y}),
-      alpha:.58,
+      alpha:.62,
+    })
+    drawTerrainEtching(r,FULL_MAP_GRAIN,{
+      project:(dot)=>({x:bounds.x+dot.x,y:bounds.y+dot.y}),
+      alpha:.14,
+      stride:7,
     })
     drawProjectedTerrainRelief(r,WORLD_TERRAIN_RELIEF,{
       project:(point)=>fullMapPoint(point,bounds),
@@ -74,11 +79,11 @@ export class StrategyScene extends OfficerStrategyScene {
 
     for(const village of this.app.store.mapProfile?.villages??[]){
       const point=fullMapPoint(village,bounds)
-      drawFullMapVillageSymbol(r,point.x,point.y,3.6)
+      drawFullMapVillageSymbol(r,point.x,point.y,3.6,TARGET_INSPECTION_PALETTE)
     }
 
     const cursor=fullMapPoint(state.cursor,bounds)
-    drawMapCursor(r,cursor.x,cursor.y,{width:8,height:8,color:COLORS.cyan,inner:'#1d120c',scale:.75})
+    drawTargetMapCursor(r,cursor.x,cursor.y,{width:9,height:9,scale:.82})
     c.restore()
 
     const legendX=235
@@ -87,10 +92,10 @@ export class StrategyScene extends OfficerStrategyScene {
     drawFullMapCitySymbol(r,244,89,FACTION_BY_ID.neutral.color,7)
     r.text('城',258,84,7,'#e8dfc8')
 
-    drawFullMapVillageSymbol(r,244,111,5.6)
+    drawFullMapVillageSymbol(r,244,111,5.6,TARGET_INSPECTION_PALETTE)
     r.text('村',258,107,7,'#e8dfc8')
 
-    drawVectorMountain(r,244,137,0,.72)
+    drawVectorMountain(r,244,137,0,.72,TARGET_INSPECTION_PALETTE)
     r.text('山',258,131,7,'#e8dfc8')
     r.text('村庄位置待實機校準',264,151,5,'#837a69','center')
     r.text('START / B 返回',160,178,6,'#887f6d','center')
@@ -100,6 +105,8 @@ export class StrategyScene extends OfficerStrategyScene {
     return drawProjectedRiver(this.app.r,{
       project:(point)=>fullMapPoint(point,bounds),
       clip:bounds,
+      outer:'#6f5837',
+      inner:'#064ac0',
     })
   }
 
