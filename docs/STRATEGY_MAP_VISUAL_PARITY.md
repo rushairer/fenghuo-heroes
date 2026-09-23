@@ -22,6 +22,13 @@ Second visual calibration pass:
 - the river keeps the same provisional center path while receiving broader, irregular
   presentation-only bank modulation.
 
+Mountain silhouette convergence:
+
+- the active strategy map no longer uses the generic three-triangle mountain icon;
+- target mountains are rendered as four-lobe continuous dark-brown masses with a broad base;
+- ridge accents are subordinate to silhouette, reducing the previous icon/sticker appearance;
+- the full-map legend now uses the same target mountain mass renderer.
+
 Cross-state strategic map convergence:
 
 - survey, command and march states now share the same ochre procedural ground;

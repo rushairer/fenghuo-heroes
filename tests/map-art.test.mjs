@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { TARGET_INSPECTION_PALETTE, flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, targetHillClusterGeometry, villageDetailGeometry } from '../src/game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, targetHillClusterGeometry, targetMountainMassGeometry, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -180,4 +180,17 @@ test('target army flag wrapper keeps faction identity as a small accent rather t
   assert.match(source,/drawTargetArmyFlag/)
   assert.match(source,/TARGET_INSPECTION_PALETTE\.flag/)
   assert.match(source,/c\.fillStyle=factionColor/)
+})
+
+
+test('target mountain mass geometry is deterministic broad and non-iconic',()=>{
+  for(let index=0;index<12;index++){
+    const g=targetMountainMassGeometry(index)
+    assert.deepEqual(g,targetMountainMassGeometry(index))
+    assert.equal(g.lobes.length,4)
+    assert.equal(g.ridgeLines.length,3)
+    assert.ok(g.base.rx>=16)
+    assert.ok(g.lobes.some((lobe)=>lobe.ry>10))
+    assert.ok(g.lobes.every((lobe)=>lobe.rx>=5&&lobe.rx<10))
+  }
 })

@@ -4,13 +4,14 @@ import { readFileSync } from 'node:fs'
 
 const read=(path)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8')
 
-test('strategy map fallbacks use the scalable map-art layer',()=>{
+test('active strategy map uses target-specific scalable natural and fort layers',()=>{
   const source=read('src/scenes/strategy-info.js')
-  for(const symbol of ['drawVectorMountain','drawVectorForest','drawVectorFort']){
+  for(const symbol of ['drawTargetMountainMass','drawTargetHillCluster','drawTargetInspectionFort']){
     assert.match(source,new RegExp(`\\b${symbol}\\b`))
   }
+  assert.doesNotMatch(source,/drawVectorForest/)
+  assert.doesNotMatch(source,/drawVectorFort/)
   assert.doesNotMatch(source,/const trees=\[\[-5,1,4\]/)
-  assert.doesNotMatch(source,/c\.fillRect\(-8\*S,-2\*S,16\*S,7\*S\)/)
 })
 
 test('duel scene uses vector fighter artwork instead of the legacy rectangle fighter method',()=>{
@@ -337,7 +338,7 @@ test('inspection parity view uses continuous procedural ground and a dominant lo
   assert.doesNotMatch(source,/drawImageTiled/)
   assert.match(source,/calibration\.river\.inspectionWidth/)
   assert.match(source,/calibration\.river\.standardWidth/)
-  assert.match(source,/drawVectorMountain\(this\.app\.r,x,y,index,scale,TARGET_INSPECTION_PALETTE\)/)
+  assert.match(source,/drawTargetMountainMass\(this\.app\.r,x,y,index,scale\)/)
 })
 
 
@@ -346,7 +347,7 @@ test('target inspection map uses dedicated earth-language vector symbols instead
   assert.match(source,/drawTargetHillCluster/)
   assert.match(source,/drawTargetInspectionFort/)
   assert.match(source,/drawTargetMapCursor/)
-  assert.match(source,/drawVectorMountain\(r,x,y,index,scale,TARGET_INSPECTION_PALETTE\)/)
+  assert.match(source,/drawTargetMountainMass/)
 })
 
 
@@ -382,7 +383,7 @@ test('full-map presentation shares the target earth-language vector palette',()=
   assert.match(source,/drawTerrainEtching/)
   assert.match(source,/drawTargetMapCursor/)
   assert.match(source,/drawFullMapVillageSymbol\(r,point\.x,point\.y,3\.6,TARGET_INSPECTION_PALETTE\)/)
-  assert.match(source,/drawVectorMountain\(r,244,137,0,\.72,TARGET_INSPECTION_PALETTE\)/)
+  assert.match(source,/drawTargetMountainMass\(r,244,137,0,\.62\)/)
   assert.doesNotMatch(source,/drawMapCursor\(/)
   assert.doesNotMatch(source,/getForDisplay\(['`"]map\./)
 })

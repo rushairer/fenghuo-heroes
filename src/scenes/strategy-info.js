@@ -1,7 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
-import { TARGET_INSPECTION_PALETTE, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawTargetMountainMass, drawVectorVillage } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawWorldTerrainRelief } from '../game/terrain-relief.js'
@@ -197,7 +197,7 @@ export class StrategyScene extends ParityStrategyScene {
   drawMountain(x,y,index=0,mapFirst=false) {
     const c=TARGET_STRATEGY_CALIBRATION
     const scale=mapFirst?c.mountain.inspectionScale*c.view.scale:c.mountain.standardScale
-    drawVectorMountain(this.app.r,x,y,index,scale,TARGET_INSPECTION_PALETTE)
+    drawTargetMountainMass(this.app.r,x,y,index,scale)
   }
 
   drawForest(x,y,index=0,mapFirst=false) {

@@ -2,7 +2,7 @@ import { SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
-import { TARGET_INSPECTION_PALETTE, drawFullMapCitySymbol, drawFullMapVillageSymbol, drawTargetMapCursor, drawVectorMountain } from '../game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, drawFullMapCitySymbol, drawFullMapVillageSymbol, drawTargetMapCursor, drawTargetMountainMass } from '../game/map-art.js'
 import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawProjectedTerrainRelief } from '../game/terrain-relief.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from '../game/world.js'
@@ -95,7 +95,7 @@ export class StrategyScene extends OfficerStrategyScene {
     drawFullMapVillageSymbol(r,244,111,5.6,TARGET_INSPECTION_PALETTE)
     r.text('村',258,107,7,'#e8dfc8')
 
-    drawVectorMountain(r,244,137,0,.72,TARGET_INSPECTION_PALETTE)
+    drawTargetMountainMass(r,244,137,0,.62)
     r.text('山',258,131,7,'#e8dfc8')
     r.text('村庄位置待實機校準',264,151,5,'#837a69','center')
     r.text('START / B 返回',160,178,6,'#887f6d','center')

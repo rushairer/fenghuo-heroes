@@ -87,6 +87,82 @@ export function mountainDetailGeometry(index=0){
   })
 }
 
+export function targetMountainMassGeometry(index=0){
+  const i=Math.abs(Math.floor(Number(index)||0))
+  const drift=(i%3)-1
+  return Object.freeze({
+    base:Object.freeze({x:1,y:6.4,rx:16.4,ry:3.1}),
+    lobes:Object.freeze([
+      Object.freeze({x:-10,y:1.8,rx:6.5,ry:8.2,lean:-.7+drift*.15}),
+      Object.freeze({x:-3.5,y:-1.5,rx:8.7,ry:12.2,lean:.45-drift*.18}),
+      Object.freeze({x:5,y:.2,rx:8.2,ry:10.4,lean:-.2+drift*.12}),
+      Object.freeze({x:11.5,y:2.6,rx:5.8,ry:7.2,lean:.55-drift*.1}),
+    ]),
+    ridgeLines:Object.freeze([
+      Object.freeze({x1:-7.5,y1:1.5,x2:-3.5,y2:-8}),
+      Object.freeze({x1:-1,y1:2.4,x2:2.4,y2:-6.3}),
+      Object.freeze({x1:6.2,y1:3,x2:9.5,y2:-2.8}),
+    ]),
+  })
+}
+
+export function drawTargetMountainMass(r,x,y,index=0,scale=1){
+  const c=r.ctx,S=r.S*scale
+  const p=TARGET_INSPECTION_PALETTE
+  const g=targetMountainMassGeometry(index)
+  c.save()
+  c.translate(x*r.S,y*r.S)
+
+  c.fillStyle='rgba(47,29,19,.28)'
+  c.beginPath()
+  c.ellipse(g.base.x*S,g.base.y*S,g.base.rx*S,g.base.ry*S,0,0,Math.PI*2)
+  c.fill()
+
+  for(const [lobeIndex,lobe] of g.lobes.entries()){
+    const left=(lobe.x-lobe.rx)*S
+    const right=(lobe.x+lobe.rx)*S
+    const base=(lobe.y+lobe.ry*.7)*S
+    const peakX=(lobe.x+lobe.lean)*S
+    const peakY=(lobe.y-lobe.ry)*S
+    c.fillStyle=lobeIndex%2===0?p.mountainDark:p.mountainMid
+    c.beginPath()
+    c.moveTo(left,base)
+    c.quadraticCurveTo((lobe.x-lobe.rx*.45)*S,(lobe.y-lobe.ry*.35)*S,peakX,peakY)
+    c.quadraticCurveTo((lobe.x+lobe.rx*.45)*S,(lobe.y-lobe.ry*.2)*S,right,base)
+    c.quadraticCurveTo((lobe.x+lobe.rx*.2)*S,(lobe.y+lobe.ry*.92)*S,left,base)
+    c.closePath()
+    c.fill()
+
+    c.fillStyle=p.mountainLight
+    c.globalAlpha=.28
+    c.beginPath()
+    c.moveTo(peakX,peakY)
+    c.quadraticCurveTo((lobe.x+lobe.rx*.28)*S,(lobe.y-lobe.ry*.15)*S,(lobe.x+lobe.rx*.52)*S,(lobe.y+lobe.ry*.55)*S)
+    c.lineTo((lobe.x+lobe.rx*.08)*S,(lobe.y+lobe.ry*.35)*S)
+    c.closePath()
+    c.fill()
+    c.globalAlpha=1
+  }
+
+  c.strokeStyle='rgba(224,174,103,.42)'
+  c.lineWidth=.34*S
+  c.lineCap='round'
+  for(const ridge of g.ridgeLines){
+    c.beginPath()
+    c.moveTo(ridge.x1*S,ridge.y1*S)
+    c.quadraticCurveTo(((ridge.x1+ridge.x2)/2-.8)*S,((ridge.y1+ridge.y2)/2+.7)*S,ridge.x2*S,ridge.y2*S)
+    c.stroke()
+  }
+
+  c.fillStyle=p.mountainDust
+  c.globalAlpha=.34
+  c.beginPath()
+  c.ellipse(1*S,6.6*S,14.8*S,1.45*S,0,0,Math.PI*2)
+  c.fill()
+  c.restore()
+  return true
+}
+
 export function drawVectorMountain(r,x,y,index=0,scale=1,palette=MAP_ART_PALETTE){
   const c=r.ctx,S=r.S*scale,v=mountainVariant(index)
   c.save()
