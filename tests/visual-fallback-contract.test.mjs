@@ -105,11 +105,13 @@ test('full-map frame is drawn after relief so terrain shading cannot wash out th
 })
 
 
-test('presentation-only terrain relief is confined to raster fallback branches',()=>{
+test('terrain relief is always part of the vector strategy surface',()=>{
   const strategy=read('src/scenes/strategy-info.js')
   const overview=read('src/scenes/strategy-full-map.js')
-  assert.match(strategy,/const tiled=!mapFirst&&sand&&r\.drawImageTiled[\s\S]*if\(!tiled\)[\s\S]*drawTerrainGrain[\s\S]*drawWorldTerrainRelief[\s\S]*\}\n\n    this\.drawRiver/)
-  assert.match(overview,/if\(!sand\|\|!r\.drawImageTiled[\s\S]*drawTerrainGrain[\s\S]*drawProjectedTerrainRelief[\s\S]*\}\n    r\.strokeRect/)
+  assert.match(strategy,/drawTerrainGrain[\s\S]*drawWorldTerrainRelief[\s\S]*drawTerrainEtching/)
+  assert.match(overview,/drawTerrainGrain[\s\S]*drawTerrainEtching[\s\S]*drawProjectedTerrainRelief/)
+  assert.doesNotMatch(strategy,/drawImageTiled/)
+  assert.doesNotMatch(overview,/drawImageTiled/)
 })
 
 
@@ -171,7 +173,7 @@ test('full-map city village and cursor symbols are clipped to map bounds',()=>{
   const clip=source.indexOf('c.rect(bounds.x*S,bounds.y*S,bounds.w*S,bounds.h*S)')
   const city=source.indexOf('drawFullMapCitySymbol(r,point.x,point.y')
   const village=source.indexOf('drawFullMapVillageSymbol(r,point.x,point.y')
-  const cursor=source.indexOf('drawMapCursor(r,cursor.x,cursor.y')
+  const cursor=source.indexOf('drawTargetMapCursor(r,cursor.x,cursor.y')
   const restore=source.indexOf('c.restore()',cursor)
   assert.ok(clip>=0&&city>clip&&village>city&&cursor>village&&restore>cursor)
 })
@@ -329,11 +331,11 @@ test('inspection root uses the target-parity map-first composition',()=>{
   assert.doesNotMatch(source,/uniqueRoadPairs/)
 })
 
-test('inspection parity view avoids seam-prone tiled sand and widens the local river',()=>{
+test('inspection parity view uses continuous procedural ground and a dominant local river',()=>{
   const source=read('src/scenes/strategy-info.js')
-  assert.match(source,/const tiled=!mapFirst&&sand&&r\.drawImageTiled/)
-  assert.match(source,/this\.drawRiver\(camera,mapFirst\?1\.28:1,viewScale\)/)
-  assert.match(source,/mountainStampStyle\(index,false\)/)
+  assert.doesNotMatch(source,/drawImageTiled/)
+  assert.match(source,/this\.drawRiver\(camera,mapFirst\?1\.28:1\.12,viewScale\)/)
+  assert.match(source,/drawVectorMountain\(this\.app\.r,x,y,index,scale,TARGET_INSPECTION_PALETTE\)/)
 })
 
 
@@ -351,16 +353,21 @@ test('target inspection zoom is presentation-only and projects every local landm
   assert.match(source,/function projectToView\(point,camera,viewScale=1\)/)
   assert.match(source,/cameraForView\(state\.cursor,viewHeight,viewScale\)/)
   assert.match(source,/drawWorldTerrainRelief\(r,this\.mapRelief,\{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale\}\)/)
-  assert.match(source,/drawWorldRiver\(this\.app\.r,\{camera,pattern,widthScale,viewScale\}\)/)
+  assert.match(source,/drawWorldRiver\(this\.app\.r,\{camera,widthScale,viewScale\}\)/)
   assert.doesNotMatch(source,/setCursor\([^\n]*TARGET_PARITY_SCALE/)
 })
 
 
-test('target inspection surface avoids mixed raster villages and uses dedicated flag and plaque language',()=>{
+test('all strategy states share target villages flags terrain and cursor language',()=>{
   const source=read('src/scenes/strategy-info.js')
   assert.match(source,/drawTargetArmyFlag/)
   assert.match(source,/drawTerrainEtching/)
-  assert.match(source,/if\(mapFirst\)\{\n        drawVectorVillage/)
+  assert.match(source,/drawVectorVillage\(r,p\.x,p\.y,mapFirst\?\.9:\.8,TARGET_INSPECTION_PALETTE\)/)
+  assert.match(source,/drawTargetMapCursor/)
+  assert.doesNotMatch(source,/drawMapCursor/)
+  assert.doesNotMatch(source,/drawVectorFlag/)
+  assert.doesNotMatch(source,/drawVectorForest/)
+  assert.doesNotMatch(source,/drawVectorFort/)
   assert.doesNotMatch(source,/drawInspectionPlaque[\s\S]*getNineSlice/)
   assert.match(source,/r\.text\('視察情況'/)
 })

@@ -22,6 +22,15 @@ Second visual calibration pass:
 - the river keeps the same provisional center path while receiving broader, irregular
   presentation-only bank modulation.
 
+Cross-state strategic map convergence:
+
+- survey, command and march states now share the same ochre procedural ground;
+- all strategic states use the same brown mountain / green hill family;
+- forts keep the same brown/gold body with hot-pink/yellow banner language;
+- armies use the same target-derived flag wrapper instead of changing to faction-colored cloth;
+- map cursors remain white bracket forms across state transitions;
+- only composition/interaction changes by state; the terrain art language no longer changes.
+
 Full-map visual language convergence:
 
 - full-map ground now uses the same ochre procedural language and etched texture family;

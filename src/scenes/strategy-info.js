@@ -1,7 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
-import { TARGET_INSPECTION_PALETTE, drawMapCursor, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawVectorFlag, drawVectorForest, drawVectorFort, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawVectorMountain, drawVectorVillage } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawWorldTerrainRelief } from '../game/terrain-relief.js'
@@ -111,23 +111,21 @@ export class StrategyScene extends ParityStrategyScene {
     const viewScale=mapFirst?TARGET_PARITY_SCALE:1
     const camera=cameraForView(state.cursor,viewHeight,viewScale)
 
-    r.fillRect(0,0,MAP_VIEW_W,viewHeight,mapFirst?'#aa8050':'#a98654')
+    r.fillRect(0,0,MAP_VIEW_W,viewHeight,'#aa8050')
     drawTerrainGrain(r,this.mapSpeckles,{
       project:(dot)=>projectToView(dot,camera,viewScale),
       visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
-      alpha:mapFirst?.72:.58,
+      alpha:mapFirst?.72:.62,
     })
     drawWorldTerrainRelief(r,this.mapRelief,{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale})
-    if(mapFirst){
-      drawTerrainEtching(r,this.mapSpeckles,{
-        project:(dot)=>projectToView(dot,camera,viewScale),
-        visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
-        alpha:.18,
-        stride:8,
-      })
-    }
+    drawTerrainEtching(r,this.mapSpeckles,{
+      project:(dot)=>projectToView(dot,camera,viewScale),
+      visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
+      alpha:mapFirst?.18:.12,
+      stride:mapFirst?8:10,
+    })
 
-    this.drawRiver(camera,mapFirst?1.28:1,viewScale)
+    this.drawRiver(camera,mapFirst?1.28:1.12,viewScale)
 
     MOUNTAIN_REFS.forEach((ref,index)=>{
       const wp=worldPoint({x:ref[0],y:ref[1]})
@@ -152,7 +150,7 @@ export class StrategyScene extends ParityStrategyScene {
     for(const village of this.app.store.mapProfile?.villages??[]){
       if(!isVisibleInView(village,camera,viewHeight,16,viewScale))continue
       const p=projectToView(village,camera,viewScale)
-      drawVectorVillage(r,p.x,p.y,mapFirst?.9:.8,mapFirst?TARGET_INSPECTION_PALETTE:undefined)
+      drawVectorVillage(r,p.x,p.y,mapFirst?.9:.8,TARGET_INSPECTION_PALETTE)
     }
 
     for(const army of ensureMarchState(this.app.store)){
@@ -161,11 +159,11 @@ export class StrategyScene extends ParityStrategyScene {
       const p=projectToView(wp,camera,viewScale)
       const faction=FACTION_BY_ID[army.faction]
       const selected=this.marchArmyId===army.id&&ARMY_SELECTED_VIEWS.has(this.view)
-      if(mapFirst){
-        drawTargetArmyFlag(r,p.x,p.y,faction?.color??'#888',{starving:army.starving,selected,scale:1.04*TARGET_PARITY_SCALE})
-      }else{
-        this.drawArmyFlag(p.x,p.y,faction?.color??'#888',army.starving,army.faction,selected)
-      }
+      drawTargetArmyFlag(r,p.x,p.y,faction?.color??'#888',{
+        starving:army.starving,
+        selected,
+        scale:mapFirst?1.04*TARGET_PARITY_SCALE:.92,
+      })
     }
 
     if(this.view==='march-route'&&this.marchRoute.length>1){
@@ -177,12 +175,12 @@ export class StrategyScene extends ParityStrategyScene {
     }
 
     const cursor=projectToView(state.cursor,camera,viewScale)
-    if(mapFirst){
-      drawTargetMapCursor(r,cursor.x,cursor.y)
-      this.drawInspectionPlaque()
-    }else{
-      drawMapCursor(r,cursor.x,cursor.y)
-    }
+    drawTargetMapCursor(r,cursor.x,cursor.y,{
+      width:mapFirst?19:16,
+      height:mapFirst?15:12,
+      scale:mapFirst?1:.92,
+    })
+    if(mapFirst)this.drawInspectionPlaque()
   }
 
   drawRiver(camera,widthScale=1,viewScale=1) {
@@ -190,36 +188,29 @@ export class StrategyScene extends ParityStrategyScene {
   }
 
   drawMountain(x,y,index=0,mapFirst=false) {
-    const scale=mapFirst?1.12*TARGET_PARITY_SCALE:1
-    drawVectorMountain(
+    const scale=mapFirst?1.12*TARGET_PARITY_SCALE:1.02
+    drawVectorMountain(this.app.r,x,y,index,scale,TARGET_INSPECTION_PALETTE)
+  }
+
+  drawForest(x,y,index=0,mapFirst=false) {
+    drawTargetHillCluster(
       this.app.r,
       x,
       y,
       index,
-      scale,
-      mapFirst?TARGET_INSPECTION_PALETTE:undefined,
+      mapFirst?1.08*TARGET_PARITY_SCALE:.92,
     )
-  }
-
-  drawForest(x,y,index=0,mapFirst=false) {
-    if(mapFirst){
-      drawTargetHillCluster(this.app.r,x,y,index,1.08*TARGET_PARITY_SCALE)
-      return
-    }
-    drawVectorForest(this.app.r,x,y,index,1)
   }
 
   drawCity(city,x,y,mapFirst=false) {
     const runtime=this.app.store.state.cities[city.id]
     const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
-    if(mapFirst){
-      drawTargetInspectionFort(this.app.r,x,y,faction.color,1.08*TARGET_PARITY_SCALE)
-      return
-    }
-    drawVectorFort(this.app.r,x,y,faction.color,1)
-  }
-
-  drawArmyFlag(x,y,color,starving=false,_factionId=null,selected=false) {
-    drawVectorFlag(this.app.r,x,y,color,{selected,starving})
+    drawTargetInspectionFort(
+      this.app.r,
+      x,
+      y,
+      faction.color,
+      mapFirst?1.08*TARGET_PARITY_SCALE:.94,
+    )
   }
 }
