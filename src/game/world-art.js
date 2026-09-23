@@ -32,7 +32,7 @@ function cubicPoint(p0,p1,p2,p3,t){
 export function riverSurfaceMarks(path=WORLD_RIVER_PATH){
   const marks=[]
   let start=path.start
-  const samples=[.28,.58,.82]
+  const samples=[.14,.32,.5,.68,.86]
   for(const curve of path.curves){
     const [a,b,end]=curve
     for(const t of samples){
@@ -64,6 +64,20 @@ export function riverBankModulations(path=WORLD_RIVER_PATH){
   })))
 }
 
+export function riverEdgeScallops(path=WORLD_RIVER_PATH){
+  return Object.freeze(riverSurfaceMarks(path)
+    .filter((_,index)=>index%2===1)
+    .map((mark,index)=>Object.freeze({
+      x:mark.x,
+      y:mark.y,
+      angle:mark.angle,
+      side:index%2===0?-1:1,
+      offsetFactor:.42+(index%3)*.035,
+      radiusFactor:.13+(index%4)*.014,
+      squash:.52+(index%2)*.08,
+    })))
+}
+
 function drawRiverBankModulations(ctx,S,mods,project,bankWidth,color,alpha=.72){
   ctx.save()
   ctx.fillStyle=color
@@ -75,6 +89,32 @@ function drawRiverBankModulations(ctx,S,mods,project,bankWidth,color,alpha=.72){
     const offset=bankWidth*mod.offsetFactor*mod.side
     const rx=Math.max(.8,bankWidth*mod.radiusFactor)
     const ry=Math.max(.5,rx*mod.squash)
+    ctx.beginPath()
+    ctx.ellipse(
+      (p.x+normalX*offset)*S,
+      (p.y+normalY*offset)*S,
+      rx*S,
+      ry*S,
+      p.angle,
+      0,
+      Math.PI*2,
+    )
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
+function drawRiverEdgeScallops(ctx,S,scallops,project,waterWidth,color,alpha=.9){
+  ctx.save()
+  ctx.fillStyle=color
+  ctx.globalAlpha=alpha
+  for(const scallop of scallops){
+    const p=projectRiverSurfaceMark({...scallop,length:1},project)
+    const normalX=-Math.sin(p.angle)
+    const normalY=Math.cos(p.angle)
+    const offset=waterWidth*scallop.offsetFactor*scallop.side
+    const rx=Math.max(.65,waterWidth*scallop.radiusFactor)
+    const ry=Math.max(.45,rx*scallop.squash)
     ctx.beginPath()
     ctx.ellipse(
       (p.x+normalX*offset)*S,
@@ -191,8 +231,10 @@ export function drawWorldRiver(r,{
   c.lineWidth=style.bankInnerWidth*strokeScale*S
   c.stroke()
 
+  const waterColor=pattern??'#064ac0'
+  drawRiverEdgeScallops(c,S,riverEdgeScallops(path),project,style.waterWidth*strokeScale,waterColor,.92)
   traceRiver(c,S,path,project)
-  c.strokeStyle=pattern??'#064ac0'
+  c.strokeStyle=waterColor
   c.lineWidth=style.waterWidth*strokeScale*S
   c.stroke()
 
@@ -251,6 +293,7 @@ export function drawProjectedRiver(r,{
   c.lineWidth=style.bankInnerWidth*outerScale*S
   c.stroke()
 
+  drawRiverEdgeScallops(c,S,riverEdgeScallops(path),project,style.waterWidth*innerScale,inner,.88)
   traceRiver(c,S,path,project)
   c.strokeStyle=inner
   c.lineWidth=style.waterWidth*innerScale*S

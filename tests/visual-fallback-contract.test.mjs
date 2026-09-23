@@ -278,8 +278,9 @@ test('river shoreline accent is layered as a visible ring between outer and inne
   const outer=block.indexOf("c.strokeStyle='#6f5837'")
   const shore=block.indexOf("c.strokeStyle='#d0a66b'")
   const inner=block.indexOf("c.strokeStyle='#183d79'")
-  const water=block.indexOf("c.strokeStyle=pattern??'#064ac0'")
-  assert.ok(outer>=0&&shore>outer&&inner>shore&&water>inner)
+  const scallops=block.indexOf('drawRiverEdgeScallops')
+  const water=block.indexOf('c.strokeStyle=waterColor')
+  assert.ok(outer>=0&&shore>outer&&inner>shore&&scallops>inner&&water>scallops)
 })
 
 
@@ -386,4 +387,14 @@ test('full-map presentation shares the target earth-language vector palette',()=
   assert.match(source,/drawTargetMountainMass\(r,244,137,0,\.62\)/)
   assert.doesNotMatch(source,/drawMapCursor\(/)
   assert.doesNotMatch(source,/getForDisplay\(['`"]map\./)
+})
+
+
+test('river edge irregularity is shared by local and overview rendering',()=>{
+  const source=read('src/game/world-art.js')
+  assert.match(source,/riverEdgeScallops/)
+  const world=source.slice(source.indexOf('export function drawWorldRiver'),source.indexOf('export function drawProjectedRiver'))
+  const projected=source.slice(source.indexOf('export function drawProjectedRiver'),source.indexOf('export function roadSegmentStyle'))
+  assert.match(world,/drawRiverEdgeScallops/)
+  assert.match(projected,/drawRiverEdgeScallops/)
 })

@@ -13,8 +13,15 @@ Before more map micro-detail work:
 - [~] Calibrate camera scale and landmark bounding-box ratios from direct target frames.
 - [ ] Replace mixed blue/purple mountain assets with a coherent target-derived terrain language.
 - [ ] Eliminate visible terrain tiling seams.
-- [ ] Calibrate deep-blue river width and irregular bank silhouette from reference frames.
+- [~] Calibrate deep-blue river width and irregular bank silhouette from reference frames.
 - [ ] Rebuild fort/flag/cursor silhouettes from direct target screenshots before further micro-detail.
+
+### River silhouette pass — 2026-09-23
+
+River presentation now samples each canonical Bézier segment at five positions instead of
+three for shoreline modulation. Alternating water-edge scallops create shallow inlets on
+both banks while the canonical center path remains untouched. This specifically targets
+the prior smooth-pipe appearance; canonical river geometry is still not claimed.
 
 ### Calibration contract pass — 2026-09-23
 

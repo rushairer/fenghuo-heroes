@@ -22,6 +22,13 @@ Second visual calibration pass:
 - the river keeps the same provisional center path while receiving broader, irregular
   presentation-only bank modulation.
 
+River silhouette convergence:
+
+- shoreline modulation density increased from 9 to 15 deterministic samples;
+- alternating water-edge scallops create visible local inlets on both banks;
+- local and full-map rivers use the same irregularity model;
+- the canonical three-segment center path is unchanged.
+
 Mountain silhouette convergence:
 
 - the active strategy map no longer uses the generic three-triangle mountain icon;

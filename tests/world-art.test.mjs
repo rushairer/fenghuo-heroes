@@ -5,6 +5,7 @@ import {
   WORLD_RIVER_PATH,
   riverStrokeStyle,
   riverBankModulations,
+  riverEdgeScallops,
   projectRiverSurfaceMark,
   riverSurfaceMarks,
   roadSegmentStyle,
@@ -76,7 +77,7 @@ test('pattern-backed river lowers highlight opacity without changing geometry',(
 
 test('river surface marks are deterministic samples of the shared river path',()=>{
   const marks=riverSurfaceMarks()
-  assert.equal(marks.length,WORLD_RIVER_PATH.curves.length*3)
+  assert.equal(marks.length,WORLD_RIVER_PATH.curves.length*5)
   assert.deepEqual(marks,riverSurfaceMarks())
   assert.ok(marks.every((mark)=>Number.isFinite(mark.x)&&Number.isFinite(mark.y)&&Number.isFinite(mark.angle)))
   assert.ok(marks.every((mark)=>mark.length>=8&&mark.length<=12))
@@ -112,4 +113,16 @@ test('river bank modulation adds deterministic irregularity without changing the
   assert.ok(mods.every((item)=>item.offsetFactor>=.3&&item.offsetFactor<.4))
   assert.ok(mods.every((item)=>item.radiusFactor>.14&&item.radiusFactor<.22))
   assert.deepEqual(WORLD_RIVER_PATH.curves.length,3)
+})
+
+
+test('river edge scallops alternate banks without changing the canonical center path',()=>{
+  const scallops=riverEdgeScallops()
+  assert.equal(scallops.length,Math.floor(riverSurfaceMarks().length/2))
+  assert.deepEqual(scallops,riverEdgeScallops())
+  assert.ok(scallops.some((item)=>item.side<0))
+  assert.ok(scallops.some((item)=>item.side>0))
+  assert.ok(scallops.every((item)=>item.offsetFactor>=.42&&item.offsetFactor<.5))
+  assert.ok(scallops.every((item)=>item.radiusFactor>=.13&&item.radiusFactor<.18))
+  assert.equal(WORLD_RIVER_PATH.curves.length,3)
 })
