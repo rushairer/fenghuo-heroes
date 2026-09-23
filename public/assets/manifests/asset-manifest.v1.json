@@ -2,74 +2,201 @@
   "version": "1.0.0",
   "policy": {
     "fallback": "canvas",
-    "loadOnlyReady": true
+    "loadOnlyReady": true,
+    "mapRuntime": "vector"
   },
   "title": {
-    "main": { "src": "assets/title/hd/title-main-hd-v1.webp", "status": "disabled" },
-    "menuFrame": { "src": "assets/title/slices/title-menu-frame-v1.webp", "status": "planned" },
-    "rightBorder": { "src": "assets/title/slices/title-border-right-v1.webp", "status": "planned" }
+    "main": {
+      "src": "assets/title/hd/title-main-hd-v1.webp",
+      "status": "disabled"
+    },
+    "menuFrame": {
+      "src": "assets/title/slices/title-menu-frame-v1.webp",
+      "status": "planned"
+    },
+    "rightBorder": {
+      "src": "assets/title/slices/title-border-right-v1.webp",
+      "status": "planned"
+    }
   },
   "map": {
     "terrain": {
-      "sandBase": { "src": "assets/map/terrain/map-terrain-sand-base-v1.webp", "status": "ready" },
-      "mountainA": { "src": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp", "status": "ready" },
-      "mountainB": { "src": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp", "status": "ready" },
-      "riverA": { "src": "assets/map/terrain/map-terrain-river-segment-a-v1.webp", "status": "ready" },
-      "forestA": { "src": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp", "status": "ready" }
+      "sandBase": {
+        "src": "assets/map/terrain/map-terrain-sand-base-v1.webp",
+        "status": "disabled"
+      },
+      "mountainA": {
+        "src": "assets/map/terrain/map-terrain-mountain-cluster-a-v1.webp",
+        "status": "disabled"
+      },
+      "mountainB": {
+        "src": "assets/map/terrain/map-terrain-mountain-cluster-b-v1.webp",
+        "status": "disabled"
+      },
+      "riverA": {
+        "src": "assets/map/terrain/map-terrain-river-segment-a-v1.webp",
+        "status": "disabled"
+      },
+      "forestA": {
+        "src": "assets/map/terrain/map-terrain-forest-cluster-a-v1.webp",
+        "status": "disabled"
+      }
     },
     "cities": {
-      "neutral": { "src": "assets/map/cities/city-fort-neutral-v1.webp", "status": "ready" },
-      "liu": { "src": "assets/map/cities/city-fort-liubei-v1.webp", "status": "ready" },
-      "cao": { "src": "assets/map/cities/city-fort-caocao-v1.webp", "status": "ready" },
-      "sun": { "src": "assets/map/cities/city-fort-sunjian-v1.webp", "status": "ready" },
-      "yuan": { "src": "assets/map/cities/city-fort-yuanshao-v1.webp", "status": "ready" },
-      "dong": { "src": "assets/map/cities/city-fort-dongzhuo-v1.webp", "status": "ready" },
-      "liu_biao": { "src": "assets/map/cities/city-fort-liubiao-v1.webp", "status": "ready" },
-      "ma": { "src": "assets/map/cities/city-fort-mateng-v1.webp", "status": "ready" }
+      "neutral": {
+        "src": "assets/map/cities/city-fort-neutral-v1.webp",
+        "status": "disabled"
+      },
+      "liu": {
+        "src": "assets/map/cities/city-fort-liubei-v1.webp",
+        "status": "disabled"
+      },
+      "cao": {
+        "src": "assets/map/cities/city-fort-caocao-v1.webp",
+        "status": "disabled"
+      },
+      "sun": {
+        "src": "assets/map/cities/city-fort-sunjian-v1.webp",
+        "status": "disabled"
+      },
+      "yuan": {
+        "src": "assets/map/cities/city-fort-yuanshao-v1.webp",
+        "status": "disabled"
+      },
+      "dong": {
+        "src": "assets/map/cities/city-fort-dongzhuo-v1.webp",
+        "status": "disabled"
+      },
+      "liu_biao": {
+        "src": "assets/map/cities/city-fort-liubiao-v1.webp",
+        "status": "disabled"
+      },
+      "ma": {
+        "src": "assets/map/cities/city-fort-mateng-v1.webp",
+        "status": "disabled"
+      }
     },
     "villages": {
-      "neutral": { "src": "assets/map/villages/village-neutral-v1.webp", "status": "ready" }
+      "neutral": {
+        "src": "assets/map/villages/village-neutral-v1.webp",
+        "status": "disabled"
+      }
     },
     "flags": {
-      "liu": { "src": "assets/map/flags/army-flag-liubei-v1.webp", "status": "ready" },
-      "cao": { "src": "assets/map/flags/army-flag-caocao-v1.webp", "status": "ready" },
-      "sun": { "src": "assets/map/flags/army-flag-sunjian-v1.webp", "status": "ready" },
-      "yuan": { "src": "assets/map/flags/army-flag-yuanshao-v1.webp", "status": "ready" },
-      "dong": { "src": "assets/map/flags/army-flag-dongzhuo-v1.webp", "status": "ready" },
-      "liu_biao": { "src": "assets/map/flags/army-flag-liubiao-v1.webp", "status": "ready" },
-      "ma": { "src": "assets/map/flags/army-flag-mateng-v1.webp", "status": "ready" },
-      "selected": { "src": "assets/map/flags/army-flag-selected-v1.webp", "status": "ready" },
-      "lowFood": { "src": "assets/map/flags/army-flag-low-food-v1.webp", "status": "ready" }
+      "liu": {
+        "src": "assets/map/flags/army-flag-liubei-v1.webp",
+        "status": "disabled"
+      },
+      "cao": {
+        "src": "assets/map/flags/army-flag-caocao-v1.webp",
+        "status": "disabled"
+      },
+      "sun": {
+        "src": "assets/map/flags/army-flag-sunjian-v1.webp",
+        "status": "disabled"
+      },
+      "yuan": {
+        "src": "assets/map/flags/army-flag-yuanshao-v1.webp",
+        "status": "disabled"
+      },
+      "dong": {
+        "src": "assets/map/flags/army-flag-dongzhuo-v1.webp",
+        "status": "disabled"
+      },
+      "liu_biao": {
+        "src": "assets/map/flags/army-flag-liubiao-v1.webp",
+        "status": "disabled"
+      },
+      "ma": {
+        "src": "assets/map/flags/army-flag-mateng-v1.webp",
+        "status": "disabled"
+      },
+      "selected": {
+        "src": "assets/map/flags/army-flag-selected-v1.webp",
+        "status": "disabled"
+      },
+      "lowFood": {
+        "src": "assets/map/flags/army-flag-low-food-v1.webp",
+        "status": "disabled"
+      }
     }
   },
   "ui": {
     "panels": {
-      "large": { "src": "assets/ui/panels/ui-panel-black-gold-a-v1.webp", "status": "ready" },
-      "small": { "src": "assets/ui/panels/ui-panel-black-gold-b-v1.webp", "status": "ready" }
+      "large": {
+        "src": "assets/ui/panels/ui-panel-black-gold-a-v1.webp",
+        "status": "ready"
+      },
+      "small": {
+        "src": "assets/ui/panels/ui-panel-black-gold-b-v1.webp",
+        "status": "ready"
+      }
     },
     "frames": {
-      "small": { "src": "assets/ui/frames/ui-frame-small-v1.webp", "status": "ready" },
-      "large": { "src": "assets/ui/frames/ui-frame-large-v1.webp", "status": "ready" }
+      "small": {
+        "src": "assets/ui/frames/ui-frame-small-v1.webp",
+        "status": "ready"
+      },
+      "large": {
+        "src": "assets/ui/frames/ui-frame-large-v1.webp",
+        "status": "ready"
+      }
     },
     "cursors": {
-      "box": { "src": "assets/ui/cursors/ui-cursor-box-v1.webp", "status": "ready" },
-      "pointer": { "src": "assets/ui/cursors/ui-cursor-pointer-v1.webp", "status": "ready" }
+      "box": {
+        "src": "assets/ui/cursors/ui-cursor-box-v1.webp",
+        "status": "ready"
+      },
+      "pointer": {
+        "src": "assets/ui/cursors/ui-cursor-pointer-v1.webp",
+        "status": "ready"
+      }
     },
     "icons": {
-      "food": { "src": "assets/ui/icons/ui-icon-food-v1.webp", "status": "ready" },
-      "gold": { "src": "assets/ui/icons/ui-icon-gold-v1.webp", "status": "ready" },
-      "troops": { "src": "assets/ui/icons/ui-icon-troops-v1.webp", "status": "ready" }
+      "food": {
+        "src": "assets/ui/icons/ui-icon-food-v1.webp",
+        "status": "ready"
+      },
+      "gold": {
+        "src": "assets/ui/icons/ui-icon-gold-v1.webp",
+        "status": "ready"
+      },
+      "troops": {
+        "src": "assets/ui/icons/ui-icon-troops-v1.webp",
+        "status": "ready"
+      }
     }
   },
   "portraits": {
     "rulers": {
-      "liu": { "src": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp", "status": "planned" },
-      "cao": { "src": "assets/portraits/rulers/portrait-ruler-caocao-v1.webp", "status": "planned" },
-      "sun": { "src": "assets/portraits/rulers/portrait-ruler-sunjian-v1.webp", "status": "planned" },
-      "yuan": { "src": "assets/portraits/rulers/portrait-ruler-yuanshao-v1.webp", "status": "planned" },
-      "dong": { "src": "assets/portraits/rulers/portrait-ruler-dongzhuo-v1.webp", "status": "planned" },
-      "liu_biao": { "src": "assets/portraits/rulers/portrait-ruler-liubiao-v1.webp", "status": "planned" },
-      "ma": { "src": "assets/portraits/rulers/portrait-ruler-mateng-v1.webp", "status": "planned" }
+      "liu": {
+        "src": "assets/portraits/rulers/portrait-ruler-liubei-v1.webp",
+        "status": "planned"
+      },
+      "cao": {
+        "src": "assets/portraits/rulers/portrait-ruler-caocao-v1.webp",
+        "status": "planned"
+      },
+      "sun": {
+        "src": "assets/portraits/rulers/portrait-ruler-sunjian-v1.webp",
+        "status": "planned"
+      },
+      "yuan": {
+        "src": "assets/portraits/rulers/portrait-ruler-yuanshao-v1.webp",
+        "status": "planned"
+      },
+      "dong": {
+        "src": "assets/portraits/rulers/portrait-ruler-dongzhuo-v1.webp",
+        "status": "planned"
+      },
+      "liu_biao": {
+        "src": "assets/portraits/rulers/portrait-ruler-liubiao-v1.webp",
+        "status": "planned"
+      },
+      "ma": {
+        "src": "assets/portraits/rulers/portrait-ruler-mateng-v1.webp",
+        "status": "planned"
+      }
     }
   }
 }

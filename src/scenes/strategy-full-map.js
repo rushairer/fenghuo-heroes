@@ -45,20 +45,17 @@ export class StrategyScene extends OfficerStrategyScene {
     r.text('全體地圖',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(28,44,292,44,'#72501b',.7)
 
-    const sand=this.app.assets?.getForDisplay('map.terrain.sandBase',32,32)
-    if(!sand||!r.drawImageTiled(sand,bounds.x,bounds.y,bounds.w,bounds.h,32,32,0,0,.94)){
-      r.fillRect(bounds.x,bounds.y,bounds.w,bounds.h,'#a98654')
-      drawTerrainGrain(r,FULL_MAP_GRAIN,{
-        project:(dot)=>({x:bounds.x+dot.x,y:bounds.y+dot.y}),
-        alpha:.58,
-      })
-      drawProjectedTerrainRelief(r,WORLD_TERRAIN_RELIEF,{
-        project:(point)=>fullMapPoint(point,bounds),
-        scaleX:bounds.w/WORLD_W,
-        scaleY:bounds.h/WORLD_H,
-        clip:bounds,
-      })
-    }
+    r.fillRect(bounds.x,bounds.y,bounds.w,bounds.h,'#a98654')
+    drawTerrainGrain(r,FULL_MAP_GRAIN,{
+      project:(dot)=>({x:bounds.x+dot.x,y:bounds.y+dot.y}),
+      alpha:.58,
+    })
+    drawProjectedTerrainRelief(r,WORLD_TERRAIN_RELIEF,{
+      project:(point)=>fullMapPoint(point,bounds),
+      scaleX:bounds.w/WORLD_W,
+      scaleY:bounds.h/WORLD_H,
+      clip:bounds,
+    })
     r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
 
     this.drawFullMapRiver(bounds)
@@ -93,10 +90,7 @@ export class StrategyScene extends OfficerStrategyScene {
     drawFullMapVillageSymbol(r,244,111,5.6)
     r.text('村',258,107,7,'#e8dfc8')
 
-    const mountain=this.app.assets?.getForDisplay('map.terrain.mountainA',18,14)
-    if(!mountain||!r.drawImageCentered(mountain,244,135,18,14)){
-      drawVectorMountain(r,244,137,0,.72)
-    }
+    drawVectorMountain(r,244,137,0,.72)
     r.text('山',258,131,7,'#e8dfc8')
     r.text('村庄位置待實機校準',264,151,5,'#837a69','center')
     r.text('START / B 返回',160,178,6,'#887f6d','center')

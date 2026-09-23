@@ -74,6 +74,7 @@ const failures=[]
 const seenSrc=new Map()
 for(const entry of entries){
   if(!allowedStatuses.has(entry.status))failures.push(`${entry.key}: invalid status ${entry.status}`)
+  if(manifest.policy?.mapRuntime==='vector'&&entry.key.startsWith('map.')&&entry.status==='ready')failures.push(`${entry.key}: map runtime is vector-only; raster map assets must stay disabled/planned`)
   if(!entry.src.startsWith('assets/'))failures.push(`${entry.key}: src must be project-relative under assets/`)
   if(entry.src.includes('\\')||entry.src.includes('..')||entry.src.startsWith('/'))failures.push(`${entry.key}: unsafe src ${entry.src}`)
   const ext=extname(entry.src).toLowerCase()

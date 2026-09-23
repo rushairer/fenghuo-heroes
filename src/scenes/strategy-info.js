@@ -5,8 +5,7 @@ import { TARGET_INSPECTION_PALETTE, drawMapCursor, drawTargetArmyFlag, drawTarge
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawWorldTerrainRelief } from '../game/terrain-relief.js'
-import { mountainStampStyle } from '../game/terrain-style.js'
-import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, toScreen, worldPoint } from '../game/world.js'
+import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, worldPoint } from '../game/world.js'
 import { drawWorldRiver } from '../game/world-art.js'
 import { StrategyScene as ParityStrategyScene } from './strategy-parity.js'
 
@@ -111,25 +110,21 @@ export class StrategyScene extends ParityStrategyScene {
     const viewHeight=mapFirst?TARGET_PARITY_VIEW_H:MAP_VIEW_H
     const viewScale=mapFirst?TARGET_PARITY_SCALE:1
     const camera=cameraForView(state.cursor,viewHeight,viewScale)
-    const sand=this.app.assets?.getForDisplay('map.terrain.sandBase',64,64)
-    const tiled=!mapFirst&&sand&&r.drawImageTiled(sand,0,0,MAP_VIEW_W,viewHeight,64,64,camera.x,camera.y)
 
-    if(!tiled){
-      r.fillRect(0,0,MAP_VIEW_W,viewHeight,'#aa8050')
-      drawTerrainGrain(r,this.mapSpeckles,{
+    r.fillRect(0,0,MAP_VIEW_W,viewHeight,mapFirst?'#aa8050':'#a98654')
+    drawTerrainGrain(r,this.mapSpeckles,{
+      project:(dot)=>projectToView(dot,camera,viewScale),
+      visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
+      alpha:mapFirst?.72:.58,
+    })
+    drawWorldTerrainRelief(r,this.mapRelief,{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale})
+    if(mapFirst){
+      drawTerrainEtching(r,this.mapSpeckles,{
         project:(dot)=>projectToView(dot,camera,viewScale),
         visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
-        alpha:mapFirst?.72:.62,
+        alpha:.18,
+        stride:8,
       })
-      drawWorldTerrainRelief(r,this.mapRelief,{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale})
-      if(mapFirst){
-        drawTerrainEtching(r,this.mapSpeckles,{
-          project:(dot)=>projectToView(dot,camera,viewScale),
-          visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
-          alpha:.18,
-          stride:8,
-        })
-      }
     }
 
     this.drawRiver(camera,mapFirst?1.28:1,viewScale)
@@ -157,13 +152,7 @@ export class StrategyScene extends ParityStrategyScene {
     for(const village of this.app.store.mapProfile?.villages??[]){
       if(!isVisibleInView(village,camera,viewHeight,16,viewScale))continue
       const p=projectToView(village,camera,viewScale)
-      const size=mapFirst?20:18
-      if(mapFirst){
-        drawVectorVillage(r,p.x,p.y,.9)
-        continue
-      }
-      const image=this.app.assets?.getForDisplay('map.villages.neutral',size,size)
-      if(!image||!r.drawImageCentered(image,p.x,p.y,size,size))drawVectorVillage(r,p.x,p.y,.8)
+      drawVectorVillage(r,p.x,p.y,mapFirst?.9:.8)
     }
 
     for(const army of ensureMarchState(this.app.store)){
@@ -197,69 +186,40 @@ export class StrategyScene extends ParityStrategyScene {
   }
 
   drawRiver(camera,widthScale=1,viewScale=1) {
-    const water=this.app.assets?.getForDisplay('map.terrain.riverA',42,20)
-    const pattern=water?this.app.r.ctx.createPattern(water,'repeat'):null
-    drawWorldRiver(this.app.r,{camera,pattern,widthScale,viewScale})
+    drawWorldRiver(this.app.r,{camera,widthScale,viewScale})
   }
 
   drawMountain(x,y,index=0,mapFirst=false) {
-    const r=this.app.r
-    const style=mountainStampStyle(index,false)
     const scale=mapFirst?1.12*TARGET_PARITY_SCALE:1
-    const width=Math.round(style.width*scale)
-    const height=Math.round(style.height*scale)
-    if(mapFirst){
-      drawVectorMountain(r,x,y,index,scale,TARGET_INSPECTION_PALETTE)
-      return
-    }
-    const image=this.app.assets?.getForDisplay('map.terrain.mountainA',width,height)
-    if(image&&r.drawImageCentered(image,x,y+style.offsetY,width,height,style.alpha,style.mirror))return
-    drawVectorMountain(r,x,y,index,scale)
+    drawVectorMountain(
+      this.app.r,
+      x,
+      y,
+      index,
+      scale,
+      mapFirst?TARGET_INSPECTION_PALETTE:undefined,
+    )
   }
 
   drawForest(x,y,index=0,mapFirst=false) {
-    const r=this.app.r
-    const width=mapFirst?24:22
-    const height=mapFirst?20:18
     if(mapFirst){
-      drawTargetHillCluster(r,x,y,index,1.08*TARGET_PARITY_SCALE)
+      drawTargetHillCluster(this.app.r,x,y,index,1.08*TARGET_PARITY_SCALE)
       return
     }
-    const image=this.app.assets?.getForDisplay('map.terrain.forestA',width,height)
-    if(image&&r.drawImageCentered(image,x,y,width,height,.96))return
-    drawVectorForest(r,x,y,index,1)
+    drawVectorForest(this.app.r,x,y,index,1)
   }
 
   drawCity(city,x,y,mapFirst=false) {
-    const r=this.app.r
     const runtime=this.app.store.state.cities[city.id]
     const faction=FACTION_BY_ID[runtime.owner]??FACTION_BY_ID.neutral
-    const size=mapFirst?28:24
     if(mapFirst){
-      drawTargetInspectionFort(r,x,y,faction.color,1.08*TARGET_PARITY_SCALE)
+      drawTargetInspectionFort(this.app.r,x,y,faction.color,1.08*TARGET_PARITY_SCALE)
       return
     }
-    const image=this.app.assets?.getForDisplay(`map.cities.${runtime.owner}`,size,size)
-      ??(runtime.owner==='neutral'?this.app.assets?.getForDisplay('map.cities.neutral',size,size):null)
-    if(image&&r.drawImageStretch(image,x-size/2,y-Math.round(size*.67),size,size))return
-    drawVectorFort(r,x,y,faction.color,1)
+    drawVectorFort(this.app.r,x,y,faction.color,1)
   }
 
-  drawArmyFlag(x,y,color,starving=false,factionId=null,selected=false) {
-    const r=this.app.r
-    const c=r.ctx
-    const S=r.S
-    const base=this.app.assets?.getForDisplay(`map.flags.${factionId}`,20,20)
-    const selectedFlag=selected?this.app.assets?.getForDisplay('map.flags.selected',20,20):null
-    const lowFoodFlag=starving?this.app.assets?.getForDisplay('map.flags.lowFood',20,20):null
-    const image=lowFoodFlag??selectedFlag??base
-    if(image){
-      r.drawImageStretch(image,x-10,y-14,20,20)
-      if((starving||selected)&&!lowFoodFlag&&!selectedFlag){
-        r.strokeRect(x-11,y-15,22,22,starving?'#ff765f':COLORS.cyan,1)
-      }
-      return
-    }
-    drawVectorFlag(r,x,y,color,{selected,starving})
+  drawArmyFlag(x,y,color,starving=false,_factionId=null,selected=false) {
+    drawVectorFlag(this.app.r,x,y,color,{selected,starving})
   }
 }

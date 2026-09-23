@@ -29,6 +29,16 @@ now has a broader, lightly irregular bank silhouette. Exact camera ratios, landm
 bounding boxes and canonical river/world geometry remain open until more target frames
 are measured.
 
+### Map runtime asset convergence — 2026-09-23
+
+The strategic map runtime is now vector/procedural-only across inspection, command,
+march and full-map presentation. Historical map WebP entries remain tracked but are
+disabled in the manifest, and the asset checker rejects any `map.*` raster entry that
+is switched back to `ready` while `policy.mapRuntime` is `vector`.
+
+This removes a major source of cross-state art-language drift. UI frames/icons remain
+independent raster assets.
+
 # Parity Roadmap v0.2
 
 ## Definition of "1:1 HD"
