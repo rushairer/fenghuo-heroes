@@ -321,8 +321,9 @@ test('strategy fort banner retains finial fold and knot micro-detail',()=>{
 
 test('inspection root uses the target-parity map-first composition',()=>{
   const source=read('src/scenes/strategy-info.js')
-  assert.ok(source.includes('const TARGET_PARITY_VIEW_H = 224'))
-  assert.ok(source.includes('const TARGET_PARITY_SCALE = 1.18'))
+  assert.match(source,/TARGET_STRATEGY_CALIBRATION/)
+  assert.match(source,/calibration\.view\.height/)
+  assert.match(source,/calibration\.view\.scale/)
   assert.ok(source.includes("return this.stage==='survey'&&this.view==='map'"))
   assert.ok(source.includes("r.text('視察情況'"))
   assert.ok(source.includes('if(this.isTargetParityInspection())return'))
@@ -334,7 +335,8 @@ test('inspection root uses the target-parity map-first composition',()=>{
 test('inspection parity view uses continuous procedural ground and a dominant local river',()=>{
   const source=read('src/scenes/strategy-info.js')
   assert.doesNotMatch(source,/drawImageTiled/)
-  assert.match(source,/this\.drawRiver\(camera,mapFirst\?1\.28:1\.12,viewScale\)/)
+  assert.match(source,/calibration\.river\.inspectionWidth/)
+  assert.match(source,/calibration\.river\.standardWidth/)
   assert.match(source,/drawVectorMountain\(this\.app\.r,x,y,index,scale,TARGET_INSPECTION_PALETTE\)/)
 })
 
@@ -354,7 +356,7 @@ test('target inspection zoom is presentation-only and projects every local landm
   assert.match(source,/cameraForView\(state\.cursor,viewHeight,viewScale\)/)
   assert.match(source,/drawWorldTerrainRelief\(r,this\.mapRelief,\{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale\}\)/)
   assert.match(source,/drawWorldRiver\(this\.app\.r,\{camera,widthScale,viewScale\}\)/)
-  assert.doesNotMatch(source,/setCursor\([^\n]*TARGET_PARITY_SCALE/)
+  assert.doesNotMatch(source,/setCursor\([^\n]*TARGET_STRATEGY_CALIBRATION/)
 })
 
 
@@ -362,7 +364,8 @@ test('all strategy states share target villages flags terrain and cursor languag
   const source=read('src/scenes/strategy-info.js')
   assert.match(source,/drawTargetArmyFlag/)
   assert.match(source,/drawTerrainEtching/)
-  assert.match(source,/drawVectorVillage\(r,p\.x,p\.y,mapFirst\?\.9:\.8,TARGET_INSPECTION_PALETTE\)/)
+  assert.match(source,/calibration\.village\.inspectionScale/)
+  assert.match(source,/calibration\.village\.standardScale/)
   assert.match(source,/drawTargetMapCursor/)
   assert.doesNotMatch(source,/drawMapCursor/)
   assert.doesNotMatch(source,/drawVectorFlag/)

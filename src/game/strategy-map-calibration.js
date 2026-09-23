@@ -1,0 +1,49 @@
+export const TARGET_STRATEGY_CALIBRATION=Object.freeze({
+  view:Object.freeze({
+    height:224,
+    scale:1.24,
+  }),
+  plaque:Object.freeze({
+    x:5,
+    y:5,
+    width:72,
+    height:22,
+    textSize:8,
+  }),
+  cursor:Object.freeze({
+    width:18,
+    height:18,
+    scale:1,
+  }),
+  river:Object.freeze({
+    inspectionWidth:1.32,
+    standardWidth:1.12,
+  }),
+  mountain:Object.freeze({
+    inspectionScale:1.1,
+    standardScale:1.02,
+  }),
+  hill:Object.freeze({
+    inspectionScale:1.04,
+    standardScale:.92,
+  }),
+  fort:Object.freeze({
+    inspectionScale:1.03,
+    standardScale:.94,
+  }),
+  village:Object.freeze({
+    inspectionScale:1.02,
+    standardScale:.8,
+  }),
+  army:Object.freeze({
+    inspectionScale:1,
+    standardScale:.92,
+  }),
+})
+
+export function inspectionWorldViewport(){
+  return Object.freeze({
+    width:320/TARGET_STRATEGY_CALIBRATION.view.scale,
+    height:TARGET_STRATEGY_CALIBRATION.view.height/TARGET_STRATEGY_CALIBRATION.view.scale,
+  })
+}

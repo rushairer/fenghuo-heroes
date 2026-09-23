@@ -10,11 +10,21 @@ Before more map micro-detail work:
 - [x] Rebuild inspection composition as map-first with compact upper-left status plaque.
 - [x] Remove the large bottom instruction panel from the target-parity inspection state.
 - [x] Disable visible provisional node-link road rendering unless direct evidence proves it.
-- [ ] Calibrate camera scale and landmark bounding-box ratios from direct target frames.
+- [~] Calibrate camera scale and landmark bounding-box ratios from direct target frames.
 - [ ] Replace mixed blue/purple mountain assets with a coherent target-derived terrain language.
 - [ ] Eliminate visible terrain tiling seams.
 - [ ] Calibrate deep-blue river width and irregular bank silhouette from reference frames.
 - [ ] Rebuild fort/flag/cursor silhouettes from direct target screenshots before further micro-detail.
+
+### Calibration contract pass — 2026-09-23
+
+The current visual hypothesis is now centralized in
+`src/game/strategy-map-calibration.js` instead of scattered scene magic numbers.
+Inspection density moved from 1.18× to 1.24×, the inspection cursor is now square
+(18×18 logical), and the upper-left plaque is reduced to 72×22 logical. Fort scale
+is intentionally held near the previous effective footprint while mountains/hills and
+villages gain slightly more presence. These values remain calibration hypotheses until
+additional direct target frames can be measured.
 
 ### Structural reset implementation note — 2026-09-22
 

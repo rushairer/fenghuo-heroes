@@ -5,6 +5,7 @@ import { TARGET_INSPECTION_PALETTE, drawTargetArmyFlag, drawTargetHillCluster, d
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawWorldTerrainRelief } from '../game/terrain-relief.js'
+import { TARGET_STRATEGY_CALIBRATION } from '../game/strategy-map-calibration.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, worldPoint } from '../game/world.js'
 import { drawWorldRiver } from '../game/world-art.js'
 import { StrategyScene as ParityStrategyScene } from './strategy-parity.js'
@@ -22,8 +23,6 @@ const FOREST_REFS = Object.freeze([
 ])
 
 const ARMY_SELECTED_VIEWS = new Set(['army-menu','march-route','march-route-prompt'])
-const TARGET_PARITY_VIEW_H = 224
-const TARGET_PARITY_SCALE = 1.18
 
 function cameraForView(point,viewHeight=MAP_VIEW_H,viewScale=1){
   if(viewHeight===MAP_VIEW_H&&viewScale===1)return cameraFor(point)
@@ -94,21 +93,29 @@ export class StrategyScene extends ParityStrategyScene {
 
   drawInspectionPlaque() {
     const r=this.app.r
-    r.fillRect(5,5,80,24,'#1c100b')
-    r.strokeRect(5.5,5.5,79,23,'#e0b25e',1)
-    r.strokeRect(8,8,74,18,'#6f3d20',.65)
-    r.fillRect(9.5,9.5,71,15,'#3b2114')
-    r.line(13,22.5,77,22.5,'#9b6631',.45,.72)
-    for(const [x,y] of [[7,7],[82,7],[7,26],[82,26]])r.fillRect(x-1,y-1,2,2,'#d3a14d')
-    r.text('視察情況',45,10.5,8.5,'#f3d985','center','top',SERIF,'700')
+    const p=TARGET_STRATEGY_CALIBRATION.plaque
+    const cx=p.x+p.width/2
+    r.fillRect(p.x,p.y,p.width,p.height,'#1c100b')
+    r.strokeRect(p.x+.5,p.y+.5,p.width-1,p.height-1,'#e0b25e',1)
+    r.strokeRect(p.x+3,p.y+3,p.width-6,p.height-6,'#6f3d20',.65)
+    r.fillRect(p.x+4.5,p.y+4.5,p.width-9,p.height-9,'#3b2114')
+    r.line(p.x+8,p.y+p.height-6.5,p.x+p.width-8,p.y+p.height-6.5,'#9b6631',.45,.72)
+    for(const [x,y] of [
+      [p.x+2,p.y+2],
+      [p.x+p.width-2,p.y+2],
+      [p.x+2,p.y+p.height-2],
+      [p.x+p.width-2,p.y+p.height-2],
+    ])r.fillRect(x-1,y-1,2,2,'#d3a14d')
+    r.text('視察情況',cx,p.y+4.5,p.textSize,'#f3d985','center','top',SERIF,'700')
   }
 
   drawWorld() {
     const r=this.app.r
     const state=this.app.store.state
     const mapFirst=this.isTargetParityInspection()
-    const viewHeight=mapFirst?TARGET_PARITY_VIEW_H:MAP_VIEW_H
-    const viewScale=mapFirst?TARGET_PARITY_SCALE:1
+    const calibration=TARGET_STRATEGY_CALIBRATION
+    const viewHeight=mapFirst?calibration.view.height:MAP_VIEW_H
+    const viewScale=mapFirst?calibration.view.scale:1
     const camera=cameraForView(state.cursor,viewHeight,viewScale)
 
     r.fillRect(0,0,MAP_VIEW_W,viewHeight,'#aa8050')
@@ -125,7 +132,7 @@ export class StrategyScene extends ParityStrategyScene {
       stride:mapFirst?8:10,
     })
 
-    this.drawRiver(camera,mapFirst?1.28:1.12,viewScale)
+    this.drawRiver(camera,mapFirst?calibration.river.inspectionWidth:calibration.river.standardWidth,viewScale)
 
     MOUNTAIN_REFS.forEach((ref,index)=>{
       const wp=worldPoint({x:ref[0],y:ref[1]})
@@ -150,7 +157,7 @@ export class StrategyScene extends ParityStrategyScene {
     for(const village of this.app.store.mapProfile?.villages??[]){
       if(!isVisibleInView(village,camera,viewHeight,16,viewScale))continue
       const p=projectToView(village,camera,viewScale)
-      drawVectorVillage(r,p.x,p.y,mapFirst?.9:.8,TARGET_INSPECTION_PALETTE)
+      drawVectorVillage(r,p.x,p.y,mapFirst?calibration.village.inspectionScale:calibration.village.standardScale,TARGET_INSPECTION_PALETTE)
     }
 
     for(const army of ensureMarchState(this.app.store)){
@@ -162,7 +169,7 @@ export class StrategyScene extends ParityStrategyScene {
       drawTargetArmyFlag(r,p.x,p.y,faction?.color??'#888',{
         starving:army.starving,
         selected,
-        scale:mapFirst?1.04*TARGET_PARITY_SCALE:.92,
+        scale:mapFirst?calibration.army.inspectionScale*calibration.view.scale:calibration.army.standardScale,
       })
     }
 
@@ -176,9 +183,9 @@ export class StrategyScene extends ParityStrategyScene {
 
     const cursor=projectToView(state.cursor,camera,viewScale)
     drawTargetMapCursor(r,cursor.x,cursor.y,{
-      width:mapFirst?19:16,
-      height:mapFirst?15:12,
-      scale:mapFirst?1:.92,
+      width:mapFirst?calibration.cursor.width:16,
+      height:mapFirst?calibration.cursor.height:12,
+      scale:mapFirst?calibration.cursor.scale:.92,
     })
     if(mapFirst)this.drawInspectionPlaque()
   }
@@ -188,7 +195,8 @@ export class StrategyScene extends ParityStrategyScene {
   }
 
   drawMountain(x,y,index=0,mapFirst=false) {
-    const scale=mapFirst?1.12*TARGET_PARITY_SCALE:1.02
+    const c=TARGET_STRATEGY_CALIBRATION
+    const scale=mapFirst?c.mountain.inspectionScale*c.view.scale:c.mountain.standardScale
     drawVectorMountain(this.app.r,x,y,index,scale,TARGET_INSPECTION_PALETTE)
   }
 
@@ -198,7 +206,7 @@ export class StrategyScene extends ParityStrategyScene {
       x,
       y,
       index,
-      mapFirst?1.08*TARGET_PARITY_SCALE:.92,
+      mapFirst?TARGET_STRATEGY_CALIBRATION.hill.inspectionScale*TARGET_STRATEGY_CALIBRATION.view.scale:TARGET_STRATEGY_CALIBRATION.hill.standardScale,
     )
   }
 
@@ -210,7 +218,7 @@ export class StrategyScene extends ParityStrategyScene {
       x,
       y,
       faction.color,
-      mapFirst?1.08*TARGET_PARITY_SCALE:.94,
+      mapFirst?TARGET_STRATEGY_CALIBRATION.fort.inspectionScale*TARGET_STRATEGY_CALIBRATION.view.scale:TARGET_STRATEGY_CALIBRATION.fort.standardScale,
     )
   }
 }
