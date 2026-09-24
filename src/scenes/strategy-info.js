@@ -1,4 +1,5 @@
 import { COLORS, SERIF } from '../game/constants.js'
+import { drawStrategyPanel } from '../game/ui-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
 import { TARGET_INSPECTION_PALETTE, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawTargetMountainMass, drawVectorVillage } from '../game/map-art.js'
@@ -58,7 +59,7 @@ export class StrategyScene extends ParityStrategyScene {
 
     const r = this.app.r
     const rows = openingOfficerRows(this.app.store)
-    r.panel(18,20,284,170,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,18,20,284,170,'#020202','#b07118')
     const tabs=['統治國一覽','全體地圖','武將狀態']
     tabs.forEach((title,index)=>r.text(title,66+index*94,30,8,index===this.infoTab?COLORS.cyan:'#777','center'))
     r.line(28,45,292,45,'#7b4e12',1)

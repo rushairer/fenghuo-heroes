@@ -2,6 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor } from '../game/country-overview.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
+import { drawStrategyPanel } from '../game/ui-art.js'
 import { OFFICER_STATUS_FIELDS, openingOfficerListForCity, officerStatusProjection } from '../game/officer-roster.js'
 import { StrategyScene as InfoStrategyScene } from './strategy-info.js'
 
@@ -164,8 +165,7 @@ export class StrategyScene extends InfoStrategyScene {
     const r=this.app.r
     const rows=countryOverviewRows(this.app.store,{revealAll:this.infoCommandBrowse})
     const page=countryOverviewWindow(rows,this.countryOverviewCursor,COUNTRY_OVERVIEW_PAGE_SIZE)
-    const pointer=this.app.assets?.getForDisplay('ui.cursors.pointer',10,10)
-    r.panel(24,18,272,174,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,24,18,272,174,'#020202','#b07118')
     r.text('統治國一覽',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(37,44,283,44,'#72501b',.7)
     r.text('國',51,50,6,'#8f8674')
@@ -177,9 +177,7 @@ export class StrategyScene extends InfoStrategyScene {
       const absolute=page.start+index
       const active=absolute===this.countryOverviewCursor
       const y=61+index*10.8
-      if(active){
-        if(!pointer||!r.drawImageCentered(pointer,39,y+4,8,8))r.text('▶',34,y,6.5,COLORS.cyan)
-      }
+      if(active)r.text('▶',34,y,6.5,COLORS.cyan)
       const faction=FACTION_BY_ID[row.owner]??FACTION_BY_ID.neutral
       const color=active?COLORS.cyan:'#e8dfc8'
       r.text(String(row.number).padStart(2,'0'),48,y,6,color)
@@ -198,7 +196,7 @@ export class StrategyScene extends InfoStrategyScene {
     const city=this.app.store.mapProfile?.cityById?.[this.targetCity]
     const rt=this.app.store.state.cities[this.targetCity]
     const f=FACTION_BY_ID[rt?.owner]??FACTION_BY_ID.neutral
-    r.panel(54,38,212,126,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,54,38,212,126,'#020202','#b07118')
     r.text(city?.name??'',160,48,15,'#f0d477','center','top',SERIF,'700')
     r.text(f?.label??'',160,70,8,f?.color??'#fff','center')
     const rows=[['兵力',rt?.troops],['金',rt?.gold],['米',rt?.food],['產值',rt?.development],['統治',rt?.rule],['防衛',rt?.defense],['訓練',rt?.training]]
@@ -217,7 +215,7 @@ export class StrategyScene extends InfoStrategyScene {
     const city=this.app.store.mapProfile?.cityById?.[this.officerListCity]
     const faction=FACTION_BY_ID[projection.factionId]??FACTION_BY_ID.neutral
     const rows=projection.rows
-    r.panel(46,27,228,164,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,46,27,228,164,'#020202','#b07118')
     r.text(`${city?.name??'—'} · 武將一覽`,160,36,10,'#efd27d','center','top',SERIF,'700')
     r.text(faction?.label??'',160,52,7,faction?.color??'#ddd','center')
     r.text(projection.cityAssignmentVerified?'開局城市配屬已由證據校準':'暫顯勢力開局名冊 · 城市配屬未校準',160,63,5.5,'#918978','center')
@@ -230,14 +228,11 @@ export class StrategyScene extends InfoStrategyScene {
       const maxStart=Math.max(0,rows.length-OFFICER_PAGE_SIZE)
       const start=Math.min(maxStart,Math.max(0,this.officerListCursor-3))
       const visible=rows.slice(start,start+OFFICER_PAGE_SIZE)
-      const pointer=this.app.assets?.getForDisplay('ui.cursors.pointer',10,10)
       visible.forEach((row,index)=>{
         const absolute=start+index
         const y=80+index*12
         const active=absolute===this.officerListCursor
-        if(active){
-          if(!pointer||!r.drawImageCentered(pointer,75,y+4,10,10))r.text('▶',70,y,7,COLORS.cyan)
-        }
+        if(active)r.text('▶',70,y,7,COLORS.cyan)
         r.text(row.role==='君主'?'君':'將',89,y,6.5,row.role==='君主'?'#efd27d':'#8f8674')
         r.text(row.name,111,y,8,active?COLORS.cyan:'#e8dfc8')
       })
@@ -248,7 +243,7 @@ export class StrategyScene extends InfoStrategyScene {
   drawOfficerStatus() {
     const r=this.app.r
     const row=this.officerStatusRow
-    r.panel(34,26,252,166,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,34,26,252,166,'#020202','#b07118')
     if(!row){
       r.text('武將資料尚未建立',160,89,9,'#d9cba8','center')
       r.text('B 返回',160,178,6,'#887f6d','center')

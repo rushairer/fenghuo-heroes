@@ -1,4 +1,5 @@
 import { SERIF } from '../game/constants.js'
+import { drawStrategyPanel } from '../game/ui-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
@@ -41,7 +42,7 @@ export class StrategyScene extends OfficerStrategyScene {
     const S=r.S
     const state=this.app.store.state
     const bounds=FULL_MAP_BOUNDS
-    r.panel(18,18,284,174,'#020202','#b07118',this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,18,18,284,174,'#020202','#b07118')
     r.text('全體地圖',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(28,44,292,44,'#72501b',.7)
 

@@ -1,6 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
+import { drawStrategyPanel } from '../game/ui-art.js'
 import { dailyFoodFor, queueMarch, rerouteArmy } from '../game/march.js'
 import { foodForDays, maxFoodDaysForStock } from '../game/parity.js'
 import { cityWorldPoint } from '../game/world.js'
@@ -249,23 +250,21 @@ export class StrategyScene extends MarchStrategyScene {
     const officerLabel = this.selectedOfficerNames.length
       ? this.selectedOfficerNames.join('、')
       : '未選擇'
-    r.panel(62, 27, 196, 151, '#000', '#9b6514', this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,62, 27, 196, 151, '#000', '#9b6514')
     r.text(`${city?.name ?? ''} 出陣`, 160, 36, 11, '#efd27d', 'center', 'top', SERIF, '700')
     const rows = [
       { label:'武將', value:`${count}人` },
-      { label:'兵力', value:this.marchTroops, icon:'ui.icons.troops' },
-      { label:'軍資金', value:this.marchGold, icon:'ui.icons.gold' },
-      { label:'兵糧日數', value:`${this.marchFoodDays}日`, icon:'ui.icons.food' },
+      { label:'兵力', value:this.marchTroops },
+      { label:'軍資金', value:this.marchGold },
+      { label:'兵糧日數', value:`${this.marchFoodDays}日` },
       { label:'路線', value:'指定' },
     ]
-    rows.forEach(({ label, value, icon }, i) => {
+    rows.forEach(({ label, value }, i) => {
       const y = 57 + i * 18
       const focused = i === this.composeFocus
       const color = focused ? COLORS.cyan : '#ddd0ad'
-      const image = icon ? this.app.assets?.getForDisplay(icon,12,12) : null
       r.text(focused ? '▶' : '　', 78, y, 8, color)
-      if (image) r.drawImageCentered(image, 94, y + 4, 12, 12)
-      r.text(label, image ? 105 : 91, y, 8, color)
+      r.text(label, 91, y, 8, color)
       r.text(value, 234, y, 8, focused ? COLORS.cyan : '#eee0bd', 'right')
     })
     r.text(officerLabel, 160, 149, 6, '#b8aa8c', 'center')
@@ -278,7 +277,7 @@ export class StrategyScene extends MarchStrategyScene {
     const visibleCount = Math.min(8, available.length)
     const maxStart = Math.max(0, available.length - visibleCount)
     const start = Math.max(0, Math.min(maxStart, this.officerCursor - 3))
-    r.panel(68, 26, 184, 153, '#000', '#9b6514', this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,68, 26, 184, 153, '#000', '#9b6514')
     r.text('出陣武將', 160, 35, 11, '#efd27d', 'center', 'top', SERIF, '700')
     r.text(`已選 ${this.selectedOfficerNames.length} 人`, 160, 49, 6, '#9f947b', 'center')
     available.slice(start, start + visibleCount).forEach((name, row) => {
@@ -292,7 +291,7 @@ export class StrategyScene extends MarchStrategyScene {
 
   drawMarchRoutePrompt() {
     const r = this.app.r
-    r.panel(54, 73, 212, 77, '#000', '#b07118', this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,54, 73, 212, 77, '#000', '#b07118')
     r.text('請決定到目的地的', 160, 86, 10, '#f0dfad', 'center', 'top', SERIF, '700')
     r.text('行軍路線', 160, 104, 12, COLORS.cyan, 'center', 'top', SERIF, '700')
     r.text('C / A：開始指定　B：取消', 160, 132, 6.5, '#9c927f', 'center')
