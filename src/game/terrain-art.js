@@ -81,3 +81,29 @@ export function drawTerrainEtching(r,items,{
   c.restore()
   return drawn
 }
+
+
+export function drawTerrainMottle(r,items,{
+  project=(point)=>point,
+  visible=()=>true,
+  alpha=.24,
+  stride=3,
+}={}){
+  const c=r.ctx,S=r.S
+  const step=Math.max(1,Math.floor(Number(stride)||1))
+  let drawn=0
+  c.save()
+  c.globalAlpha=alpha
+  for(let i=0;i<(items??[]).length;i+=step){
+    const item=items[i]
+    const point=project(item)
+    if(!visible(point,item))continue
+    const width=.8+(i%4)*.34
+    const height=.28+((i>>2)%3)*.12
+    c.fillStyle=i%3===0?'#70492f':i%3===1?'#b98552':'#d2aa72'
+    c.fillRect((point.x-width*.5)*S,(point.y-height*.5)*S,width*S,height*S)
+    drawn++
+  }
+  c.restore()
+  return drawn
+}

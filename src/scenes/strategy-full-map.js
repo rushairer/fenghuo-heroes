@@ -3,14 +3,15 @@ import { drawStrategyPanel } from '../game/ui-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { FULL_MAP_BOUNDS, fullMapPoint } from '../game/full-map.js'
 import { mdButton } from '../game/input.js'
-import { TARGET_INSPECTION_PALETTE, drawFullMapCitySymbol, drawFullMapVillageSymbol, drawTargetMapCursor, drawTargetMountainMass } from '../game/map-art.js'
-import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
+import { TARGET_INSPECTION_PALETTE, drawFullMapCitySymbol, drawFullMapVillageSymbol, drawTargetHillCluster, drawTargetMapCursor, drawTargetMountainRange } from '../game/map-art.js'
+import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain, drawTerrainMottle } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawProjectedTerrainRelief } from '../game/terrain-relief.js'
+import { PRESENTATION_HILL_CLUSTERS, PRESENTATION_MOUNTAIN_RANGES } from '../game/strategy-map-presentation.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from '../game/world.js'
 import { drawProjectedRiver } from '../game/world-art.js'
 import { StrategyScene as OfficerStrategyScene } from './strategy-officers.js'
 
-const FULL_MAP_GRAIN=createTerrainGrain({width:194,height:112,count:360,seed:0x21500189})
+const FULL_MAP_GRAIN=createTerrainGrain({width:194,height:112,count:720,seed:0x21500189})
 
 export class StrategyScene extends OfficerStrategyScene {
   update(dt,input) {
@@ -51,6 +52,11 @@ export class StrategyScene extends OfficerStrategyScene {
       project:(dot)=>({x:bounds.x+dot.x,y:bounds.y+dot.y}),
       alpha:.62,
     })
+    drawTerrainMottle(r,FULL_MAP_GRAIN,{
+      project:(dot)=>({x:bounds.x+dot.x,y:bounds.y+dot.y}),
+      alpha:.22,
+      stride:2,
+    })
     drawTerrainEtching(r,FULL_MAP_GRAIN,{
       project:(dot)=>({x:bounds.x+dot.x,y:bounds.y+dot.y}),
       alpha:.14,
@@ -62,6 +68,16 @@ export class StrategyScene extends OfficerStrategyScene {
       scaleY:bounds.h/WORLD_H,
       clip:bounds,
     })
+    const terrainScale=bounds.w/WORLD_W
+    for(const feature of PRESENTATION_MOUNTAIN_RANGES){
+      const point=fullMapPoint(feature,bounds)
+      drawTargetMountainRange(r,point.x,point.y,feature.variant,terrainScale*.82*feature.scale)
+    }
+    for(const feature of PRESENTATION_HILL_CLUSTERS){
+      const point=fullMapPoint(feature,bounds)
+      drawTargetHillCluster(r,point.x,point.y,feature.variant,terrainScale*.88*feature.scale)
+    }
+
     r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
 
     this.drawFullMapRiver(bounds)
@@ -96,7 +112,7 @@ export class StrategyScene extends OfficerStrategyScene {
     drawFullMapVillageSymbol(r,244,111,5.6,TARGET_INSPECTION_PALETTE)
     r.text('村',258,107,7,'#e8dfc8')
 
-    drawTargetMountainMass(r,244,137,0,.62)
+    drawTargetMountainRange(r,244,137,0,.48)
     r.text('山',258,131,7,'#e8dfc8')
     r.text('村庄位置待實機校準',264,151,5,'#837a69','center')
     r.text('START / B 返回',160,178,6,'#887f6d','center')

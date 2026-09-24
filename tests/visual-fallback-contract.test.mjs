@@ -6,7 +6,7 @@ const read=(path)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8')
 
 test('active strategy map uses target-specific scalable natural and fort layers',()=>{
   const source=read('src/scenes/strategy-info.js')
-  for(const symbol of ['drawTargetMountainMass','drawTargetHillCluster','drawTargetInspectionFort']){
+  for(const symbol of ['drawTargetMountainRange','drawTargetHillCluster','drawTargetInspectionFort']){
     assert.match(source,new RegExp(`\\b${symbol}\\b`))
   }
   assert.doesNotMatch(source,/drawVectorForest/)
@@ -339,7 +339,7 @@ test('inspection parity view uses continuous procedural ground and a dominant lo
   assert.doesNotMatch(source,/drawImageTiled/)
   assert.match(source,/calibration\.river\.inspectionWidth/)
   assert.match(source,/calibration\.river\.standardWidth/)
-  assert.match(source,/drawTargetMountainMass\(this\.app\.r,x,y,index,scale\)/)
+  assert.match(source,/drawTargetMountainRange\(this\.app\.r,x,y,index,scale\)/)
 })
 
 
@@ -384,7 +384,7 @@ test('full-map presentation shares the target earth-language vector palette',()=
   assert.match(source,/drawTerrainEtching/)
   assert.match(source,/drawTargetMapCursor/)
   assert.match(source,/drawFullMapVillageSymbol\(r,point\.x,point\.y,3\.6,TARGET_INSPECTION_PALETTE\)/)
-  assert.match(source,/drawTargetMountainMass\(r,244,137,0,\.62\)/)
+  assert.match(source,/drawTargetMountainRange\(r,244,137,0,\.48\)/)
   assert.doesNotMatch(source,/drawMapCursor\(/)
   assert.doesNotMatch(source,/getForDisplay\(['`"]map\./)
 })
@@ -419,4 +419,18 @@ test('target map cursor is a pure four-corner bracket silhouette',()=>{
   const block=source.slice(start,end)
   assert.match(block,/corners=\[\[-1,-1\],\[1,-1\],\[-1,1\],\[1,1\]\]/)
   assert.doesNotMatch(block,/strokeRect/)
+})
+
+
+test('local and overview maps share presentation mountain and hill geography',()=>{
+  const local=read('src/scenes/strategy-info.js')
+  const overview=read('src/scenes/strategy-full-map.js')
+  for(const symbol of ['PRESENTATION_MOUNTAIN_RANGES','PRESENTATION_HILL_CLUSTERS']){
+    assert.match(local,new RegExp(symbol))
+    assert.match(overview,new RegExp(symbol))
+  }
+  assert.match(local,/drawTargetMountainRange/)
+  assert.match(overview,/drawTargetMountainRange/)
+  assert.match(local,/drawTerrainMottle/)
+  assert.match(overview,/drawTerrainMottle/)
 })

@@ -2,26 +2,15 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { drawStrategyPanel } from '../game/ui-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { ensureMarchState } from '../game/march.js'
-import { TARGET_INSPECTION_PALETTE, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawTargetMountainMass, drawVectorVillage } from '../game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawTargetMountainRange, drawVectorVillage } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
-import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain } from '../game/terrain-art.js'
+import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain, drawTerrainMottle } from '../game/terrain-art.js'
 import { WORLD_TERRAIN_RELIEF, drawWorldTerrainRelief } from '../game/terrain-relief.js'
 import { TARGET_STRATEGY_CALIBRATION } from '../game/strategy-map-calibration.js'
-import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, worldPoint } from '../game/world.js'
+import { PRESENTATION_HILL_CLUSTERS, PRESENTATION_MOUNTAIN_RANGES } from '../game/strategy-map-presentation.js'
+import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint } from '../game/world.js'
 import { drawWorldRiver } from '../game/world-art.js'
 import { StrategyScene as ParityStrategyScene } from './strategy-parity.js'
-
-const MOUNTAIN_REFS = Object.freeze([
-  [17,35],[29,27],[42,43],[56,28],[72,48],[88,32],[104,52],[119,34],[137,43],[154,31],
-  [174,53],[194,39],[213,55],[232,42],[252,56],[275,39],[296,54],[34,79],[58,70],[84,85],
-  [108,73],[132,91],[158,76],[185,95],[211,79],[241,98],[274,82],[304,102],[28,126],[54,112],
-  [79,139],[105,121],[132,148],[160,128],[190,150],[220,131],[249,155],[282,137],[310,159],[41,174],
-  [75,191],[112,174],[149,197],[185,181],[224,201],[259,181],[294,202],
-])
-
-const FOREST_REFS = Object.freeze([
-  [285,27],[302,36],[266,71],[288,109],[227,151],[188,155],[39,111],[66,154],[113,188],[249,190],[181,117],[26,187],
-])
 
 const ARMY_SELECTED_VIEWS = new Set(['army-menu','march-route','march-route-prompt'])
 
@@ -50,7 +39,7 @@ function isVisibleInView(point,camera,viewHeight,padding=16,viewScale=1){
 export class StrategyScene extends ParityStrategyScene {
   constructor(app) {
     super(app)
-    this.mapSpeckles=createTerrainGrain({width:WORLD_W,height:WORLD_H,count:1500})
+    this.mapSpeckles=createTerrainGrain({width:WORLD_W,height:WORLD_H,count:3200})
     this.mapRelief=WORLD_TERRAIN_RELIEF
   }
 
@@ -126,6 +115,12 @@ export class StrategyScene extends ParityStrategyScene {
       alpha:mapFirst?.72:.62,
     })
     drawWorldTerrainRelief(r,this.mapRelief,{camera,viewWidth:MAP_VIEW_W,viewHeight,viewScale})
+    drawTerrainMottle(r,this.mapSpeckles,{
+      project:(dot)=>projectToView(dot,camera,viewScale),
+      visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
+      alpha:mapFirst?.34:.24,
+      stride:2,
+    })
     drawTerrainEtching(r,this.mapSpeckles,{
       project:(dot)=>projectToView(dot,camera,viewScale),
       visible:(point)=>point.x>=0&&point.x<=MAP_VIEW_W&&point.y>=0&&point.y<=viewHeight,
@@ -133,20 +128,18 @@ export class StrategyScene extends ParityStrategyScene {
       stride:mapFirst?8:10,
     })
 
-    this.drawRiver(camera,mapFirst?calibration.river.inspectionWidth:calibration.river.standardWidth,viewScale)
+    for(const feature of PRESENTATION_MOUNTAIN_RANGES){
+      if(!isVisibleInView(feature,camera,viewHeight,34,viewScale))continue
+      const p=projectToView(feature,camera,viewScale)
+      this.drawMountain(p.x,p.y,feature.variant,mapFirst,feature.scale)
+    }
+    for(const feature of PRESENTATION_HILL_CLUSTERS){
+      if(!isVisibleInView(feature,camera,viewHeight,22,viewScale))continue
+      const p=projectToView(feature,camera,viewScale)
+      this.drawForest(p.x,p.y,feature.variant,mapFirst,feature.scale)
+    }
 
-    MOUNTAIN_REFS.forEach((ref,index)=>{
-      const wp=worldPoint({x:ref[0],y:ref[1]})
-      if(!isVisibleInView(wp,camera,viewHeight,22,viewScale))return
-      const p=projectToView(wp,camera,viewScale)
-      this.drawMountain(p.x,p.y,index,mapFirst)
-    })
-    FOREST_REFS.forEach((ref,index)=>{
-      const wp=worldPoint({x:ref[0],y:ref[1]})
-      if(!isVisibleInView(wp,camera,viewHeight,18,viewScale))return
-      const p=projectToView(wp,camera,viewScale)
-      this.drawForest(p.x,p.y,index,mapFirst)
-    })
+    this.drawRiver(camera,mapFirst?calibration.river.inspectionWidth:calibration.river.standardWidth,viewScale)
 
     for(const city of this.mapCities()){
       const wp=cityWorldPoint(city)
@@ -195,19 +188,19 @@ export class StrategyScene extends ParityStrategyScene {
     drawWorldRiver(this.app.r,{camera,widthScale,viewScale})
   }
 
-  drawMountain(x,y,index=0,mapFirst=false) {
+  drawMountain(x,y,index=0,mapFirst=false,featureScale=1) {
     const c=TARGET_STRATEGY_CALIBRATION
-    const scale=mapFirst?c.mountain.inspectionScale*c.view.scale:c.mountain.standardScale
-    drawTargetMountainMass(this.app.r,x,y,index,scale)
+    const scale=(mapFirst?c.mountain.inspectionScale*c.view.scale:c.mountain.standardScale)*featureScale
+    drawTargetMountainRange(this.app.r,x,y,index,scale)
   }
 
-  drawForest(x,y,index=0,mapFirst=false) {
+  drawForest(x,y,index=0,mapFirst=false,featureScale=1) {
     drawTargetHillCluster(
       this.app.r,
       x,
       y,
       index,
-      mapFirst?TARGET_STRATEGY_CALIBRATION.hill.inspectionScale*TARGET_STRATEGY_CALIBRATION.view.scale:TARGET_STRATEGY_CALIBRATION.hill.standardScale,
+      (mapFirst?TARGET_STRATEGY_CALIBRATION.hill.inspectionScale*TARGET_STRATEGY_CALIBRATION.view.scale:TARGET_STRATEGY_CALIBRATION.hill.standardScale)*featureScale,
     )
   }
 

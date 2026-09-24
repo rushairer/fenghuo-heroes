@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { TARGET_INSPECTION_PALETTE, flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, targetFortGeometry, targetHillClusterGeometry, targetMountainMassGeometry, villageDetailGeometry } from '../src/game/map-art.js'
+import { TARGET_INSPECTION_PALETTE, flagFoldGuides, flagGeometry, forestDetailGeometry, forestLayout, fortBannerDetailGeometry, fortDetailGeometry, fullMapCitySymbolGeometry, fullMapVillageSymbolGeometry, mapCursorDetailGeometry, mountainDetailGeometry, mountainVariant, targetFortGeometry, targetHillClusterGeometry, targetMountainMassGeometry, targetMountainRangeGeometry, villageDetailGeometry } from '../src/game/map-art.js'
 
 test('mountain vector variants are deterministic and bounded',()=>{
   assert.deepEqual(mountainVariant(0),mountainVariant(0))
@@ -217,4 +217,15 @@ test('target cursor renderer is bracket-only with no inner rectangular box',()=>
   assert.match(block,/lineWidth=2\.35\*S/)
   assert.match(block,/lineWidth=1\.18\*S/)
   assert.doesNotMatch(block,/strokeRect/)
+})
+
+
+test('target mountain range geometry overlaps multiple masses instead of isolated icons',()=>{
+  for(let index=0;index<12;index++){
+    const range=targetMountainRangeGeometry(index)
+    assert.equal(range.length,3)
+    assert.ok(range[0].dx<0&&range[2].dx>0)
+    assert.ok(range.some((item)=>item.scale===1))
+    assert.ok(range.every((item)=>item.scale>=.7&&item.scale<=1))
+  }
 })

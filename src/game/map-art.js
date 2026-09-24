@@ -163,6 +163,30 @@ export function drawTargetMountainMass(r,x,y,index=0,scale=1){
   return true
 }
 
+export function targetMountainRangeGeometry(index=0){
+  const i=Math.abs(Math.floor(Number(index)||0))
+  const sway=(i%3)-1
+  return Object.freeze([
+    Object.freeze({dx:-12.5,dy:2.2+sway*.45,scale:.72,variant:i}),
+    Object.freeze({dx:0,dy:-1.8,scale:1,variant:i+1}),
+    Object.freeze({dx:13,dy:2.8-sway*.35,scale:.78,variant:i+2}),
+  ])
+}
+
+export function drawTargetMountainRange(r,x,y,index=0,scale=1){
+  const pieces=targetMountainRangeGeometry(index)
+  for(const piece of pieces){
+    drawTargetMountainMass(
+      r,
+      x+piece.dx*scale,
+      y+piece.dy*scale,
+      piece.variant,
+      scale*piece.scale,
+    )
+  }
+  return true
+}
+
 export function drawVectorMountain(r,x,y,index=0,scale=1,palette=MAP_ART_PALETTE){
   const c=r.ctx,S=r.S*scale,v=mountainVariant(index)
   c.save()
