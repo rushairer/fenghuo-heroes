@@ -2,7 +2,7 @@ export const WORLD_SCALE = 2
 export const WORLD_W = 640
 export const WORLD_H = 448
 export const MAP_VIEW_W = 320
-export const MAP_VIEW_H = 176
+export const MAP_VIEW_H = 156
 
 export function worldPoint(point) {
   return { x: Math.round(point.x * WORLD_SCALE), y: Math.round(point.y * WORLD_SCALE) }

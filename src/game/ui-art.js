@@ -70,3 +70,44 @@ export function drawPromptPlate(r,x,y,w=132,h=17,{
   c.restore()
   return true
 }
+
+
+export function strategyPanelGeometry(width,height){
+  const w=Math.max(24,Number(width)||24)
+  const h=Math.max(18,Number(height)||18)
+  return Object.freeze({width:w,height:h,outerInset:.5,goldInset:1.5,innerInset:4,corner:Math.min(5,Math.max(2.5,h*.08))})
+}
+
+export function drawStrategyPanel(r,x,y,w,h,fill='#020202',border='#b07118'){
+  const g=strategyPanelGeometry(w,h)
+  r.fillRect(x,y,g.width,g.height,fill)
+  r.strokeRect(x+.5,y+.5,g.width-1,g.height-1,'#170b07',1)
+  r.strokeRect(x+1.5,y+1.5,g.width-3,g.height-3,border,.75)
+  r.strokeRect(x+4,y+4,g.width-8,g.height-8,'#5a2b18',.45)
+  const c=g.corner
+  for(const [cx,cy,sx,sy] of [[x+2.5,y+2.5,1,1],[x+g.width-2.5,y+2.5,-1,1],[x+2.5,y+g.height-2.5,1,-1],[x+g.width-2.5,y+g.height-2.5,-1,-1]]){
+    r.line(cx,cy,cx+sx*c,cy,border,.55,.9)
+    r.line(cx,cy,cx,cy+sy*c,border,.55,.9)
+  }
+  return true
+}
+
+export function strategyTextWindowGeometry(width=320,height=68){
+  const w=Math.max(64,Number(width)||320),h=Math.max(40,Number(height)||68)
+  return Object.freeze({width:w,height:h,railHeight:5,paddingX:10,primaryY:14,secondaryY:41})
+}
+
+export function drawStrategyTextWindow(r,x=0,y=156,w=320,h=68){
+  const g=strategyTextWindowGeometry(w,h)
+  const rail=(yy,flip=false)=>{
+    r.fillRect(x,yy,g.width,g.railHeight,'#1d1a17')
+    r.line(x+1,yy+(flip?3.8:1.1),x+g.width-1,yy+(flip?3.8:1.1),'#eee9df',.45,.9)
+    r.line(x+1,yy+(flip?1.2:3.7),x+g.width-1,yy+(flip?1.2:3.7),'#6b6259',.45,.95)
+    for(let xx=x+3;xx<x+g.width-5;xx+=8){
+      const a=flip?yy+1.4:yy+3.6,b=flip?yy+3.6:yy+1.4
+      r.line(xx,a,xx+3,b,'#bcb5a9',.4,.8);r.line(xx+3,b,xx+6,a,'#4b443e',.4,.8)
+    }
+  }
+  r.fillRect(x,y,g.width,g.height,'#deddd8');rail(y,false);rail(y+g.height-g.railHeight,true)
+  return Object.freeze({...g,x,y,textX:x+g.paddingX,primaryTextY:y+g.primaryY,secondaryTextY:y+g.secondaryY})
+}

@@ -6,6 +6,7 @@ import { CHINESE_COPY_GAPS } from '../game/chinese-copy-gaps.js'
 import { drawVectorForest, drawVectorFort, drawVectorMountain } from '../game/map-art.js'
 import { inspectionCommandItems, inspectionCommandPath, isInspectionConfirmButton } from '../game/inspection-command-parity.js'
 import { adjustTaxRate } from '../game/tax-parity.js'
+import { drawStrategyPanel, drawStrategyTextWindow } from '../game/ui-art.js'
 import { TRANSPORT_LOAD_OPTIONS, transportEligibleDestinations, transportLoadStatus, transportTargetStatus } from '../game/transport-parity.js'
 import { MAP_VIEW_H, MAP_VIEW_W, WORLD_H, WORLD_W, cameraFor, cityWorldPoint, isVisible, toScreen, worldPoint } from '../game/world.js'
 import { drawWorldRiver } from '../game/world-art.js'
@@ -205,25 +206,22 @@ export class StrategyScene{
   drawMountain(x,y){drawVectorMountain(this.app.r,x,y,0)}
   drawForest(x,y){drawVectorForest(this.app.r,x,y,0)}
   drawCity(city,x,y){const rt=this.app.store.state.cities[city.id],f=FACTION_BY_ID[rt.owner]??FACTION_BY_ID.neutral;drawVectorFort(this.app.r,x,y,f.color,.7)}
-    drawDialog(){const r=this.app.r;r.fillRect(0,176,320,48,'#dedede');r.line(0,176,320,176,'#2b2018',2);r.line(0,179,320,179,'#8b6d45',1);const s=this.app.store.state,p=s.cursor,city=this.app.store.cityAt(p.x,p.y,12),ruler=FACTION_BY_ID[this.app.store.humanFaction]?.ruler??'';let line1='',line2='';if(this.stage==='survey'){line1=city?`${city.name}的情況。按 C 查看國力。`:'狀況視察：移動方框查看各地。';line2='A 統治國一覽　START 全體地圖　空白處 C 進入本月命令'}else if(this.stage==='command'){const locked=this.app.store.inspectionCategoryForActive();line1=locked?`${ruler}，本月執行「${CATEGORY_LABELS[locked]}」。`:monthlyCommandPrompt(ruler);line2=locked?'把方框移到本國城池按 C　START 結束本月':'把方框移到空白處按 C 決定 內政／外交／軍備'}else{line1=city?`行軍：${city.name}`:'行軍：選擇出發城。';line2='本國城池按 C 編成行軍　START 結束本月'}r.text(line1,12,187,9,'#171717','left','top',SERIF,'600');r.text(line2,12,207,6.5,'#423d37')}
-  drawCategory(){const r=this.app.r,ruler=FACTION_BY_ID[this.app.store.humanFaction]?.ruler??'';r.panel(78,54,164,91,'#000','#a86d14');r.text(monthlyCommandPrompt(ruler),160,64,9,'#f0e2bd','center','top',SERIF,'600');CATEGORIES.forEach((k,i)=>r.text(`${i===this.menuIndex?'▶':'　'}${CATEGORY_LABELS[k]}`,122,88+i*16,10,i===this.menuIndex?COLORS.cyan:'#e9e0c8'))}
-  drawTargetHint(){const r=this.app.r;r.panel(72,184,176,31,'#000','#9b6514');r.text(`${CATEGORY_LABELS[this.category]}：選擇本國城池`,160,192,8,COLORS.cyan,'center');r.text('C 決定　B 返回',160,205,6,'#9c927f','center')}
-  drawCityStatus(){const r=this.app.r,city=this.cityById(this.targetCity),rt=this.app.store.state.cities[this.targetCity],f=FACTION_BY_ID[rt?.owner]??FACTION_BY_ID.neutral;r.panel(54,38,212,126,'#020202','#b07118');r.text(city?.name??'',160,48,15,'#f0d477','center','top',SERIF,'700');r.text(f?.label??'',160,70,8,f?.color??'#fff','center');const rows=[['兵力',rt?.troops],['金',rt?.gold],['米',rt?.food],['產值',rt?.development],['統治',rt?.rule],['防衛',rt?.defense],['訓練',rt?.training]];rows.forEach(([label,value],i)=>{const col=i<4?0:1,row=col===0?i:i-4;r.text(label,75+col*101,91+row*15,7,'#9e947e');r.text(value??'—',139+col*101,91+row*15,7,'#eee2c3','right')});r.text(this.stage==='command'?'C 繼續選命令　B 返回':'B/C 返回',160,148,6,'#847b69','center')}
+  drawDialog(){const r=this.app.r,s=this.app.store.state,p=s.cursor,city=this.app.store.cityAt(p.x,p.y,12),ruler=FACTION_BY_ID[this.app.store.humanFaction]?.ruler??'';let line1='',line2='';if(this.stage==='survey'){line1=city?`${city.name}的情況。按 C 查看國力。`:'狀況視察：移動方框查看各地。';line2='A 統治國一覽　START 全體地圖　空白處 C 進入本月命令'}else if(this.stage==='command'){const locked=this.app.store.inspectionCategoryForActive();line1=locked?`${ruler}，本月執行「${CATEGORY_LABELS[locked]}」。`:monthlyCommandPrompt(ruler);line2=locked?'把方框移到本國城池按 C　START 結束本月':'把方框移到空白處按 C 決定 內政／外交／軍備'}else{line1=city?`行軍：${city.name}`:'行軍：選擇出發城。';line2='本國城池按 C 編成行軍　START 結束本月'}const box=drawStrategyTextWindow(r,0,MAP_VIEW_H,MAP_VIEW_W,224-MAP_VIEW_H);r.text(line1,box.textX,box.primaryTextY,9,'#171717','left','top',SERIF,'600');r.text(line2,box.textX,box.secondaryTextY,6.5,'#423d37')}
+  drawCategory(){const r=this.app.r,ruler=FACTION_BY_ID[this.app.store.humanFaction]?.ruler??'';drawStrategyPanel(r,78,54,164,91,'#000','#a86d14');r.text(monthlyCommandPrompt(ruler),160,64,9,'#f0e2bd','center','top',SERIF,'600');CATEGORIES.forEach((k,i)=>r.text(`${i===this.menuIndex?'▶':'　'}${CATEGORY_LABELS[k]}`,122,88+i*16,10,i===this.menuIndex?COLORS.cyan:'#e9e0c8'))}
+  drawTargetHint(){const r=this.app.r;drawStrategyPanel(r,72,184,176,31,'#000','#9b6514');r.text(`${CATEGORY_LABELS[this.category]}：選擇本國城池`,160,192,8,COLORS.cyan,'center');r.text('C 決定　B 返回',160,205,6,'#9c927f','center')}
+  drawCityStatus(){const r=this.app.r,city=this.cityById(this.targetCity),rt=this.app.store.state.cities[this.targetCity],f=FACTION_BY_ID[rt?.owner]??FACTION_BY_ID.neutral;drawStrategyPanel(r,54,38,212,126,'#020202','#b07118');r.text(city?.name??'',160,48,15,'#f0d477','center','top',SERIF,'700');r.text(f?.label??'',160,70,8,f?.color??'#fff','center');const rows=[['兵力',rt?.troops],['金',rt?.gold],['米',rt?.food],['產值',rt?.development],['統治',rt?.rule],['防衛',rt?.defense],['訓練',rt?.training]];rows.forEach(([label,value],i)=>{const col=i<4?0:1,row=col===0?i:i-4;r.text(label,75+col*101,91+row*15,7,'#9e947e');r.text(value??'—',139+col*101,91+row*15,7,'#eee2c3','right')});r.text(this.stage==='command'?'C 繼續選命令　B 返回':'B/C 返回',160,148,6,'#847b69','center')}
   drawCommands(){
     const r=this.app.r
     const items=inspectionCommandItems(this.category,this.commandSubmenu)
     const path=inspectionCommandPath(this.category,this.commandSubmenu).join(' · ')
     const h=35+items.length*14
     const y=Math.max(22,105-h/2)
-    const pointer=this.app.assets?.getForDisplay('ui.cursors.pointer',9,9)
-    r.panel(88,y,144,h,'#000','#9b6514',this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,88,y,144,h,'#000','#9b6514')
     r.text(`${this.cityById(this.targetCity)?.name??''} · ${path}`,160,y+8,7.5,'#e8cc73','center')
     items.forEach((item,i)=>{
       const active=i===this.menuIndex
       const rowY=y+24+i*14
-      if(active){
-        if(!pointer||!r.drawImageCentered(pointer,107,rowY+4,9,9))r.text('▶',102,rowY,7,COLORS.cyan)
-      }
+      if(active)r.text('▶',102,rowY,7,COLORS.cyan)
       r.text(item.label,119,rowY,8,active?COLORS.cyan:'#e8dfc8')
       if(item.kind==='submenu')r.text('›',213,rowY,8,active?COLORS.cyan:'#9c927f','right')
     })
@@ -231,7 +229,7 @@ export class StrategyScene{
   drawTaxRate(){
     const r=this.app.r
     const city=this.cityById(this.targetCity)
-    r.panel(84,66,152,91,'#000','#9b6514',this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,84,66,152,91,'#000','#9b6514')
     r.text(`${city?.name??'—'} · 稅率`,160,77,10,'#efd27d','center','top',SERIF,'700')
     r.text(`${this.taxRateDraft}%`,160,103,20,COLORS.cyan,'center','top',SERIF,'700')
     const previous=this.taxRateOriginal==null?'未設定':`${this.taxRateOriginal}%`
@@ -241,7 +239,7 @@ export class StrategyScene{
   drawTransportTargetHint(){
     const r=this.app.r
     const source=this.cityById(this.transportSource)
-    r.panel(52,181,216,37,'#000','#9b6514',this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,52,181,216,37,'#000','#9b6514')
     r.text(`運輸：${source?.name??'—'} → 選擇本國城`,160,189,7.5,COLORS.cyan,'center')
     r.text(this.transportHint||'C 決定　B 返回',160,203,6,'#b5a88b','center')
   }
@@ -250,7 +248,7 @@ export class StrategyScene{
     const source=this.cityById(this.transportSource)
     const destination=this.cityById(this.transportDestination)
     const runtime=this.app.store.state.cities[this.transportSource]
-    r.panel(75,47,170,128,'#000','#9b6514',this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6}))
+    drawStrategyPanel(r,75,47,170,128,'#000','#9b6514')
     r.text(`${source?.name??'—'} → ${destination?.name??'—'}`,160,58,9,'#efd27d','center','top',SERIF,'700')
     r.text(`所持　金${runtime?.gold??0}　米${runtime?.food??0}`,160,75,6.5,'#a99d82','center')
     TRANSPORT_LOAD_OPTIONS.forEach((option,index)=>{
@@ -262,11 +260,11 @@ export class StrategyScene{
     })
     r.text(this.transportHint||'↑↓ 選擇　C 決定　B 返回',160,157,6,'#b5a88b','center')
   }
-  drawMessage(){const r=this.app.r;r.panel(40,77,240,65,'#000','#b07118');r.wrapText(this.message,160,90,208,11,8,'#f0e4c5','center');r.text('A / B / C 關閉',160,126,6,'#8a806e','center')}
+  drawMessage(){const r=this.app.r;drawStrategyPanel(r,40,77,240,65,'#000','#b07118');r.wrapText(this.message,160,90,208,11,8,'#f0e4c5','center');r.text('A / B / C 關閉',160,126,6,'#8a806e','center')}
   drawInfo(){
     const r=this.app.r,s=this.app.store.state
     const panel=this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6})
-    r.panel(18,20,284,170,'#020202','#b07118',panel)
+    drawStrategyPanel(r,18,20,284,170,'#020202','#b07118',panel)
     const tabs=['統治國一覽','全體地圖','武將狀態']
     tabs.forEach((title,index)=>r.text(title,66+index*94,30,8,index===this.infoTab?COLORS.cyan:'#777','center'))
     r.line(28,45,292,45,'#7b4e12',1)
@@ -281,5 +279,5 @@ export class StrategyScene{
     }
     r.text('← → 切換　A/B/C 返回',160,176,6,'#887f6d','center')
   }
-  drawSave(){const r=this.app.r;r.panel(79,73,162,76,'#000','#b07118');r.text('是否保存遊戲？',160,84,10,'#eee2c3','center','top',SERIF,'600');['是','否'].forEach((v,i)=>r.text(`${i===this.saveIndex?'▶':'　'}${v}`,160,106+i*15,8,i===this.saveIndex?COLORS.cyan:'#d4c8a9','center'))}
+  drawSave(){const r=this.app.r;drawStrategyPanel(r,79,73,162,76,'#000','#b07118');r.text('是否保存遊戲？',160,84,10,'#eee2c3','center','top',SERIF,'600');['是','否'].forEach((v,i)=>r.text(`${i===this.saveIndex?'▶':'　'}${v}`,160,106+i*15,8,i===this.saveIndex?COLORS.cyan:'#d4c8a9','center'))}
 }
