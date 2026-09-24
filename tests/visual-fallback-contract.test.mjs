@@ -348,7 +348,7 @@ test('target inspection map uses dedicated earth-language vector symbols instead
   assert.match(source,/drawTargetHillCluster/)
   assert.match(source,/drawTargetInspectionFort/)
   assert.match(source,/drawTargetMapCursor/)
-  assert.match(source,/drawTargetMountainMass/)
+  assert.match(source,/drawTargetMountainRange/)
 })
 
 
