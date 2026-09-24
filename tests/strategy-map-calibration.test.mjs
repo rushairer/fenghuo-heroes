@@ -28,3 +28,11 @@ test('target landmark scales preserve compact forts and stronger natural masses'
   assert.ok(hill>=fort)
   assert.ok(c.village.inspectionScale>c.village.standardScale)
 })
+
+
+test('river presentation stays dominant without mutating the center path',()=>{
+  const c=TARGET_STRATEGY_CALIBRATION
+  assert.ok(c.river.inspectionWidth>=1.5)
+  assert.ok(c.river.inspectionWidth>c.river.standardWidth)
+  assert.ok(c.river.standardWidth>=1.3)
+})

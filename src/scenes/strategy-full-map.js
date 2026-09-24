@@ -122,8 +122,8 @@ export class StrategyScene extends OfficerStrategyScene {
     return drawProjectedRiver(this.app.r,{
       project:(point)=>fullMapPoint(point,bounds),
       clip:bounds,
-      outer:'#6f5837',
-      inner:'#064ac0',
+      outer:'#5e432b',
+      inner:'#073fb4',
     })
   }
 

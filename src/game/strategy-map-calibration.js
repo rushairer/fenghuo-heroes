@@ -16,8 +16,8 @@ export const TARGET_STRATEGY_CALIBRATION=Object.freeze({
     scale:1,
   }),
   river:Object.freeze({
-    inspectionWidth:1.32,
-    standardWidth:1.12,
+    inspectionWidth:1.62,
+    standardWidth:1.34,
   }),
   mountain:Object.freeze({
     inspectionScale:1.1,
