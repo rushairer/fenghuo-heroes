@@ -263,8 +263,7 @@ export class StrategyScene{
   drawMessage(){const r=this.app.r;drawStrategyPanel(r,40,77,240,65,'#000','#b07118');r.wrapText(this.message,160,90,208,11,8,'#f0e4c5','center');r.text('A / B / C 關閉',160,126,6,'#8a806e','center')}
   drawInfo(){
     const r=this.app.r,s=this.app.store.state
-    const panel=this.app.assets?.getNineSlice('ui.panels.large',{sourceSlice:32,destEdge:6})
-    drawStrategyPanel(r,18,20,284,170,'#020202','#b07118',panel)
+    drawStrategyPanel(r,18,20,284,170,'#020202','#b07118')
     const tabs=['統治國一覽','全體地圖','武將狀態']
     tabs.forEach((title,index)=>r.text(title,66+index*94,30,8,index===this.infoTab?COLORS.cyan:'#777','center'))
     r.line(28,45,292,45,'#7b4e12',1)

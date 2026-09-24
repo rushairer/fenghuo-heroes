@@ -41,3 +41,13 @@ test('scene visual assets may not bypass explicit HD-aware registry lookups',()=
   }
   assert.deepEqual(failures,[])
 })
+
+
+test('strategy scene chain cannot reintroduce generic UI raster assets',()=>{
+  const failures=[]
+  for(const {name,source} of sceneSources().filter(({name})=>name.startsWith('strategy'))){
+    const refs=[...source.matchAll(/this\.app\.assets/g)]
+    if(refs.length)failures.push(`${name}: ${refs.length} asset registry reference(s)`)
+  }
+  assert.deepEqual(failures,[])
+})

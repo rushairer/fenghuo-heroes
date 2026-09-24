@@ -61,6 +61,19 @@ Full-map visual language convergence:
 - the overview cursor now uses the same white bracket language;
 - overview river banks/water use the same brown/deep-blue hierarchy as the local map.
 
+Strategic UI residue pass — 2026-09-24:
+
+- root inspection remains a full 320×224 map-first state with no lower instruction panel;
+- command and march map states now reserve logical y=156..223 for a pale MD-style text band
+  rather than the former shallow 48px modern help strip;
+- strategy command, country, officer, full-map and march overlays share code-native vector
+  frames instead of the generic `ui.panels.*` / `ui.frames.*` raster family;
+- strategic pointers and march resource rows no longer depend on generic raster cursor/icons;
+- a source contract now forbids the strategy scene chain from reintroducing asset-registry UI
+  lookups, so this class of visual residue cannot silently return;
+- border ornament is still a clean-room structural approximation pending direct frame evidence,
+  and is not claimed pixel-perfect.
+
 This does **not** close camera/landmark, terrain, river, fort/flag or canonical map
 evidence work. Those remain open until more direct frames are measured. In particular,
 the 1.18× zoom and river-width factors are calibration hypotheses, not claimed original
