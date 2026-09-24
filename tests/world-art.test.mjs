@@ -8,8 +8,6 @@ import {
   riverEdgeScallops,
   projectRiverSurfaceMark,
   riverSurfaceMarks,
-  roadSegmentStyle,
-  uniqueRoadPairs,
   worldRiverBounds,
 } from '../src/game/world-art.js'
 
@@ -24,27 +22,6 @@ test('world river scaffold remains a single deterministic path',()=>{
   })
 })
 
-test('road segment style varies deterministically within narrow HD-safe bounds',()=>{
-  for(let index=0;index<16;index++){
-    const style=roadSegmentStyle(index)
-    assert.ok(style.width>=.48&&style.width<=.56)
-    assert.ok(style.alpha>=.34&&style.alpha<=.43)
-    assert.ok(style.shadowWidth>style.width)
-    assert.ok(style.highlightWidth<style.width)
-    assert.ok(style.highlightAlpha>0&&style.highlightAlpha<style.alpha)
-    assert.deepEqual(style,roadSegmentStyle(index))
-  }
-})
-
-
-test('road-pair extraction removes reverse duplicates without changing identities',()=>{
-  const pairs=uniqueRoadPairs([
-    {id:'a',neighbors:['b','c']},
-    {id:'b',neighbors:['a']},
-    {id:'c',neighbors:['a']},
-  ])
-  assert.deepEqual(pairs,[['a','b'],['a','c']])
-})
 
 
 test('river stroke style keeps bank water and highlight widths ordered',()=>{
@@ -136,4 +113,12 @@ test('river presentation keeps broad flat water and subordinate highlights',()=>
   assert.ok(world.highlightAlpha<=.18)
   assert.ok(overview.waterWidth>=4.5)
   assert.ok(overview.highlightAlpha<=.2)
+})
+
+
+test('retired visible-road helpers stay absent from world art',()=>{
+  const source=readFileSync(new URL('../src/game/world-art.js',import.meta.url),'utf8')
+  assert.doesNotMatch(source,/drawRoadNetwork/)
+  assert.doesNotMatch(source,/uniqueRoadPairs/)
+  assert.doesNotMatch(source,/roadSegmentStyle/)
 })

@@ -35,13 +35,14 @@ test('deep visual QA synthetic state remains explicitly marked as fixture data',
 })
 
 
-test('base strategy scene no longer carries rectangle-only mountain forest or city fallbacks',()=>{
+test('base strategy fallback cannot regress to generic map icons grid or prototype HUD',()=>{
   const source=read('src/scenes/strategy.js')
-  for(const symbol of ['drawVectorMountain','drawVectorForest','drawVectorFort']){
+  for(const symbol of ['drawTargetMountainRange','drawTargetHillCluster','drawTargetInspectionFort','drawTargetMapCursor']){
     assert.match(source,new RegExp(`\\b${symbol}\\b`))
   }
-  assert.doesNotMatch(source,/drawForest\(x,y\)\{const r=this\.app\.r;r\.fillRect/)
-  assert.doesNotMatch(source,/drawCity\(city,x,y\).*r\.fillRect\(x-4/)
+  assert.doesNotMatch(source,/drawVectorMountain|drawVectorForest|drawVectorFort/)
+  assert.doesNotMatch(source,/const grid=32/)
+  assert.doesNotMatch(source,/state\.year.*state\.month.*fillRect\(4,4,106,16/)
 })
 
 test('duel backdrop uses the vector arena compositor rather than block spectator rows',()=>{
@@ -306,7 +307,7 @@ test('strategy and full-map rivers share deterministic surface micro-reflections
   const source=read('src/game/world-art.js')
   assert.match(source,/riverSurfaceMarks/)
   const world=source.slice(source.indexOf('export function drawWorldRiver'),source.indexOf('export function drawProjectedRiver'))
-  const projected=source.slice(source.indexOf('export function drawProjectedRiver'),source.indexOf('export function roadSegmentStyle'))
+  const projected=source.slice(source.indexOf('export function drawProjectedRiver'))
   assert.match(world,/drawRiverSurfaceMarks/)
   assert.match(projected,/drawRiverSurfaceMarks/)
 })
@@ -453,4 +454,12 @@ test('full-map terrain ranges are clipped before the border and river pass',()=>
   const restore=source.indexOf('c.restore()',mountain)
   const frame=source.indexOf("r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)")
   assert.ok(terrainScale>=0&&clip>terrainScale&&mountain>clip&&restore>mountain&&frame>restore)
+})
+
+
+test('world-art module no longer ships visible-road rendering helpers',()=>{
+  const source=read('src/game/world-art.js')
+  assert.doesNotMatch(source,/drawRoadNetwork/)
+  assert.doesNotMatch(source,/uniqueRoadPairs/)
+  assert.doesNotMatch(source,/roadSegmentStyle/)
 })

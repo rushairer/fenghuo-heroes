@@ -2,7 +2,7 @@
 
 Status: active parity blocker.
 
-## Implementation status — 2026-09-22
+## Implementation status — 2026-09-24
 
 First structural correction is now implemented in the runtime:
 
@@ -16,7 +16,7 @@ First structural correction is now implemented in the runtime:
 
 Second visual calibration pass:
 
-- inspection-only camera density is now 1.18× and is strictly presentation-layer;
+- inspection-only camera density is now 1.20× and is strictly presentation-layer;
 - target inspection mountains/hills/forts/flags/cursor use one coherent vector palette;
 - ground texture uses deterministic non-tiled grain plus subtle earth etching;
 - the river keeps the same provisional center path while receiving broader, irregular
@@ -33,7 +33,7 @@ Fort/cursor silhouette convergence:
 
 River silhouette convergence:
 
-- shoreline modulation density increased from 9 to 15 deterministic samples;
+- shoreline sampling now uses 27 deterministic surface samples with denser alternating edge scallops;
 - alternating water-edge scallops create visible local inlets on both banks;
 - local and full-map rivers use the same irregularity model;
 - the canonical three-segment center path is unchanged.
@@ -41,9 +41,9 @@ River silhouette convergence:
 Mountain silhouette convergence:
 
 - the active strategy map no longer uses the generic three-triangle mountain icon;
-- target mountains are rendered as four-lobe continuous dark-brown masses with a broad base;
+- target mountains are grouped into overlapping three-mass ranges rather than isolated map icons;
 - ridge accents are subordinate to silhouette, reducing the previous icon/sticker appearance;
-- the full-map legend now uses the same target mountain mass renderer.
+- local and full-map views now share the same presentation-only mountain belts and sparse hill belts.
 
 Cross-state strategic map convergence:
 
@@ -76,7 +76,7 @@ Strategic UI residue pass — 2026-09-24:
 
 This does **not** close camera/landmark, terrain, river, fort/flag or canonical map
 evidence work. Those remain open until more direct frames are measured. In particular,
-the 1.18× zoom and river-width factors are calibration hypotheses, not claimed original
+the 1.20× zoom, presentation mountain belts and river-width factors are calibration hypotheses, not claimed original
 game constants.
 
 This ledger records observations from a user-supplied direct reference screenshot of
@@ -88,6 +88,43 @@ Current runtime screenshot measured in the review session: 2048x1019.
 
 These measurements describe the supplied images only; they are not canonical game
 coordinates.
+
+## 20-round map convergence — 2026-09-24
+
+This batch deliberately attacked structural similarity rather than decorative detail:
+
+1. extracted temporary geography from scene code into an explicit presentation-only module;
+2. generated deterministic mountain belts instead of maintaining scattered scene-local points;
+3. kept green hill/vegetation clusters sparse relative to the mountain field;
+4. introduced overlapping target mountain ranges so mountains read as terrain, not icons;
+5. increased deterministic land grain and added low-level mottle texture;
+6. widened the inspection river while keeping its center path untouched;
+7. reduced glossy river highlights and bright bank rings;
+8. increased deterministic shoreline samples and irregular edge scallops;
+9. changed water marks into alternating light/dark short strokes instead of a modern sheen;
+10. made the overview river consume the same flatter deep-blue presentation language;
+11. reduced inspection zoom slightly to 1.20 while strengthening natural-feature scale;
+12. made forts lower and more compact while enlarging the hot-pink flag relationship;
+13. simplified the cursor into pure white corner brackets with a lighter under-stroke;
+14. replaced broad soft relief blobs with more numerous smaller, subtler relief patches;
+15. clipped full-map terrain ranges to the map window before river/frame composition;
+16. removed retired visible-road rendering helpers entirely;
+17. added density auditing for the presentation terrain so large empty sand fields cannot silently return;
+18. replaced the base strategy fallback's debug grid/HUD/generic mountain/forest/fort language;
+19. added source contracts preventing generic map art, road helpers and presentation/canonical cross-contamination;
+20. updated this evidence ledger and the dedicated 20-round log with remaining blockers.
+
+These are visual/presentation convergence rounds. They do **not** fill the canonical Chinese-ROM coordinate ledger.
+
+### Remaining 1:1 blockers
+
+- direct Chinese-ROM capture of all 40 city marker centers;
+- verified village coverage and positions;
+- verified river/world geometry rather than the current presentation center path;
+- exact mountain/hill coverage derived from direct frame stitching;
+- camera scrolling/dead-zone behavior measured from gameplay footage;
+- original frame-by-frame flag animation and map-symbol timing;
+- exact Chinese-ROM typography, copy and spacing across command/status screens.
 
 ## High-confidence visual mismatches
 

@@ -52,3 +52,47 @@ export const PRESENTATION_HILL_CLUSTERS=sampleBelts(HILL_BELTS,{
   scaleVariance:.08,
   variantOffset:91,
 })
+
+
+export function presentationFeatureCounts({
+  x=0,
+  y=0,
+  width=640,
+  height=448,
+}={}){
+  const minX=Number(x)||0
+  const minY=Number(y)||0
+  const maxX=minX+Math.max(0,Number(width)||0)
+  const maxY=minY+Math.max(0,Number(height)||0)
+  const inside=(item)=>item.x>=minX&&item.x<=maxX&&item.y>=minY&&item.y<=maxY
+  return Object.freeze({
+    mountains:PRESENTATION_MOUNTAIN_RANGES.filter(inside).length,
+    hills:PRESENTATION_HILL_CLUSTERS.filter(inside).length,
+  })
+}
+
+export function presentationCoverageCells({
+  columns=4,
+  rows=3,
+  width=640,
+  height=448,
+}={}){
+  const cols=Math.max(1,Math.floor(Number(columns)||1))
+  const rowCount=Math.max(1,Math.floor(Number(rows)||1))
+  const w=Math.max(1,Number(width)||640)
+  const h=Math.max(1,Number(height)||448)
+  const cellW=w/cols
+  const cellH=h/rowCount
+  const cells=[]
+  for(let row=0;row<rowCount;row++){
+    for(let col=0;col<cols;col++){
+      const bounds={x:col*cellW,y:row*cellH,width:cellW,height:cellH}
+      cells.push(Object.freeze({
+        row,
+        col,
+        ...presentationFeatureCounts(bounds),
+      }))
+    }
+  }
+  return Object.freeze(cells)
+}

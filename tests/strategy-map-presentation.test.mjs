@@ -5,6 +5,8 @@ import {
   PRESENTATION_HILL_CLUSTERS,
   PRESENTATION_MOUNTAIN_RANGES,
   STRATEGY_PRESENTATION_GEOGRAPHY,
+  presentationCoverageCells,
+  presentationFeatureCounts,
 } from '../src/game/strategy-map-presentation.js'
 
 test('presentation geography is explicitly non-canonical',()=>{
@@ -27,4 +29,15 @@ test('presentation hills stay much sparser than mountain ranges',()=>{
 test('presentation geography cannot import canonical evidence or runtime scaffold data',()=>{
   const source=readFileSync(new URL('../src/game/strategy-map-presentation.js',import.meta.url),'utf8')
   assert.doesNotMatch(source,/canonical-map-evidence|runtime-map-scaffold|original-data/)
+})
+
+
+test('presentation density audit covers the world without large empty terrain cells',()=>{
+  const whole=presentationFeatureCounts()
+  assert.equal(whole.mountains,PRESENTATION_MOUNTAIN_RANGES.length)
+  assert.equal(whole.hills,PRESENTATION_HILL_CLUSTERS.length)
+  const cells=presentationCoverageCells({columns:4,rows:3})
+  assert.equal(cells.length,12)
+  assert.ok(cells.filter((cell)=>cell.mountains>0).length>=10)
+  assert.ok(cells.every((cell)=>cell.mountains+cell.hills>0))
 })
