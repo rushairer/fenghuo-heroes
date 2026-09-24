@@ -5,10 +5,10 @@ import { TARGET_STRATEGY_CALIBRATION, inspectionWorldViewport } from '../src/gam
 test('target strategy calibration remains inside the 320x224 logical frame',()=>{
   const c=TARGET_STRATEGY_CALIBRATION
   assert.equal(c.view.height,224)
-  assert.ok(c.view.scale>1&&c.view.scale<1.5)
+  assert.equal(c.view.scale,1.2)
   assert.ok(c.plaque.width<80&&c.plaque.height<24)
   assert.equal(c.cursor.width,c.cursor.height)
-  assert.ok(c.cursor.width>=16&&c.cursor.width<=20)
+  assert.equal(c.cursor.width,16)
 })
 
 test('inspection viewport density is derived without mutating world coordinates',()=>{
@@ -35,4 +35,14 @@ test('river presentation stays dominant without mutating the center path',()=>{
   assert.ok(c.river.inspectionWidth>=1.5)
   assert.ok(c.river.inspectionWidth>c.river.standardWidth)
   assert.ok(c.river.standardWidth>=1.3)
+})
+
+
+test('natural masses stay visually stronger than compact forts at target zoom',()=>{
+  const c=TARGET_STRATEGY_CALIBRATION
+  const mountain=c.mountain.inspectionScale*c.view.scale
+  const fort=c.fort.inspectionScale*c.view.scale
+  assert.ok(mountain>fort*1.15)
+  assert.ok(c.fort.inspectionScale<1)
+  assert.ok(c.village.inspectionScale<1)
 })

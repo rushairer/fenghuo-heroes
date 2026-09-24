@@ -443,3 +443,14 @@ test('river water uses subdued highlight rather than a glossy center stripe',()=
   assert.match(source,/highlightAlpha:pattern\?\.1:\.18/)
   assert.match(source,/const waterColor=pattern\?\?'#073fb4'/)
 })
+
+
+test('full-map terrain ranges are clipped before the border and river pass',()=>{
+  const source=read('src/scenes/strategy-full-map.js')
+  const terrainScale=source.indexOf('const terrainScale=bounds.w/WORLD_W')
+  const clip=source.indexOf('c.rect(bounds.x*S,bounds.y*S,bounds.w*S,bounds.h*S)',terrainScale)
+  const mountain=source.indexOf('drawTargetMountainRange(r,point.x,point.y',terrainScale)
+  const restore=source.indexOf('c.restore()',mountain)
+  const frame=source.indexOf("r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)")
+  assert.ok(terrainScale>=0&&clip>terrainScale&&mountain>clip&&restore>mountain&&frame>restore)
+})

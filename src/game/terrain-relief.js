@@ -1,9 +1,9 @@
 // Presentation-only terrain relief. These patches add large-scale depth to the
 // provisional/HD map surface but are NOT canonical geography evidence.
 export const TERRAIN_RELIEF_TONES=Object.freeze([
-  Object.freeze({dark:'rgba(91,63,38,.16)',light:'rgba(232,194,133,.12)'}),
-  Object.freeze({dark:'rgba(79,68,43,.13)',light:'rgba(210,184,125,.1)'}),
-  Object.freeze({dark:'rgba(111,70,39,.12)',light:'rgba(240,207,151,.09)'}),
+  Object.freeze({dark:'rgba(91,63,38,.09)',light:'rgba(232,194,133,.07)'}),
+  Object.freeze({dark:'rgba(79,68,43,.08)',light:'rgba(210,184,125,.06)'}),
+  Object.freeze({dark:'rgba(111,70,39,.075)',light:'rgba(240,207,151,.055)'}),
 ])
 
 export function createTerrainRelief({
@@ -23,8 +23,8 @@ export function createTerrainRelief({
   return Object.freeze(Array.from({length:n},(_,index)=>{
     const x=next()*w
     const y=next()*h
-    const rx=38+next()*78
-    const ry=20+next()*52
+    const rx=28+next()*56
+    const ry=14+next()*38
     const rotation=(next()-.5)*.9
     return Object.freeze({
       x:Math.round(x*100)/100,
@@ -115,6 +115,6 @@ export function drawProjectedTerrainRelief(r,patches,{
 export const WORLD_TERRAIN_RELIEF=createTerrainRelief({
   width:640,
   height:448,
-  count:22,
+  count:34,
   seed:0x31415926,
 })

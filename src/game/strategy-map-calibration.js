@@ -1,7 +1,7 @@
 export const TARGET_STRATEGY_CALIBRATION=Object.freeze({
   view:Object.freeze({
     height:224,
-    scale:1.24,
+    scale:1.2,
   }),
   plaque:Object.freeze({
     x:5,
@@ -11,8 +11,8 @@ export const TARGET_STRATEGY_CALIBRATION=Object.freeze({
     textSize:8,
   }),
   cursor:Object.freeze({
-    width:18,
-    height:18,
+    width:16,
+    height:16,
     scale:1,
   }),
   river:Object.freeze({
@@ -20,20 +20,20 @@ export const TARGET_STRATEGY_CALIBRATION=Object.freeze({
     standardWidth:1.34,
   }),
   mountain:Object.freeze({
-    inspectionScale:1.1,
-    standardScale:1.02,
+    inspectionScale:1.12,
+    standardScale:1.06,
   }),
   hill:Object.freeze({
-    inspectionScale:1.04,
-    standardScale:.92,
+    inspectionScale:.98,
+    standardScale:.9,
   }),
   fort:Object.freeze({
-    inspectionScale:1.03,
-    standardScale:.94,
+    inspectionScale:.92,
+    standardScale:.88,
   }),
   village:Object.freeze({
-    inspectionScale:1.02,
-    standardScale:.8,
+    inspectionScale:.94,
+    standardScale:.76,
   }),
   army:Object.freeze({
     inspectionScale:1,

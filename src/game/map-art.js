@@ -810,20 +810,20 @@ export function drawTargetHillCluster(r,x,y,index=0,scale=1){
 
 export function targetFortGeometry(){
   return Object.freeze({
-    ground:Object.freeze({x:0,y:6.2,rx:10.6,ry:2.6}),
-    wall:Object.freeze({x:-8,y:-2,w:16,h:8}),
-    keep:Object.freeze({x:-4.8,y:-7.5,w:9.6,h:7.2}),
+    ground:Object.freeze({x:0,y:5.8,rx:9.6,ry:2.35}),
+    wall:Object.freeze({x:-7,y:-1.6,w:14,h:7.2}),
+    keep:Object.freeze({x:-4.2,y:-7,w:8.4,h:6.7}),
     towers:Object.freeze([
-      Object.freeze({x:-8.5,y:-6,w:4.8,h:10}),
-      Object.freeze({x:3.7,y:-6,w:4.8,h:10}),
+      Object.freeze({x:-7.4,y:-5.5,w:4.2,h:9}),
+      Object.freeze({x:3.2,y:-5.5,w:4.2,h:9}),
     ]),
     roofs:Object.freeze([
-      Object.freeze({x:-6.1,y:-6.2,w:6.2,h:3}),
-      Object.freeze({x:0,y:-8.1,w:11.2,h:3.8}),
-      Object.freeze({x:6.1,y:-6.2,w:6.2,h:3}),
+      Object.freeze({x:-5.4,y:-5.7,w:5.6,h:2.7}),
+      Object.freeze({x:0,y:-7.6,w:9.8,h:3.4}),
+      Object.freeze({x:5.4,y:-5.7,w:5.6,h:2.7}),
     ]),
-    gate:Object.freeze({x:-1.7,y:1.2,w:3.4,h:4.8}),
-    banner:Object.freeze({poleX:4.2,poleTop:-16.2,poleBottom:-7.3,flagRight:12.2,flagTop:-15.7,flagBottom:-10.4}),
+    gate:Object.freeze({x:-1.5,y:1,w:3,h:4.4}),
+    banner:Object.freeze({poleX:3.8,poleTop:-16.4,poleBottom:-6.8,flagRight:13.2,flagTop:-15.8,flagBottom:-10.1}),
   })
 }
 
@@ -859,10 +859,10 @@ export function drawTargetInspectionFort(r,x,y,factionColor='#888',scale=1){
   c.strokeStyle=p.fortLight
   c.lineWidth=.5*S
   c.beginPath()
-  c.moveTo(-7.2*S,-.5*S)
-  c.lineTo(7.2*S,-.5*S)
-  c.moveTo(-4.1*S,-6.2*S)
-  c.lineTo(4.1*S,-6.2*S)
+  c.moveTo(-6.2*S,-.25*S)
+  c.lineTo(6.2*S,-.25*S)
+  c.moveTo(-3.6*S,-5.8*S)
+  c.lineTo(3.6*S,-5.8*S)
   c.stroke()
 
   c.fillStyle='#21150f'
@@ -880,17 +880,17 @@ export function drawTargetInspectionFort(r,x,y,factionColor='#888',scale=1){
   c.fillStyle=p.flag
   c.beginPath()
   c.moveTo(g.banner.poleX*S,g.banner.flagTop*S)
-  c.quadraticCurveTo(8.7*S,-15.2*S,g.banner.flagRight*S,-13.4*S)
-  c.lineTo(10.8*S,g.banner.flagBottom*S)
-  c.quadraticCurveTo(7.5*S,-11.8*S,g.banner.poleX*S,-12.1*S)
+  c.quadraticCurveTo(9.2*S,-15.4*S,g.banner.flagRight*S,-13.6*S)
+  c.lineTo(11.2*S,g.banner.flagBottom*S)
+  c.quadraticCurveTo(7.7*S,-11.4*S,g.banner.poleX*S,-11.9*S)
   c.closePath()
   c.fill()
 
   c.strokeStyle=p.flagHighlight
   c.lineWidth=.48*S
   c.beginPath()
-  c.moveTo(5.1*S,-14.9*S)
-  c.lineTo(10.8*S,-13.4*S)
+  c.moveTo(4.8*S,-15*S)
+  c.lineTo(11.6*S,-13.55*S)
   c.stroke()
 
   c.strokeStyle='rgba(237,204,150,.42)'
@@ -918,16 +918,14 @@ export function drawTargetMapCursor(r,x,y,{width=19,height=15,scale=1}={}){
   c.translate(x*r.S,y*r.S)
   c.lineCap='square'
 
-  c.strokeStyle='rgba(34,21,14,.76)'
-  c.lineWidth=2.35*S
+  c.strokeStyle='rgba(34,21,14,.68)'
+  c.lineWidth=1.72*S
   traceCorners()
 
   c.strokeStyle=TARGET_INSPECTION_PALETTE.cursor
-  c.lineWidth=1.18*S
+  c.lineWidth=1.22*S
   traceCorners()
 
-  c.fillStyle=TARGET_INSPECTION_PALETTE.cursor
-  for(const [sx,sy] of corners)c.fillRect((sx*w-.55)*S,(sy*h-.55)*S,1.1*S,1.1*S)
   c.restore()
   return true
 }

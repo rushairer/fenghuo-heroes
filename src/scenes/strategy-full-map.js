@@ -69,6 +69,10 @@ export class StrategyScene extends OfficerStrategyScene {
       clip:bounds,
     })
     const terrainScale=bounds.w/WORLD_W
+    c.save()
+    c.beginPath()
+    c.rect(bounds.x*S,bounds.y*S,bounds.w*S,bounds.h*S)
+    c.clip()
     for(const feature of PRESENTATION_MOUNTAIN_RANGES){
       const point=fullMapPoint(feature,bounds)
       drawTargetMountainRange(r,point.x,point.y,feature.variant,terrainScale*.82*feature.scale)
@@ -77,6 +81,7 @@ export class StrategyScene extends OfficerStrategyScene {
       const point=fullMapPoint(feature,bounds)
       drawTargetHillCluster(r,point.x,point.y,feature.variant,terrainScale*.88*feature.scale)
     }
+    c.restore()
 
     r.strokeRect(bounds.x,bounds.y,bounds.w,bounds.h,'#2d1b0e',1)
 

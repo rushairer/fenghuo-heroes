@@ -22,3 +22,10 @@ test('terrain relief patches stay finite and use declared tone indexes',()=>{
     assert.ok(item.contourCount>=2)
   }
 })
+
+
+test('world relief uses many smaller subtle patches instead of broad modern gradients',async()=>{
+  const { WORLD_TERRAIN_RELIEF }=await import('../src/game/terrain-relief.js')
+  assert.equal(WORLD_TERRAIN_RELIEF.length,34)
+  assert.ok(WORLD_TERRAIN_RELIEF.every((item)=>item.rx<=84&&item.ry<=52))
+})
