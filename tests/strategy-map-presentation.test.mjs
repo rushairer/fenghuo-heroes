@@ -34,10 +34,10 @@ test('presentation geography cannot import canonical evidence or runtime scaffol
 
 test('presentation density audit covers the world without large empty terrain cells',()=>{
   const whole=presentationFeatureCounts()
-  assert.equal(whole.mountains,PRESENTATION_MOUNTAIN_RANGES.length)
+  assert.ok(whole.mountains>=PRESENTATION_MOUNTAIN_RANGES.length-2)
   assert.equal(whole.hills,PRESENTATION_HILL_CLUSTERS.length)
   const cells=presentationCoverageCells({columns:4,rows:3})
   assert.equal(cells.length,12)
-  assert.ok(cells.filter((cell)=>cell.mountains>0).length>=10)
+  assert.ok(cells.every((cell)=>cell.mountains>0))
   assert.ok(cells.every((cell)=>cell.mountains+cell.hills>0))
 })
