@@ -106,13 +106,15 @@ export class GameStore {
   }
   finishCurrentTurn(){this.assertState();const previousMode=this.mode,previousFaction=this.humanFaction;if(!this.isLastHumanTurn){this.state.activeHumanIndex+=1;this.addLog(`${this.state.year}年${this.state.month}月：輪到 ${this.humanFaction}。`);this.save();return{monthAdvanced:false,previousMode,previousFaction,nextFaction:this.humanFaction}}this.state.activeHumanIndex=0;this.state.month+=1;if(this.state.month>12){this.state.month=1;this.state.year+=1}this.state.inspectionCategories={};this.addLog(`${this.state.year}年${this.state.month}月 ${this.mode==='inspection'?'視察情況':'行軍'}`);this.save();return{monthAdvanced:true,previousMode,previousFaction,nextFaction:this.humanFaction}}
   advanceMonth(){this.assertState();this.state.activeHumanIndex=this.state.humanFactions.length-1;return this.finishCurrentTurn()}
-  save(){if(this.state&&this.storage?.setItem)this.storage.setItem(SAVE_KEY,JSON.stringify(this.state))}
+  save(){if(this.state&&this.storage?.setItem){const payload={...this.state,pendingConflict:this.pendingConflict??null};this.storage.setItem(SAVE_KEY,JSON.stringify(payload))}}
   load(){
     if(!this.storage?.getItem)return false
     const raw=this.storage.getItem(SAVE_KEY)
     if(!raw)return false
     try{
       const parsed=JSON.parse(raw)
+      const savedConflict=parsed.pendingConflict&&typeof parsed.pendingConflict==='object'?parsed.pendingConflict:null
+      delete parsed.pendingConflict
       // Saves created before map-profile tagging are compatible only while the
       // scaffold remains active. Never reinterpret scaffold city IDs as a
       // future canonical profile.
@@ -129,7 +131,7 @@ export class GameStore {
       if(!this.state.inspectionCategories)this.state.inspectionCategories={}
       if(!this.state.openingRosters)this.state.openingRosters=openingRosters(this.state.scenarioYear)
       if(!Number.isInteger(this.state.activeHumanIndex))this.state.activeHumanIndex=0
-      this.pendingConflict=null
+      this.pendingConflict=savedConflict
       return Boolean(this.state?.cities&&this.state?.humanFactions)
     }catch{
       this.storage.removeItem?.(SAVE_KEY)
