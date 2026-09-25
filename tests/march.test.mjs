@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
-import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginSiegeFromArmy,cancelSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
+import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginFieldBattleFromArmies,beginSiegeFromArmy,cancelFieldBattleFromArmies,cancelSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { cityWorldPoint } from '../src/game/world.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
@@ -204,4 +204,45 @@ test('march execution reports elapsed calendar days separately from route steps'
   assert.equal(event.daysElapsed,1)
   assert.equal(army.routeIndex,1)
   assert.equal(army.food,389)
+})
+
+
+test('adjacent enemy armies enter a persistent field-battle conflict without fake casualties',()=>{
+  const mem=new MemoryStorage()
+  const s=new GameStore(mem)
+  s.newGame({scenarioYear:189,humanFactions:['cao']})
+  s.finishCurrentTurn()
+  const start=cityWorldPoint(city('xuchang'))
+  const own=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:1200,food:400,gold:0,officerNames:['曹操','夏候惇']})
+  const enemy={id:'enemy-field',faction:'liu',from:'xinye',x:start.x+8,y:start.y,route:[{x:start.x+8,y:start.y}],routeIndex:0,troops:900,food:300,gold:0,officerCount:2,officerNames:['劉備','關羽'],dailyFood:11,starving:false,status:'waiting'}
+  s.state.armies.push(enemy)
+  const before=[own.troops,enemy.troops]
+  const conflict=beginFieldBattleFromArmies(s,own.id,enemy.id)
+  assert.equal(conflict.kind,'field')
+  assert.equal(conflict.attackerArmyId,own.id)
+  assert.equal(conflict.defenderArmyId,enemy.id)
+  assert.equal(own.status,'engaged')
+  assert.equal(enemy.status,'engaged')
+  assert.deepEqual([own.troops,enemy.troops],before)
+
+  const loaded=new GameStore(mem)
+  assert.equal(loaded.load(),true)
+  assert.equal(loaded.pendingConflict?.kind,'field')
+  assert.equal(loaded.pendingConflict?.attackerArmyId,own.id)
+})
+
+test('field battle cancel restores pre-battle army statuses without changing troops',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const own=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:800,food:200,gold:0})
+  own.status='waiting'
+  const enemy={id:'enemy-cancel',faction:'liu',from:'xinye',x:start.x+8,y:start.y,route:[{x:start.x+8,y:start.y}],routeIndex:0,troops:700,food:200,gold:0,officerCount:1,officerNames:['劉備'],dailyFood:8,starving:false,status:'marching'}
+  s.state.armies.push(enemy)
+  const before=[own.troops,enemy.troops]
+  beginFieldBattleFromArmies(s,own.id,enemy.id)
+  assert.equal(cancelFieldBattleFromArmies(s),true)
+  assert.equal(s.pendingConflict,null)
+  assert.equal(own.status,'waiting')
+  assert.equal(enemy.status,'marching')
+  assert.deepEqual([own.troops,enemy.troops],before)
 })
