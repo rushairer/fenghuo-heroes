@@ -6,6 +6,7 @@ import {
   commandWindowPausesBattle,
   fieldBattleCommandAvailable,
   fieldBattleInputAction,
+  fieldBattleOrder,
 } from '../src/game/field-battle-parity.js'
 
 test('field battle A B C controls follow the documented window semantics',()=>{
@@ -37,4 +38,13 @@ test('retreat timing stays explicitly unmeasured instead of inventing a duration
   assert.equal(fieldBattleCommandAvailable('retreat'),false)
   assert.equal(fieldBattleCommandAvailable('retreat',{retreatUnlocked:true}),true)
   assert.equal(fieldBattleCommandAvailable('wait'),true)
+})
+
+
+test('field battle orders preserve only evidence-backed command intent',()=>{
+  assert.deepEqual(fieldBattleOrder('enemy-commander'),{commandId:'enemy-commander'})
+  assert.deepEqual(fieldBattleOrder('wait'),{commandId:'wait'})
+  assert.equal(fieldBattleOrder('retreat'),null)
+  assert.deepEqual(fieldBattleOrder('retreat',{retreatUnlocked:true}),{commandId:'retreat'})
+  assert.equal(fieldBattleOrder('invented-command'),null)
 })
