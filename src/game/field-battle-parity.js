@@ -48,3 +48,9 @@ export function fieldBattleCommandAvailable(commandId,{retreatUnlocked=false}={}
   if(command.id==='retreat')return Boolean(retreatUnlocked)
   return true
 }
+
+
+export function fieldBattleOrder(commandId,{retreatUnlocked=false}={}) {
+  if(!fieldBattleCommandAvailable(commandId,{retreatUnlocked}))return null
+  return Object.freeze({commandId})
+}
