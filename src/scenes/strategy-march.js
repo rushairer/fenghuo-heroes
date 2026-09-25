@@ -2,7 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { drawStrategyPanel, drawStrategyTextWindow } from '../game/ui-art.js'
-import { advanceMarchArmies,armyAt,beginSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../game/march.js'
+import { advanceMarchArmies,armyAt,beginFieldBattleFromArmies,beginSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../game/march.js'
 import { MARCH_RUNTIME_PROJECTION } from '../game/march-runtime-projection.js'
 import { MAP_VIEW_H, MAP_VIEW_W, cameraFor,cityWorldPoint,isVisible,toScreen } from '../game/world.js'
 import { StrategyScene as BaseStrategyScene } from './strategy.js'
@@ -49,9 +49,15 @@ export class StrategyScene extends BaseStrategyScene{
     if(action==='attack'){
       const target=enemyArmyNearArmy(this.app.store,army.id)
       if(!target){this.app.audio.alert();return}
-      this.message='「攻擊」僅在敵行軍部隊鄰接時出現已按原作收口；部隊戰畫面與結算仍待校準，本次不改變兵力。'
-      this.view='message'
-      this.app.audio.alert()
+      try{
+        beginFieldBattleFromArmies(this.app.store,army.id,target.id)
+        this.app.audio.confirm()
+        this.app.go('field-battle')
+      }catch(error){
+        this.message=error instanceof Error?error.message:'無法進入部隊戰。'
+        this.view='message'
+        this.app.audio.alert()
+      }
       return
     }
     if(action==='siege'){
