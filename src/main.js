@@ -7,6 +7,7 @@ import { applyVisualQaState, initialSceneForVisualQa } from './game/qa-state.js'
 import { makeRenderer } from './game/render.js'
 import { GameStore } from './game/store.js'
 import { DuelScene } from './scenes/duel.js'
+import { FieldBattleScene } from './scenes/field-battle.js'
 import { PlayerCountScene } from './scenes/player-count.js'
 import { SetupScene } from './scenes/setup.js'
 import { SiegeScene } from './scenes/siege.js'
@@ -56,6 +57,8 @@ class App {
   }
 
   go(name,{force=false}={}) {
+    if(name==='strategy'&&this.store.pendingConflict?.kind==='field')name='field-battle'
+    if(name==='strategy'&&this.store.pendingConflict?.kind==='siege')name='siege'
     const fromStrategy=this.scene instanceof StrategyScene
     if(name==='title'&&shouldBlockTitleNavigation({
       hasGame:this.store.hasGame(),
@@ -70,6 +73,7 @@ class App {
       strategy:StrategyScene,
       siege:SiegeScene,
       duel:DuelScene,
+      'field-battle':FieldBattleScene,
     }
     const Scene=scenes[name]
     if(!Scene)throw new Error(`Unknown scene ${name}`)
