@@ -35,3 +35,13 @@ This is intentionally a **contract**, not a fabricated battle engine. It does no
 - collision, capture or victory formulas.
 
 Those are required before the runtime real-time battle scene can be called 1:1.
+
+
+## Runtime integration — 2026-09-25
+
+- 行軍「攻擊」對鄰接敵行軍部隊現在會立即建立 `field` conflict 並進入部隊戰。
+- 戰鬥準備復用「普通／快速」速度選擇與每部隊最多 15 小隊的已確認邊界。
+- runtime 已接入 A=雙方戰力、B=關閉窗口、C=命令窗口、窗口外上下捲動畫面。
+- 方向移動、向敵總大將移動與待機只保存命令語義；未校準速度、碰撞、傷害不做推測。
+- 退卻仍保持鎖定，直到取得「戰鬥進行一段時間後」的精確解鎖時機。
+- 本階段不改兵力、不判勝負、不修改城池歸屬。
