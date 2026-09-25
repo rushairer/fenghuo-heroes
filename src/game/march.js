@@ -267,3 +267,56 @@ export function cancelSiegeFromArmy(store) {
   store.save()
   return true
 }
+
+
+export function beginFieldBattleFromArmies(store, attackerArmyId, defenderArmyId) {
+  const armies=ensureMarchState(store)
+  const attacker=armies.find((item)=>item.id===attackerArmyId&&item.faction===store.humanFaction)
+  const defender=armies.find((item)=>item.id===defenderArmyId&&item.faction!==store.humanFaction)
+  if(!attacker||!defender)throw new Error('目前無可攻擊的敵行軍部隊。')
+  if(store.pendingConflict)throw new Error('已有尚未結束的戰鬥。')
+  const dx=Math.abs(defender.x-attacker.x)
+  const dy=Math.abs(defender.y-attacker.y)
+  if(Math.max(dx,dy)===0||Math.max(dx,dy)>MARCH_ADJACENCY_STEP)throw new Error('敵部隊尚未進入可攻擊範圍。')
+
+  const previousArmyStatuses=Object.freeze({
+    [attacker.id]:attacker.status??'waiting',
+    [defender.id]:defender.status??'waiting',
+  })
+  attacker.status='engaged'
+  defender.status='engaged'
+  store.pendingConflict={
+    kind:'field',
+    armyId:attacker.id,
+    attackerArmyId:attacker.id,
+    defenderArmyId:defender.id,
+    from:attacker.from,
+    attacker:attacker.faction,
+    defender:defender.faction,
+    attackerTroops:attacker.troops,
+    defenderTroops:defender.troops,
+    attackerOfficers:[...(attacker.officerNames??[])],
+    defenderOfficers:[...(defender.officerNames??[])],
+    previousArmyStatuses,
+    battleOrder:null,
+    battleSpeed:null,
+  }
+  store.addLog('與敵行軍部隊接觸，進入部隊戰。')
+  store.save()
+  return store.pendingConflict
+}
+
+export function cancelFieldBattleFromArmies(store) {
+  const conflict=store.pendingConflict
+  if(!conflict||conflict.kind!=='field')return false
+  const statuses=conflict.previousArmyStatuses??{}
+  for(const army of ensureMarchState(store)){
+    if(army.id===conflict.attackerArmyId||army.id===conflict.defenderArmyId){
+      army.status=statuses[army.id]??'waiting'
+    }
+  }
+  store.pendingConflict=null
+  store.addLog('部隊戰中止；未套用未校準的戰鬥結果。')
+  store.save()
+  return true
+}
