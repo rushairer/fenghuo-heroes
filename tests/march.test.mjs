@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
-import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginFieldBattleFromArmies,beginSiegeFromArmy,cancelFieldBattleFromArmies,cancelSiegeFromArmy,dailyFoodFor,enemyArmyNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
+import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginFieldBattleFromArmies,beginSiegeFromArmy,cancelFieldBattleFromArmies,cancelSiegeFromArmy,dailyFoodFor,deployedOfficerNames,enemyArmyNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { cityWorldPoint } from '../src/game/world.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
@@ -245,4 +245,42 @@ test('field battle cancel restores pre-battle army statuses without changing tro
   assert.equal(own.status,'waiting')
   assert.equal(enemy.status,'marching')
   assert.deepEqual([own.troops,enemy.troops],before)
+})
+
+
+test('same officer cannot be deployed into two armies at once',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:500,food:100,gold:0,officerNames:['曹操']})
+  assert.equal(deployedOfficerNames(s).has('曹操'),true)
+  assert.throws(
+    ()=>queueMarch(s,{from:'xuchang',route:[start,{x:start.x,y:start.y+8}],troops:500,food:100,gold:0,officerNames:['曹操']}),
+    /已隨其他部隊出陣/,
+  )
+})
+
+test('engaged and besieging armies cannot be rerouted',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const army=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:500,food:100,gold:0,officerNames:['曹操']})
+  for(const status of ['engaged','besieging']){
+    army.status=status
+    assert.throws(
+      ()=>rerouteArmy(s,army.id,[{x:army.x,y:army.y},{x:army.x+8,y:army.y}]),
+      /戰鬥中的部隊不能變更/,
+    )
+  }
+})
+
+test('cancelled siege restores the exact pre-siege army status',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const target=cityWorldPoint(city('xinye'))
+  const army=queueMarch(s,{from:'xuchang',route:[start,target],troops:1200,food:400,gold:0,officerNames:['曹操']})
+  advanceMarchArmies(s,1)
+  army.status='marching'
+  beginSiegeFromArmy(s,army.id,'xinye')
+  assert.equal(army.status,'besieging')
+  cancelSiegeFromArmy(s)
+  assert.equal(army.status,'marching')
 })
