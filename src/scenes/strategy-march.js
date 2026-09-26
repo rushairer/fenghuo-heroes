@@ -74,6 +74,11 @@ export class StrategyScene extends BaseStrategyScene{
       }
       return
     }
+    if(action==='end'){
+      this.marchArmyId=null
+      this.requestFinishTurn()
+      return
+    }
     this.view='map'
     this.app.audio.confirm()
   }
