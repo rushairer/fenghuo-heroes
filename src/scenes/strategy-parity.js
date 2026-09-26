@@ -1,8 +1,9 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
+import { openingOfficerListForCity } from '../game/officer-roster.js'
 import { drawStrategyPanel } from '../game/ui-art.js'
-import { dailyFoodFor, queueMarch, rerouteArmy } from '../game/march.js'
+import { dailyFoodFor, deployedOfficerNames, queueMarch, rerouteArmy } from '../game/march.js'
 import { foodForDays, maxFoodDaysForStock } from '../game/parity.js'
 import { cityWorldPoint } from '../game/world.js'
 import { StrategyScene as MarchStrategyScene } from './strategy-march.js'
@@ -47,11 +48,14 @@ export class StrategyScene extends MarchStrategyScene {
   }
 
   availableOfficerNames() {
-    const store = this.app.store
-    const roster = store.state.openingRosters?.[store.humanFaction]
-    if (roster) return [roster.ruler, ...(roster.officers ?? [])].filter(Boolean)
-    const fallbackRuler = FACTION_BY_ID[store.humanFaction]?.ruler
-    return fallbackRuler ? [fallbackRuler] : []
+    const store=this.app.store
+    const projection=openingOfficerListForCity(store,this.marchFrom)
+    const deployed=deployedOfficerNames(store,store.humanFaction)
+    const names=projection.rows.map((row)=>row.name).filter((name)=>name&&!deployed.has(name))
+    if(names.length)return names
+    if(projection.rows.length)return []
+    const fallbackRuler=FACTION_BY_ID[store.humanFaction]?.ruler
+    return fallbackRuler&&!deployed.has(fallbackRuler)?[fallbackRuler]:[]
   }
 
   officerCount() {
@@ -114,7 +118,15 @@ export class StrategyScene extends MarchStrategyScene {
       this.app.audio.cancel()
       return
     }
-    if ((b === 'C' || b === 'A' || b === 'START') && this.composeFocus === 4) this.beginNewMarchRoute()
+    if ((b === 'C' || b === 'A' || b === 'START') && this.composeFocus === 4) {
+      if(!this.selectedOfficerNames.length){
+        this.message='沒有可出陣的武將。已隨其他部隊出陣的武將不能重複編入。'
+        this.view='message'
+        this.app.audio.alert()
+        return
+      }
+      this.beginNewMarchRoute()
+    }
   }
 
   updateMarchOfficers(input) {
