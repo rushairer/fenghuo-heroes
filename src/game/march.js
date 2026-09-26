@@ -15,6 +15,18 @@ export function dailyFoodFor(troops, officerCount = 1) {
   return Math.floor(Math.max(0, troops) / 100) + Math.max(0, Math.floor(officerCount))
 }
 
+export function deployedOfficerNames(store, faction = store?.humanFaction) {
+  const names=new Set()
+  for(const army of ensureMarchState(store)){
+    if(army.faction!==faction)continue
+    for(const name of army.officerNames??[]){
+      const normalized=String(name??'').trim()
+      if(normalized)names.add(normalized)
+    }
+  }
+  return names
+}
+
 export function armyAt(store, x, y, tolerance = 10, faction = store.humanFaction) {
   return ensureMarchState(store).find((army) =>
     army.faction === faction && Math.abs(army.x - x) <= tolerance && Math.abs(army.y - y) <= tolerance
@@ -97,6 +109,9 @@ export function queueMarch(store, {
   const names = Array.isArray(officerNames)
     ? [...new Set(officerNames.map((name) => String(name).trim()).filter(Boolean))]
     : []
+  const deployed=deployedOfficerNames(store,store.humanFaction)
+  const duplicate=names.find((name)=>deployed.has(name))
+  if(duplicate)throw new Error(`${duplicate}已隨其他部隊出陣。`)
   const nOfficers = Math.max(1, names.length || Math.floor(officerCount))
   const nTroops = clamp(Math.floor(troops), 100, Math.max(100, source.troops - 100))
   const nFood = clamp(Math.floor(food), 0, source.food)
@@ -143,6 +158,7 @@ export function queueMarch(store, {
 export function rerouteArmy(store, armyId, route) {
   const army = ensureMarchState(store).find((item) => item.id === armyId && item.faction === store.humanFaction)
   if (!army) throw new Error('找不到可操作的行軍部隊。')
+  if(army.status==='engaged'||army.status==='besieging')throw new Error('戰鬥中的部隊不能變更行軍路線。')
   if (!Array.isArray(route) || route.length < 2) throw new Error('請指定新的行軍路線。')
   army.route = [
     { x: army.x, y: army.y },
@@ -234,15 +250,18 @@ export function enemyCityNearArmy(store, armyId, tolerance = MARCH_RUNTIME_PROJE
 }
 
 export function beginSiegeFromArmy(store, armyId, targetCityId) {
+  if(store.pendingConflict)throw new Error('已有尚未結束的戰鬥。')
   const armies = ensureMarchState(store)
   const army = armies.find((item) => item.id === armyId && item.faction === store.humanFaction)
   const target = store.state.cities[targetCityId]
   if (!army || !target || target.owner === army.faction) throw new Error('目前無可攻擊的敵城。')
   const near = enemyCityNearArmy(store, armyId)
   if (!near || near.id !== targetCityId) throw new Error('部隊尚未接近敵城。')
+  const previousArmyStatus=army.status??'waiting'
   army.status = 'besieging'
   store.pendingConflict = {
     kind: 'siege',
+    previousArmyStatus,
     armyId: army.id,
     from: army.from,
     target: targetCityId,
@@ -261,7 +280,7 @@ export function cancelSiegeFromArmy(store) {
   const conflict = store.pendingConflict
   if (!conflict || conflict.kind !== 'siege') return false
   const army = ensureMarchState(store).find((item) => item.id === conflict.armyId)
-  if (army) army.status = 'waiting'
+  if (army) army.status = conflict.previousArmyStatus ?? 'waiting'
   store.pendingConflict = null
   store.addLog(`${store.mapProfile?.cityById?.[conflict.target]?.name ?? conflict.target}中止攻城。`)
   store.save()
