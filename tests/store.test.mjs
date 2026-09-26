@@ -129,3 +129,30 @@ test('save data from a different map profile is never reinterpreted as the activ
   assert.equal(loaded.load(),false)
   assert.equal(loaded.state,null)
 })
+
+
+test('active battle blocks strategic turn advancement',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['liu']})
+  const month=s.state.month
+  s.pendingConflict={kind:'field',attackerArmyId:'a',defenderArmyId:'b'}
+  assert.throws(()=>s.finishCurrentTurn(),/戰鬥尚未結束/)
+  assert.equal(s.state.month,month)
+})
+
+test('load discards stale conflicts and recovers orphaned battle army statuses',()=>{
+  const mem=new MemoryStorage()
+  const s=new GameStore(mem)
+  s.newGame({humanFactions:['liu']})
+  s.state.armies=[{
+    id:'orphan',faction:'liu',from:'x',x:8,y:8,route:[{x:8,y:8}],routeIndex:0,
+    troops:100,food:10,gold:0,officerCount:1,officerNames:['劉備'],status:'engaged',
+  }]
+  s.pendingConflict={kind:'field',attackerArmyId:'missing-a',defenderArmyId:'missing-b'}
+  s.save()
+
+  const loaded=new GameStore(mem)
+  assert.equal(loaded.load(),true)
+  assert.equal(loaded.pendingConflict,null)
+  assert.equal(loaded.state.armies[0].status,'waiting')
+})
