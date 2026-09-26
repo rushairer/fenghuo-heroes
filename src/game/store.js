@@ -7,6 +7,37 @@ import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 
 const SAVE_KEY = 'fenghuo-heroes.cleanroom.v4'
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+function sanitizePendingConflict(conflict,state){
+  if(!conflict||typeof conflict!=='object')return null
+  const armies=Array.isArray(state?.armies)?state.armies:[]
+  if(conflict.kind==='field'){
+    const attacker=armies.find((army)=>army.id===conflict.attackerArmyId)
+    const defender=armies.find((army)=>army.id===conflict.defenderArmyId)
+    return attacker&&defender?conflict:null
+  }
+  if(conflict.kind==='siege'){
+    const army=armies.find((item)=>item.id===conflict.armyId)
+    const target=state?.cities?.[conflict.target]
+    return army&&target?conflict:null
+  }
+  return null
+}
+
+function recoverOrphanedBattleArmyStatuses(state,pendingConflict){
+  if(!Array.isArray(state?.armies))return
+  const activeIds=new Set()
+  if(pendingConflict?.kind==='field'){
+    activeIds.add(pendingConflict.attackerArmyId)
+    activeIds.add(pendingConflict.defenderArmyId)
+  }
+  if(pendingConflict?.kind==='siege')activeIds.add(pendingConflict.armyId)
+  for(const army of state.armies){
+    if(!activeIds.has(army.id)&&(army.status==='engaged'||army.status==='besieging')){
+      army.status='waiting'
+    }
+  }
+}
 const UNVERIFIED_INSPECTION_EFFECT_MESSAGES = Object.freeze({
   develop:'開發：投入金額、執行武將與產值公式尚未校準，本次不修改數值。',
   welfare:'福利：執行武將、投入金額與統治效果公式尚未校準，本次不修改數值。',
@@ -131,7 +162,8 @@ export class GameStore {
       if(!this.state.inspectionCategories)this.state.inspectionCategories={}
       if(!this.state.openingRosters)this.state.openingRosters=openingRosters(this.state.scenarioYear)
       if(!Number.isInteger(this.state.activeHumanIndex))this.state.activeHumanIndex=0
-      this.pendingConflict=savedConflict
+      this.pendingConflict=sanitizePendingConflict(savedConflict,this.state)
+      recoverOrphanedBattleArmyStatuses(this.state,this.pendingConflict)
       return Boolean(this.state?.cities&&this.state?.humanFactions)
     }catch{
       this.storage.removeItem?.(SAVE_KEY)
