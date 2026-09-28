@@ -1,4 +1,5 @@
 import { FIELD_BATTLE_COMMANDS, FIELD_BATTLE_TACTICS } from './field-battle-parity.js'
+import { advanceBattleDay, battleDayState } from './battle-time-parity.js'
 
 const PHASES=new Set(['speed','formation','battle'])
 const SPEEDS=new Set(['normal','fast'])
@@ -20,6 +21,9 @@ export function ensureFieldBattleRuntime(conflict) {
     order,
     ordersClosed:Boolean(current.ordersClosed),
     commandEpoch:Math.max(0,Math.floor(Number(current.commandEpoch)||0)),
+    day:Math.max(1,Math.floor(Number(current.day)||1)),
+    carryoverPending:Boolean(current.carryoverPending),
+    ambush:Boolean(current.ambush),
   }
   return conflict.runtime
 }
@@ -64,5 +68,31 @@ export function fieldBattleRuntimeSnapshot(conflict) {
     order:runtime.order?Object.freeze({...runtime.order}):null,
     ordersClosed:runtime.ordersClosed,
     commandEpoch:runtime.commandEpoch,
+    day:runtime.day,
+    carryoverPending:runtime.carryoverPending,
+    ambush:runtime.ambush,
   })
+}
+
+
+export function setFieldBattleAmbush(conflict,active){
+  const runtime=ensureFieldBattleRuntime(conflict)
+  runtime.ambush=Boolean(active)
+  return runtime
+}
+
+export function advanceFieldBattleDayRuntime(conflict,delta=1){
+  const runtime=ensureFieldBattleRuntime(conflict)
+  const next=advanceBattleDay(runtime.day,delta)
+  runtime.day=Math.max(1,next.day)
+  runtime.carryoverPending=next.segmentComplete
+  if(next.segmentComplete){
+    runtime.ordersClosed=true
+  }else{
+    runtime.commandEpoch+=1
+    runtime.ordersClosed=false
+    runtime.order=null
+    runtime.ambush=false
+  }
+  return Object.freeze({...next})
 }
