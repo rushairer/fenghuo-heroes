@@ -175,6 +175,7 @@ export class StrategyScene extends MarchStrategyScene {
   }
 
   beginNewMarchRoute() {
+    this.marchRouteReason='move'
     const point = cityWorldPoint(this.app.store.mapProfile?.cityById?.[this.marchFrom])
     this.marchRoute = [{ ...point }]
     this.app.store.setCursor(point.x, point.y)
@@ -183,8 +184,9 @@ export class StrategyScene extends MarchStrategyScene {
     this.app.audio.confirm()
   }
 
-  beginArmyRoute(army) {
+  beginArmyRoute(army, reason='move') {
     this.marchArmyId = army.id
+    this.marchRouteReason = reason
     this.marchFrom = army.from
     this.marchRoute = [{ x: army.x, y: army.y }]
     this.app.store.setCursor(army.x, army.y)
