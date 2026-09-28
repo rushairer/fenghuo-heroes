@@ -22,7 +22,7 @@ References:
 
 ## Not yet implemented
 
-This module does **not** currently advance the runtime siege/field-battle scene. Before wiring it into gameplay we still need to determine:
+The runtime now persists the current battle day and exposes an explicit day-advance transition, but it does **not** guess the real-time duration of one battle day. We still need to determine:
 
 - exactly when a battle day increments;
 - whether paused command-window time counts;
@@ -31,3 +31,8 @@ This module does **not** currently advance the runtime siege/field-battle scene.
 - the exact resume screen and transition timing.
 
 The existing strategic month/turn logic must not infer these details from the number 30.
+
+
+## Day-30 runtime boundary
+
+`field-battle-runtime.js` now carries the observed boundary into persistent battle state. Advancing from day 29 to day 30 marks the battle as `carryoverPending`, keeps command entry closed and deliberately does not create a winner. Automatic timing and the exact strategic-intermission/resume trigger remain blocked until direct observation establishes when the game's internal day counter changes.
