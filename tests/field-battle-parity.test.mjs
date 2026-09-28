@@ -5,6 +5,7 @@ import {
   FIELD_BATTLE_TACTICS,
   RETREAT_UNLOCK_TIMING,
   commandWindowPausesBattle,
+  fieldBattleAmbushState,
   fieldBattleCommandAvailable,
   fieldBattleInputAction,
   fieldBattleOrder,
@@ -43,6 +44,8 @@ test('field battle exposes the documented tactic family without inventing effect
     FIELD_BATTLE_TACTICS.map((item)=>item.id),
     ['fire','rockfall','immobilize','provoke','persuade','chain'],
   )
+  assert.equal(fieldBattleTacticAvailable('fire',{strategyAvailable:true,enemyTerrain:'forest'}),true)
+  assert.equal(fieldBattleTacticAvailable('fire',{strategyAvailable:true,enemyTerrain:'plain'}),false)
   assert.equal(fieldBattleTacticAvailable('chain',{strategyAvailable:true,enemyTerrain:'river'}),true)
   assert.equal(fieldBattleTacticAvailable('chain',{strategyAvailable:true,enemyTerrain:'plain'}),false)
   assert.equal(fieldBattleTacticAvailable('rockfall',{strategyAvailable:true,ownTerrain:'mountain',enemyTerrain:'plain'}),true)
@@ -88,4 +91,12 @@ test('battle status projection exposes documented attack morale and troops witho
       defender:{troops:900,attack:null,morale:null,officers:['劉備']},
     },
   )
+})
+
+
+test('forest wait at five thousand troops or less enters documented ambush state',()=>{
+  assert.equal(fieldBattleAmbushState({commandId:'wait',ownTerrain:'forest',troops:5000}).active,true)
+  assert.equal(fieldBattleAmbushState({commandId:'wait',ownTerrain:'forest',troops:5001}).active,false)
+  assert.equal(fieldBattleAmbushState({commandId:'move',ownTerrain:'forest',troops:3000}).active,false)
+  assert.equal(fieldBattleAmbushState({commandId:'wait',ownTerrain:'plain',troops:3000}).active,false)
 })
