@@ -34,13 +34,15 @@ export function armyAt(store, x, y, tolerance = 10, faction = store.humanFaction
 }
 
 export const MARCH_COMMAND_EVIDENCE = Object.freeze({
-  source:'jp-manual-pages-24-25',
+  sources:Object.freeze(['jp-manual-pages-24-25','zh-hk-manual-pages-24-25']),
   conditionSemantics:'manual-confirmed',
+  targetAttackTransition:'zh-hk-manual-immediate-field-battle',
+  japaneseAttackTransition:'jp-manual-after-march-orders',
   adjacencySemantics:'adjacent-on-original-map',
   enemyArmyAdjacencyProjection:`provisional-${MARCH_RUNTIME_PROJECTION.enemyArmyAdjacencyWorld}px-route-step`,
   enemyCityAdjacencyProjection:`provisional-${MARCH_RUNTIME_PROJECTION.enemyCityAdjacencyWorld}px-city-tolerance`,
   splitGroupingProjection:'same-map-point-engineering',
-  villageProjection:'unimplemented',
+  villageProjection:'map-profile-evidence',
 })
 
 export const MARCH_COMMAND_ORDER = Object.freeze([
@@ -76,6 +78,10 @@ export function friendlyArmyStack(store, armyId) {
       item.faction === army.faction && item.x === army.x && item.y === army.y
     ),
   )
+}
+
+export function canSplitArmy(store,armyId){
+  return friendlyArmyStack(store,armyId).length>=2
 }
 
 export function enemyArmyNearArmy(store, armyId, tolerance = MARCH_ADJACENCY_STEP) {
@@ -269,6 +275,7 @@ export function beginSiegeFromArmy(store, armyId, targetCityId) {
     defender: target.owner,
     attackerTroops: army.troops,
     defenderTroops: target.troops,
+    defenderDefense:Number.isFinite(target.defense)?target.defense:null,
     attackerOfficers: [...(army.officerNames ?? [])],
   }
   store.addLog(`${store.mapProfile?.cityById?.[targetCityId]?.name??targetCityId}攻城準備。`)
