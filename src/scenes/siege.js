@@ -4,15 +4,17 @@ import { BATTLE_SPEEDS, MAX_SQUADS_PER_UNIT, battlePreparation, cycleBattleSpeed
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { cancelSiegeFromArmy } from '../game/march.js'
+import { ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed } from '../game/siege-runtime.js'
 
 export class SiegeScene{
   constructor(app){
     this.app=app
     this.conflict=app.store.pendingConflict
-    this.speedIndex=0
-    this.phase='speed'
+    if(!this.conflict||this.conflict.kind!=='siege'){app.go('strategy');return}
+    this.runtime=ensureSiegeRuntime(this.conflict)
+    this.speedIndex=Math.max(0,BATTLE_SPEEDS.findIndex((item)=>item.id===this.runtime.speed))
+    this.phase=this.runtime.phase
     this.message=''
-    if(!this.conflict)app.go('strategy')
   }
 
   update(_dt,input){
@@ -45,22 +47,47 @@ export class SiegeScene{
         return
       }
       if(b==='A'||b==='C'||b==='START'){
+        const speed=BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
+        setSiegeSpeed(this.conflict,speed)
+        setSiegePhase(this.conflict,'formation')
         this.phase='formation'
+        this.app.store.save()
         this.app.audio.confirm()
       }
       return
     }
 
-    if(b==='B'){
-      this.phase='speed'
-      this.app.audio.cancel()
+    if(this.phase==='formation'){
+      if(b==='B'){
+        setSiegePhase(this.conflict,'speed')
+        this.phase='speed'
+        this.app.store.save()
+        this.app.audio.cancel()
+        return
+      }
+      if(b==='A'||b==='C'||b==='START'){
+        const speed=this.runtime.speed??BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
+        battlePreparation(this.conflict,speed)
+        setSiegeSpeed(this.conflict,speed)
+        setSiegePhase(this.conflict,'siege')
+        this.phase='siege'
+        this.app.store.save()
+        this.app.audio.confirm()
+      }
       return
     }
-    if(b==='A'||b==='C'||b==='START'){
-      const speed=BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
-      battlePreparation(this.conflict,speed)
-      this.message='小隊編成與即時部隊戰仍待實機校準；目前不使用虛構公式結算攻城。'
-      this.app.audio.alert()
+
+    if(this.phase==='siege'){
+      if(b==='B'){
+        this.retreat()
+        return
+      }
+      if(b==='A'||b==='C'||b==='START'){
+        const intent=queueSiegeAttackIntent(this.conflict)
+        this.message=`第${intent.sequence}次攻城命令已受理；原版确认会降低城防并提高进入城内部队战的概率，但具体下降量和概率尚未校准，本次不修改数值。`
+        this.app.store.save()
+        this.app.audio.confirm()
+      }
     }
   }
 
@@ -101,10 +128,14 @@ export class SiegeScene{
         r.text(`${index===this.speedIndex?'▶':'　'}${option.label}`,160,190+index*10,7.5,index===this.speedIndex?COLORS.cyan:'#ddd0ad','center')
       })
       r.text('C 決定　B 退卻',160,213,5.8,'#8e846f','center')
-    }else{
+    }else if(this.phase==='formation'){
       r.text(`小隊編成　每部隊最多 ${MAX_SQUADS_PER_UNIT} 小隊`,160,180,7.5,COLORS.cyan,'center')
       r.text('原版編成規則仍待逐項校準',160,194,6.5,'#cfc19f','center')
       r.text('C 繼續　B 返回速度選擇',160,208,5.8,'#8e846f','center')
+    }else{
+      r.text(`攻城命令 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,178,7.5,COLORS.cyan,'center')
+      r.text('C / A 攻城　B 退卻',160,196,6.5,'#cfc19f','center')
+      r.text('未校準城防下降量與入城戰概率不做假結算',160,210,5.8,'#8e846f','center')
     }
 
     if(this.message){
