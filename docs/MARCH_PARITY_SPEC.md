@@ -101,3 +101,20 @@ Evidence inference is deliberately conservative:
 - starvation observations are stored, but no casualty/HP formula is fitted yet.
 
 See `docs/MARCH_EVIDENCE_CAPTURE.md`.
+
+
+## Edition-specific attack transition
+
+The Japanese and Hong Kong Chinese manuals disagree on the transition timing for 行軍「攻擊」:
+
+- Japanese manual P24–25: after choosing attack, field battle begins after the march-command phase ends.
+- Hong Kong Chinese manual P24–25: choosing attack transitions into the unit-battle screen directly.
+
+The production target is the Chinese-ROM experience, so runtime follows the Hong Kong Chinese manual and enters field battle immediately. The Japanese timing is retained as edition-specific evidence and must not overwrite the Chinese target behavior.
+
+## Village supply and split runtime
+
+- 補給 is derived from `mapProfile.villages`; the command appears only when the selected army is physically on a verified village coordinate.
+- The supply submenu exposes only the documented three families: purchase weapons, purchase rice, and officer healing.
+- Prices, quantities, weapon effects and healing amounts remain unverified, so supply records semantic intent without mutating resources or stamina.
+- 分散 appears only when at least two friendly armies share the same map point. Because the runtime already stores those armies as separate persistent entities, 分散 reroutes the selected army away from the shared point instead of inventing an unsupported troop/resource split formula.
