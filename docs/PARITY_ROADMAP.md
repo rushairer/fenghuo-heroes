@@ -132,6 +132,7 @@ Before a screen is marked parity-complete it needs:
 - [x] Enemy city enters evidence-backed siege battle preparation; direct pre-battle duel shortcut is retired.
 - [x] Playable duel movement / attack / guard QA slice, isolated from strategic outcomes until consequence rules are calibrated.
 - [ ] Free marching movement parity.
+- [~] Village supply command flow now uses verified map-profile village coordinates and the documented weapon/rice/heal menu; prices/effects and occupation remain uncalibrated.
 - [ ] Supply interception and village occupation.
 - [x] Battle speed choices and the documented 15-squad-per-unit ceiling are modeled.
 - [x] Field-battle A/B/C window semantics and command families are modeled as an evidence-backed contract.
@@ -139,6 +140,7 @@ Before a screen is marked parity-complete it needs:
 - [x] Observed 30-day battle carryover boundary is modeled separately from manual-confirmed rules.
 - [~] Field-battle command runtime now matches the documented command/tactic hierarchy and persists across reload; exact squad formation, movement speed, tactic success and damage remain uncalibrated.
 - [ ] Exact formation allocation screen and real-time battle movement/combat rules.
+- [~] Siege now has persistent speed / formation / attack-intent phases and preserves a defense snapshot; exact defense reduction and entry-battle probability remain uncalibrated.
 - [ ] Siege and duel frame-level parity.
 
 ## Copyright / clean-room line
