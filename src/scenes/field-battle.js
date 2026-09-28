@@ -4,6 +4,7 @@ import { FACTION_BY_ID } from '../game/data.js'
 import {
   FIELD_BATTLE_COMMANDS,
   FIELD_BATTLE_TACTICS,
+  fieldBattleAmbushState,
   fieldBattleCommandAvailable,
   fieldBattleInputAction,
   fieldBattleOrder,
@@ -13,6 +14,7 @@ import {
 } from '../game/field-battle-parity.js'
 import {
   ensureFieldBattleRuntime,
+  setFieldBattleAmbush,
   setFieldBattleOrder,
   setFieldBattlePhase,
   setFieldBattleSpeed,
@@ -229,7 +231,15 @@ export class FieldBattleScene{
     }else if(order.commandId==='retreat'){
       this.message='退卻命令已受理；退卻路徑與完成判定尚未校準。'
     }else if(order.commandId==='wait'){
-      this.message='待機命令已受理；森林中兵力5000以下可成為伏兵的條件已記錄，伏兵效果仍待校準。'
+      const ambush=fieldBattleAmbushState({
+        commandId:'wait',
+        ownTerrain:this.conflict.ownTerrain??null,
+        troops:this.conflict.attackerTroops??0,
+      })
+      setFieldBattleAmbush(this.conflict,ambush.active)
+      this.message=ambush.active
+        ?'待機命令已受理；符合森林且兵力5000以下條件，部隊進入伏兵狀態。伏兵戰鬥效果仍待校準。'
+        :'待機命令已受理；目前不符合已確認的伏兵條件。'
     }else if(order.commandId==='end'){
       this.message='本戰鬥日命令已結束；等待日數改變後再接受下一次命令。'
     }
@@ -265,7 +275,7 @@ export class FieldBattleScene{
     const df=FACTION_BY_ID[this.conflict?.defender]
     r.clear('#6f603f')
     r.fillRect(0,0,320,28,'#101010')
-    r.text('部隊戰',160,7,12,'#efd27d','center','top',SERIF,'700')
+    r.text(`部隊戰　第${this.runtime.day}日`,160,7,12,'#efd27d','center','top',SERIF,'700')
     r.text(`${af?.label??''} ${this.conflict?.attackerTroops??0}`,12,18,6.5,af?.color??'#fff')
     r.text(`${df?.label??''} ${this.conflict?.defenderTroops??0}`,308,18,6.5,df?.color??'#fff','right')
 
