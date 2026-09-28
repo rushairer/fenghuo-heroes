@@ -68,3 +68,18 @@ The runtime intentionally stops at the evidence boundary:
 
 The A-button strength window now projects the documented troops / attack / morale
 fields. Unknown attack and morale values remain blank rather than being synthesized.
+
+
+## Terrain/tactic condition closure
+
+The runtime now enforces the manual-confirmed terrain conditions before a tactic can be selected:
+
+- 火計: enemy in mountain, forest or river.
+- 落石: own unit on mountain and enemy on plain.
+- 止足: enemy on mountain or in forest.
+- 連環: enemy in river.
+- 挑發 / 說得 remain range-gated by the parent 計略 availability.
+
+待機 also records the documented ambush condition: a unit with 5,000 troops or fewer waiting in forest enters ambush state. The combat effect of ambush remains uncalibrated.
+
+The persisted battle runtime also records battle day, ambush state and the observed 30-day carryover boundary without assigning a winner.
