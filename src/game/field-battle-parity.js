@@ -82,6 +82,7 @@ export function fieldBattleTacticAvailable(tacticId,{
 }={}) {
   const tactic=FIELD_BATTLE_TACTICS.find((item)=>item.id===tacticId)
   if(!tactic||!strategyAvailable)return false
+  if(tactic.id==='fire')return ['mountain','forest','river'].includes(enemyTerrain)
   if(tactic.id==='chain')return enemyTerrain==='river'
   if(tactic.id==='rockfall')return ownTerrain==='mountain'&&enemyTerrain==='plain'
   if(tactic.id==='immobilize')return enemyTerrain==='mountain'||enemyTerrain==='forest'
@@ -108,5 +109,19 @@ export function fieldBattleStatusProjection(conflict) {
   return Object.freeze({
     attacker:side('attacker'),
     defender:side('defender'),
+  })
+}
+
+
+export function fieldBattleAmbushState({
+  commandId,
+  ownTerrain=null,
+  troops=0,
+}={}) {
+  const eligible=commandId==='wait'&&ownTerrain==='forest'&&Math.max(0,Math.floor(Number(troops)||0))<=5000
+  return Object.freeze({
+    eligible,
+    active:eligible,
+    evidence:'jp-manual-wait-forest-5000-or-less',
   })
 }
