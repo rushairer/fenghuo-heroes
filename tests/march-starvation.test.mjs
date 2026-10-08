@@ -4,6 +4,8 @@ import { executeMarchTurn } from '../src/game/march.js'
 
 function storeWithFood(food){
   return {
+    mode:'march',
+    assertState(){if(!this.state)throw new Error('Game not initialized')},
     state:{
       cities:{},
       nextArmyId:2,

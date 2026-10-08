@@ -11,6 +11,7 @@ import {
 function storeAtVillage(){
   const logs=[]
   const store={
+    mode:'march',
     humanFaction:'liu',
     mapProfile:{villages:[{id:'village-01',x:80,y:96}]},
     state:{armies:[{
