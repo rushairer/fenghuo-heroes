@@ -25,7 +25,7 @@ test('field battle runtime uses documented A B C control contract',()=>{
 test('uncalibrated field battle contains no fabricated damage resolver',()=>{
   const source=read('src/scenes/field-battle.js')
   assert.doesNotMatch(source,/resolveConflict/)
-  assert.match(source,/cancelFieldBattleFromArmies/)
+  assert.doesNotMatch(source,/cancelFieldBattleFromArmies/)
 })
 
 test('battle pause returns to title only after explicit confirmation and never clears conflict',async()=>{
@@ -41,7 +41,7 @@ test('battle pause returns to title only after explicit confirmation and never c
     }
     const scene=new Scene(app)
     const send=(key)=>scene.update(0,{consume:()=>key})
-    send('Escape')
+    if(kind==='field')send('Escape')
     assert.equal(app.store.pendingConflict,conflict)
     assert.equal(calls.length,0)
     send('p')

@@ -294,6 +294,7 @@ export class FieldBattleScene{
       r.text('戰鬥速度',160,73,10,'#efd27d','center','top',SERIF,'700')
       BATTLE_SPEEDS.forEach((option,index)=>r.text(`${index===this.speedIndex?'▶':'　'}${option.label}`,160,99+index*18,8,index===this.speedIndex?COLORS.cyan:'#ddd0ad','center'))
       r.text('C 決定',160,139,6,'#8e846f','center')
+      if(this.pauseConfirm)this.drawPauseConfirm()
       return
     }
 
@@ -304,6 +305,7 @@ export class FieldBattleScene{
       r.text('騎兵／弓箭／步兵數受武官級限制',160,106,6.5,'#d8ccb0','center')
       r.text('武官級與分配規則未校準，不造假分兵',160,123,6.2,'#a99d82','center')
       r.text('C 進入控制層　B 返回',160,148,6,'#8e846f','center')
+      if(this.pauseConfirm)this.drawPauseConfirm()
       return
     }
 
@@ -365,10 +367,14 @@ export class FieldBattleScene{
       r.wrapText(this.message,160,86,220,11,7,'#f0e4c5','center')
       r.text('A / B / C 關閉',160,126,6,'#8a806e','center')
     }
-    if(this.pauseConfirm){
-      r.panel(33,70,254,78,'#050505','#9b6514')
-      r.text('保存目前戰鬥並返回標題？',160,85,9,'#efd27d','center')
-      r.text('C / START 確定　B 取消',160,117,7,COLORS.cyan,'center')
-    }else r.text('P：保存並返回標題',160,217,5.5,'#c5b99c','center')
+    if(this.pauseConfirm)this.drawPauseConfirm()
+    else r.text('P：保存並返回標題',160,217,5.5,'#c5b99c','center')
+  }
+
+  drawPauseConfirm(){
+    const r=this.app.r
+    r.panel(33,70,254,78,'#050505','#9b6514')
+    r.text('保存目前戰鬥並返回標題？',160,85,9,'#efd27d','center')
+    r.text('C / START 確定　B 取消',160,117,7,COLORS.cyan,'center')
   }
 }
