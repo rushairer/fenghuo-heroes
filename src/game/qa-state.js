@@ -2,6 +2,7 @@ import { ensureMarchState } from './march.js'
 import { officerStatusProjection } from './officer-roster.js'
 import {
   BATTLE_VISUAL_QA_STATES,
+  INSPECTION_VISUAL_QA_STATES,
   MARCH_VISUAL_QA_STATES,
   qaOwnedCity,
 } from './qa-fixtures.js'
@@ -23,6 +24,7 @@ export const VISUAL_QA_STATES = Object.freeze([
   'full-map',
   'officer-list',
   'officer-status',
+  ...INSPECTION_VISUAL_QA_STATES,
   ...MARCH_VISUAL_QA_STATES,
   ...BATTLE_VISUAL_QA_STATES,
 ])
@@ -34,12 +36,14 @@ const STRATEGY_QA_STATES=new Set([
   'full-map',
   'officer-list',
   'officer-status',
+  ...INSPECTION_VISUAL_QA_STATES,
   ...MARCH_VISUAL_QA_STATES,
 ])
 
 export function initialSceneForVisualQa(qaState) {
   if(qaState==='player-count')return 'players'
   if(qaState==='setup')return 'setup'
+  if(qaState.startsWith('field-battle-'))return 'field-battle'
   if(qaState==='siege-speed'||qaState==='siege-formation')return 'siege'
   if(qaState==='duel-mode'||qaState==='duel-manual')return 'duel'
   if(STRATEGY_QA_STATES.has(qaState))return 'strategy'
@@ -117,6 +121,18 @@ export function applyVisualQaState(app, qaState) {
     return true
   }
 
+  if(qaState.startsWith('field-battle-')){
+    if(!('phase' in scene)||!scene.conflict||!scene.runtime)return false
+    const phase=qaState==='field-battle-speed'?'speed':
+      qaState==='field-battle-formation'?'formation':'battle'
+    scene.phase=phase
+    scene.runtime.phase=phase
+    scene.runtime.speed=phase==='speed'?null:'normal'
+    scene.speedIndex=0
+    scene.message=''
+    return true
+  }
+
   if(qaState==='siege-speed'||qaState==='siege-formation'){
     if(!('phase' in scene)||!scene.conflict)return false
     scene.phase=qaState==='siege-formation'?'formation':'speed'
@@ -139,6 +155,16 @@ export function applyVisualQaState(app, qaState) {
   }
 
   if (!app?.store?.hasGame?.()) return false
+  if(INSPECTION_VISUAL_QA_STATES.includes(qaState)){
+    const cityId=firstOwnedCityId(app)
+    if(!cityId||typeof scene.beginInspectionActionDraft!=='function')return false
+    scene.stage='command'
+    scene.category='domestic'
+    scene.targetCity=cityId
+    app.store.lockInspectionCategory('domestic')
+    scene.beginInspectionActionDraft(qaState.slice('inspection-'.length))
+    return scene.view==='action-draft'
+  }
   if(MARCH_VISUAL_QA_STATES.includes(qaState))return applyMarchVisualQaState(app,qaState)
   if (!STRATEGY_QA_STATES.has(qaState)) return false
 

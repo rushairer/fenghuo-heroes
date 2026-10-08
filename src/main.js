@@ -35,7 +35,7 @@ class App {
     const forced=params.get('scene')
     const initial=forced??initialSceneForVisualQa(qa)
 
-    const qaNeedsGame=['strategy','siege','duel'].includes(initial)
+    const qaNeedsGame=['strategy','siege','duel','field-battle'].includes(initial)
     if(qa&&qaNeedsGame){
       this.store.newGame({scenarioYear:189,humanFactions:['liu']})
       prepareVisualQaStore(this.store,qa)
@@ -45,6 +45,7 @@ class App {
     else if(initial==='setup')this.go('setup')
     else if(initial==='strategy')this.go('strategy')
     else if(initial==='siege')this.go('siege')
+    else if(initial==='field-battle')this.go('field-battle')
     else if(initial==='duel')this.go('duel')
     else this.go('title')
 

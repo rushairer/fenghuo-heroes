@@ -8,7 +8,16 @@ export const MARCH_VISUAL_QA_STATES = Object.freeze([
   'army-menu',
 ])
 
+export const INSPECTION_VISUAL_QA_STATES = Object.freeze([
+  'inspection-develop',
+  'inspection-welfare',
+  'inspection-educate',
+])
+
 export const BATTLE_VISUAL_QA_STATES = Object.freeze([
+  'field-battle-speed',
+  'field-battle-formation',
+  'field-battle-active',
   'siege-speed',
   'siege-formation',
   'duel-mode',
@@ -73,6 +82,41 @@ export function prepareVisualQaStore(store, qaState) {
     qaFixture:true,
   }
   if(!existing)armies.push(army)
+
+  if(qaState.startsWith('field-battle-')){
+    const enemy={
+      id:'qa-field-enemy',
+      faction:store.state.cities[target.id].owner,
+      from:target.id,
+      x:targetPoint.x,
+      y:targetPoint.y,
+      route:[{...targetPoint}],
+      routeIndex:0,
+      troops:2500,
+      food:800,
+      gold:0,
+      officerCount:1,
+      officerNames:[],
+      status:'engaged',
+      qaFixture:true,
+    }
+    armies.push(enemy)
+    army.status='engaged'
+    store.pendingConflict={
+      kind:'field',
+      attackerArmyId:army.id,
+      defenderArmyId:enemy.id,
+      from:source.id,
+      attacker:army.faction,
+      defender:enemy.faction,
+      attackerTroops:army.troops,
+      defenderTroops:enemy.troops,
+      attackerOfficers:[...(army.officerNames??[])],
+      defenderOfficers:[],
+      qaFixture:true,
+    }
+    return true
+  }
 
   if(isBattleVisualQaState(qaState)){
     army.x=Math.max(8,targetPoint.x-8)
