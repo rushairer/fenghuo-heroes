@@ -93,3 +93,19 @@ as a shortcut, because retreat availability and combat consequences are
 not calibrated. Returning to the title retains the pending conflict
 and Continue routes back to its battle scene. This is an engineering
 safety control, not a claimed original-ROM key binding.
+
+## 2026-10-09 — battle scene state synchronization and manual-day bridge
+
+- Field and siege scene references are refreshed after mutation because
+  ensureFieldBattleRuntime/ensureSiegeRuntime normalize into new objects.
+  Previously, battle orders could persist but the scene still displayed stale
+  ordersClosed or siege attack count. Dedicated scene tests cover both.
+- After the field-battle 結束 command closes a battle day's orders, START
+  explicitly advances exactly one in-memory day and reopens commands.
+  This is an **engineering-only/manual bridge** because original real-time
+  frame-to-day conversion and troop-combat effects have not been calibrated.
+- The observed day-30 boundary sets carryoverPending and blocks further
+  manual advance. It does not invent a winner, automatically discard a battle
+  or pretend the strategic-month handoff has been restored.
+- P saves and returns to title without resetting battle armies or results.
+  Continue resumes the same pending conflict.

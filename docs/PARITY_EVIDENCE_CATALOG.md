@@ -189,6 +189,27 @@ that copy stable against casual modernization or Simplified-Chinese rewrites.
 Confidence remains below Tier A: a direct Chinese-ROM frame or legible Traditional
 Chinese manual page is still required before marking the copy frame-complete.
 
+### Fiscal calendar timing — community leads only (Tier C)
+
+Independent player recollections of this precise Sega MD title describe gold
+receipts around month 4 and rice receipts around month 10:
+
+- https://www.ptt.cc/bbs/Old-Games/M.1298730665.A.ED3.html
+- https://gmerago.com/forum.php?mod=viewthread&tid=4372
+
+These are leads about event timing, not verified formula or amount evidence.
+One historical discussion initially recalled different months before
+another participant corrected it, so only direct Chinese-ROM transition
+frames may promote a timing conclusion. Required controlled capture:
+
+1. Record city gold, rice, development, governance and tax rates before
+   ending March, then record the first April state.
+2. Repeat for September to October; separate individual city effects from
+   unrelated combat, trade and governance changes.
+3. Compare at least two independently reproduced transitions and record
+   scenario, difficulty and exact before/after source frames.
+4. Do not infer a linear tax rate formula or insert placeholder income.
+
 ## Immediate acquisition order
 
 1. Chinese-ROM 189 full-map screenshot(s): 40 city coordinates + visible ownership.

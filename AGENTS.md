@@ -28,6 +28,8 @@ clean-room implementation rather than restoring archived prototypes.
   exact numeric effects. See docs/INSPECTION_COMMAND_PARITY_V1.md and
   docs/FIELD_BATTLE_PARITY.md. Currently development/welfare/education
   support actor and investment PREVIEW only; they do not execute effects.
+- Officer transfer is another PREVIEW-only command: never change the stored
+  city assignments until relocation timing/requirements have original evidence.
 - Respect edition differences between JP manual and HK/Chinese target.
 - Do not distribute ROMs, extracted copyrighted artwork/audio, or ROM dumps.
 
@@ -36,8 +38,15 @@ clean-room implementation rather than restoring archived prototypes.
 - B/Escape cannot restart or abandon the root strategic game.
 - Unresolved field battles must not disappear via a cancel shortcut.
   P is an engineering-only explicit save-and-return confirmation.
+- Field-battle START after 結束 is an EXPLICIT engineering-only day advance,
+  not a faithful real-time clock. Day 30 remains a blocked carryover boundary.
 - QA query states must use ephemeral GameStore storage and must never
   replace or corrupt a normal player's save.
+- Before a stored game is replaced, TitleScene requires an explicit new-game
+  confirmation. Save validation fails closed and preserves damaged browser bytes.
+- Only named officers currently assigned to a city may be dispatched once
+  source-backed city placement exists; disallow phantom/nonnative officers.
+- Tax rate can be changed only in an odd-month domestic command phase.
 - Input allocations must be validated BEFORE subtracting city gold, food
   or troops. Keep army IDs, officer assignments and battle conflicts coherent.
 - March nodes follow the explicit provisional world-step bound from

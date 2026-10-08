@@ -46,3 +46,28 @@ the target game has been reproduced 1:1.
 - docs/MARCH_EVIDENCE_CAPTURE.md
 - docs/SCENARIO_EVIDENCE_CAPTURE.md
 - docs/VISUAL_QA_MATRIX.md
+
+## Follow-up implementation pass — 2026-10-09
+
+- Saved games now pass structural city/faction/calendar/cursor validation before
+  replacing active memory. Invalid browser JSON is retained for possible
+  recovery rather than deleted; unsupported campaign creation fails safely.
+- A source-backed city permits only its actual resident, named officers to
+  join a new marching army. Provisional roster fallback is isolated to
+  scaffold states and not promoted into Chinese-ROM evidence.
+- Officer transfer now has a non-destructive actor/destination/review flow
+  with stale ownership/officer checks and a deterministic QA entrypoint.
+- Existing-save START at the title requires explicit confirmation, default No.
+- Tax writes require the locked domestic command category in odd months.
+- Field and siege scene runtime references remain synchronized after each
+  command; an explicit START bridge reopens the next battle day's orders
+  without inventing real-time timing, damage or victory.
+- Additional tests cover corrupt saves, invalid rulers, transfer plans,
+  title confirmation, battle-day transitions, and unsupported setup.
+
+## Calendar income evidence still required
+
+Community records separately suggest April gold and October rice income,
+but these are Tier C leads. See docs/PARITY_EVIDENCE_CATALOG.md. Do not
+apply calendar income or tax settlement until source-backed amounts and
+event timing have been captured.
