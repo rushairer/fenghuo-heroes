@@ -19,10 +19,16 @@ test('visual QA state catalog covers setup, strategy, march, siege and duel scre
     'full-map',
     'officer-list',
     'officer-status',
+    'inspection-develop',
+    'inspection-welfare',
+    'inspection-educate',
     'march-compose',
     'march-officers',
     'march-route-prompt',
     'army-menu',
+    'field-battle-speed',
+    'field-battle-formation',
+    'field-battle-active',
     'siege-speed',
     'siege-formation',
     'duel-mode',
@@ -36,6 +42,8 @@ test('QA states resolve to deterministic initial scenes',()=>{
   assert.equal(initialSceneForVisualQa('setup'),'setup')
   assert.equal(initialSceneForVisualQa('strategy-map'),'strategy')
   assert.equal(initialSceneForVisualQa('march-compose'),'strategy')
+  assert.equal(initialSceneForVisualQa('inspection-develop'),'strategy')
+  assert.equal(initialSceneForVisualQa('field-battle-active'),'field-battle')
   assert.equal(initialSceneForVisualQa('siege-speed'),'siege')
   assert.equal(initialSceneForVisualQa('duel-mode'),'duel')
   assert.equal(initialSceneForVisualQa('unknown'),'title')
@@ -93,6 +101,7 @@ function strategyApp() {
     },
     assertState(){},
     setCursor(x,y){this.state.cursor={x,y}},
+    lockInspectionCategory(category){this.state.inspectionCategory=category;return true},
   }
   return {
     store,
@@ -121,6 +130,10 @@ function strategyApp() {
       marchFoodDays:30,
       syncCountryOverviewCursorToMap(){this.countryOverviewCursor=2},
       officerListProjection(){return {rows:[{name:'關羽',role:'將'}]}},
+      beginInspectionActionDraft(commandId){
+        this.actionDraft={commandId}
+        this.view='action-draft'
+      },
       beginMarchCompose(cityId){
         this.marchFrom=cityId
         this.composeFocus=0
@@ -229,4 +242,31 @@ test('visual QA always uses ephemeral storage and never overwrites player saves'
   assert.equal(storageForVisualQa('strategy-map',persistent),null)
   assert.equal(storageForVisualQa('title-menu',persistent),null)
   assert.equal(storageForVisualQa('unknown-preview',persistent),null)
+})
+
+test('inspection command QA opens reproducible actor-selection previews',()=>{
+  const app=strategyApp()
+  assert.equal(applyVisualQaState(app,'inspection-develop'),true)
+  assert.equal(app.scene.view,'action-draft')
+  assert.equal(app.scene.stage,'command')
+  assert.equal(app.scene.targetCity,'chengdu')
+  assert.equal(app.scene.actionDraft.commandId,'develop')
+  assert.equal(app.store.state.inspectionCategory,'domestic')
+})
+
+test('field battle QA sets explicit phases without inventing results',()=>{
+  for(const [qa,phase] of [
+    ['field-battle-speed','speed'],
+    ['field-battle-formation','formation'],
+    ['field-battle-active','battle'],
+  ]){
+    const app={
+      scene:{phase:'speed',runtime:{phase:'speed'},conflict:{kind:'field'},message:'stale'},
+    }
+    assert.equal(applyVisualQaState(app,qa),true)
+    assert.equal(app.scene.phase,phase)
+    assert.equal(app.scene.runtime.phase,phase)
+    assert.equal(app.scene.message,'')
+    assert.equal('winner' in app.scene.runtime,false)
+  }
 })
