@@ -47,6 +47,16 @@ function validatedRoute(route,start){
   if(points[0].x!==start.x||points[0].y!==start.y){
     throw new Error('行軍路線必須從部隊目前位置開始。')
   }
+  // Each route node is one bounded movement step in the provisional runtime
+  // projection. A distant destination can no longer be reached in one day.
+  const step=MARCH_RUNTIME_PROJECTION.routeStepWorld
+  for(let i=1;i<points.length;i++){
+    const dx=Math.abs(points[i].x-points[i-1].x)
+    const dy=Math.abs(points[i].y-points[i-1].y)
+    if((dx===0&&dy===0)||Math.max(dx,dy)>step){
+      throw new Error('行軍路線節點超出每格步長或重複。')
+    }
+  }
   return points
 }
 

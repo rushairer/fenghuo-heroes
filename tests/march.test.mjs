@@ -4,9 +4,23 @@ import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
 import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginFieldBattleFromArmies,beginSiegeFromArmy,cancelFieldBattleFromArmies,cancelSiegeFromArmy,dailyFoodFor,deployedOfficerNames,enemyArmyNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { WORLD_W, cityWorldPoint } from '../src/game/world.js'
+import { MARCH_RUNTIME_PROJECTION } from '../src/game/march-runtime-projection.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
 const city=(id)=>CITIES.find((item)=>item.id===id)
+
+function routeToward(start,target){
+  const step=MARCH_RUNTIME_PROJECTION.routeStepWorld
+  const points=[{...start}]
+  let x=start.x,y=start.y
+  while(x!==target.x||y!==target.y){
+    x+=Math.sign(target.x-x)*Math.min(step,Math.abs(target.x-x))
+    y+=Math.sign(target.y-y)*Math.min(step,Math.abs(target.y-y))
+    points.push({x,y})
+    if(points.length>256)throw new Error('fixture route exceeded world bounds')
+  }
+  return points
+}
 
 function marchingCaoStore(){
   const store=new GameStore(new MemoryStorage())
@@ -47,6 +61,8 @@ test('invalid troop, food, gold and route data are rejected atomically',()=>{
     {...valid,gold:Infinity},
     {...valid,route:[start,{x:NaN,y:start.y}]},
     {...valid,route:[start,{x:WORLD_W+9,y:start.y}]},
+    {...valid,route:[start,{x:start.x+80,y:start.y}]},
+    {...valid,route:[start,start]},
     {...valid,route:[{x:start.x+8,y:start.y},{x:start.x+16,y:start.y}]},
   ]
   for(const request of invalid){
@@ -76,6 +92,7 @@ test('rejected reroute leaves the original army position and route untouched',()
   const army=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:500,food:100,gold:0})
   const before=structuredClone(army)
   assert.throws(()=>rerouteArmy(s,army.id,[start,{x:NaN,y:start.y}]),/行軍路線/)
+  assert.throws(()=>rerouteArmy(s,army.id,[start,{x:start.x+40,y:start.y}]),/每格步長/)
   assert.throws(()=>rerouteArmy(s,army.id,[{x:start.x+8,y:start.y},{x:start.x+16,y:start.y}]),/部隊目前位置/)
   assert.deepEqual(army,before)
 })
@@ -141,13 +158,13 @@ test('siege preparation preserves the attacking army instead of applying fake in
   const target=cityWorldPoint(city('xinye'))
   const army=queueMarch(s,{
     from:'xuchang',
-    route:[start,target],
+    route:routeToward(start,target),
     troops:1200,
     food:400,
     gold:0,
     officerNames:['曹操','夏候惇'],
   })
-  advanceMarchArmies(s,1)
+  advanceMarchArmies(s,200)
   const citiesBefore=structuredClone(s.state.cities)
   const conflict=beginSiegeFromArmy(s,army.id,'xinye')
   assert.equal(conflict.kind,'siege')
@@ -328,8 +345,8 @@ test('cancelled siege restores the exact pre-siege army status',()=>{
   const s=marchingCaoStore()
   const start=cityWorldPoint(city('xuchang'))
   const target=cityWorldPoint(city('xinye'))
-  const army=queueMarch(s,{from:'xuchang',route:[start,target],troops:1200,food:400,gold:0,officerNames:['曹操']})
-  advanceMarchArmies(s,1)
+  const army=queueMarch(s,{from:'xuchang',route:routeToward(start,target),troops:1200,food:400,gold:0,officerNames:['曹操']})
+  advanceMarchArmies(s,200)
   army.status='marching'
   beginSiegeFromArmy(s,army.id,'xinye')
   assert.equal(army.status,'besieging')
