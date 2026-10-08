@@ -60,6 +60,7 @@ export class FieldBattleScene{
   }
 
   saveRuntime(){
+    this.runtime=ensureFieldBattleRuntime(this.conflict)
     this.app.store.save()
   }
 

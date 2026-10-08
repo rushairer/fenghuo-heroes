@@ -18,6 +18,11 @@ export class SiegeScene{
     this.pauseConfirm=false
   }
 
+  saveRuntime(){
+    this.runtime=ensureSiegeRuntime(this.conflict)
+    this.app.store.save()
+  }
+
   update(_dt,input){
     const key=input.consume()
     if(!key)return
@@ -31,7 +36,7 @@ export class SiegeScene{
     if(this.pauseConfirm){
       if(b==='B'){this.pauseConfirm=false;this.app.audio.cancel();return}
       if(b==='C'||b==='START'){
-        this.app.store.save()
+        this.saveRuntime()
         this.app.go('title',{force:true})
         this.app.audio.confirm()
       }
@@ -66,7 +71,7 @@ export class SiegeScene{
         setSiegeSpeed(this.conflict,speed)
         setSiegePhase(this.conflict,'formation')
         this.phase='formation'
-        this.app.store.save()
+        this.saveRuntime()
         this.app.audio.confirm()
       }
       return
@@ -76,7 +81,7 @@ export class SiegeScene{
       if(b==='B'){
         setSiegePhase(this.conflict,'speed')
         this.phase='speed'
-        this.app.store.save()
+        this.saveRuntime()
         this.app.audio.cancel()
         return
       }
@@ -86,7 +91,7 @@ export class SiegeScene{
         setSiegeSpeed(this.conflict,speed)
         setSiegePhase(this.conflict,'siege')
         this.phase='siege'
-        this.app.store.save()
+        this.saveRuntime()
         this.app.audio.confirm()
       }
       return
@@ -100,7 +105,7 @@ export class SiegeScene{
       if(b==='A'||b==='C'||b==='START'){
         const intent=queueSiegeAttackIntent(this.conflict)
         this.message=`第${intent.sequence}次攻城命令已受理；原版确认会降低城防并提高进入城内部队战的概率，但具体下降量和概率尚未校准，本次不修改数值。`
-        this.app.store.save()
+        this.saveRuntime()
         this.app.audio.confirm()
       }
     }
