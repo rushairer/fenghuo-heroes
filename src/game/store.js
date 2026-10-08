@@ -38,7 +38,11 @@ function recoverOrphanedBattleArmyStatuses(state,pendingConflict){
   }
   if(pendingConflict?.kind==='siege')activeIds.add(pendingConflict.armyId)
   for(const army of state.armies){
-    if(!activeIds.has(army.id)&&(army.status==='engaged'||army.status==='besieging')){
+    // The persisted conflict is the authority for battle participation.
+    // Recover stale statuses without inferring any battle outcome.
+    if(activeIds.has(army.id)){
+      army.status=pendingConflict.kind==='field'?'engaged':'besieging'
+    }else if(army.status==='engaged'||army.status==='besieging'){
       army.status='waiting'
     }
   }

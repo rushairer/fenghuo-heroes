@@ -133,3 +133,23 @@ test('saved start-state provenance cannot silently masquerade as a different sce
   assert.equal(restored.load(),false)
   assert.equal(storage.getItem(SAVE_KEY),value)
 })
+
+test('valid conflict references restore active battlefield statuses without changing troops',()=>{
+  for(const kind of ['field','siege']){
+    const {storage,store}=baseline()
+    store.state.armies=[
+      {id:'a',faction:'cao',status:'waiting',troops:700,food:10,gold:0},
+      {id:'b',faction:'liu',status:'marching',troops:600,food:10,gold:0},
+    ]
+    store.pendingConflict=kind==='field'
+      ?{kind:'field',attackerArmyId:'a',defenderArmyId:'b',attacker:'cao',defender:'liu'}
+      :{kind:'siege',armyId:'a',target:'xinye',attacker:'cao',defender:'liu'}
+    store.save()
+    const restored=new GameStore(storage)
+    assert.equal(restored.load(),true)
+    assert.equal(restored.pendingConflict.kind,kind)
+    assert.equal(restored.state.armies[0].status,kind==='field'?'engaged':'besieging')
+    assert.equal(restored.state.armies[1].status,kind==='field'?'engaged':'marching')
+    assert.deepEqual(restored.state.armies.map((a)=>a.troops),[700,600])
+  }
+})
