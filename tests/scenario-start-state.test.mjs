@@ -4,6 +4,7 @@ import { buildCanonicalRuntimeMap } from '../src/game/canonical-map-profile.js'
 import { RUNTIME_SCAFFOLD_MAP_PROFILE } from '../src/game/runtime-map-scaffold.js'
 import {
   buildCanonical189ScenarioStartState,
+  buildCanonicalScenarioStartState,
   buildScaffold189ScenarioStartState,
   canonicalScenarioOwnershipByCityId,
   canonicalOfficerAssignmentsByCityId,
@@ -90,4 +91,52 @@ test('canonical 189 start state combines source-backed ownership economy and off
   ].sort((a,b)=>a.name.localeCompare(b.name)))
   assert.equal(state.cities['zh-03'].officerCount,2)
   assert.equal(state.cities['zh-01'].officerCount,0)
+})
+
+test('independent 200 and 215 canonical scenarios build only from matching synthetic test ledgers',()=>{
+  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
+  for(const year of [200,215]){
+    const evidence=completeCanonicalScenarioEvidence({year})
+    const state=buildCanonicalScenarioStartState({
+      mapProfile:profile,scenarioYear:year,scenarioEvidence:evidence,
+    })
+    assert.equal(state.id,'zh-rom-canonical:'+year)
+    assert.equal(state.scenarioYear,year)
+    assert.equal(state.ownershipStatus,'source-backed-'+year)
+    assert.equal(state.economyStatus,'source-backed-'+year)
+    assert.equal(state.officerPlacementStatus,'source-backed-'+year)
+    assert.equal(state.cities['zh-01'].owner,'liu')
+    assert.equal(state.cities['zh-02'].owner,'cao')
+    assert.equal(Object.keys(state.cities).length,40)
+  }
+})
+
+test('canonical 200/215 cannot start with empty production evidence or another year ledger',()=>{
+  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
+  for(const year of [200,215]){
+    assert.throws(
+      ()=>defaultScenarioStartStateFactory({mapProfile:profile,scenarioYear:year}),
+      /evidence is incomplete/,
+    )
+    assert.throws(()=>buildCanonicalScenarioStartState({
+      mapProfile:profile,scenarioYear:year,
+      scenarioEvidence:completeCanonicalScenarioEvidence({year:189}),
+    }),/year does not match/)
+    assert.throws(()=>buildCanonicalScenarioStartState({
+      mapProfile:profile,scenarioYear:year,
+      scenarioEvidence:{...completeCanonicalScenarioEvidence({year}),cityStates:[]},
+    }),/evidence is incomplete/)
+  }
+})
+
+test('unsupported years or scaffold geometry cannot be promoted by synthetic complete evidence',()=>{
+  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
+  assert.throws(()=>buildCanonicalScenarioStartState({
+    mapProfile:profile,scenarioYear:201,
+    scenarioEvidence:completeCanonicalScenarioEvidence({year:201}),
+  }),/Unknown canonical scenario year/)
+  assert.throws(()=>buildCanonicalScenarioStartState({
+    mapProfile:RUNTIME_SCAFFOLD_MAP_PROFILE,scenarioYear:189,
+    scenarioEvidence:completeCanonicalScenarioEvidence({year:189}),
+  }),/canonical map profile/)
 })
