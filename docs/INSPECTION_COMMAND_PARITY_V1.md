@@ -166,3 +166,14 @@ Rules for later work:
 - replace blocked effects only from manual/ROM/emulator evidence;
 - never infer exact formulas from another Three Kingdoms title;
 - never promote a community heuristic or prototype number to a parity fact.
+
+## 2026-10-09 — 開發、福利、教育的命令準備流程
+
+- 開發／福利：選執行武將、設定投入金、預覽、確認。
+- 教育：選非君主對象、設定投入金、預覽、確認。
+- 城市配屬優先使用經驗證的 per-city officer assignments；189 scaffold 僅有勢力名冊時，界面明確標記「城市配屬未校準」。
+- 投入金採整數範圍且不得高於城內現有金，確認時再次驗證。B 可以逐步返回或取消。
+- 沒有經直接證據校準的數值公式，確認僅作預覽；不扣金、不消耗武將回合、不修改城市或武將狀態。
+- 固定 QA：inspection-develop、inspection-welfare、inspection-educate。
+
+後續須以中文原版實機資料驗證金額輸入上下限、步進方式、執行次數和效果公式，才能從準備流程升級到真實命令效果。
