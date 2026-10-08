@@ -15,6 +15,41 @@ export function dailyFoodFor(troops, officerCount = 1) {
   return Math.floor(Math.max(0, troops) / 100) + Math.max(0, Math.floor(officerCount))
 }
 
+// Protect the player-owned city ledger before any mutable march state is created.
+// The existing 100-soldier garrison rule is a runtime constraint, not a claim
+// about an unverified Chinese-ROM recruitment or casualty formula.
+export function validateMarchAllocation(source,{troops,food,gold}){
+  const wholeNonNegative=(value)=>Number.isSafeInteger(value)&&value>=0
+  if(!source||!wholeNonNegative(source.troops)||!wholeNonNegative(source.food)||!wholeNonNegative(source.gold)){
+    throw new Error('出發城的兵力、兵糧或軍資金資料無效。')
+  }
+  if(!Number.isSafeInteger(troops)||troops<100||troops>source.troops-100){
+    throw new Error('出陣兵力不足：至少須留下100兵守城。')
+  }
+  if(!wholeNonNegative(food)||food>source.food){
+    throw new Error('出陣兵糧必須是城內存量以內的整數。')
+  }
+  if(!wholeNonNegative(gold)||gold>source.gold){
+    throw new Error('出陣軍資金必須是城內存量以內的整數。')
+  }
+  return Object.freeze({troops,food,gold})
+}
+
+function validatedRoute(route,start){
+  if(!Array.isArray(route)||route.length<2)throw new Error('請先用方框指定行軍路線。')
+  const points=route.map((point)=>{
+    if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y)||
+      point.x<8||point.x>WORLD_W-8||point.y<8||point.y>WORLD_H-8){
+      throw new Error('行軍路線含有無效或超出地圖範圍的座標。')
+    }
+    return {x:Math.round(point.x),y:Math.round(point.y)}
+  })
+  if(points[0].x!==start.x||points[0].y!==start.y){
+    throw new Error('行軍路線必須從部隊目前位置開始。')
+  }
+  return points
+}
+
 export function deployedOfficerNames(store, faction = store?.humanFaction) {
   const names=new Set()
   for(const army of ensureMarchState(store)){
@@ -119,21 +154,17 @@ export function queueMarch(store, {
   const duplicate=names.find((name)=>deployed.has(name))
   if(duplicate)throw new Error(`${duplicate}已隨其他部隊出陣。`)
   const nOfficers = Math.max(1, names.length || Math.floor(officerCount))
-  const nTroops = clamp(Math.floor(troops), 100, Math.max(100, source.troops - 100))
-  const nFood = clamp(Math.floor(food), 0, source.food)
-  const nGold = clamp(Math.floor(gold), 0, source.gold)
-  if (source.troops - nTroops < 100) throw new Error('城內留守兵力不足。')
+  const start = cityWorldPoint(city)
+  const normalized = validatedRoute(route,start)
+  const allocation = validateMarchAllocation(source,{troops,food,gold})
+  const nTroops=allocation.troops
+  const nFood=allocation.food
+  const nGold=allocation.gold
 
+  // All checks are complete: no failing request may consume resources or IDs.
   source.troops -= nTroops
   source.food -= nFood
   source.gold -= nGold
-
-  const start = cityWorldPoint(city)
-  const normalized = route.map((point) => ({
-    x: clamp(Math.round(point.x), 8, WORLD_W - 8),
-    y: clamp(Math.round(point.y), 8, WORLD_H - 8),
-  }))
-  normalized[0] = { ...start }
 
   const army = {
     id: `army-${store.state.nextArmyId++}`,
@@ -165,14 +196,8 @@ export function rerouteArmy(store, armyId, route) {
   const army = ensureMarchState(store).find((item) => item.id === armyId && item.faction === store.humanFaction)
   if (!army) throw new Error('找不到可操作的行軍部隊。')
   if(army.status==='engaged'||army.status==='besieging')throw new Error('戰鬥中的部隊不能變更行軍路線。')
-  if (!Array.isArray(route) || route.length < 2) throw new Error('請指定新的行軍路線。')
-  army.route = [
-    { x: army.x, y: army.y },
-    ...route.slice(1).map((point) => ({
-      x: clamp(Math.round(point.x), 8, WORLD_W - 8),
-      y: clamp(Math.round(point.y), 8, WORLD_H - 8),
-    })),
-  ]
+  const normalized=validatedRoute(route,{x:army.x,y:army.y})
+  army.route=normalized
   army.routeIndex = 0
   army.status = 'marching'
   store.addLog('行軍部隊已變更路線。')
@@ -261,6 +286,9 @@ export function beginSiegeFromArmy(store, armyId, targetCityId) {
   const army = armies.find((item) => item.id === armyId && item.faction === store.humanFaction)
   const target = store.state.cities[targetCityId]
   if (!army || !target || target.owner === army.faction) throw new Error('目前無可攻擊的敵城。')
+  if(army.status==='engaged'||army.status==='besieging'){
+    throw new Error('已進入戰鬥的部隊不可重複發動攻城。')
+  }
   const near = enemyCityNearArmy(store, armyId)
   if (!near || near.id !== targetCityId) throw new Error('部隊尚未接近敵城。')
   const previousArmyStatus=army.status??'waiting'
@@ -301,6 +329,9 @@ export function beginFieldBattleFromArmies(store, attackerArmyId, defenderArmyId
   const defender=armies.find((item)=>item.id===defenderArmyId&&item.faction!==store.humanFaction)
   if(!attacker||!defender)throw new Error('目前無可攻擊的敵行軍部隊。')
   if(store.pendingConflict)throw new Error('已有尚未結束的戰鬥。')
+  if([attacker,defender].some((army)=>army.status==='engaged'||army.status==='besieging')){
+    throw new Error('戰鬥中的部隊不可重複發動攻擊。')
+  }
   const dx=Math.abs(defender.x-attacker.x)
   const dy=Math.abs(defender.y-attacker.y)
   if(Math.max(dx,dy)===0||Math.max(dx,dy)>MARCH_ADJACENCY_STEP)throw new Error('敵部隊尚未進入可攻擊範圍。')

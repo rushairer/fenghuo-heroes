@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
 import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginFieldBattleFromArmies,beginSiegeFromArmy,cancelFieldBattleFromArmies,cancelSiegeFromArmy,dailyFoodFor,deployedOfficerNames,enemyArmyNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
-import { cityWorldPoint } from '../src/game/world.js'
+import { WORLD_W, cityWorldPoint } from '../src/game/world.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
 const city=(id)=>CITIES.find((item)=>item.id===id)
@@ -28,6 +28,56 @@ test('free cursor route creates persistent march army',()=>{
   assert.equal(ensureMarchState(s).length,1)
   assert.equal(army.dailyFood,11)
   assert.equal(army.route.length,3)
+})
+
+
+test('invalid troop, food, gold and route data are rejected atomically',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const source=s.state.cities.xuchang
+  const before=structuredClone(source)
+  const valid={from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:100,food:10,gold:1}
+  const invalid=[
+    {...valid,troops:source.troops},
+    {...valid,troops:-1},
+    {...valid,troops:NaN},
+    {...valid,food:source.food+1},
+    {...valid,food:1.1},
+    {...valid,gold:source.gold+1},
+    {...valid,gold:Infinity},
+    {...valid,route:[start,{x:NaN,y:start.y}]},
+    {...valid,route:[start,{x:WORLD_W+9,y:start.y}]},
+    {...valid,route:[{x:start.x+8,y:start.y},{x:start.x+16,y:start.y}]},
+  ]
+  for(const request of invalid){
+    assert.throws(()=>queueMarch(s,request),/出陣|行軍路線/)
+    assert.deepEqual(source,before)
+    assert.equal(ensureMarchState(s).length,0)
+    assert.equal(s.state.nextArmyId,1)
+  }
+})
+
+test('a city with fewer than 200 soldiers cannot create an army or mint troops',()=>{
+  const s=marchingCaoStore()
+  const cityState=s.state.cities.xuchang
+  cityState.troops=150
+  const start=cityWorldPoint(city('xuchang'))
+  assert.throws(()=>queueMarch(s,{
+    from:'xuchang',route:[start,{x:start.x+8,y:start.y}],
+    troops:100,food:0,gold:0,
+  }),/至少須留下100兵/)
+  assert.equal(cityState.troops,150)
+  assert.equal(ensureMarchState(s).length,0)
+})
+
+test('rejected reroute leaves the original army position and route untouched',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const army=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:500,food:100,gold:0})
+  const before=structuredClone(army)
+  assert.throws(()=>rerouteArmy(s,army.id,[start,{x:NaN,y:start.y}]),/行軍路線/)
+  assert.throws(()=>rerouteArmy(s,army.id,[{x:start.x+8,y:start.y},{x:start.x+16,y:start.y}]),/部隊目前位置/)
+  assert.deepEqual(army,before)
 })
 
 test('selected officer names persist on army and drive grain consumption',()=>{

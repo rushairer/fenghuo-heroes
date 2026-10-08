@@ -63,8 +63,14 @@ export class StrategyScene extends MarchStrategyScene {
   }
 
   beginMarchCompose(cityId) {
-    super.beginMarchCompose(cityId)
     const city = this.app.store.state.cities[cityId]
+    if(!city||!Number.isSafeInteger(city.troops)||city.troops<200){
+      this.message='城內兵力不足：至少須留下100兵守城。'
+      this.view='message'
+      this.app.audio.alert()
+      return
+    }
+    super.beginMarchCompose(cityId)
     const available = this.availableOfficerNames()
     this.officerCursor = 0
     this.selectedOfficerNames = available.length ? [available[0]] : []

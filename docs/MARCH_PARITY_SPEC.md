@@ -118,3 +118,11 @@ The production target is the Chinese-ROM experience, so runtime follows the Hong
 - The supply submenu exposes only the documented three families: purchase weapons, purchase rice, and officer healing.
 - Prices, quantities, weapon effects and healing amounts remain unverified, so supply records semantic intent without mutating resources or stamina.
 - 分散 appears only when at least two friendly armies share the same map point. Because the runtime already stores those armies as separate persistent entities, 分散 reroutes the selected army away from the shared point instead of inventing an unsupported troop/resource split formula.
+
+## 2026-10-08 — 出陣資料完整性保護
+
+- 出陣前以整數及實際城內存量校驗兵、金、米；至少留下目前運行時規定的 100 守軍，拒絕以夾取值掩蓋非法數據。
+- 路線的起點必須是出發城或行軍部隊的當前坐標；NaN、無窮大、超出世界邊界的節點直接拒絕，不再悄悄夾到邊界。
+- 全部校驗通過後才扣除資源及消耗軍隊 ID；被拒絕的命令不改城池、軍隊或路線。
+- 已處於 engaged / besieging 的部隊不能重新發動另一場戰鬥。
+- 以上屬於數據完整性約束，不是對原版行軍格距、兵力分配或戰鬥公式的聲稱。
