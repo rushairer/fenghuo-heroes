@@ -65,16 +65,22 @@ npm run check
 - `?qa=full-map`
 - `?qa=officer-list`
 - `?qa=officer-status`
+- `?qa=inspection-develop`
+- `?qa=inspection-welfare`
+- `?qa=inspection-educate`
 - `?qa=march-compose`
 - `?qa=march-officers`
 - `?qa=march-route-prompt`
 - `?qa=army-menu`
+- `?qa=field-battle-speed`
+- `?qa=field-battle-formation`
+- `?qa=field-battle-active`
 - `?qa=siege-speed`
 - `?qa=siege-formation`
 - `?qa=duel-mode`
 - `?qa=duel-manual`
 
-这些 QA 状态只固定画面入口，不改变默认玩家流程。武将 QA 状态只使用仓库现有 evidence-backed 开局名册投影；行军/攻城/单挑深层页面所需的临时军队与冲突明确标记为 `qaFixture`，仅用于确定性视觉复核，不属于 parity 证据，也不会被当作 canonical 游戏数据。
+这些 QA 状态只固定画面入口，不改变默认玩家流程。QA 模式使用独立临时 GameStore，不会读取或覆盖正常浏览器存档。武将 QA 状态只使用仓库现有 evidence-backed 开局名册投影；行军/攻城/单挑深层页面所需的临时军队与冲突明确标记为 `qaFixture`，仅用于确定性视觉复核，不属于 parity 证据，也不会被当作 canonical 游戏数据。
 
 ## Parity evidence tools
 
