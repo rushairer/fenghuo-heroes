@@ -43,7 +43,6 @@ test('malformed saves fail closed without erasing recoverable browser bytes',()=
     (s)=>{s.scenarioYear='189'},
     (s)=>{s.scenarioYear=200},
     (s)=>{s.scenarioStateId='zh-rom-canonical:189'},
-    (s)=>{delete s.scenarioStateId},
     (s)=>{s.month=13},
     (s)=>{s.cursor={x:Infinity,y:10}},
     (s)=>{s.activeCity='missing-city'},
@@ -143,7 +142,7 @@ test('valid conflict references restore active battlefield statuses without chan
     ]
     store.pendingConflict=kind==='field'
       ?{kind:'field',attackerArmyId:'a',defenderArmyId:'b',attacker:'cao',defender:'liu'}
-      :{kind:'siege',armyId:'a',target:'xinye',attacker:'cao',defender:'liu'}
+      :{kind:'siege',armyId:'a',target:'xinye',attacker:'cao',defender:store.state.cities.xinye.owner}
     store.save()
     const restored=new GameStore(storage)
     assert.equal(restored.load(),true)
@@ -152,4 +151,13 @@ test('valid conflict references restore active battlefield statuses without chan
     assert.equal(restored.state.armies[1].status,kind==='field'?'engaged':'marching')
     assert.deepEqual(restored.state.armies.map((a)=>a.troops),[700,600])
   }
+})
+
+test('legacy scaffold 189 save without scenario state tag is safely backfilled',()=>{
+  const {storage,raw}=baseline()
+  delete raw.scenarioStateId
+  storage.setItem(SAVE_KEY,JSON.stringify(raw))
+  const restored=new GameStore(storage)
+  assert.equal(restored.load(),true)
+  assert.equal(restored.state.scenarioStateId,'runtime-scaffold:189')
 })
