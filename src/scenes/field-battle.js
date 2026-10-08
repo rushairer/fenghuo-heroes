@@ -20,7 +20,6 @@ import {
   setFieldBattleSpeed,
 } from '../game/field-battle-runtime.js'
 import { mdButton } from '../game/input.js'
-import { cancelFieldBattleFromArmies } from '../game/march.js'
 
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value))
 
@@ -39,6 +38,7 @@ export class FieldBattleScene{
     this.scrollY=0
     this.message=''
     this.retreatUnlocked=Boolean(this.conflict.retreatUnlocked)
+    this.pauseConfirm=false
   }
 
   commandContext(){
@@ -65,14 +65,24 @@ export class FieldBattleScene{
   update(_dt,input){
     const key=input.consume()
     if(!key)return
-    if(key==='Escape'){
-      cancelFieldBattleFromArmies(this.app.store)
-      this.app.audio.cancel()
-      this.app.go('strategy')
-      return
-    }
     const b=mdButton(key)
     if(b==='HD'){this.app.toggleHd();return}
+    // Never interpret Esc/B as a strategic battle cancellation. P is an
+    // explicit save-and-return control because outcome rules remain blocked.
+    if(key==='p'||key==='P'){
+      this.pauseConfirm=!this.pauseConfirm
+      this.app.audio.move()
+      return
+    }
+    if(this.pauseConfirm){
+      if(b==='B'){this.pauseConfirm=false;this.app.audio.cancel();return}
+      if(b==='C'||b==='START'){
+        this.saveRuntime()
+        this.app.go('title',{force:true})
+        this.app.audio.confirm()
+      }
+      return
+    }
 
     if(this.message){
       if(['A','B','C'].includes(b)){
@@ -355,5 +365,10 @@ export class FieldBattleScene{
       r.wrapText(this.message,160,86,220,11,7,'#f0e4c5','center')
       r.text('A / B / C 關閉',160,126,6,'#8a806e','center')
     }
+    if(this.pauseConfirm){
+      r.panel(33,70,254,78,'#050505','#9b6514')
+      r.text('保存目前戰鬥並返回標題？',160,85,9,'#efd27d','center')
+      r.text('C / START 確定　B 取消',160,117,7,COLORS.cyan,'center')
+    }else r.text('P：保存並返回標題',160,217,5.5,'#c5b99c','center')
   }
 }

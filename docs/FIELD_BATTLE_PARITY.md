@@ -83,3 +83,13 @@ The runtime now enforces the manual-confirmed terrain conditions before a tactic
 待機 also records the documented ambush condition: a unit with 5,000 troops or fewer waiting in forest enters ambush state. The combat effect of ambush remains uncalibrated.
 
 The persisted battle runtime also records battle day, ambush state and the observed 30-day carryover boundary without assigning a winner.
+
+## 2026-10-08 — explicit battle pause and resume
+
+Both field-battle and siege scenes now use P to open an explicit
+save-and-return-to-title confirmation. C/START saves and returns; B cancels
+the confirmation. Field-battle Escape/B must no longer erase a conflict
+as a shortcut, because retreat availability and combat consequences are
+not calibrated. Returning to the title retains the pending conflict
+and Continue routes back to its battle scene. This is an engineering
+safety control, not a claimed original-ROM key binding.

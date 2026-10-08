@@ -15,6 +15,7 @@ export class SiegeScene{
     this.speedIndex=Math.max(0,BATTLE_SPEEDS.findIndex((item)=>item.id===this.runtime.speed))
     this.phase=this.runtime.phase
     this.message=''
+    this.pauseConfirm=false
   }
 
   update(_dt,input){
@@ -22,6 +23,20 @@ export class SiegeScene{
     if(!key)return
     const b=mdButton(key)
     if(b==='HD'){this.app.toggleHd();return}
+    if(key==='p'||key==='P'){
+      this.pauseConfirm=!this.pauseConfirm
+      this.app.audio.move()
+      return
+    }
+    if(this.pauseConfirm){
+      if(b==='B'){this.pauseConfirm=false;this.app.audio.cancel();return}
+      if(b==='C'||b==='START'){
+        this.app.store.save()
+        this.app.go('title',{force:true})
+        this.app.audio.confirm()
+      }
+      return
+    }
 
     if(this.message){
       if(['A','B','C','START'].includes(b)){
@@ -143,6 +158,11 @@ export class SiegeScene{
       r.wrapText(this.message,160,88,208,11,7.5,'#f0e4c5','center')
       r.text('A / B / C 關閉',160,124,6,'#8a806e','center')
     }
+    if(this.pauseConfirm){
+      r.panel(33,70,254,78,'#050505','#9b6514',smallPanel)
+      r.text('保存目前攻城並返回標題？',160,85,9,'#efd27d','center')
+      r.text('C / START 確定　B 取消',160,117,7,COLORS.cyan,'center')
+    }else r.text('P：保存並返回標題',160,217,5.5,'#c5b99c','center')
     r.scanlines(.02)
   }
 }

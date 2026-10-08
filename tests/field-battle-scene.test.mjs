@@ -27,3 +27,30 @@ test('uncalibrated field battle contains no fabricated damage resolver',()=>{
   assert.doesNotMatch(source,/resolveConflict/)
   assert.match(source,/cancelFieldBattleFromArmies/)
 })
+
+test('battle pause returns to title only after explicit confirmation and never clears conflict',async()=>{
+  const { FieldBattleScene }=await import('../src/scenes/field-battle.js')
+  const { SiegeScene }=await import('../src/scenes/siege.js')
+  for(const [Scene,kind] of [[FieldBattleScene,'field'],[SiegeScene,'siege']]){
+    const conflict={kind,runtime:{phase:kind==='field'?'battle':'siege'}}
+    const calls=[]
+    const app={
+      store:{pendingConflict:conflict,save:()=>calls.push('saved')},
+      go:(name,options)=>calls.push({name,options}),
+      audio:{move(){},cancel(){},confirm(){},alert(){}},
+    }
+    const scene=new Scene(app)
+    const send=(key)=>scene.update(0,{consume:()=>key})
+    send('Escape')
+    assert.equal(app.store.pendingConflict,conflict)
+    assert.equal(calls.length,0)
+    send('p')
+    assert.equal(scene.pauseConfirm,true)
+    send('x')
+    assert.equal(scene.pauseConfirm,false)
+    send('p')
+    send('c')
+    assert.equal(app.store.pendingConflict,conflict)
+    assert.deepEqual(calls,[ 'saved',{name:'title',options:{force:true}} ])
+  }
+})
