@@ -1,5 +1,6 @@
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 import { MARCH_RUNTIME_PROJECTION } from './march-runtime-projection.js'
+import { openingOfficerListForCity } from './officer-roster.js'
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
@@ -162,6 +163,15 @@ export function queueMarch(store, {
   const deployed=deployedOfficerNames(store,store.humanFaction)
   const duplicate=names.find((name)=>deployed.has(name))
   if(duplicate)throw new Error(`${duplicate}已隨其他部隊出陣。`)
+  const roster=openingOfficerListForCity(store,from)
+  if(roster.cityAssignmentVerified){
+    // Once the real scenario specifies per-city officer placement, a caller
+    // must choose a named officer stationed in the selected source city.
+    if(!names.length)throw new Error('已校準城池出陣必須選擇實際駐城武將。')
+    const allowed=new Set(roster.rows.map((row)=>row.name))
+    const displaced=names.find((name)=>!allowed.has(name))
+    if(displaced)throw new Error(`${displaced}不在目前的出發城駐守。`)
+  }
   const nOfficers=names.length||officerCount
   if(!Number.isSafeInteger(nOfficers)||nOfficers<1){
     throw new Error('出陣武將人數必須是有效正整數。')

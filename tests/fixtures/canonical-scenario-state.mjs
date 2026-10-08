@@ -33,6 +33,7 @@ export function completeCanonicalScenarioEvidence({
   const officerAssignments=[
     {officer:'關羽',role:'officer',city:'代縣',sourceId:source.id,frameRef:'frame#officer-guan-yu',verified:true},
     {officer:'張飛',role:'officer',city:'代縣',sourceId:source.id,frameRef:'frame#officer-zhang-fei',verified:true},
+    {officer:'曹操',role:'ruler',city:ZH_ROM_CANONICAL_CITY_SET[1],sourceId:source.id,frameRef:'frame#fixture-cao-canonical-city',verified:true},
   ]
   return {
     status:'test-fixture-complete',

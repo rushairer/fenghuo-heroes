@@ -53,7 +53,7 @@ export class StrategyScene extends MarchStrategyScene {
     const deployed=deployedOfficerNames(store,store.humanFaction)
     const names=projection.rows.map((row)=>row.name).filter((name)=>name&&!deployed.has(name))
     if(names.length)return names
-    if(projection.rows.length)return []
+    if(projection.cityAssignmentVerified||projection.rows.length)return []
     const fallbackRuler=FACTION_BY_ID[store.humanFaction]?.ruler
     return fallbackRuler&&!deployed.has(fallbackRuler)?[fallbackRuler]:[]
   }

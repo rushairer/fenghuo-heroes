@@ -56,6 +56,7 @@ test('march queue resolves source city through injected canonical profile',()=>{
     troops:1000,
     food:400,
     gold:0,
+    officerNames:['曹操'],
   })
   assert.equal(army.from,source.id)
   assert.equal(army.x,start.x)
@@ -74,6 +75,7 @@ test('enemy-city proximity and siege use canonical profile identities',()=>{
     troops:1200,
     food:400,
     gold:0,
+    officerNames:['曹操'],
   })
   advanceMarchArmies(store,200)
   assert.equal(enemyCityNearArmy(store,army.id)?.id,target.id)
@@ -82,4 +84,25 @@ test('enemy-city proximity and siege use canonical profile identities',()=>{
   assert.equal(conflict.attacker,'cao')
   assert.equal(conflict.defender,'liu')
   assert.equal(cancelSiegeFromArmy(store),true)
+})
+
+test('source-backed city placement is enforced before soldiers or money are consumed',()=>{
+  const {store,profile}=canonicalMarchStore()
+  const source=profile.cities.find((city)=>store.state.cities[city.id]?.owner==='cao')
+  const start=cityWorldPoint(source)
+  const before=structuredClone(store.state.cities[source.id])
+  const valid={
+    from:source.id,route:[start,{x:start.x+8,y:start.y}],
+    troops:1000,food:400,gold:0,
+  }
+  assert.throws(()=>queueMarch(store,valid),/必須選擇實際駐城武將/)
+  assert.throws(()=>queueMarch(store,{...valid,officerNames:['關羽']}),/不在目前的出發城/)
+  assert.deepEqual(store.state.cities[source.id],before)
+  assert.equal(store.state.armies?.length??0,0)
+  assert.equal(store.state.nextArmyId??1,1)
+
+  const own=queueMarch(store,{...valid,officerNames:['曹操']})
+  assert.deepEqual(own.officerNames,['曹操'])
+  assert.equal(own.officerCount,1)
+  assert.throws(()=>queueMarch(store,{...valid,officerNames:['曹操']}),/已隨其他部隊出陣/)
 })
