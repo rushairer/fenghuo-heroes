@@ -104,9 +104,19 @@ export class GameStore {
     const firstCity=cities.find((city)=>cityStates[city.id]?.owner===primary)??cities[0]
     if(!firstCity)throw new Error('Runtime map profile contains no cities.')
     const first=firstCity.id
-    this.state = { mapProfileId:this.mapProfile.id, scenarioStateId:scenarioState.id, scenarioOwnershipStatus:scenarioState.ownershipStatus, scenarioEconomyStatus:scenarioState.economyStatus, scenarioOfficerPlacementStatus:scenarioState.officerPlacementStatus, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(cityById[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:cityStates, log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
-    this.pendingConflict = null
-    this.save()
+    const nextState = { mapProfileId:this.mapProfile.id, scenarioStateId:scenarioState.id, scenarioOwnershipStatus:scenarioState.ownershipStatus, scenarioEconomyStatus:scenarioState.economyStatus, scenarioOfficerPlacementStatus:scenarioState.officerPlacementStatus, scenarioYear, difficulty:options.difficulty??'easy', animation:options.animation??true, textSpeed:options.textSpeed??'normal', year:scenarioYear, month:1, humanFactions:humans, activeHumanIndex:0, activeCity:first, cursor:cityWorldPoint(cityById[first]), inspectionCategories:{}, openingRosters:openingRosters(scenarioYear), cities:cityStates, log:[`${scenarioYear}年，群雄並起。`,'奇數月視察與命令，偶數月行軍。'] }
+    const oldState=this.state, oldConflict=this.pendingConflict
+    this.state=nextState
+    this.pendingConflict=null
+    try{
+      this.save()
+    }catch(error){
+      // A localStorage quota/security error must not replace the current
+      // in-memory campaign or swallow the real persistence failure.
+      this.state=oldState
+      this.pendingConflict=oldConflict
+      throw error
+    }
     return this.state
   }
   get humanFaction(){this.assertState();return this.state.humanFactions[this.state.activeHumanIndex]}
