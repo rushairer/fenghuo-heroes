@@ -10,6 +10,7 @@ export class TitleScene {
     this.selection = 0
     this.blink = 0
     this.phase = 'splash'
+    this.overwriteChoice = 1
   }
 
   update(dt, input) {
@@ -23,6 +24,29 @@ export class TitleScene {
       if (b === 'START' || b === 'C') {
         this.phase = 'menu'
         this.app.audio.confirm()
+      }
+      return
+    }
+
+    if (this.phase === 'overwrite-confirm') {
+      if (b === 'B') {
+        this.phase = 'menu'
+        this.app.audio.cancel()
+        return
+      }
+      if (b === 'UP' || b === 'DOWN' || b === 'LEFT' || b === 'RIGHT') {
+        this.overwriteChoice = 1 - this.overwriteChoice
+        this.app.audio.move()
+        return
+      }
+      if (b === 'C' || b === 'START') {
+        if (this.overwriteChoice === 0) {
+          this.app.audio.confirm()
+          this.app.go('players')
+        } else {
+          this.phase = 'menu'
+          this.app.audio.cancel()
+        }
       }
       return
     }
@@ -43,7 +67,10 @@ export class TitleScene {
     if (b === 'START' || b === 'C') {
       this.app.audio.confirm()
       if (this.selection === 1 && this.hasSave) this.app.go('strategy')
-      else this.app.go('players')
+      else if (this.hasSave) {
+        this.overwriteChoice = 1
+        this.phase = 'overwrite-confirm'
+      } else this.app.go('players')
     }
   }
 
@@ -65,6 +92,15 @@ export class TitleScene {
           r.text('PUSH START BUTTON', 153, 202, 7, '#fff0c9', 'center')
         }
       }
+    } else if (this.phase === 'overwrite-confirm') {
+      r.panel(44,66,232,103,'rgba(8,5,5,.96)','#b47722')
+      r.text('已有遊戲存檔',160,77,12,'#efd27d','center')
+      r.wrapText('開始新遊戲將在完成新劇本設定後覆蓋目前的存檔。',160,99,199,11,7,'#f0e4c5','center')
+      const choices=['確定開始','返回繼續']
+      choices.forEach((value,index)=>r.text(
+        `${index===this.overwriteChoice?'▶ ':''}${value}`,
+        160,131+index*16,8,index===this.overwriteChoice?COLORS.cyan:'#ddd0ad','center',
+      ))
     } else {
       const opts = this.hasSave ? ['START', 'CONTINUE'] : ['START']
       if (!hdArt) {
