@@ -103,13 +103,21 @@ export class SetupScene {
       this.app.audio.alert()
       return
     }
-    this.app.store.newGame({
-      scenarioYear: scenario.year,
-      difficulty: DIFFICULTIES[this.difficulty].id,
-      animation: this.animation === 0,
-      textSpeed: SPEEDS[this.speed][0],
-      humanFactions: selected,
-    })
+    try {
+      this.app.store.newGame({
+        scenarioYear: scenario.year,
+        difficulty: DIFFICULTIES[this.difficulty].id,
+        animation: this.animation === 0,
+        textSpeed: SPEEDS[this.speed][0],
+        humanFactions: selected,
+      })
+    } catch (error) {
+      // A verified scenario may lack an opening city for a selected ruler.
+      // Never discard the previous campaign or leave setup on a bad request.
+      this.message=error instanceof Error?error.message:'劇本開局資料無效。'
+      this.app.audio.alert()
+      return
+    }
     this.app.audio.confirm()
     this.app.go('strategy')
   }
