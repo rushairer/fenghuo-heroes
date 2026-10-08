@@ -42,8 +42,13 @@ test('battle QA fixtures seed only the minimum conflict shape required by siege 
     assert.equal(prepareVisualQaStore(value,qaState),true)
     assert.equal(value.state.month,2)
     assert.equal(value.pendingConflict?.qaFixture,true)
-    assert.equal(value.pendingConflict?.kind,'siege')
-    assert.ok(value.pendingConflict?.target)
+    const field=qaState.startsWith('field-battle-')
+    assert.equal(value.pendingConflict?.kind,field?'field':'siege')
+    if(field){
+      assert.equal(value.pendingConflict?.attackerArmyId,'qa-army')
+      assert.equal(value.pendingConflict?.defenderArmyId,'qa-field-enemy')
+      assert.equal(value.state.armies.find((army)=>army.id==='qa-field-enemy')?.qaFixture,true)
+    }else assert.ok(value.pendingConflict?.target)
     assert.notEqual(value.pendingConflict?.attacker,value.pendingConflict?.defender)
   }
 })
@@ -63,4 +68,16 @@ test('QA fixtures can be removed without touching ordinary game state',()=>{
   assert.equal(value.pendingConflict,null)
   assert.equal(value.state.armies.some((army)=>army.qaFixture),false)
   assert.equal(value.hasGame(),true)
+})
+
+test('field-battle QA armies and conflict are removable without touching playable city state',()=>{
+  const value=store()
+  const before=structuredClone(value.state.cities)
+  assert.equal(prepareVisualQaStore(value,'field-battle-active'),true)
+  assert.equal(value.pendingConflict?.kind,'field')
+  assert.equal(value.state.armies.length,2)
+  clearVisualQaFixture(value)
+  assert.equal(value.pendingConflict,null)
+  assert.equal(value.state.armies.length,0)
+  assert.deepEqual(value.state.cities,before)
 })
