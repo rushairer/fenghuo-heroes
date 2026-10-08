@@ -70,3 +70,29 @@ test('B/Escape at title does not start or reset a saved campaign',()=>{
   assert.equal(scene.phase,'splash')
   assert.deepEqual(moves,[])
 })
+
+test('a corrupt but retained browser save triggers overwrite warning rather than silent new-game start',()=>{
+  const moves=[]
+  const app={
+    store:{load:()=>false,hasStoredSave:()=>true},
+    audio:{confirm(){},cancel(){},move(){}},
+    go(name){moves.push(name)},
+    toggleHd(){},
+  }
+  const scene=new TitleScene(app)
+  const send=(key)=>scene.update(16,{consume:()=>key})
+  assert.equal(scene.hasSave,false)
+  assert.equal(scene.hasStoredSave,true)
+  send('c')
+  send('c')
+  assert.equal(scene.phase,'overwrite-confirm')
+  assert.equal(scene.overwriteChoice,1)
+  assert.deepEqual(moves,[])
+  send('c')
+  assert.equal(scene.phase,'menu')
+  assert.deepEqual(moves,[])
+  send('c')
+  send('ArrowUp')
+  send('c')
+  assert.deepEqual(moves,['players'])
+})

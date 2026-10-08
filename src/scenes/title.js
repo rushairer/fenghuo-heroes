@@ -7,6 +7,7 @@ export class TitleScene {
   constructor(app) {
     this.app = app
     this.hasSave = app.store.load()
+    this.hasStoredSave = Boolean(this.hasSave || app.store.hasStoredSave?.())
     this.selection = 0
     this.blink = 0
     this.phase = 'splash'
@@ -67,7 +68,7 @@ export class TitleScene {
     if (b === 'START' || b === 'C') {
       this.app.audio.confirm()
       if (this.selection === 1 && this.hasSave) this.app.go('strategy')
-      else if (this.hasSave) {
+      else if (this.hasStoredSave) {
         this.overwriteChoice = 1
         this.phase = 'overwrite-confirm'
       } else this.app.go('players')
@@ -94,8 +95,11 @@ export class TitleScene {
       }
     } else if (this.phase === 'overwrite-confirm') {
       r.panel(44,66,232,103,'rgba(8,5,5,.96)','#b47722')
-      r.text('已有遊戲存檔',160,77,12,'#efd27d','center')
-      r.wrapText('開始新遊戲將在完成新劇本設定後覆蓋目前的存檔。',160,99,199,11,7,'#f0e4c5','center')
+      r.text(this.hasSave?'已有遊戲存檔':'舊存檔無法讀取',160,77,12,'#efd27d','center')
+      const warning=this.hasSave
+        ?'開始新遊戲將在完成新劇本設定後覆蓋目前的存檔。'
+        :'存檔格式不相容或已損壞。開始新遊戲將覆蓋舊資料。'
+      r.wrapText(warning,160,99,199,11,7,'#f0e4c5','center')
       const choices=['確定開始','返回繼續']
       choices.forEach((value,index)=>r.text(
         `${index===this.overwriteChoice?'▶ ':''}${value}`,

@@ -110,6 +110,9 @@ export class GameStore {
   get isLastHumanTurn(){this.assertState();return this.state.activeHumanIndex>=this.state.humanFactions.length-1}
   assertState(){if(!this.state)throw new Error('Game not initialized')}
   hasGame(){return Boolean(this.state)}
+  // A corrupt or incompatible save may not be loadable, but is still the
+  // player's data. TitleScene must require an explicit overwrite decision.
+  hasStoredSave(){return Boolean(this.storage?.getItem?.(SAVE_KEY))}
   addLog(msg){this.assertState();this.state.log.unshift(msg);this.state.log=this.state.log.slice(0,8)}
   cityAt(x,y,tolerance=7){return this.mapProfile.cities.find((c)=>{const p=cityWorldPoint(c);return Math.abs(p.x-x)<=tolerance&&Math.abs(p.y-y)<=tolerance})??null}
   setCursor(x,y){this.assertState();this.state.cursor.x=clamp(x,8,WORLD_W-8);this.state.cursor.y=clamp(y,8,WORLD_H-8)}
