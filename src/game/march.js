@@ -157,13 +157,15 @@ export function queueMarch(store, {
   if (!source || !city || source.owner !== store.humanFaction) throw new Error('必須從本國城池出陣。')
   if (!Array.isArray(route) || route.length < 2) throw new Error('請先用方框指定行軍路線。')
 
-  const names = Array.isArray(officerNames)
-    ? [...new Set(officerNames.map((name) => String(name).trim()).filter(Boolean))]
-    : []
+  if(!Array.isArray(officerNames))throw new Error('出陣武將名單格式無效。')
+  const names=[...new Set(officerNames.map((name)=>String(name).trim()).filter(Boolean))]
   const deployed=deployedOfficerNames(store,store.humanFaction)
   const duplicate=names.find((name)=>deployed.has(name))
   if(duplicate)throw new Error(`${duplicate}已隨其他部隊出陣。`)
-  const nOfficers = Math.max(1, names.length || Math.floor(officerCount))
+  const nOfficers=names.length||officerCount
+  if(!Number.isSafeInteger(nOfficers)||nOfficers<1){
+    throw new Error('出陣武將人數必須是有效正整數。')
+  }
   const start = cityWorldPoint(city)
   const normalized = validatedRoute(route,start)
   const allocation = validateMarchAllocation(source,{troops,food,gold})

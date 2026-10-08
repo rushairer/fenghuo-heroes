@@ -59,6 +59,10 @@ test('invalid troop, food, gold and route data are rejected atomically',()=>{
     {...valid,food:1.1},
     {...valid,gold:source.gold+1},
     {...valid,gold:Infinity},
+    {...valid,officerCount:Infinity},
+    {...valid,officerCount:NaN},
+    {...valid,officerCount:0},
+    {...valid,officerNames:'曹操'},
     {...valid,route:[start,{x:NaN,y:start.y}]},
     {...valid,route:[start,{x:WORLD_W+9,y:start.y}]},
     {...valid,route:[start,{x:start.x+80,y:start.y}]},
@@ -66,7 +70,7 @@ test('invalid troop, food, gold and route data are rejected atomically',()=>{
     {...valid,route:[{x:start.x+8,y:start.y},{x:start.x+16,y:start.y}]},
   ]
   for(const request of invalid){
-    assert.throws(()=>queueMarch(s,request),/出陣|行軍路線/)
+    assert.throws(()=>queueMarch(s,request),/出陣|行軍路線|武將/)
     assert.deepEqual(source,before)
     assert.equal(ensureMarchState(s).length,0)
     assert.equal(s.state.nextArmyId,1)
