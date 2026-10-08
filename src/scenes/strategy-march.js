@@ -86,7 +86,21 @@ export class StrategyScene extends BaseStrategyScene{
     this.view='map'
     this.app.audio.confirm()
   }
-  finishTurn(){if(this.app.store.mode==='march'&&this.app.store.isLastHumanTurn)advanceMarchArmies(this.app.store);super.finishTurn()}
+  finishTurn(){
+    const store=this.app.store
+    // Check conflicts before changing the world: GameStore itself rejects
+    // month advancement with an unresolved conflict.
+    if(store.pendingConflict){
+      this.message='戰鬥尚未結束，不能推進本月。'
+      this.messageReturnView='map'
+      this.view='message'
+      this.app.audio.alert()
+      return false
+    }
+    if(store.mode==='march'&&store.isLastHumanTurn)advanceMarchArmies(store)
+    super.finishTurn()
+    return true
+  }
   resetForActiveTurn(){super.resetForActiveTurn();this.marchArmyId=null;this.marchRoute=[];this.marchRouteReason='move';this.supplyMenuIndex=0}
   draw(){super.draw();if(this.view==='march-compose')this.drawMarchCompose();if(this.view==='march-route')this.drawMarchRouteHint();if(this.view==='army-menu')this.drawArmyMenu();if(this.view==='supply-menu')this.drawSupplyMenu()}
   drawWorld(){super.drawWorld();const r=this.app.r,camera=cameraFor(this.app.store.state.cursor);for(const army of ensureMarchState(this.app.store)){const wp={x:army.x,y:army.y};if(!isVisible(wp,camera,12))continue;const p=toScreen(wp,camera),f=FACTION_BY_ID[army.faction];r.fillRect(p.x-4,p.y-5,8,8,'#14100d');r.fillRect(p.x-2,p.y-8,9,4,f?.color??'#888');r.strokeRect(p.x-5,p.y-6,10,10,army.starving?'#ff7a5e':'#e8d39a',.6)}if(this.view==='march-route'&&this.marchRoute.length>1){for(let i=1;i<this.marchRoute.length;i++){const a=toScreen(this.marchRoute[i-1],camera),b=toScreen(this.marchRoute[i],camera);r.line(a.x,a.y,b.x,b.y,'#fff08a',1.3,.95)}}}
