@@ -1,5 +1,6 @@
 import { CITY_ECONOMY_FIELDS } from './scenario-fields.js'
 import { canonicalScenarioEvidence } from './canonical-scenario-evidence.js'
+import { targetScenario } from './scenario-target.js'
 import { validateScenarioStartEvidence } from './scenario-evidence.js'
 import { normalizeZhRomCityName } from './original-data.js'
 
@@ -132,10 +133,21 @@ export function canonicalOfficerAssignmentsByCityId(
   ))
 }
 
-export function buildCanonical189ScenarioStartState({
+// Year-specific ledgers must be independently complete. Reusing an 189 ledger
+// as 200 or 215 evidence is forbidden, even for a geometry-compatible map.
+export function buildCanonicalScenarioStartState({
   mapProfile,
-  scenarioEvidence=canonicalScenarioEvidence(189),
+  scenarioYear,
+  scenarioEvidence=canonicalScenarioEvidence(scenarioYear),
 }={}){
+  const year=Number(scenarioYear)
+  if(!targetScenario(year))throw new Error('Unknown canonical scenario year.')
+  if(!mapProfile?.canonical)throw new Error('Canonical scenario requires a canonical map profile.')
+  if(scenarioEvidence?.scenarioYear!==year){
+    throw new Error('Canonical scenario evidence year does not match the requested start year.')
+  }
+  const report=validateScenarioStartEvidence(scenarioEvidence)
+  if(!report.ready)throw new Error('Canonical scenario start-state evidence is incomplete.')
   const ownership=canonicalScenarioOwnershipByCityId(mapProfile,scenarioEvidence)
   const cityState=canonicalScenarioStateByCityId(mapProfile,scenarioEvidence)
   const officerAssignments=canonicalOfficerAssignmentsByCityId(mapProfile,scenarioEvidence)
@@ -150,14 +162,22 @@ export function buildCanonical189ScenarioStartState({
     },
   ]))
   return {
-    id:'zh-rom-canonical:189',
+    id:`zh-rom-canonical:${year}`,
     mapProfileId:mapProfile.id,
-    scenarioYear:189,
-    ownershipStatus:'source-backed-189',
-    economyStatus:'source-backed-189',
-    officerPlacementStatus:'source-backed-189',
+    scenarioYear:year,
+    ownershipStatus:`source-backed-${year}`,
+    economyStatus:`source-backed-${year}`,
+    officerPlacementStatus:`source-backed-${year}`,
     cities,
   }
+}
+
+// Backward-compatible public entrypoint for existing 189 runtime consumers.
+export function buildCanonical189ScenarioStartState({
+  mapProfile,
+  scenarioEvidence=canonicalScenarioEvidence(189),
+}={}){
+  return buildCanonicalScenarioStartState({mapProfile,scenarioYear:189,scenarioEvidence})
 }
 
 export function defaultScenarioStartStateFactory({
@@ -168,8 +188,8 @@ export function defaultScenarioStartStateFactory({
   if(mapProfile?.id==='runtime-scaffold'&&year===189){
     return buildScaffold189ScenarioStartState(mapProfile)
   }
-  if(mapProfile?.canonical&&year===189){
-    return buildCanonical189ScenarioStartState({mapProfile})
+  if(mapProfile?.canonical&&targetScenario(year)){
+    return buildCanonicalScenarioStartState({mapProfile,scenarioYear:year})
   }
   throw new Error(
     `No production scenario start state is calibrated for ${mapProfile?.id??'unknown-map'} / ${year}.`,
