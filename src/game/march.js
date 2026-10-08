@@ -39,7 +39,7 @@ function validatedRoute(route,start){
   if(!Array.isArray(route)||route.length<2)throw new Error('請先用方框指定行軍路線。')
   const points=route.map((point)=>{
     if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y)||
-      point.x<8||point.x>WORLD_W-8||point.y<8||point.y>WORLD_H-8){
+      point.x<0||point.x>WORLD_W||point.y<0||point.y>WORLD_H){
       throw new Error('行軍路線含有無效或超出地圖範圍的座標。')
     }
     return {x:Math.round(point.x),y:Math.round(point.y)}
