@@ -3,7 +3,7 @@ import { AudioBus } from './game/audio.js'
 import { Input } from './game/input.js'
 import { shouldBlockTitleNavigation } from './game/parity.js'
 import { prepareVisualQaStore } from './game/qa-fixtures.js'
-import { applyVisualQaState, initialSceneForVisualQa } from './game/qa-state.js'
+import { applyVisualQaState, initialSceneForVisualQa, storageForVisualQa } from './game/qa-state.js'
 import { makeRenderer } from './game/render.js'
 import { GameStore } from './game/store.js'
 import { DuelScene } from './scenes/duel.js'
@@ -20,7 +20,9 @@ class App {
     this.r=makeRenderer(canvas)
     this.hd=true
     this.r.syncResolution({pixelPreview:!this.hd})
-    this.store=new GameStore(window.localStorage)
+    const params=new URLSearchParams(location.search)
+    const qa=params.get('qa')
+    this.store=new GameStore(storageForVisualQa(qa,window.localStorage))
     this.audio=new AudioBus()
     this.input=new Input(window)
     this.assets=new AssetRegistry()
@@ -30,8 +32,6 @@ class App {
     this.playerCount=1
     this.frame=this.frame.bind(this)
 
-    const params=new URLSearchParams(location.search)
-    const qa=params.get('qa')
     const forced=params.get('scene')
     const initial=forced??initialSceneForVisualQa(qa)
 

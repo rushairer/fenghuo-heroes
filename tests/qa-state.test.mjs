@@ -4,6 +4,7 @@ import {
   VISUAL_QA_STATES,
   applyVisualQaState,
   initialSceneForVisualQa,
+  storageForVisualQa,
 } from '../src/game/qa-state.js'
 
 test('visual QA state catalog covers setup, strategy, march, siege and duel screens',()=>{
@@ -46,6 +47,7 @@ test('title QA states fix phase, selection and blink state',()=>{
   assert.equal(menu.scene.phase,'menu')
   assert.equal(menu.scene.selection,0)
   assert.equal(menu.scene.blink,0)
+  assert.equal(menu.scene.hasSave,true)
 
   const splash={scene:{phase:'menu',selection:1,blink:500}}
   assert.equal(applyVisualQaState(splash,'title-splash'),true)
@@ -219,4 +221,12 @@ test('duel QA states reset mode, health and transient command state',()=>{
 test('unknown QA states and missing required scene shapes are inert',()=>{
   assert.equal(applyVisualQaState({scene:{}},'invented-screen'),false)
   assert.equal(applyVisualQaState({scene:{}},'setup'),false)
+})
+
+test('visual QA always uses ephemeral storage and never overwrites player saves',()=>{
+  const persistent={getItem(){return'old-save'},setItem(){throw Error('unexpected write')}}
+  assert.equal(storageForVisualQa(null,persistent),persistent)
+  assert.equal(storageForVisualQa('strategy-map',persistent),null)
+  assert.equal(storageForVisualQa('title-menu',persistent),null)
+  assert.equal(storageForVisualQa('unknown-preview',persistent),null)
 })

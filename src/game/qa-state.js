@@ -6,6 +6,12 @@ import {
   qaOwnedCity,
 } from './qa-fixtures.js'
 
+// Visual QA runs with throwaway game state. Loading a preview must never
+// replace a real player's browser save.
+export function storageForVisualQa(qaState,storage){
+  return qaState?null:storage
+}
+
 export const VISUAL_QA_STATES = Object.freeze([
   'title-splash',
   'title-menu',
@@ -89,6 +95,7 @@ export function applyVisualQaState(app, qaState) {
     scene.phase=qaState==='title-menu'?'menu':'splash'
     scene.selection=0
     scene.blink=0
+    scene.hasSave=qaState==='title-menu'
     return true
   }
 
