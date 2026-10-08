@@ -162,6 +162,11 @@ export function applyVisualQaState(app, qaState) {
     scene.category='domestic'
     scene.targetCity=cityId
     app.store.lockInspectionCategory('domestic')
+    if(qaState==='inspection-transfer'){
+      if(typeof scene.beginInspectionTransferDraft!=='function')return false
+      scene.beginInspectionTransferDraft()
+      return scene.view==='transfer-draft'
+    }
     scene.beginInspectionActionDraft(qaState.slice('inspection-'.length))
     return scene.view==='action-draft'
   }

@@ -68,6 +68,7 @@ npm run check
 - `?qa=inspection-develop`
 - `?qa=inspection-welfare`
 - `?qa=inspection-educate`
+- `?qa=inspection-transfer`
 - `?qa=march-compose`
 - `?qa=march-officers`
 - `?qa=march-route-prompt`

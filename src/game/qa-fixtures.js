@@ -12,6 +12,7 @@ export const INSPECTION_VISUAL_QA_STATES = Object.freeze([
   'inspection-develop',
   'inspection-welfare',
   'inspection-educate',
+  'inspection-transfer',
 ])
 
 export const BATTLE_VISUAL_QA_STATES = Object.freeze([

@@ -22,6 +22,7 @@ test('visual QA state catalog covers setup, strategy, march, siege and duel scre
     'inspection-develop',
     'inspection-welfare',
     'inspection-educate',
+    'inspection-transfer',
     'march-compose',
     'march-officers',
     'march-route-prompt',
@@ -133,6 +134,10 @@ function strategyApp() {
       beginInspectionActionDraft(commandId){
         this.actionDraft={commandId}
         this.view='action-draft'
+      },
+      beginInspectionTransferDraft(){
+        this.transferDraft={sourceId:this.targetCity}
+        this.view='transfer-draft'
       },
       beginMarchCompose(cityId){
         this.marchFrom=cityId
@@ -269,4 +274,13 @@ test('field battle QA sets explicit phases without inventing results',()=>{
     assert.equal(app.scene.message,'')
     assert.equal('winner' in app.scene.runtime,false)
   }
+})
+
+test('transfer QA opens a draft using the selected source city',()=>{
+  const app=strategyApp()
+  const before=structuredClone(app.store.state.cities)
+  assert.equal(applyVisualQaState(app,'inspection-transfer'),true)
+  assert.equal(app.scene.view,'transfer-draft')
+  assert.equal(app.scene.transferDraft.sourceId,'chengdu')
+  assert.deepEqual(app.store.state.cities,before)
 })

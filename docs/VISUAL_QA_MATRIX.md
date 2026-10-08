@@ -18,6 +18,7 @@ inspection tools, not gameplay evidence.
 | inspection-develop | strategy | executing officer and investment | preview only, no resource mutation |
 | inspection-welfare | strategy | executing officer and investment | preview only, no resource mutation |
 | inspection-educate | strategy | non-ruler education target and investment | preview only; loyalty/virtue uncalibrated |
+| inspection-transfer | strategy | officer and friendly-city transfer draft | preview only; officer location and travel time unchanged |
 | march-compose | strategy | march preparation | QA month is forced to an even month |
 | march-officers | strategy | officer selection | opening faction roster only |
 | march-route-prompt | strategy | route prompt | route geometry remains runtime scaffold |
