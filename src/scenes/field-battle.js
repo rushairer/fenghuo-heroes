@@ -13,6 +13,7 @@ import {
   fieldBattleTacticOrder,
 } from '../game/field-battle-parity.js'
 import {
+  advanceFieldBattleDayRuntime,
   ensureFieldBattleRuntime,
   setFieldBattleAmbush,
   setFieldBattleOrder,
@@ -183,6 +184,23 @@ export class FieldBattleScene{
       return
     }
 
+    // Explicit engineering control: we have no verified automatic frame-to-day
+    // timing yet. START after 結束 advances the day without combat effects.
+    if(b==='START'&&this.runtime.ordersClosed){
+      if(this.runtime.carryoverPending){
+        this.message='戰鬥已達30日段落；回到戰略月及下一段戰鬥的銜接尚未校準，請按 P 保存進度。'
+        this.app.audio.alert()
+        return
+      }
+      const next=advanceFieldBattleDayRuntime(this.conflict)
+      this.message=next.segmentComplete
+        ?'已記錄30日戰鬥段落。未校準戰略銜接與勝負，不會自動結算。'
+        :`已手動進入第${this.runtime.day}日；戰鬥時鐘和交戰效果未校準，本次只重開命令。`
+      this.saveRuntime()
+      this.app.audio.confirm()
+      return
+    }
+
     const action=fieldBattleInputAction(b,{windowOpen:false})
     if(action==='status-window'){
       this.window='status'
@@ -251,7 +269,7 @@ export class FieldBattleScene{
         ?'待機命令已受理；符合森林且兵力5000以下條件，部隊進入伏兵狀態。伏兵戰鬥效果仍待校準。'
         :'待機命令已受理；目前不符合已確認的伏兵條件。'
     }else if(order.commandId==='end'){
-      this.message='本戰鬥日命令已結束；等待日數改變後再接受下一次命令。'
+      this.message='本戰鬥日命令已結束；按 START 手動進入下一日（工程控制，非原版計時）。'
     }
     this.saveRuntime()
     this.app.audio.confirm()
@@ -325,7 +343,12 @@ export class FieldBattleScene{
     r.fillRect(0,190,320,34,'rgba(8,8,8,.88)')
     r.text(`目前命令：${orderLabel}`,12,196,6.5,'#e8dec4')
     r.text('A 戰力　C 命令　方向鍵捲動畫面',308,196,6.2,'#d0c5ad','right')
-    r.text('未校準的傷害／速度／勝負公式不套用',160,211,6,'#9f947b','center')
+    const timingHint=this.runtime.carryoverPending
+      ?'30日段落已結束　P 保存離開'
+      :this.runtime.ordersClosed
+        ?'START 手動換日（非原版計時）'
+        :'未校準的傷害／速度／勝負公式不套用'
+    r.text(timingHint,160,211,6,'#9f947b','center')
 
     if(this.window==='status'){
       const status=fieldBattleStatusProjection(this.conflict)
