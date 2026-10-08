@@ -1,4 +1,5 @@
 import { WORLD_H, WORLD_W } from './world.js'
+import { FACTION_BY_ID } from './data.js'
 
 // Validation precedes assigning an untrusted browser save to GameStore.
 // This is a structural compatibility gate, NOT canonical scenario evidence.
@@ -22,7 +23,7 @@ export function validateSavedGameState(state,mapProfile){
 
   const humans=state.humanFactions
   if(!Array.isArray(humans)||humans.length<1||humans.length>3||
-    humans.some((id)=>typeof id!=='string'||!id.trim()||id==='neutral')||
+    humans.some((id)=>typeof id!=='string'||!id.trim()||id==='neutral'||!Object.hasOwn(FACTION_BY_ID,id))||
     new Set(humans).size!==humans.length){
     errors.push('invalid-human-factions')
   }

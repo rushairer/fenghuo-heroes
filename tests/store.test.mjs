@@ -175,3 +175,12 @@ test('tax changes require a domestic inspection turn, never march or other categ
   assert.throws(()=>s.setTaxRate('xuchang',55),/內政視察月/)
   assert.deepEqual(s.state.cities.xuchang,before)
 })
+
+test('unknown ruler cannot start a game or overwrite a valid save',()=>{
+  const mem=new MemoryStorage()
+  const s=new GameStore(mem)
+  s.newGame({humanFactions:['cao']})
+  const old=mem.getItem('fenghuo-heroes.cleanroom.v4')
+  assert.throws(()=>s.newGame({humanFactions:['nonexistent']}),/Human factions/)
+  assert.equal(mem.getItem('fenghuo-heroes.cleanroom.v4'),old)
+})

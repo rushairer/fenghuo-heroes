@@ -38,6 +38,7 @@ test('malformed saves fail closed without erasing recoverable browser bytes',()=
   const bad=[
     (s)=>{s.humanFactions=[]},
     (s)=>{s.humanFactions=['cao','cao']},
+    (s)=>{s.humanFactions=['unlisted-ruler']},
     (s)=>{s.activeHumanIndex=99},
     (s)=>{s.scenarioYear='189'},
     (s)=>{s.month=13},
@@ -82,7 +83,7 @@ test('a failed reload leaves the current in-memory game untouched',()=>{
 test('new game rejects duplicate/empty human controllers before touching an existing save',()=>{
   const {storage,store}=baseline()
   const before=storage.getItem(SAVE_KEY)
-  for(const humanFactions of [[],['cao','cao'],['neutral'],['cao','liu','sun','yuan']]){
+  for(const humanFactions of [[],['cao','cao'],['neutral'],['unlisted-ruler'],['cao','liu','sun','yuan']]){
     assert.throws(()=>store.newGame({humanFactions}),/Human factions/)
     assert.equal(storage.getItem(SAVE_KEY),before)
   }

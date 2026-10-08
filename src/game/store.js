@@ -1,4 +1,4 @@
-import { MAP_PROFILE } from './data.js'
+import { FACTION_BY_ID, MAP_PROFILE } from './data.js'
 import { assertRuntimeMapProfile } from './map-profile-validation.js'
 import { ORIGINAL_189_RULERS } from './original-data.js'
 import { defaultScenarioStartStateFactory } from './scenario-start-state.js'
@@ -79,7 +79,7 @@ export class GameStore {
     const scenarioYear = Number(options.scenarioYear ?? 189)
     const humans = [...(options.humanFactions ?? ['liu'])]
     if(!humans.length||humans.length>3||humans.some((id)=>
-      typeof id!=='string'||!id.trim()||id==='neutral')||
+      typeof id!=='string'||!id.trim()||id==='neutral'||!Object.hasOwn(FACTION_BY_ID,id))||
       new Set(humans).size!==humans.length){
       throw new Error('Human factions must contain one to three distinct playable rulers.')
     }
@@ -94,6 +94,9 @@ export class GameStore {
       throw new Error('Scenario start state does not match the active map profile/year.')
     }
     const cityStates=scenarioState.cities??{}
+    if(humans.some((id)=>!cities.some((city)=>cityStates[city.id]?.owner===id))){
+      throw new Error('Selected ruler has no opening city in this scenario.')
+    }
     const firstCity=cities.find((city)=>cityStates[city.id]?.owner===primary)??cities[0]
     if(!firstCity)throw new Error('Runtime map profile contains no cities.')
     const first=firstCity.id
