@@ -17,7 +17,13 @@ export function validateSavedGameState(state,mapProfile){
     return Object.freeze({ok:false,errors:Object.freeze(['missing-map-profile'])})
   }
 
-  if(!count(state.scenarioYear,1,9999))errors.push('invalid-scenario-year')
+  if(![189,200,215].includes(state.scenarioYear))errors.push('invalid-scenario-year')
+  if(mapProfile.id==='runtime-scaffold'&&state.scenarioYear!==189){
+    errors.push('scaffold-year-not-supported')
+  }
+  if(state.scenarioStateId!==mapProfile.id+':'+state.scenarioYear){
+    errors.push('scenario-provenance-mismatch')
+  }
   if(!count(state.year,1,9999)||state.year<state.scenarioYear)errors.push('invalid-calendar-year')
   if(!count(state.month,1,12))errors.push('invalid-calendar-month')
 

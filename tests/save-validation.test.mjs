@@ -41,6 +41,9 @@ test('malformed saves fail closed without erasing recoverable browser bytes',()=
     (s)=>{s.humanFactions=['unlisted-ruler']},
     (s)=>{s.activeHumanIndex=99},
     (s)=>{s.scenarioYear='189'},
+    (s)=>{s.scenarioYear=200},
+    (s)=>{s.scenarioStateId='zh-rom-canonical:189'},
+    (s)=>{delete s.scenarioStateId},
     (s)=>{s.month=13},
     (s)=>{s.cursor={x:Infinity,y:10}},
     (s)=>{s.activeCity='missing-city'},
@@ -116,4 +119,17 @@ test('a siege conflict targeting a friendly city is not resumed as an enemy batt
   assert.equal(restored.load(),true)
   assert.equal(restored.pendingConflict,null)
   assert.equal(restored.state.armies[0].status,'waiting')
+})
+
+test('saved start-state provenance cannot silently masquerade as a different scenario',()=>{
+  const {storage,raw}=baseline()
+  assert.equal(raw.scenarioStateId,'runtime-scaffold:189')
+  raw.scenarioYear=215
+  raw.year=215
+  raw.scenarioStateId='runtime-scaffold:215'
+  const value=JSON.stringify(raw)
+  storage.setItem(SAVE_KEY,value)
+  const restored=new GameStore(storage)
+  assert.equal(restored.load(),false)
+  assert.equal(storage.getItem(SAVE_KEY),value)
 })
