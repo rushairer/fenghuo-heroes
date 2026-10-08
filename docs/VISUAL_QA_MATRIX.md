@@ -15,10 +15,16 @@ inspection tools, not gameplay evidence.
 | full-map | strategy | whole-map presentation | canonical 40-city migration still blocked |
 | officer-list | strategy | officer drill-down | opening faction roster only |
 | officer-status | strategy | officer status schema | names/roles only; values uncalibrated |
+| inspection-develop | strategy | executing officer and investment | preview only, no resource mutation |
+| inspection-welfare | strategy | executing officer and investment | preview only, no resource mutation |
+| inspection-educate | strategy | non-ruler education target and investment | preview only; loyalty/virtue uncalibrated |
 | march-compose | strategy | march preparation | QA month is forced to an even month |
 | march-officers | strategy | officer selection | opening faction roster only |
 | march-route-prompt | strategy | route prompt | route geometry remains runtime scaffold |
 | army-menu | strategy | army command menu | uses a local qaFixture army |
+| field-battle-speed | field-battle | battle-speed selection | synthetic armies; no original damage formula |
+| field-battle-formation | field-battle | squad formation | squad allocation still uncalibrated |
+| field-battle-active | field-battle | battlefield controls | synthetic conflict; no AI or damage formula |
 | siege-speed | siege | battle-speed selection | uses a local qaFixture conflict |
 | siege-formation | siege | formation placeholder | no invented battle formula |
 | duel-mode | duel | manual/auto choice | uses a local qaFixture conflict |
