@@ -75,6 +75,7 @@ test('verified officer-count and tax-rate slots remain available without fabrica
   store.newGame({scenarioYear:189,humanFactions:['liu']})
   const city=Object.values(store.state.cities).find((runtime)=>runtime.owner==='liu')
   city.officerCount=3
+  store.lockInspectionCategory('domestic')
   store.setTaxRate(city.id,44)
   const row=countryOverviewRows(store).find((candidate)=>candidate.cityId===city.id)
   assert.equal(row.officerCount,3)

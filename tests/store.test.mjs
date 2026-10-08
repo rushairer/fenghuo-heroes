@@ -58,6 +58,7 @@ test('setting tax rate persists the configured percentage without immediate sett
   const mem=new MemoryStorage()
   const s=new GameStore(mem)
   s.newGame({humanFactions:['cao']})
+  s.lockInspectionCategory('domestic')
   const city=s.state.cities.xuchang
   const before={gold:city.gold,food:city.food,rule:city.rule}
   assert.equal(city.taxRate,undefined)
@@ -75,12 +76,14 @@ test('setting tax rate persists the configured percentage without immediate sett
 test('tax rate rejects unverified out-of-range or non-integer values',()=>{
   const s=new GameStore(new MemoryStorage())
   s.newGame({humanFactions:['cao']})
+  s.lockInspectionCategory('domestic')
   for(const value of [-1,100,44.5,NaN])assert.throws(()=>s.setTaxRate('xuchang',value),/0 到 99/)
 })
 
 test('tax rate can only be configured for the active player territory',()=>{
   const s=new GameStore(new MemoryStorage())
   s.newGame({humanFactions:['cao']})
+  s.lockInspectionCategory('domestic')
   assert.throws(()=>s.setTaxRate('xinye',30),/本國城池/)
 })
 
@@ -88,6 +91,7 @@ test('tax rate can only be configured for the active player territory',()=>{
 test('legacy generic tax command no longer performs the removed instant money and rule mutation',()=>{
   const s=new GameStore(new MemoryStorage())
   s.newGame({humanFactions:['cao']})
+  s.lockInspectionCategory('domestic')
   const city=s.state.cities.xuchang
   const before={gold:city.gold,food:city.food,rule:city.rule,taxRate:city.taxRate}
   assert.match(s.executeInspection('tax','xuchang'),/設定畫面/)
@@ -155,4 +159,19 @@ test('load discards stale conflicts and recovers orphaned battle army statuses',
   assert.equal(loaded.load(),true)
   assert.equal(loaded.pendingConflict,null)
   assert.equal(loaded.state.armies[0].status,'waiting')
+})
+
+test('tax changes require a domestic inspection turn, never march or other categories',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({humanFactions:['cao']})
+  const before=structuredClone(s.state.cities.xuchang)
+  assert.throws(()=>s.setTaxRate('xuchang',55),/內政視察月/)
+  assert.deepEqual(s.state.cities.xuchang,before)
+
+  assert.equal(s.lockInspectionCategory('military'),true)
+  assert.throws(()=>s.setTaxRate('xuchang',55),/內政視察月/)
+  s.finishCurrentTurn()
+  assert.equal(s.mode,'march')
+  assert.throws(()=>s.setTaxRate('xuchang',55),/內政視察月/)
+  assert.deepEqual(s.state.cities.xuchang,before)
 })
