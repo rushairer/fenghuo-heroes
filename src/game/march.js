@@ -152,6 +152,7 @@ export function queueMarch(store, {
   officerNames = [],
 }) {
   store.assertState()
+  if(store.pendingConflict)throw new Error('戰鬥尚未結束，不能編成新的行軍部隊。')
   if (store.mode !== 'march') throw new Error('偶數月才能下達行軍命令。')
   const source = store.state.cities[from]
   const city = store.mapProfile?.cityById?.[from]
@@ -215,6 +216,8 @@ export function queueMarch(store, {
 }
 
 export function rerouteArmy(store, armyId, route) {
+  if(store.pendingConflict)throw new Error('戰鬥尚未結束，不能重新指定行軍路線。')
+  if(store.mode!=='march')throw new Error('只有行軍月能調整行軍路線。')
   const army = ensureMarchState(store).find((item) => item.id === armyId && item.faction === store.humanFaction)
   if (!army) throw new Error('找不到可操作的行軍部隊。')
   if(army.status==='engaged'||army.status==='besieging')throw new Error('戰鬥中的部隊不能變更行軍路線。')
@@ -228,6 +231,10 @@ export function rerouteArmy(store, armyId, route) {
 }
 
 export function executeMarchTurn(store, days = MARCH_RUNTIME_PROJECTION.executionDaysPerEvenMonth) {
+  store.assertState()
+  if(store.pendingConflict)throw new Error('戰鬥尚未結束，不能移動其他部隊。')
+  if(store.mode!=='march')throw new Error('只有行軍月可以結算行軍移動。')
+  if(!Number.isSafeInteger(days)||days<0)throw new Error('行軍日數必須是非負整數。')
   const events = []
   const maxDays = Math.max(0, Math.floor(days))
 

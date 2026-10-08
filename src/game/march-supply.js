@@ -25,6 +25,8 @@ export function villageAtArmy(store,armyId,tolerance=0){
 }
 
 export function marchSupplyOrder(store,armyId,optionId){
+  if(store?.pendingConflict)throw new Error('戰鬥尚未結束，不能下達補給命令。')
+  if(store?.mode!=='march')throw new Error('只有行軍月能下達補給命令。')
   const army=(store?.state?.armies??[]).find((item)=>item.id===armyId&&item.faction===store.humanFaction)
   if(!army)throw new Error('找不到可補給的行軍部隊。')
   const village=villageAtArmy(store,armyId)
