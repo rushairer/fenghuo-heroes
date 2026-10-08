@@ -3,6 +3,7 @@ import { assertRuntimeMapProfile } from './map-profile-validation.js'
 import { ORIGINAL_189_RULERS } from './original-data.js'
 import { defaultScenarioStartStateFactory } from './scenario-start-state.js'
 import { isTaxRate } from './tax-parity.js'
+import { assertSavedGameState } from './save-validation.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 
 const SAVE_KEY = 'fenghuo-heroes.cleanroom.v4'
@@ -14,12 +15,16 @@ function sanitizePendingConflict(conflict,state){
   if(conflict.kind==='field'){
     const attacker=armies.find((army)=>army.id===conflict.attackerArmyId)
     const defender=armies.find((army)=>army.id===conflict.defenderArmyId)
-    return attacker&&defender?conflict:null
+    return attacker&&defender&&attacker.id!==defender.id&&
+      attacker.faction===conflict.attacker&&
+      defender.faction===conflict.defender&&
+      attacker.faction!==defender.faction?conflict:null
   }
   if(conflict.kind==='siege'){
     const army=armies.find((item)=>item.id===conflict.armyId)
     const target=state?.cities?.[conflict.target]
-    return army&&target?conflict:null
+    return army&&target&&army.faction===conflict.attacker&&
+      target.owner===conflict.defender&&target.owner!==army.faction?conflict:null
   }
   return null
 }
@@ -73,6 +78,11 @@ export class GameStore {
   newGame(options = {}) {
     const scenarioYear = Number(options.scenarioYear ?? 189)
     const humans = [...(options.humanFactions ?? ['liu'])]
+    if(!humans.length||humans.length>3||humans.some((id)=>
+      typeof id!=='string'||!id.trim()||id==='neutral')||
+      new Set(humans).size!==humans.length){
+      throw new Error('Human factions must contain one to three distinct playable rulers.')
+    }
     const primary = humans[0] ?? 'liu'
     const cities=this.mapProfile.cities
     const cityById=this.mapProfile.cityById
@@ -158,15 +168,17 @@ export class GameStore {
         parsed.scenarioEconomyStatus='provisional-coordinate-derived'
         parsed.scenarioOfficerPlacementStatus='provisional-roster-only'
       }
+      // Never publish a partly parsed or corrupt save into the active game.
+      // The original localStorage value remains untouched for diagnostics/recovery.
+      assertSavedGameState(parsed,this.mapProfile)
+      if(!parsed.inspectionCategories)parsed.inspectionCategories={}
+      if(!parsed.openingRosters)parsed.openingRosters=openingRosters(parsed.scenarioYear)
+      const conflict=sanitizePendingConflict(savedConflict,parsed)
+      recoverOrphanedBattleArmyStatuses(parsed,conflict)
       this.state=parsed
-      if(!this.state.inspectionCategories)this.state.inspectionCategories={}
-      if(!this.state.openingRosters)this.state.openingRosters=openingRosters(this.state.scenarioYear)
-      if(!Number.isInteger(this.state.activeHumanIndex))this.state.activeHumanIndex=0
-      this.pendingConflict=sanitizePendingConflict(savedConflict,this.state)
-      recoverOrphanedBattleArmyStatuses(this.state,this.pendingConflict)
-      return Boolean(this.state?.cities&&this.state?.humanFactions)
+      this.pendingConflict=conflict
+      return true
     }catch{
-      this.storage.removeItem?.(SAVE_KEY)
       return false
     }
   }
