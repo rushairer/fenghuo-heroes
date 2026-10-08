@@ -136,3 +136,17 @@ The production target is the Chinese-ROM experience, so runtime follows the Hong
 測試中的遠距城市攻城會先建立逐格路線，再執行足夠的行軍日數。
 這一層是 runtime 安全邊界，並不宣稱格距、移動天數或斜向步行規則
 已獲中文 ROM 直接證據校準。
+
+
+## 2026-10-09 — conflict isolation and small-garrison draft
+
+- With pendingConflict active, queueMarch, rerouteArmy, executeMarchTurn,
+  advanceMarchArmies and marchSupplyOrder reject changes before mutating troops,
+  military funds, rations, routes or strategic calendar.
+- March stepping accepts explicit nonnegative integer days only; malformed
+  timing input cannot silently consume resource fields.
+- Initial composition troops are clamped to city troops minus the existing
+  100-troop engineering garrison. The draft for a 200-troop city is 100.
+- These are runtime safety guarantees. The 100-garrison and 8-world-unit
+  movement limits remain provisional pending direct original-game proof.
+

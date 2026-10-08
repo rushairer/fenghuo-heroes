@@ -71,3 +71,21 @@ Community records separately suggest April gold and October rice income,
 but these are Tier C leads. See docs/PARITY_EVIDENCE_CATALOG.md. Do not
 apply calendar income or tax settlement until source-backed amounts and
 event timing have been captured.
+
+
+## Follow-up implementation checkpoint — 2026-10-09
+
+- March and village-supply commands now reject unresolved combat at the engine layer.
+- Invalid march-day inputs fail closed; no army/food resources mutate on rejection.
+- A corrupt, retained, incompatible save is still treated as user data before new-game overwrite.
+- Loaded save provenance is checked against actual active map and scenario year.
+- Valid active field/siege conflicts repair inconsistent saved army statuses.
+- The 200 and 215 canonical builders have their own ledger gates and tests;
+  no 189 ledger can ever silently serve a later scenario. Production data remains blocked.
+- Small-city march composition respects the minimum provisional garrison.
+- An unsuccessful browser-storage write while starting a new game rolls back
+  in-memory state instead of replacing the existing campaign.
+- All additions have deterministic regression tests and an existing direct-reference
+  evidence boundary. This checkpoint is infrastructure/correctness work, NOT
+  proof that the original game's battle/economy formulas have been reproduced.
+

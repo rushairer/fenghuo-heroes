@@ -146,3 +146,19 @@ Before a screen is marked parity-complete it needs:
 ## Copyright / clean-room line
 
 The repository does not distribute ROM dumps or extracted Sega artwork/audio. When exact copyrighted raster/audio is required for visual comparison, it is treated as a reference only; production assets must be redrawn, generated as original replacements, or supplied by the user with appropriate rights.
+
+
+### 2026-10-09 — integrity and scenario readiness
+
+- [x] Block march/supply operations at the domain layer while pending combat exists.
+- [x] Distinguish stored-save presence from loadability before overwriting data.
+- [x] Reject mismatched map/scenario/year save provenance while migrating legacy 189 scaffold tags.
+- [x] Recover active field/siege army statuses from validated conflict references.
+- [x] Bound new march drafts by the city's remaining garrison.
+- [x] Generalize canonical 189/200/215 start-state construction with STRICT per-year evidence gates.
+- [x] Make Setup readiness for canonical geometry depend on independent scenario evidence.
+- [x] Roll back in-memory newGame on failed localStorage persistence.
+- [ ] Acquire direct Chinese-ROM 189 map/start-state captures and original rules.
+- [ ] Acquire independent 200/215 opening snapshots before enabling either production scenario.
+- [ ] Calibrate battle effects, victory/consequences, field-battle timing and strategic AI.
+

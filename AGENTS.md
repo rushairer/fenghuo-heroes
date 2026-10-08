@@ -72,3 +72,23 @@ clean-room implementation rather than restoring archived prototypes.
 3. Unit formation, battle-day timing, combat effects and battle conclusion.
 4. Independently calibrated 200 and 215 scenarios, AI turn behavior.
 5. Screenshot-by-screenshot HD artwork, Chinese text and input QA.
+
+
+## 2026-10-09 follow-up engineering invariants
+
+- Reject queue/reroute/movement/supply commands during any unresolved
+  pendingConflict, at the domain layer (not only through scene navigation).
+- Browser saves must match their map profile, supported scenario year,
+  and scenarioStateId provenance. Missing legacy 189 scaffold IDs are
+  backfilled; an unreadable stored save still requires overwrite confirmation.
+- A valid persisted pending conflict restores participant army statuses as
+  engaged (field) or besieging (siege), with no fabricated battle result.
+- The canonical start-state builder is reusable for 189/200/215 but each
+  year must satisfy its OWN independently verified evidence ledger.
+  Production 200/215 are still BLOCKED; synthetic test ledgers are never
+  production data or grounds to enable a scenario.
+- Treat localStorage persistence failures as errors; newGame rolls back
+  the in-memory campaign when the new save cannot be written.
+- For cities with only 200 troops, preselect 100 for marching to retain
+  the provisional 100-soldier garrison; never show an over-budget draft.
+

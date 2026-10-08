@@ -198,3 +198,15 @@ npm run march:evidence:audit -- march.merged.json --require-adjacency-ready
 ```
 
 The inference layer refuses inconsistent observations instead of averaging them into a guessed value. See `docs/MARCH_EVIDENCE_CAPTURE.md`.
+
+
+## 2026-10-09 状态一致性与剧本门禁
+
+- 战斗未结束时，底层拒绝其他行军部队移动、出阵、改道及村庄补给。
+- 仅供工程验证的逐日行军步进继续使用临时路线时间基线，**不是原版计时公式**。
+- 浏览器旧存档即使损坏或当前版本无法读取，标题画面也会明确确认后才进入可能覆盖它的新游戏。
+- 写入新游戏存档时如果浏览器存储失败，内存里的原游戏恢复到原状态。
+- 恢复野战／攻城时，合法冲突记录会统一恢复参战部队状态，不假设伤害或胜负。
+- 小兵力城池出阵草稿先保证至少留守工程要求的 100 兵。
+- 189、200、215 已共用**逐年份验证**的 canonical start-state builder 与 Setup readiness gate；由于 200／215 正式证据仍为空，生产运行时依旧无法开始这两个剧本，绝不挪用 189 数据。
+
