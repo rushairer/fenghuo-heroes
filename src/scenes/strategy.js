@@ -5,6 +5,7 @@ import { monthlyCommandPrompt } from '../game/chinese-copy-parity.js'
 import { CHINESE_COPY_GAPS } from '../game/chinese-copy-gaps.js'
 import { TARGET_INSPECTION_PALETTE, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawTargetMountainRange } from '../game/map-art.js'
 import { inspectionCommandItems, inspectionCommandPath, isInspectionConfirmButton } from '../game/inspection-command-parity.js'
+import { inspectionActionDraftSummary, inspectionDraftCommand, newInspectionActionDraft, transitionInspectionActionDraft } from '../game/inspection-action-draft.js'
 import { adjustTaxRate } from '../game/tax-parity.js'
 import { PRESENTATION_HILL_CLUSTERS, PRESENTATION_MOUNTAIN_RANGES } from '../game/strategy-map-presentation.js'
 import { drawStrategyPanel, drawStrategyTextWindow } from '../game/ui-art.js'
@@ -15,14 +16,14 @@ import { drawWorldRiver } from '../game/world-art.js'
 const CATEGORIES=['domestic','diplomacy','military']
 const cursorStep=8
 export class StrategyScene{
-  constructor(app){this.app=app;if(!app.store.hasGame()&&!app.store.load()){app.go('title');return}this.view='map';this.stage=app.store.mode==='inspection'?'survey':'march';this.menuIndex=0;this.category=app.store.inspectionCategoryForActive()??'domestic';this.message='';this.targetCity=null;this.infoTab=0;this.marchFrom=null;this.saveIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.snapCursorToOwnedCity()}
-  update(_dt,input){const key=input.consume();if(!key||!this.app.store.hasGame())return;const b=mdButton(key);if(b==='HD')return this.app.toggleHd();if(this.view==='message')return this.updateMessage(b);if(this.view==='category')return this.updateCategory(b);if(this.view==='target')return this.updateTarget(b);if(this.view==='commands')return this.updateCommands(b);if(this.view==='tax-rate')return this.updateTaxRate(b);if(this.view==='transport-target')return this.updateTransportTarget(b);if(this.view==='transport-load')return this.updateTransportLoad(b);if(this.view==='info')return this.updateInfo(b);if(this.view==='city-status')return this.updateCityStatus(b);if(this.view==='save')return this.updateSave(b);this.updateMap(b)}
+  constructor(app){this.app=app;if(!app.store.hasGame()&&!app.store.load()){app.go('title');return}this.view='map';this.stage=app.store.mode==='inspection'?'survey':'march';this.menuIndex=0;this.category=app.store.inspectionCategoryForActive()??'domestic';this.message='';this.targetCity=null;this.infoTab=0;this.marchFrom=null;this.saveIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.actionDraft=null;this.messageReturnView='map';this.snapCursorToOwnedCity()}
+  update(_dt,input){const key=input.consume();if(!key||!this.app.store.hasGame())return;const b=mdButton(key);if(b==='HD')return this.app.toggleHd();if(this.view==='message')return this.updateMessage(b);if(this.view==='category')return this.updateCategory(b);if(this.view==='target')return this.updateTarget(b);if(this.view==='commands')return this.updateCommands(b);if(this.view==='action-draft')return this.updateActionDraft(b);if(this.view==='tax-rate')return this.updateTaxRate(b);if(this.view==='transport-target')return this.updateTransportTarget(b);if(this.view==='transport-load')return this.updateTransportLoad(b);if(this.view==='info')return this.updateInfo(b);if(this.view==='city-status')return this.updateCityStatus(b);if(this.view==='save')return this.updateSave(b);this.updateMap(b)}
   mapCities(){return this.app.store.mapProfile.cities}
   cityById(id){return this.app.store.mapProfile?.cityById?.[id]??null}
   moveCursor(dx,dy){const s=this.app.store.state;this.app.store.setCursor(s.cursor.x+dx*cursorStep,s.cursor.y+dy*cursorStep);this.app.audio.move()}
   updateMap(b){const store=this.app.store,s=store.state;if(b==='LEFT')this.moveCursor(-1,0);if(b==='RIGHT')this.moveCursor(1,0);if(b==='UP')this.moveCursor(0,-1);if(b==='DOWN')this.moveCursor(0,1);if(b==='B'){this.app.audio.cancel();return}if(this.stage==='survey'){if(b==='A'){this.infoTab=0;this.infoReturnView='map';this.infoCommandBrowse=false;this.view='info';this.app.audio.confirm();return}if(b==='START'){this.infoTab=1;this.infoReturnView='map';this.infoCommandBrowse=false;this.view='info';this.app.audio.confirm();return}if(b==='C'){const city=store.cityAt(s.cursor.x,s.cursor.y,12);if(city){this.targetCity=city.id;this.view='city-status';this.app.audio.confirm()}else{this.stage='command';this.openCategory()}}return}if(this.stage==='command'){if(b==='A'){this.infoTab=0;this.infoReturnView='map';this.infoCommandBrowse=false;this.view='info';this.app.audio.confirm();return}if(b==='START'){this.requestFinishTurn();return}if(b==='C'){const city=store.cityAt(s.cursor.x,s.cursor.y,12),locked=store.inspectionCategoryForActive();if(!city){this.openCategory()}else if(!locked){this.message=CHINESE_COPY_GAPS.commandEntryHint.text();this.view='message';this.app.audio.alert()}else if(s.cities[city.id].owner!==store.humanFaction){this.message=CHINESE_COPY_GAPS.foreignCityCommandRejected.text();this.view='message';this.app.audio.alert()}else{this.category=locked;this.targetCity=city.id;this.view='commands';this.menuIndex=0;this.app.audio.confirm()}}return}if(this.stage==='march'){if(b==='A'){this.infoTab=1;this.infoReturnView='map';this.infoCommandBrowse=false;this.view='info';this.app.audio.confirm();return}if(b==='START'){this.requestFinishTurn();return}if(b==='C'){this.message=CHINESE_COPY_GAPS.retiredAdjacentMarchHint.text();this.view='message';this.app.audio.alert();return}}}
   openCategory(){const locked=this.app.store.inspectionCategoryForActive();this.menuIndex=Math.max(0,CATEGORIES.indexOf(locked??this.category));this.view='category';this.app.audio.confirm()}
-  updateMessage(b){if(['A','B','C','START'].includes(b)){this.view='map';this.app.audio.confirm()}}
+  updateMessage(b){if(['A','B','C','START'].includes(b)){this.view=this.messageReturnView??'map';this.messageReturnView='map';this.app.audio.confirm()}}
   updateCategory(b){if(b==='UP'){this.menuIndex=(this.menuIndex+2)%3;this.app.audio.move()}if(b==='DOWN'){this.menuIndex=(this.menuIndex+1)%3;this.app.audio.move()}if(b==='B'){this.view='map';this.app.audio.cancel();return}if(isInspectionConfirmButton(b)){const next=CATEGORIES[this.menuIndex];if(!this.app.store.lockInspectionCategory(next)){const locked=this.app.store.inspectionCategoryForActive();this.message=CHINESE_COPY_GAPS.commandCategoryLocked.text(CATEGORY_LABELS[locked]);this.view='message';this.app.audio.alert();return}this.category=next;this.view='target';this.app.audio.confirm()}}
   updateTarget(b){if(b==='LEFT')this.moveCursor(-1,0);if(b==='RIGHT')this.moveCursor(1,0);if(b==='UP')this.moveCursor(0,-1);if(b==='DOWN')this.moveCursor(0,1);if(b==='B'){this.view='map';this.app.audio.cancel();return}if(isInspectionConfirmButton(b)){const s=this.app.store.state,city=this.app.store.cityAt(s.cursor.x,s.cursor.y,12);if(!city||s.cities[city.id].owner!==this.app.store.humanFaction){this.message=CHINESE_COPY_GAPS.ownCityRequired.text();this.view='message';this.app.audio.alert();return}this.targetCity=city.id;this.view='city-status';this.message=CHINESE_COPY_GAPS.confirmCategoryAtCity.text(city.name,CATEGORY_LABELS[this.category]);this.app.audio.confirm()}}
   updateCityStatus(b){if(b==='B'){this.view=this.stage==='survey'?'map':'target';this.app.audio.cancel();return}if(isInspectionConfirmButton(b)&&this.stage==='command'&&this.targetCity){this.commandSubmenu=[];this.view='commands';this.menuIndex=0;this.app.audio.confirm()}}
@@ -79,10 +80,59 @@ export class StrategyScene{
       this.beginTransportTargeting()
       return
     }
+    if(item.kind==='action'&&inspectionDraftCommand(item.id))return this.beginInspectionActionDraft(item.id)
+    this.messageReturnView='map'
     this.message=this.app.store.executeInspection(item.id,this.targetCity)
     this.commandSubmenu=[]
     this.view='message'
     this.app.audio.confirm()
+  }
+  beginInspectionActionDraft(commandId){
+    try{
+      this.actionDraft=newInspectionActionDraft(this.app.store,this.targetCity,commandId)
+      this.view='action-draft'
+      this.app.audio.confirm()
+    }catch(error){
+      this.actionDraft=null
+      this.message=error instanceof Error?error.message:'內政命令準備失敗。'
+      this.messageReturnView='commands'
+      this.view='message'
+      this.app.audio.alert()
+    }
+  }
+  updateActionDraft(button){
+    if(!this.actionDraft){this.view='commands';return}
+    const gold=this.app.store.state.cities[this.actionDraft.cityId]?.gold
+    let result
+    try{result=transitionInspectionActionDraft(this.actionDraft,button,gold)}
+    catch(error){
+      this.message=error instanceof Error?error.message:'內政命令準備資料無效。'
+      this.messageReturnView='commands'
+      this.actionDraft=null
+      this.view='message'
+      this.app.audio.alert()
+      return
+    }
+    if(result.status==='cancelled'){
+      this.actionDraft=null
+      this.view='commands'
+      this.app.audio.cancel()
+    }else if(result.status==='updated'){
+      this.actionDraft=result.draft
+      this.app.audio.move()
+    }else if(result.status==='invalid'){
+      this.message=result.reason
+      this.messageReturnView='action-draft'
+      this.view='message'
+      this.app.audio.alert()
+    }else if(result.status==='preview-only'){
+      const item=inspectionActionDraftSummary(this.actionDraft)
+      this.message=item.commandLabel+'：'+item.officerRole+' '+item.officerName+'，預備投入金'+item.gold+'。效果公式尚未校準：本次僅預覽，不扣金、不執行。'
+      this.messageReturnView='commands'
+      this.actionDraft=null
+      this.view='message'
+      this.app.audio.confirm()
+    }
   }
   beginTaxRateConfiguration(){
     const city=this.app.store.state.cities[this.targetCity]
@@ -200,9 +250,9 @@ export class StrategyScene{
   requestFinishTurn(){if(this.app.store.mode==='inspection'&&this.app.store.isLastHumanTurn){this.saveIndex=0;this.view='save';this.app.audio.confirm();return}this.finishTurn()}
   updateSave(b){if(['LEFT','RIGHT','UP','DOWN'].includes(b)){this.saveIndex=1-this.saveIndex;this.app.audio.move()}if(b==='B'){this.view='map';this.app.audio.cancel();return}if(b==='A'||b==='C'||b==='START'){if(this.saveIndex===0)this.app.store.save();this.finishTurn()}}
   finishTurn(){this.app.store.finishCurrentTurn();this.app.audio.confirm();this.resetForActiveTurn()}
-  resetForActiveTurn(){this.view='map';this.stage=this.app.store.mode==='inspection'?'survey':'march';this.category=this.app.store.inspectionCategoryForActive()??'domestic';this.menuIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.targetCity=null;this.marchFrom=null;this.snapCursorToOwnedCity()}
+  resetForActiveTurn(){this.view='map';this.stage=this.app.store.mode==='inspection'?'survey':'march';this.category=this.app.store.inspectionCategoryForActive()??'domestic';this.menuIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.actionDraft=null;this.messageReturnView='map';this.targetCity=null;this.marchFrom=null;this.snapCursorToOwnedCity()}
   snapCursorToOwnedCity(){const store=this.app.store,city=this.mapCities().find((c)=>store.state.cities[c.id].owner===store.humanFaction);if(city){const p=cityWorldPoint(city);store.setCursor(p.x,p.y)}}
-  draw(){if(!this.app.store.hasGame())return;const r=this.app.r;r.clear('#8f6f43');this.drawWorld();this.drawDialog();if(this.view==='category')this.drawCategory();if(this.view==='target')this.drawTargetHint();if(this.view==='commands')this.drawCommands();if(this.view==='tax-rate')this.drawTaxRate();if(this.view==='transport-target')this.drawTransportTargetHint();if(this.view==='transport-load')this.drawTransportLoad();if(this.view==='message')this.drawMessage();if(this.view==='info')this.drawInfo();if(this.view==='city-status')this.drawCityStatus();if(this.view==='save')this.drawSave();r.scanlines(.018)}
+  draw(){if(!this.app.store.hasGame())return;const r=this.app.r;r.clear('#8f6f43');this.drawWorld();this.drawDialog();if(this.view==='category')this.drawCategory();if(this.view==='target')this.drawTargetHint();if(this.view==='commands')this.drawCommands();if(this.view==='action-draft')this.drawActionDraft();if(this.view==='tax-rate')this.drawTaxRate();if(this.view==='transport-target')this.drawTransportTargetHint();if(this.view==='transport-load')this.drawTransportLoad();if(this.view==='message')this.drawMessage();if(this.view==='info')this.drawInfo();if(this.view==='city-status')this.drawCityStatus();if(this.view==='save')this.drawSave();r.scanlines(.018)}
   drawWorld(){const r=this.app.r,state=this.app.store.state,camera=cameraFor(state.cursor);r.fillRect(0,0,MAP_VIEW_W,MAP_VIEW_H,'#aa8050');for(const feature of PRESENTATION_MOUNTAIN_RANGES){if(!isVisible(feature,camera,34))continue;const p=toScreen(feature,camera);this.drawMountain(p.x,p.y,feature.variant,feature.scale)}for(const feature of PRESENTATION_HILL_CLUSTERS){if(!isVisible(feature,camera,22))continue;const p=toScreen(feature,camera);this.drawForest(p.x,p.y,feature.variant,feature.scale)}drawWorldRiver(r,{camera,widthScale:1.34});for(const city of this.mapCities()){const wp=cityWorldPoint(city);if(!isVisible(wp,camera,20))continue;const sp=toScreen(wp,camera);this.drawCity(city,sp.x,sp.y)}const cursor=toScreen(state.cursor,camera);drawTargetMapCursor(r,cursor.x,cursor.y,{width:16,height:16,scale:.92})}
   drawMountain(x,y,index=0,scale=1){drawTargetMountainRange(this.app.r,x,y,index,1.02*scale)}
   drawForest(x,y,index=0,scale=1){drawTargetHillCluster(this.app.r,x,y,index,.9*scale)}
@@ -226,6 +276,34 @@ export class StrategyScene{
       r.text(item.label,119,rowY,8,active?COLORS.cyan:'#e8dfc8')
       if(item.kind==='submenu')r.text('›',213,rowY,8,active?COLORS.cyan:'#9c927f','right')
     })
+  }
+  drawActionDraft(){
+    const d=this.actionDraft
+    if(!d)return
+    const r=this.app.r,cmd=inspectionDraftCommand(d.commandId),actor=d.candidates[d.officerIndex]
+    const role=cmd.officerRole==='target-non-ruler'?'教育對象':'執行武將'
+    drawStrategyPanel(r,47,25,226,175,'#000','#9b6514')
+    r.text((this.cityById(d.cityId)?.name??'')+' · '+cmd.label,160,36,11,'#efd27d','center','top',SERIF,'700')
+    r.text(d.cityAssignmentVerified?'城內武將已校準':'臨時勢力名冊，城市配屬未校準',160,55,6,'#bfa681','center')
+    if(d.phase==='officer'){
+      r.text(role+'：↑↓ 選擇',160,70,8,COLORS.cyan,'center')
+      const start=Math.max(0,Math.min(d.candidates.length-7,d.officerIndex-3))
+      d.candidates.slice(start,start+7).forEach((item,i)=>{
+        const selected=i+start===d.officerIndex
+        r.text((selected?'▶ ':'　 ')+item.name,105,88+i*13,8,selected?COLORS.cyan:'#ddd0ad')
+      })
+    }else if(d.phase==='gold'){
+      r.text(role+'：'+actor.name,160,79,8,'#e5d4ac','center')
+      r.text('投入金',160,98,8,'#b7aa89','center')
+      r.text(String(d.gold),160,116,17,COLORS.cyan,'center','top',SERIF,'700')
+      r.text('←→ ±1　↑↓ ±100',160,145,7,'#e5d4ac','center')
+    }else{
+      r.text('準備命令預覽',160,81,9,COLORS.cyan,'center')
+      r.text(role+'：'+actor.name,160,105,8,'#e5d4ac','center')
+      r.text('投入金：'+d.gold,160,124,8,'#e5d4ac','center')
+      r.text('尚無效果公式，確認也不會執行',160,147,6.5,'#bf9a72','center')
+    }
+    r.text('C 下一步／確認　B 返回／取消',160,185,6,'#a69b86','center')
   }
   drawTaxRate(){
     const r=this.app.r
