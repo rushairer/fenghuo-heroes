@@ -6,6 +6,7 @@ import { CHINESE_COPY_GAPS } from '../game/chinese-copy-gaps.js'
 import { TARGET_INSPECTION_PALETTE, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawTargetMountainRange } from '../game/map-art.js'
 import { inspectionCommandItems, inspectionCommandPath, isInspectionConfirmButton } from '../game/inspection-command-parity.js'
 import { inspectionActionDraftSummary, inspectionDraftCommand, newInspectionActionDraft, transitionInspectionActionDraft } from '../game/inspection-action-draft.js'
+import { inspectionTransferDraftSummary, newInspectionTransferDraft, transitionInspectionTransferDraft } from '../game/inspection-transfer-draft.js'
 import { adjustTaxRate } from '../game/tax-parity.js'
 import { PRESENTATION_HILL_CLUSTERS, PRESENTATION_MOUNTAIN_RANGES } from '../game/strategy-map-presentation.js'
 import { drawStrategyPanel, drawStrategyTextWindow } from '../game/ui-art.js'
@@ -16,8 +17,8 @@ import { drawWorldRiver } from '../game/world-art.js'
 const CATEGORIES=['domestic','diplomacy','military']
 const cursorStep=8
 export class StrategyScene{
-  constructor(app){this.app=app;if(!app.store.hasGame()&&!app.store.load()){app.go('title');return}this.view='map';this.stage=app.store.mode==='inspection'?'survey':'march';this.menuIndex=0;this.category=app.store.inspectionCategoryForActive()??'domestic';this.message='';this.targetCity=null;this.infoTab=0;this.marchFrom=null;this.saveIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.actionDraft=null;this.messageReturnView='map';this.snapCursorToOwnedCity()}
-  update(_dt,input){const key=input.consume();if(!key||!this.app.store.hasGame())return;const b=mdButton(key);if(b==='HD')return this.app.toggleHd();if(this.view==='message')return this.updateMessage(b);if(this.view==='category')return this.updateCategory(b);if(this.view==='target')return this.updateTarget(b);if(this.view==='commands')return this.updateCommands(b);if(this.view==='action-draft')return this.updateActionDraft(b);if(this.view==='tax-rate')return this.updateTaxRate(b);if(this.view==='transport-target')return this.updateTransportTarget(b);if(this.view==='transport-load')return this.updateTransportLoad(b);if(this.view==='info')return this.updateInfo(b);if(this.view==='city-status')return this.updateCityStatus(b);if(this.view==='save')return this.updateSave(b);this.updateMap(b)}
+  constructor(app){this.app=app;if(!app.store.hasGame()&&!app.store.load()){app.go('title');return}this.view='map';this.stage=app.store.mode==='inspection'?'survey':'march';this.menuIndex=0;this.category=app.store.inspectionCategoryForActive()??'domestic';this.message='';this.targetCity=null;this.infoTab=0;this.marchFrom=null;this.saveIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.actionDraft=null;this.transferDraft=null;this.messageReturnView='map';this.snapCursorToOwnedCity()}
+  update(_dt,input){const key=input.consume();if(!key||!this.app.store.hasGame())return;const b=mdButton(key);if(b==='HD')return this.app.toggleHd();if(this.view==='message')return this.updateMessage(b);if(this.view==='category')return this.updateCategory(b);if(this.view==='target')return this.updateTarget(b);if(this.view==='commands')return this.updateCommands(b);if(this.view==='action-draft')return this.updateActionDraft(b);if(this.view==='transfer-draft')return this.updateTransferDraft(b);if(this.view==='tax-rate')return this.updateTaxRate(b);if(this.view==='transport-target')return this.updateTransportTarget(b);if(this.view==='transport-load')return this.updateTransportLoad(b);if(this.view==='info')return this.updateInfo(b);if(this.view==='city-status')return this.updateCityStatus(b);if(this.view==='save')return this.updateSave(b);this.updateMap(b)}
   mapCities(){return this.app.store.mapProfile.cities}
   cityById(id){return this.app.store.mapProfile?.cityById?.[id]??null}
   moveCursor(dx,dy){const s=this.app.store.state;this.app.store.setCursor(s.cursor.x+dx*cursorStep,s.cursor.y+dy*cursorStep);this.app.audio.move()}
@@ -80,6 +81,7 @@ export class StrategyScene{
       this.beginTransportTargeting()
       return
     }
+    if(item.id==='transfer')return this.beginInspectionTransferDraft()
     if(item.kind==='action'&&inspectionDraftCommand(item.id))return this.beginInspectionActionDraft(item.id)
     this.messageReturnView='map'
     this.message=this.app.store.executeInspection(item.id,this.targetCity)
@@ -130,6 +132,44 @@ export class StrategyScene{
       this.message=item.commandLabel+'：'+item.officerRole+' '+item.officerName+'，預備投入金'+item.gold+'。效果公式尚未校準：本次僅預覽，不扣金、不執行。'
       this.messageReturnView='commands'
       this.actionDraft=null
+      this.view='message'
+      this.app.audio.confirm()
+    }
+  }
+  beginInspectionTransferDraft(){
+    try{
+      this.transferDraft=newInspectionTransferDraft(this.app.store,this.targetCity)
+      this.view='transfer-draft'
+      this.app.audio.confirm()
+    }catch(error){
+      this.transferDraft=null
+      this.message=error instanceof Error?error.message:'武將調動準備失敗。'
+      this.messageReturnView='commands'
+      this.view='message'
+      this.app.audio.alert()
+    }
+  }
+  updateTransferDraft(button){
+    if(!this.transferDraft){this.view='commands';return}
+    const result=transitionInspectionTransferDraft(this.app.store,this.transferDraft,button)
+    if(result.status==='cancelled'){
+      this.transferDraft=null
+      this.view='commands'
+      this.app.audio.cancel()
+    }else if(result.status==='updated'){
+      this.transferDraft=result.draft
+      this.app.audio.move()
+    }else if(result.status==='invalid'){
+      this.message=result.reason
+      this.messageReturnView='transfer-draft'
+      this.view='message'
+      this.app.audio.alert()
+    }else if(result.status==='preview-only'){
+      const summary=inspectionTransferDraftSummary(this.transferDraft)
+      this.message='調動：'+summary.officerName+' → '+summary.destinationName+
+        '。城市配屬與到達時間未校準，本次只預覽，不更動武將位置。'
+      this.messageReturnView='commands'
+      this.transferDraft=null
       this.view='message'
       this.app.audio.confirm()
     }
@@ -250,9 +290,9 @@ export class StrategyScene{
   requestFinishTurn(){if(this.app.store.mode==='inspection'&&this.app.store.isLastHumanTurn){this.saveIndex=0;this.view='save';this.app.audio.confirm();return}this.finishTurn()}
   updateSave(b){if(['LEFT','RIGHT','UP','DOWN'].includes(b)){this.saveIndex=1-this.saveIndex;this.app.audio.move()}if(b==='B'){this.view='map';this.app.audio.cancel();return}if(b==='A'||b==='C'||b==='START'){if(this.saveIndex===0)this.app.store.save();this.finishTurn()}}
   finishTurn(){this.app.store.finishCurrentTurn();this.app.audio.confirm();this.resetForActiveTurn()}
-  resetForActiveTurn(){this.view='map';this.stage=this.app.store.mode==='inspection'?'survey':'march';this.category=this.app.store.inspectionCategoryForActive()??'domestic';this.menuIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.actionDraft=null;this.messageReturnView='map';this.targetCity=null;this.marchFrom=null;this.snapCursorToOwnedCity()}
+  resetForActiveTurn(){this.view='map';this.stage=this.app.store.mode==='inspection'?'survey':'march';this.category=this.app.store.inspectionCategoryForActive()??'domestic';this.menuIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.actionDraft=null;this.transferDraft=null;this.messageReturnView='map';this.targetCity=null;this.marchFrom=null;this.snapCursorToOwnedCity()}
   snapCursorToOwnedCity(){const store=this.app.store,city=this.mapCities().find((c)=>store.state.cities[c.id].owner===store.humanFaction);if(city){const p=cityWorldPoint(city);store.setCursor(p.x,p.y)}}
-  draw(){if(!this.app.store.hasGame())return;const r=this.app.r;r.clear('#8f6f43');this.drawWorld();this.drawDialog();if(this.view==='category')this.drawCategory();if(this.view==='target')this.drawTargetHint();if(this.view==='commands')this.drawCommands();if(this.view==='action-draft')this.drawActionDraft();if(this.view==='tax-rate')this.drawTaxRate();if(this.view==='transport-target')this.drawTransportTargetHint();if(this.view==='transport-load')this.drawTransportLoad();if(this.view==='message')this.drawMessage();if(this.view==='info')this.drawInfo();if(this.view==='city-status')this.drawCityStatus();if(this.view==='save')this.drawSave();r.scanlines(.018)}
+  draw(){if(!this.app.store.hasGame())return;const r=this.app.r;r.clear('#8f6f43');this.drawWorld();this.drawDialog();if(this.view==='category')this.drawCategory();if(this.view==='target')this.drawTargetHint();if(this.view==='commands')this.drawCommands();if(this.view==='action-draft')this.drawActionDraft();if(this.view==='transfer-draft')this.drawTransferDraft();if(this.view==='tax-rate')this.drawTaxRate();if(this.view==='transport-target')this.drawTransportTargetHint();if(this.view==='transport-load')this.drawTransportLoad();if(this.view==='message')this.drawMessage();if(this.view==='info')this.drawInfo();if(this.view==='city-status')this.drawCityStatus();if(this.view==='save')this.drawSave();r.scanlines(.018)}
   drawWorld(){const r=this.app.r,state=this.app.store.state,camera=cameraFor(state.cursor);r.fillRect(0,0,MAP_VIEW_W,MAP_VIEW_H,'#aa8050');for(const feature of PRESENTATION_MOUNTAIN_RANGES){if(!isVisible(feature,camera,34))continue;const p=toScreen(feature,camera);this.drawMountain(p.x,p.y,feature.variant,feature.scale)}for(const feature of PRESENTATION_HILL_CLUSTERS){if(!isVisible(feature,camera,22))continue;const p=toScreen(feature,camera);this.drawForest(p.x,p.y,feature.variant,feature.scale)}drawWorldRiver(r,{camera,widthScale:1.34});for(const city of this.mapCities()){const wp=cityWorldPoint(city);if(!isVisible(wp,camera,20))continue;const sp=toScreen(wp,camera);this.drawCity(city,sp.x,sp.y)}const cursor=toScreen(state.cursor,camera);drawTargetMapCursor(r,cursor.x,cursor.y,{width:16,height:16,scale:.92})}
   drawMountain(x,y,index=0,scale=1){drawTargetMountainRange(this.app.r,x,y,index,1.02*scale)}
   drawForest(x,y,index=0,scale=1){drawTargetHillCluster(this.app.r,x,y,index,.9*scale)}
@@ -304,6 +344,40 @@ export class StrategyScene{
       r.text('尚無效果公式，確認也不會執行',160,147,6.5,'#bf9a72','center')
     }
     r.text('C 下一步／確認　B 返回／取消',160,185,6,'#a69b86','center')
+  }
+  drawTransferDraft(){
+    const draft=this.transferDraft
+    if(!draft)return
+    const r=this.app.r
+    const actor=draft.candidates[draft.officerIndex]
+    const destination=draft.destinations[draft.destinationIndex]
+    drawStrategyPanel(r,48,27,224,173,'#000','#9b6514')
+    r.text('內政 · 調動',160,37,11,'#efd27d','center','top',SERIF,'700')
+    const source=this.cityById(draft.sourceId)?.name??draft.sourceId
+    r.text('出發：'+source,160,56,8,'#e5d4ac','center')
+    if(draft.phase==='officer'){
+      r.text('選擇武將',160,73,8,COLORS.cyan,'center')
+      const start=Math.max(0,Math.min(draft.candidates.length-7,draft.officerIndex-3))
+      draft.candidates.slice(start,start+7).forEach((entry,i)=>{
+        const active=i+start===draft.officerIndex
+        r.text((active?'▶ ':'　 ')+entry.name,99,90+i*13,8,active?COLORS.cyan:'#ddd0ad')
+      })
+    }else if(draft.phase==='destination'){
+      r.text('武將：'+actor.name,160,75,8,'#e5d4ac','center')
+      r.text('選擇另一座本國城',160,91,7,COLORS.cyan,'center')
+      const start=Math.max(0,Math.min(draft.destinations.length-5,draft.destinationIndex-2))
+      draft.destinations.slice(start,start+5).forEach((entry,i)=>{
+        const active=i+start===draft.destinationIndex
+        r.text((active?'▶ ':'　 ')+entry.name,106,109+i*13,8,active?COLORS.cyan:'#ddd0ad')
+      })
+    }else{
+      r.text('準備命令預覽',160,83,9,COLORS.cyan,'center')
+      r.text(actor.name+' → '+destination.name,160,112,9,'#e5d4ac','center')
+      r.text('原版移動時序未校準，確認不會調動',160,146,6.5,'#bf9a72','center')
+    }
+    r.text(draft.cityAssignmentVerified?'城內配屬已校準':'勢力名冊代替城內配屬（暫定）',
+      160,179,6,'#a69b86','center')
+    r.text('C 下一步／確認　B 返回／取消',160,192,6,'#a69b86','center')
   }
   drawTaxRate(){
     const r=this.app.r
