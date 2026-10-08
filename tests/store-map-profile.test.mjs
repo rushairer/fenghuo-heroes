@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import { buildCanonicalRuntimeMap } from '../src/game/canonical-map-profile.js'
 import { GameStore } from '../src/game/store.js'
 import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
-import { canonical189TestScenarioFactory } from './fixtures/canonical-scenario-state.mjs'
+import { canonical189TestScenarioFactory, completeCanonicalScenarioEvidence } from './fixtures/canonical-scenario-state.mjs'
+import { buildCanonicalScenarioStartState } from '../src/game/scenario-start-state.js'
 
 class MemoryStorage{
   constructor(){this.m=new Map()}
@@ -73,4 +74,39 @@ test('new games record scenario-state provenance separately from map profile pro
   assert.equal(store.state.scenarioOwnershipStatus,'source-backed-189')
   assert.equal(store.state.scenarioEconomyStatus,'source-backed-189')
   assert.equal(store.state.scenarioOfficerPlacementStatus,'source-backed-189')
+})
+
+test('synthetic independently verified canonical 200/215 games round-trip through save and load',()=>{
+  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
+  for(const year of [200,215]){
+    const storage=new MemoryStorage()
+    const factory=({mapProfile,scenarioYear})=>buildCanonicalScenarioStartState({
+      mapProfile,scenarioYear,
+      scenarioEvidence:completeCanonicalScenarioEvidence({year:scenarioYear}),
+    })
+    const store=new GameStore(storage,{mapProfile:profile,scenarioStartStateFactory:factory})
+    store.newGame({scenarioYear:year,humanFactions:['cao']})
+    assert.equal(store.state.scenarioYear,year)
+    assert.equal(store.state.scenarioStateId,'zh-rom-canonical:'+year)
+    assert.equal(store.state.scenarioOfficerPlacementStatus,'source-backed-'+year)
+    assert.ok(store.state.cities['zh-02'].officers.some((row)=>row.name==='曹操'))
+    const restored=new GameStore(storage,{mapProfile:profile,scenarioStartStateFactory:factory})
+    assert.equal(restored.load(),true)
+    assert.equal(restored.state.scenarioYear,year)
+    assert.equal(restored.humanFaction,'cao')
+  }
+})
+
+test('an injected scenario factory cannot accidentally deliver the 189 ledger for year 200',()=>{
+  const profile=buildCanonicalRuntimeMap(completeCanonicalMapEvidence())
+  const storage=new MemoryStorage()
+  const store=new GameStore(storage,{
+    mapProfile:profile,
+    scenarioStartStateFactory:({mapProfile})=>buildCanonicalScenarioStartState({
+      mapProfile,scenarioYear:189,
+      scenarioEvidence:completeCanonicalScenarioEvidence({year:189}),
+    }),
+  })
+  assert.throws(()=>store.newGame({scenarioYear:200,humanFactions:['cao']}),/does not match/)
+  assert.equal(store.hasGame(),false)
 })
