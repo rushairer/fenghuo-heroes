@@ -193,51 +193,86 @@ export function queueMarch(store, {
   const nFood=allocation.food
   const nGold=allocation.gold
 
-  // All checks are complete: no failing request may consume resources or IDs.
-  // Initialize persisted army identifiers only after every check succeeds.
-  ensureMarchState(store)
-  source.troops -= nTroops
-  source.food -= nFood
-  source.gold -= nGold
-
-  const army = {
-    id: `army-${store.state.nextArmyId++}`,
-    faction: store.humanFaction,
-    from,
-    x: start.x,
-    y: start.y,
-    route: normalized,
-    routeIndex: 0,
-    troops: nTroops,
-    food: nFood,
-    gold: nGold,
-    officerCount: nOfficers,
-    officerNames: names,
-    dailyFood: dailyFoodFor(nTroops, nOfficers),
-    starving: false,
-    lastTurnFoodConsumed: 0,
-    lastTurnStarvingDays: 0,
-    starvingDaysTotal: 0,
-    status: 'marching',
+  // All checks are complete. Persist the whole command or roll back its
+  // city debit, army creation, ID sequence and log on a storage failure.
+  const state=store.state
+  const hadArmies=Object.hasOwn(state,'armies')
+  const originalArmies=state.armies
+  const oldArmyCount=Array.isArray(originalArmies)?originalArmies.length:0
+  const hadNextId=Object.hasOwn(state,'nextArmyId')
+  const oldNextId=state.nextArmyId
+  const hadLog=Object.hasOwn(state,'log')
+  const oldLog=Array.isArray(state.log)?[...state.log]:state.log
+  let army
+  try{
+    const armies=ensureMarchState(store)
+    source.troops-=nTroops
+    source.food-=nFood
+    source.gold-=nGold
+    army={
+      id:`army-${state.nextArmyId++}`,
+      faction:store.humanFaction,
+      from,
+      x:start.x,
+      y:start.y,
+      route:normalized,
+      routeIndex:0,
+      troops:nTroops,
+      food:nFood,
+      gold:nGold,
+      officerCount:nOfficers,
+      officerNames:names,
+      dailyFood:dailyFoodFor(nTroops,nOfficers),
+      starving:false,
+      lastTurnFoodConsumed:0,
+      lastTurnStarvingDays:0,
+      starvingDaysTotal:0,
+      status:'marching',
+    }
+    armies.push(army)
+    store.addLog(`${city.name}軍出陣。武將${nOfficers} 兵${nTroops} 米${nFood}`)
+    store.save()
+  }catch(error){
+    source.troops+=nTroops
+    source.food+=nFood
+    source.gold+=nGold
+    if(hadArmies){
+      if(Array.isArray(originalArmies))originalArmies.length=oldArmyCount
+      state.armies=originalArmies
+    }else delete state.armies
+    if(hadNextId)state.nextArmyId=oldNextId
+    else delete state.nextArmyId
+    if(hadLog)state.log=oldLog
+    else delete state.log
+    throw error
   }
-  ensureMarchState(store).push(army)
-  store.addLog(`${city.name}軍出陣。武將${nOfficers} 兵${nTroops} 米${nFood}`)
-  store.save()
   return army
 }
 
 export function rerouteArmy(store, armyId, route) {
+  store.assertState?.()
   if(store.pendingConflict)throw new Error('戰鬥尚未結束，不能重新指定行軍路線。')
   if(store.mode!=='march')throw new Error('只有行軍月能調整行軍路線。')
-  const army = ensureMarchState(store).find((item) => item.id === armyId && item.faction === store.humanFaction)
-  if (!army) throw new Error('找不到可操作的行軍部隊。')
+  const army=(Array.isArray(store.state?.armies)?store.state.armies:[])
+    .find((item)=>item.id===armyId&&item.faction===store.humanFaction)
+  if(!army)throw new Error('找不到可操作的行軍部隊。')
   if(army.status==='engaged'||army.status==='besieging')throw new Error('戰鬥中的部隊不能變更行軍路線。')
   const normalized=validatedRoute(route,{x:army.x,y:army.y})
-  army.route=normalized
-  army.routeIndex = 0
-  army.status = 'marching'
-  store.addLog('行軍部隊已變更路線。')
-  store.save()
+  const oldRoute=army.route,oldIndex=army.routeIndex,oldStatus=army.status
+  const oldLog=Array.isArray(store.state.log)?[...store.state.log]:store.state.log
+  try{
+    army.route=normalized
+    army.routeIndex=0
+    army.status='marching'
+    store.addLog('行軍部隊已變更路線。')
+    store.save()
+  }catch(error){
+    army.route=oldRoute
+    army.routeIndex=oldIndex
+    army.status=oldStatus
+    store.state.log=oldLog
+    throw error
+  }
   return army
 }
 
