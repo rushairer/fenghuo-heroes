@@ -3,6 +3,12 @@ import { drawSiegeForegroundDepth, drawSiegeFortress, drawSiegeStandards } from 
 import { BATTLE_SPEEDS, MAX_SQUADS_PER_UNIT, battlePreparation, cycleBattleSpeed } from '../game/battle-prep.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
+import {
+  BATTLE_SQUAD_TYPES,
+  formationRowSquads,
+  initialFormationDraft,
+  transitionFormationDraft,
+} from '../game/battle-formation.js'
 import { cancelSiegeFromArmy } from '../game/march.js'
 import { ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed } from '../game/siege-runtime.js'
 
@@ -14,6 +20,9 @@ export class SiegeScene{
     this.runtime=ensureSiegeRuntime(this.conflict)
     this.speedIndex=Math.max(0,BATTLE_SPEEDS.findIndex((item)=>item.id===this.runtime.speed))
     this.phase=this.runtime.phase
+    if(this.phase==='formation'&&!this.runtime.formationDraft){
+      this.runtime.formationDraft=initialFormationDraft(this.conflict,this.runtime.formationPlan)
+    }
     this.message=''
     this.pauseConfirm=false
     this.retreatConfirm=false
@@ -85,33 +94,30 @@ export class SiegeScene{
         return
       }
       if(b==='A'||b==='C'||b==='START'){
-        const speed=BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
-        setSiegeSpeed(this.conflict,speed)
-        setSiegePhase(this.conflict,'formation')
-        this.phase='formation'
-        this.saveRuntime()
-        this.app.audio.confirm()
+        const before=structuredClone(this.conflict.runtime)
+        try{
+          const speed=BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
+          setSiegeSpeed(this.conflict,speed)
+          setSiegePhase(this.conflict,'formation')
+          this.runtime=ensureSiegeRuntime(this.conflict)
+          if(!this.runtime.formationDraft){
+            this.runtime.formationDraft=initialFormationDraft(this.conflict,this.runtime.formationPlan)
+          }
+          this.saveRuntime()
+          this.phase='formation'
+          this.app.audio.confirm()
+        }catch(error){
+          this.conflict.runtime=before
+          this.runtime=ensureSiegeRuntime(this.conflict)
+          this.message='編成準備未保存：'+(error instanceof Error?error.message:'存儲不可用')
+          this.app.audio.alert()
+        }
       }
       return
     }
 
     if(this.phase==='formation'){
-      if(b==='B'){
-        setSiegePhase(this.conflict,'speed')
-        this.phase='speed'
-        this.saveRuntime()
-        this.app.audio.cancel()
-        return
-      }
-      if(b==='A'||b==='C'||b==='START'){
-        const speed=this.runtime.speed??BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
-        battlePreparation(this.conflict,speed)
-        setSiegeSpeed(this.conflict,speed)
-        setSiegePhase(this.conflict,'siege')
-        this.phase='siege'
-        this.saveRuntime()
-        this.app.audio.confirm()
-      }
+      this.updateFormation(b)
       return
     }
 
@@ -126,6 +132,48 @@ export class SiegeScene{
         this.saveRuntime()
         this.app.audio.confirm()
       }
+    }
+  }
+
+  updateFormation(button){
+    if(!this.runtime.formationDraft){
+      this.runtime.formationDraft=initialFormationDraft(this.conflict,this.runtime.formationPlan)
+    }
+    const previous=structuredClone(this.conflict.runtime)
+    const previousPhase=this.phase
+    try{
+      const result=transitionFormationDraft(this.conflict,this.runtime.formationDraft,button)
+      if(result.status==='ignored')return
+      if(result.status==='limit'){
+        this.message='每位武將暫以 15 小隊作為編成上限；武官級與單小隊兵數仍待校準。'
+        this.app.audio.alert()
+        return
+      }
+      if(result.status==='back'){
+        setSiegePhase(this.conflict,'speed')
+      }else if(result.status==='updated'){
+        this.conflict.runtime.formationDraft=result.draft
+      }else if(result.status==='committed'){
+        const speed=this.runtime.speed??BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
+        battlePreparation(this.conflict,speed)
+        setSiegeSpeed(this.conflict,speed)
+        this.conflict.runtime.formationPlan=result.plan
+        this.conflict.runtime.formationDraft=null
+        setSiegePhase(this.conflict,'siege')
+      }
+      this.saveRuntime()
+      this.phase=this.runtime.phase
+      if(result.status==='committed'){
+        this.message='編成意向已保存，未校準的武官級、單隊兵數和攻城結果不進行結算。'
+      }
+      if(result.status==='back'||button==='B')this.app.audio.cancel()
+      else this.app.audio.confirm()
+    }catch(error){
+      this.conflict.runtime=previous
+      this.runtime=ensureSiegeRuntime(this.conflict)
+      this.phase=previousPhase
+      this.message='編成未保存：'+(error instanceof Error?error.message:'存儲不可用')
+      this.app.audio.alert()
     }
   }
 
@@ -179,9 +227,27 @@ export class SiegeScene{
       })
       r.text('C 決定　B 中止確認',160,213,5.8,'#8e846f','center')
     }else if(this.phase==='formation'){
-      r.text(`小隊編成　每部隊最多 ${MAX_SQUADS_PER_UNIT} 小隊`,160,180,7.5,COLORS.cyan,'center')
-      r.text('原版編成規則仍待逐項校準',160,194,6.5,'#cfc19f','center')
-      r.text('C 繼續　B 返回速度選擇',160,208,5.8,'#8e846f','center')
+      const draft=this.runtime.formationDraft
+      r.panel(29,46,262,108,'#050505','#9b6514',smallPanel)
+      r.text('小隊編成・工程預覽',160,53,10,'#efd27d','center')
+      if(draft?.phase==='review'){
+        r.text('編成核對',160,72,8,COLORS.cyan,'center')
+        const totals=draft.rows.map((row)=>`${row.officerName} ${formationRowSquads(row)}`)
+        r.wrapText(totals.join('　')||'無具名武將，不建立假小隊',160,91,220,12,7,'#e5d4ac','center')
+        r.text('未進行實際分兵與損耗',160,140,6.5,'#a99d82','center')
+        r.text('C 確認預覽　B 返回調整',160,179,7,COLORS.cyan,'center')
+      }else{
+        const row=draft?.rows?.[draft.officerIndex??0]
+        r.text(row?`${(draft.officerIndex??0)+1}/${draft.rows.length} ${row.officerName}`:'無具名出征武將',160,70,8,COLORS.cyan,'center')
+        BATTLE_SQUAD_TYPES.forEach((type,index)=>{
+          const active=index===(draft?.typeIndex??0)
+          r.text(`${active?'▶ ':''}${type.label} ${row?.[type.id]??0}`,79+index*83,96,7,active?COLORS.cyan:'#ddd0ad')
+        })
+        r.text(`當前武將合計 ${formationRowSquads(row)}/${MAX_SQUADS_PER_UNIT}　不消耗兵力`,160,125,7,'#e5d4ac','center')
+        r.text('A 換將　↑↓ 兵種　←→ 數量',160,139,6,'#a99d82','center')
+        r.text('C 核對　B 返回速度',160,179,7,COLORS.cyan,'center')
+      }
+      r.text('最多 15 小隊・武官級限制未校準',160,196,6,'#cfc19f','center')
     }else{
       r.text(`攻城命令 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,178,7.5,COLORS.cyan,'center')
       r.text('C / A 攻城　B 中止確認',160,196,6.5,'#cfc19f','center')
