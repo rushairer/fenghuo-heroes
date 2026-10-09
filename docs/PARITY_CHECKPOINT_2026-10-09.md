@@ -89,3 +89,21 @@ event timing have been captured.
   evidence boundary. This checkpoint is infrastructure/correctness work, NOT
   proof that the original game's battle/economy formulas have been reproduced.
 
+
+## Further implementation and source acquisition — 2026-10-09
+
+- Field-battle `end` is a hard day-closure gate: no same-day rewrite, no
+  advance without closure, and no day-30 bypass. Scene now displays the
+  incremented day rather than stale runtime references.
+- Asset cleanup physically removed seven outdated 640x448 title Base64
+  fragments and the disabled generator entry. Runtime remains Canvas/vector
+  until an approved 1600x1120+ title source exists.
+- March domain rejects foreign/phantom officer names; previously rejected
+  validation no longer initializes the empty army ledger.
+- Queue/reroute now roll back resources, army IDs, routes and logs when
+  browser storage fails. Tax and village-supply state also roll back.
+- Independent community player sources suggest city production and governance
+  caps, a tax threshold, and April/October income cadence. These remain
+  low-tier observational leads, NOT permission to hard-code rules.
+- Full 1:1 gameplay remains blocked on direct Chinese-ROM geometry,
+  scenario start state, battle effects and victory rules.

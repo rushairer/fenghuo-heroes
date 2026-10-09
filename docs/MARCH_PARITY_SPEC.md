@@ -160,3 +160,16 @@ faction roster; it does **not** claim original city-specific placement.
 When source-backed city assignments are available, only named officers
 actually stationed in the departure city can lead an army. Failed validation
 happens before troops, gold, grain or army IDs are consumed.
+
+## 2026-10-09 — Atomic command persistence
+
+- A source-backed city can dispatch only genuinely stationed named
+  commanders. A provisional scaffold city can use only members of its
+  own faction opening roster; this is not an assertion of city placement.
+- Officer-availability queries are read-only and must not initialize empty
+  persistent army arrays or consume army IDs.
+- Queueing a new army rolls back deducted troops, food, gold, appended
+  army, incremented army ID and command log when storage fails.
+- Rerouting an army likewise rolls back its route/index/status and log on
+  failed save. Invalid orders and failed persistence cannot change the
+  strategic state. Regression tests include first army and later armies.

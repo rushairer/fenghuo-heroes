@@ -92,3 +92,20 @@ clean-room implementation rather than restoring archived prototypes.
 - For cities with only 200 troops, preselect 100 for marching to retain
   the provisional 100-soldier garrison; never show an over-budget draft.
 
+
+## 2026-10-09 battle-day and persistence closure
+
+- The battle end order closes the current day. Day advancement is strictly
+  one day at a time, only after a closed order, and never beyond observed day 30.
+  The legacy battle-order reopen helper is not a same-day bypass.
+- Invalid saved tactic associations, battle-day counters and carryover flags
+  are normalized without adding combat outcomes.
+- Named marching officers must belong to the live city roster when verified,
+  or to the explicitly provisional opening faction roster on scaffold.
+  Do not create phantom officer names or claim scaffold city assignments.
+- Rejected queries must not initialize army state as a side effect.
+- Persisting a new march, a reroute, tax-rate configuration or village-supply
+  intent must roll back in-memory changes if storage reports a failure.
+- Disabled raster artifacts must have no retained generated source parts.
+  The retired 640x448 title parts were physically deleted; true-HD title
+  production remains future work.

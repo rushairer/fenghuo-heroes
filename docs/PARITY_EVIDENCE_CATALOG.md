@@ -234,3 +234,23 @@ A fact moves into production canonical data only when its evidence record includ
 - verification state.
 
 A source URL by itself is not a canonical data record.
+
+### Domestic-economy range and threshold leads — Tier C only
+
+A Chinese-version player's detailed account reports development/production
+(`產值`) up to 999 and governance (`統治力`) up to 200, with a
+governance risk at tax rates above 45:
+
+- https://www.mobile01.com/topicdetail.php?f=37&t=3156936
+
+A separate player conversation independently discusses a 45% tax threshold
+and April gold / October food timing, but contains anecdotal experience
+rather than a controlled before/after capture:
+
+- https://www.ptt.cc/bbs/Old-Games/M.1298730665.A.ED3.html
+
+These observations are recorded solely to guide capture priorities.
+They do NOT authorize production formula constants, stat caps, monthly
+income, rebellion probability or development/loyalty changes. A
+Chinese-ROM frame/RAM sweep must confirm exact limits, timing and
+effect formulas under recorded scenario and difficulty conditions.
