@@ -19,6 +19,7 @@ export const BATTLE_VISUAL_QA_STATES = Object.freeze([
   'field-battle-speed',
   'field-battle-formation',
   'field-battle-active',
+  'field-battle-move',
   'siege-speed',
   'siege-formation',
   'duel-mode',

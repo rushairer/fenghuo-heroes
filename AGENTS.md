@@ -109,3 +109,16 @@ clean-room implementation rather than restoring archived prototypes.
 - Disabled raster artifacts must have no retained generated source parts.
   The retired 640x448 title parts were physically deleted; true-HD title
   production remains future work.
+
+## 2026-10-09 battle move and siege-retreat safeguards
+
+- Field move input follows officer selection -> destination cursor ->
+  committed semantic order. Only an actual participating officer may be
+  chosen; temporary cursor bounds are NOT measured original tactical cells.
+- Move drafts and intents may be stored with the pending conflict, but must
+  NEVER mutate army location, food, morale, casualties, combat outcome or
+  tactical map occupancy until the original game's rules are verified.
+- Siege B asks for an explicit confirmed engineering abort; do not restore
+  single-press battle deletion.
+- Both battlefield entry and intentional cancellation must be atomic across
+  army statuses, pendingConflict, logs and browser persistence.

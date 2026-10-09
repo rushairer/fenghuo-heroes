@@ -26,6 +26,7 @@ inspection tools, not gameplay evidence.
 | field-battle-speed | field-battle | battle-speed selection | synthetic armies; no original damage formula |
 | field-battle-formation | field-battle | squad formation | squad allocation still uncalibrated |
 | field-battle-active | field-battle | battlefield controls | synthetic conflict; no AI or damage formula |
+| field-battle-move | field-battle | select commanding officer and destination cursor | temporary logical target only; no simulated movement or damage |
 | siege-speed | siege | battle-speed selection | uses a local qaFixture conflict |
 | siege-formation | siege | formation placeholder | no invented battle formula |
 | duel-mode | duel | manual/auto choice | uses a local qaFixture conflict |

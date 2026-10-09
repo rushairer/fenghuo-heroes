@@ -1,4 +1,5 @@
 import { ensureMarchState } from './march.js'
+import { initialFieldMoveDraft, transitionFieldMoveDraft } from './field-battle-move.js'
 import { officerStatusProjection } from './officer-roster.js'
 import {
   BATTLE_VISUAL_QA_STATES,
@@ -130,6 +131,16 @@ export function applyVisualQaState(app, qaState) {
     scene.runtime.speed=phase==='speed'?null:'normal'
     scene.speedIndex=0
     scene.message=''
+    if(qaState==='field-battle-move'){
+      try{
+        const draft=initialFieldMoveDraft(scene.conflict)
+        scene.runtime.moveDraft=transitionFieldMoveDraft(scene.conflict,draft,'C').draft
+        scene.window='move-destination'
+      }catch{return false}
+    }else{
+      scene.runtime.moveDraft=null
+      scene.window=null
+    }
     return true
   }
 

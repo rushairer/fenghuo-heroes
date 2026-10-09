@@ -30,6 +30,7 @@ test('visual QA state catalog covers setup, strategy, march, siege and duel scre
     'field-battle-speed',
     'field-battle-formation',
     'field-battle-active',
+    'field-battle-move',
     'siege-speed',
     'siege-formation',
     'duel-mode',
@@ -283,4 +284,18 @@ test('transfer QA opens a draft using the selected source city',()=>{
   assert.equal(app.scene.view,'transfer-draft')
   assert.equal(app.scene.transferDraft.sourceId,'chengdu')
   assert.deepEqual(app.store.state.cities,before)
+})
+
+test('field move QA starts with a real known officer and a temporary cursor',()=>{
+  const app={scene:{
+    phase:'speed',runtime:{phase:'speed'},
+    conflict:{kind:'field',attackerOfficers:['曹操','曹仁']},
+    message:'old',window:null,
+  }}
+  assert.equal(initialSceneForVisualQa('field-battle-move'),'field-battle')
+  assert.equal(applyVisualQaState(app,'field-battle-move'),true)
+  assert.equal(app.scene.phase,'battle')
+  assert.equal(app.scene.window,'move-destination')
+  assert.equal(app.scene.runtime.moveDraft.officerName,'曹操')
+  assert.deepEqual(app.scene.runtime.moveDraft.target,{x:56,y:104})
 })

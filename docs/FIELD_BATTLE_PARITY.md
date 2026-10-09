@@ -129,3 +129,23 @@ inventing a duration, AI turn, casualties, or victory rules.
 The old `reopenFieldBattleOrders` helper now delegates to the guarded
 one-day transition rather than resetting `ordersClosed` within the same
 day. It can no longer bypass an end-order or a day-30 carryover barrier.
+
+## 2026-10-09 — Two-step movement command, no fabricated motion
+
+The battlefield command `移動` now opens its actual input structure:
+select one of the attacker army's **existing named officers**, then select
+a destination using the D-pad. C commits a source-qualified semantic order;
+B returns one step or cancels the uncommitted draft. The draft and completed
+order are retained in the active pendingConflict and can survive P/Continue
+save/load, including a pause midway through choosing a target.
+
+The current destination cursor uses a bounded 8-logical-pixel engineering
+input grid inside 320x224. This grid is a provisional UI interaction aid,
+not a measured original tactical map cell size. A committed order only
+records `{officerName,target}` and does NOT move any squad, update
+world coordinates, consume food, determine contact or apply damage.
+The engine verifies that the officer is in the recorded participating
+army roster and that the target stays on the provisional cursor grid;
+invented officers or out-of-bounds targets cannot enter a saved order.
+
+The deterministic inspection entry is `?qa=field-battle-move`.

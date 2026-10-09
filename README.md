@@ -78,6 +78,7 @@ npm run check
 - `?qa=field-battle-speed`
 - `?qa=field-battle-formation`
 - `?qa=field-battle-active`
+- `?qa=field-battle-move`
 - `?qa=siege-speed`
 - `?qa=siege-formation`
 - `?qa=duel-mode`
@@ -210,3 +211,10 @@ The inference layer refuses inconsistent observations instead of averaging them 
 - 小兵力城池出阵草稿先保证至少留守工程要求的 100 兵。
 - 189、200、215 已共用**逐年份验证**的 canonical start-state builder 与 Setup readiness gate；由于 200／215 正式证据仍为空，生产运行时依旧无法开始这两个剧本，绝不挪用 189 数据。
 
+
+## 2026-10-09 部隊戰與攻城流程
+
+- 部隊戰「移動」已具備武將選擇與方向鍵目標指定，C 記錄命令，B 可以逐層取消；P 保存後可繼續未完成的選點。
+- 目前移動目標格距是工程光標，僅保存移動意向；未經中文原版校準，不更改小隊位置、不自動判斷戰損／勝負。
+- 攻城界面的 B 不再單擊中止戰鬥；會先提示工程退出與原版退兵損失尚未校準，經明確確認才中止攻城。
+- 野戰與攻城開始／中止都會原子保存部隊狀態、待決衝突與日誌；瀏覽器持久化失敗時恢復原狀。
