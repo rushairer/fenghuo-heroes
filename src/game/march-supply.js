@@ -39,8 +39,19 @@ export function marchSupplyOrder(store,armyId,optionId){
     optionId:option.id,
     status:'awaiting-calibrated-effect',
   }
-  army.lastSupplyOrder=order
-  store.addLog?.(`村莊補給：${option.label}。`)
-  store.save?.()
+  const hadOrder=Object.hasOwn(army,'lastSupplyOrder')
+  const previousOrder=army.lastSupplyOrder
+  const oldLog=Array.isArray(store.state.log)?[...store.state.log]:store.state.log
+  try{
+    army.lastSupplyOrder=order
+    store.addLog?.(`村莊補給：${option.label}。`)
+    store.save?.()
+  }catch(error){
+    if(hadOrder)army.lastSupplyOrder=previousOrder
+    else delete army.lastSupplyOrder
+    if(oldLog!==undefined)store.state.log=oldLog
+    else delete store.state.log
+    throw error
+  }
   return Object.freeze({...order})
 }

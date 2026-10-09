@@ -133,7 +133,28 @@ export class GameStore {
   setActiveCity(id){this.assertState();this.state.activeCity=id}
   inspectionCategoryForActive(){this.assertState();return this.state.inspectionCategories?.[this.humanFaction]??null}
   lockInspectionCategory(category){this.assertState();if(this.mode!=='inspection')return false;if(!this.state.inspectionCategories)this.state.inspectionCategories={};const current=this.state.inspectionCategories[this.humanFaction];if(current&&current!==category)return false;this.state.inspectionCategories[this.humanFaction]=category;this.save();return true}
-  setTaxRate(cityId,rate){this.assertState();if(this.mode!=='inspection'||this.inspectionCategoryForActive()!=='domestic')throw new Error('只可在內政視察月調整稅率。');const city=this.state.cities[cityId];if(!city||city.owner!==this.humanFaction)throw new Error('只能設定本國城池稅率。');if(!isTaxRate(rate))throw new RangeError('稅率必須是 0 到 99 的整數。');city.taxRate=rate;this.addLog(`${this.mapProfile.cityById[cityId]?.name??cityId} 稅率設定為 ${rate}%。`);this.save();return rate}
+  setTaxRate(cityId,rate){
+    this.assertState()
+    if(this.mode!=='inspection'||this.inspectionCategoryForActive()!=='domestic'){
+      throw new Error('只可在內政視察月調整稅率。')
+    }
+    const city=this.state.cities[cityId]
+    if(!city||city.owner!==this.humanFaction)throw new Error('只能設定本國城池稅率。')
+    if(!isTaxRate(rate))throw new RangeError('稅率必須是 0 到 99 的整數。')
+    const hadRate=Object.hasOwn(city,'taxRate'),oldRate=city.taxRate
+    const oldLog=[...this.state.log]
+    try{
+      city.taxRate=rate
+      this.addLog(`${this.mapProfile.cityById[cityId]?.name??cityId} 稅率設定為 ${rate}%。`)
+      this.save()
+    }catch(error){
+      if(hadRate)city.taxRate=oldRate
+      else delete city.taxRate
+      this.state.log=oldLog
+      throw error
+    }
+    return rate
+  }
   // Menu hierarchy is evidence-backed in inspection-command-parity.js.
   // Commands whose numerical effect is still unverified must never mutate game
   // state. Each effect is re-enabled only through an evidence-specific module.
