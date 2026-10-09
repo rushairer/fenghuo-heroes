@@ -374,3 +374,13 @@ test('scaffold cannot deploy invented or foreign commanders despite provisional 
   assert.deepEqual(army.officerNames,['曹操'])
   assert.equal(army.officerCount,1)
 })
+
+test('querying deployed officer names never constructs army state on an untouched scenario',()=>{
+  const store=new GameStore(null)
+  store.newGame({humanFactions:['cao']})
+  const before=structuredClone(store.state)
+  assert.deepEqual([...deployedOfficerNames(store,'cao')],[])
+  assert.deepEqual(store.state,before)
+  assert.equal('nextArmyId' in store.state,false)
+  assert.equal('armies' in store.state,false)
+})
