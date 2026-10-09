@@ -21,6 +21,11 @@ import {
   setFieldBattleSpeed,
 } from '../game/field-battle-runtime.js'
 import { mdButton } from '../game/input.js'
+import {
+  fieldMoveOfficers,
+  initialFieldMoveDraft,
+  transitionFieldMoveDraft,
+} from '../game/field-battle-move.js'
 
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value))
 
@@ -32,7 +37,9 @@ export class FieldBattleScene{
     this.runtime=ensureFieldBattleRuntime(this.conflict)
     this.phase=this.runtime.phase
     this.speedIndex=Math.max(0,BATTLE_SPEEDS.findIndex((item)=>item.id===this.runtime.speed))
-    this.window=null
+    this.window=this.runtime.moveDraft
+      ?(this.runtime.moveDraft.phase==='officer'?'move-officer':'move-destination')
+      :null
     this.commandIndex=0
     this.tacticIndex=0
     this.scrollX=0
@@ -137,6 +144,11 @@ export class FieldBattleScene{
       return
     }
 
+    if(this.window==='move-officer'||this.window==='move-destination'){
+      this.updateMoveDraft(b)
+      return
+    }
+
     if(this.window==='status'){
       if(b==='B'){
         this.window=null
@@ -229,10 +241,69 @@ export class FieldBattleScene{
     }
   }
 
+  beginMoveDraft(){
+    const previous=structuredClone(this.conflict.runtime)
+    try{
+      this.conflict.runtime.moveDraft=initialFieldMoveDraft(this.conflict)
+      this.window='move-officer'
+      this.saveRuntime()
+      this.app.audio.confirm()
+    }catch(error){
+      this.conflict.runtime=previous
+      this.runtime=ensureFieldBattleRuntime(this.conflict)
+      this.window='command'
+      this.message=error instanceof Error?error.message:'部隊移動準備失敗。'
+      this.app.audio.alert()
+    }
+  }
+
+  updateMoveDraft(b){
+    if(!this.runtime.moveDraft){
+      this.window='command'
+      return
+    }
+    const prior=structuredClone(this.conflict.runtime)
+    const previousWindow=this.window
+    try{
+      const result=transitionFieldMoveDraft(this.conflict,this.runtime.moveDraft,b)
+      if(result.status==='ignored')return
+      if(result.status==='cancelled'){
+        this.conflict.runtime.moveDraft=null
+        this.window='command'
+      }else if(result.status==='updated'){
+        this.conflict.runtime.moveDraft=result.draft
+        this.window=result.draft.phase==='officer'?'move-officer':'move-destination'
+      }else if(result.status==='committed'){
+        setFieldBattleOrder(this.conflict,result.order)
+        this.window=null
+        const move=result.order.move
+        this.message=`${move.officerName}：已記錄向 (${move.target.x},${move.target.y}) 移動的命令意向；實際移動速度與損失尚未校準，不會變更部隊位置。`
+      }
+      this.saveRuntime()
+      if(result.status==='cancelled'||b==='B')this.app.audio.cancel()
+      else this.app.audio.confirm()
+    }catch(error){
+      this.conflict.runtime=prior
+      this.runtime=ensureFieldBattleRuntime(this.conflict)
+      this.window=previousWindow
+      this.message=error instanceof Error?error.message:'移動命令未保存。'
+      this.app.audio.alert()
+    }
+  }
+
   executeCommand(){
     const command=FIELD_BATTLE_COMMANDS[this.commandIndex]
     if(!command)return
     const context=this.commandContext()
+    if(command.id==='move'){
+      if(!fieldBattleCommandAvailable('move',context)){
+        this.message='本戰鬥日的命令已結束。'
+        this.app.audio.alert()
+        return
+      }
+      this.beginMoveDraft()
+      return
+    }
     if(command.id==='strategy'){
       if(!fieldBattleCommandAvailable(command.id,context)){
         this.message='計略只在敵軍位於執行部隊兩日移動範圍內時可選；目前戰場距離尚未校準。'
@@ -254,9 +325,7 @@ export class FieldBattleScene{
     }
     setFieldBattleOrder(this.conflict,order)
     this.window=null
-    if(order.commandId==='move'){
-      this.message='移動命令已受理；原版需先選部隊再指定目的地，精確小隊位置與移動速度校準後接入。'
-    }else if(order.commandId==='siege'){
+    if(order.commandId==='siege'){
       this.message='攻城命令已受理；城防下降與進入城內部隊戰的機率公式尚未校準。'
     }else if(order.commandId==='retreat'){
       this.message='退卻命令已受理；退卻路徑與完成判定尚未校準。'
@@ -341,7 +410,10 @@ export class FieldBattleScene{
     const order=this.runtime.order
     const command=FIELD_BATTLE_COMMANDS.find((item)=>item.id===order?.commandId)
     const tactic=FIELD_BATTLE_TACTICS.find((item)=>item.id===order?.tacticId)
-    const orderLabel=tactic?`${command?.label??''}・${tactic.label}`:(command?.label??'未下令')
+    const orderLabel=tactic?`${command?.label??''}・${tactic.label}`
+      :order?.commandId==='move'&&order.move
+        ?`移動 ${order.move.officerName} → ${order.move.target.x},${order.move.target.y}`
+        :(command?.label??'未下令')
     r.fillRect(0,190,320,34,'rgba(8,8,8,.88)')
     r.text(`目前命令：${orderLabel}`,12,196,6.5,'#e8dec4')
     r.text('A 戰力　C 命令　方向鍵捲動畫面',308,196,6.2,'#d0c5ad','right')
@@ -351,6 +423,29 @@ export class FieldBattleScene{
         ?'START 手動換日（非原版計時）'
         :'未校準的傷害／速度／勝負公式不套用'
     r.text(timingHint,160,211,6,'#9f947b','center')
+
+    if(this.window==='move-destination'&&this.runtime.moveDraft?.target){
+      const target=this.runtime.moveDraft.target
+      r.strokeRect(target.x-7,target.y-7,14,14,COLORS.cyan,1.5)
+      r.line(target.x-10,target.y,target.x+10,target.y,COLORS.cyan,1,.8)
+      r.line(target.x,target.y-10,target.x,target.y+10,COLORS.cyan,1,.8)
+      r.panel(25,43,270,41,'#050505','#9b6514')
+      r.text('移動目標：'+this.runtime.moveDraft.officerName,160,50,8,'#efd27d','center')
+      r.text('方向鍵選點　C 記錄意向　B 返回武將',160,69,6.5,'#d8ccb0','center')
+    }
+
+    if(this.window==='move-officer'){
+      const candidates=fieldMoveOfficers(this.conflict)
+      const cursor=this.runtime.moveDraft?.officerIndex??0
+      const start=Math.max(0,Math.min(candidates.length-7,cursor-3))
+      r.panel(70,37,180,149,'#050505','#9b6514')
+      r.text('選擇出陣武將',160,46,10,'#efd27d','center')
+      candidates.slice(start,start+7).forEach((name,i)=>{
+        const active=start+i===cursor
+        r.text(`${active?'▶':'　'}${name}`,100,68+i*14,8,active?COLORS.cyan:'#ddd0ad')
+      })
+      r.text('C 指定位置　B 返回命令',160,173,6,'#a99d82','center')
+    }
 
     if(this.window==='status'){
       const status=fieldBattleStatusProjection(this.conflict)
