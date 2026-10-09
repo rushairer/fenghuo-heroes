@@ -54,3 +54,40 @@ test('battle pause returns to title only after explicit confirmation and never c
     assert.deepEqual(calls,[ 'saved',{name:'title',options:{force:true}} ])
   }
 })
+
+test('failed P save never navigates away from either unresolved battle',async()=>{
+  const { FieldBattleScene }=await import('../src/scenes/field-battle.js')
+  const { SiegeScene }=await import('../src/scenes/siege.js')
+  for(const [Scene,kind,phase] of [
+    [FieldBattleScene,'field','battle'],
+    [SiegeScene,'siege','siege'],
+  ]){
+    const conflict={kind,runtime:{phase,speed:'normal'}}
+    const navigation=[]
+    let fails=true
+    const app={
+      store:{
+        pendingConflict:conflict,
+        save(){if(fails)throw new Error('QuotaExceededError')},
+      },
+      go:(name,options)=>navigation.push({name,options}),
+      audio:{move(){},confirm(){},cancel(){},alert(){}},
+    }
+    const scene=new Scene(app)
+    const send=(key)=>scene.update(0,{consume:()=>key})
+    send('p')
+    assert.equal(scene.pauseConfirm,true)
+    send('c')
+    assert.equal(scene.pauseConfirm,false)
+    assert.match(scene.message,/保存戰鬥失敗/)
+    assert.match(scene.message,/QuotaExceededError/)
+    assert.deepEqual(navigation,[])
+    assert.equal(app.store.pendingConflict,conflict)
+    send('c')
+    fails=false
+    send('p')
+    send('c')
+    assert.deepEqual(navigation,[{name:'title',options:{force:true}}])
+    assert.equal(app.store.pendingConflict,conflict)
+  }
+})
