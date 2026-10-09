@@ -16,6 +16,7 @@ export class SiegeScene{
     this.phase=this.runtime.phase
     this.message=''
     this.pauseConfirm=false
+    this.retreatConfirm=false
   }
 
   saveRuntime(){
@@ -43,6 +44,16 @@ export class SiegeScene{
       return
     }
 
+    if(this.retreatConfirm){
+      if(b==='B'){
+        this.retreatConfirm=false
+        this.app.audio.cancel()
+      }else if(b==='C'||b==='START'){
+        this.retreat()
+      }
+      return
+    }
+
     if(this.message){
       if(['A','B','C','START'].includes(b)){
         this.message=''
@@ -63,7 +74,7 @@ export class SiegeScene{
         return
       }
       if(b==='B'){
-        this.retreat()
+        this.requestRetreat()
         return
       }
       if(b==='A'||b==='C'||b==='START'){
@@ -99,7 +110,7 @@ export class SiegeScene{
 
     if(this.phase==='siege'){
       if(b==='B'){
-        this.retreat()
+        this.requestRetreat()
         return
       }
       if(b==='A'||b==='C'||b==='START'){
@@ -111,10 +122,22 @@ export class SiegeScene{
     }
   }
 
+  requestRetreat(){
+    this.retreatConfirm=true
+    this.app.audio.move()
+  }
+
   retreat(){
-    this.app.audio.cancel()
-    cancelSiegeFromArmy(this.app.store)
-    this.app.go('strategy')
+    try{
+      if(!cancelSiegeFromArmy(this.app.store))throw new Error('攻城資料不再有效。')
+      this.retreatConfirm=false
+      this.app.audio.confirm()
+      this.app.go('strategy')
+    }catch(error){
+      this.retreatConfirm=false
+      this.message=error instanceof Error?error.message:'無法中止攻城。'
+      this.app.audio.alert()
+    }
   }
 
   draw(){
@@ -147,14 +170,14 @@ export class SiegeScene{
       BATTLE_SPEEDS.forEach((option,index)=>{
         r.text(`${index===this.speedIndex?'▶':'　'}${option.label}`,160,190+index*10,7.5,index===this.speedIndex?COLORS.cyan:'#ddd0ad','center')
       })
-      r.text('C 決定　B 退卻',160,213,5.8,'#8e846f','center')
+      r.text('C 決定　B 中止確認',160,213,5.8,'#8e846f','center')
     }else if(this.phase==='formation'){
       r.text(`小隊編成　每部隊最多 ${MAX_SQUADS_PER_UNIT} 小隊`,160,180,7.5,COLORS.cyan,'center')
       r.text('原版編成規則仍待逐項校準',160,194,6.5,'#cfc19f','center')
       r.text('C 繼續　B 返回速度選擇',160,208,5.8,'#8e846f','center')
     }else{
       r.text(`攻城命令 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,178,7.5,COLORS.cyan,'center')
-      r.text('C / A 攻城　B 退卻',160,196,6.5,'#cfc19f','center')
+      r.text('C / A 攻城　B 中止確認',160,196,6.5,'#cfc19f','center')
       r.text('未校準城防下降量與入城戰概率不做假結算',160,210,5.8,'#8e846f','center')
     }
 
@@ -163,7 +186,12 @@ export class SiegeScene{
       r.wrapText(this.message,160,88,208,11,7.5,'#f0e4c5','center')
       r.text('A / B / C 關閉',160,124,6,'#8a806e','center')
     }
-    if(this.pauseConfirm){
+    if(this.retreatConfirm){
+      r.panel(24,65,272,94,'#050505','#9b6514',smallPanel)
+      r.text('確定中止攻城？',160,80,10,'#efd27d','center')
+      r.wrapText('工程退出：目前無原版退兵損失與追擊公式，退出不結算傷亡。',160,101,240,12,7,'#d8ccb0','center')
+      r.text('C / START 確定　B 返回戰場',160,141,6.5,COLORS.cyan,'center')
+    }else if(this.pauseConfirm){
       r.panel(33,70,254,78,'#050505','#9b6514',smallPanel)
       r.text('保存目前攻城並返回標題？',160,85,9,'#efd27d','center')
       r.text('C / START 確定　B 取消',160,117,7,COLORS.cyan,'center')
