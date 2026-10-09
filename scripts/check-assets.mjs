@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
 import { HD_RASTER_MIN_SCALE } from '../src/game/asset-quality.js'
 
@@ -71,6 +71,18 @@ function generatedBytes(key,entry){
 visit(manifest)
 
 const failures=[]
+const activeGeneratedParts=new Set(Object.values(generatedManifest.assets??{})
+  .flatMap((asset)=>asset.parts??[]))
+for(const name of readdirSync('public/assets/generated')){
+  if(name.endsWith('.b64')&&!activeGeneratedParts.has('assets/generated/'+name)){
+    failures.push('orphan generated raster source: '+name)
+  }
+}
+for(const entry of entries){
+  if(entry.status==='disabled'&&generatedManifest.assets?.[entry.key]){
+    failures.push(entry.key+': disabled asset must not retain generated raster sources')
+  }
+}
 if(manifest.policy?.mapRuntime==='vector'){
   if(manifest.policy?.mapRasterResources!=='forbidden')failures.push('vector-only map policy must forbid raster resources')
   if(existsSync('public/assets/map'))failures.push('public/assets/map must not exist in vector-only map mode')

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 
 const readJson=(path)=>JSON.parse(readFileSync(new URL(`../${path}`,import.meta.url),'utf8'))
 const manifest=readJson('public/assets/manifests/asset-manifest.v1.json')
@@ -9,12 +9,14 @@ const generated=readJson('public/assets/generated/generated-assets.v1.json')
 const titleScene=readFileSync(new URL('../src/scenes/title.js',import.meta.url),'utf8')
 const titleArt=readFileSync(new URL('../src/game/title-art.js',import.meta.url),'utf8')
 
-test('legacy 640x448 title raster stays disabled below the true-HD runtime floor',()=>{
+test('rejected low-resolution title raster has no retained generated source',()=>{
   assert.equal(manifest.title.main.status,'disabled')
-  assert.deepEqual(generated.assets['title.main'].runtimeSize,{width:640,height:448})
+  assert.equal(generated.assets['title.main'],undefined)
   assert.deepEqual(spec.assets['title.main'].minimumRuntime,{width:1600,height:1120})
-  assert.ok(generated.assets['title.main'].runtimeSize.width<spec.assets['title.main'].minimumRuntime.width)
-  assert.ok(generated.assets['title.main'].runtimeSize.height<spec.assets['title.main'].minimumRuntime.height)
+  const parts=readdirSync(new URL('../public/assets/generated',import.meta.url))
+  assert.equal(parts.some((name)=>name.startsWith('title-main-hd-v1.part')),false)
+  assert.ok(Object.values(generated.assets).every((asset)=>asset.parts.every((part)=>
+    parts.includes(part.split('/').at(-1)))))
 })
 
 test('title scene uses HD-aware lookup and scalable fallback paths',()=>{

@@ -75,3 +75,13 @@ raster families have been retired from production. Strategic-map visuals are now
 vector/procedural-only, and the old WebP/generated-source pipeline must not be restored.
 This batch document therefore no longer tracks raster map assets as future deliverables.
 
+
+## 2026-10-09 retired title source cleanup
+
+The obsolete 640x448 title source was already disabled at runtime and is
+now physically removed from the current source tree: all seven
+`title-main-hd-v1.part*.b64` fragments and the corresponding generated
+manifest entry are deleted. The 1600x1120 minimum production contract,
+existing disabled status, and scalable title fallback remain authoritative.
+The asset verifier now rejects retained sources for disabled raster entries
+and unreferenced generated source parts.
