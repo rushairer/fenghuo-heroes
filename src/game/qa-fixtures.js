@@ -18,10 +18,12 @@ export const INSPECTION_VISUAL_QA_STATES = Object.freeze([
 export const BATTLE_VISUAL_QA_STATES = Object.freeze([
   'field-battle-speed',
   'field-battle-formation',
+  'field-battle-formation-review',
   'field-battle-active',
   'field-battle-move',
   'siege-speed',
   'siege-formation',
+  'siege-formation-review',
   'duel-mode',
   'duel-manual',
 ])

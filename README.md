@@ -77,10 +77,12 @@ npm run check
 - `?qa=army-menu`
 - `?qa=field-battle-speed`
 - `?qa=field-battle-formation`
+- `?qa=field-battle-formation-review`
 - `?qa=field-battle-active`
 - `?qa=field-battle-move`
 - `?qa=siege-speed`
 - `?qa=siege-formation`
+- `?qa=siege-formation-review`
 - `?qa=duel-mode`
 - `?qa=duel-manual`
 

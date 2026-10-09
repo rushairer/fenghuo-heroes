@@ -1,4 +1,5 @@
 import { ensureMarchState } from './march.js'
+import { initialFormationDraft } from './battle-formation.js'
 import { initialFieldMoveDraft, transitionFieldMoveDraft } from './field-battle-move.js'
 import { officerStatusProjection } from './officer-roster.js'
 import {
@@ -45,7 +46,7 @@ export function initialSceneForVisualQa(qaState) {
   if(qaState==='player-count')return 'players'
   if(qaState==='setup')return 'setup'
   if(qaState.startsWith('field-battle-'))return 'field-battle'
-  if(qaState==='siege-speed'||qaState==='siege-formation')return 'siege'
+  if(qaState.startsWith('siege-'))return 'siege'
   if(qaState==='duel-mode'||qaState==='duel-manual')return 'duel'
   if(STRATEGY_QA_STATES.has(qaState))return 'strategy'
   return 'title'
@@ -125,13 +126,18 @@ export function applyVisualQaState(app, qaState) {
   if(qaState.startsWith('field-battle-')){
     if(!('phase' in scene)||!scene.conflict||!scene.runtime)return false
     const phase=qaState==='field-battle-speed'?'speed':
-      qaState==='field-battle-formation'?'formation':'battle'
+      qaState.startsWith('field-battle-formation')?'formation':'battle'
     scene.phase=phase
     scene.runtime.phase=phase
     scene.runtime.speed=phase==='speed'?null:'normal'
     scene.speedIndex=0
     scene.message=''
-    if(qaState==='field-battle-move'){
+    if(qaState.startsWith('field-battle-formation')){
+      const draft=initialFormationDraft(scene.conflict)
+      scene.runtime.formationDraft=qaState==='field-battle-formation-review'
+        ?{...draft,phase:'review'}:draft
+      scene.window=null
+    }else if(qaState==='field-battle-move'){
       try{
         const draft=initialFieldMoveDraft(scene.conflict)
         scene.runtime.moveDraft=transitionFieldMoveDraft(scene.conflict,draft,'C').draft
@@ -144,11 +150,20 @@ export function applyVisualQaState(app, qaState) {
     return true
   }
 
-  if(qaState==='siege-speed'||qaState==='siege-formation'){
+  if(qaState.startsWith('siege-')){
     if(!('phase' in scene)||!scene.conflict)return false
-    scene.phase=qaState==='siege-formation'?'formation':'speed'
+    const phase=qaState.startsWith('siege-formation')?'formation':'speed'
+    scene.phase=phase
     scene.speedIndex=0
     scene.message=''
+    if(scene.runtime){
+      scene.runtime.phase=phase
+      if(phase==='formation'){
+        const draft=initialFormationDraft(scene.conflict)
+        scene.runtime.formationDraft=qaState==='siege-formation-review'
+          ?{...draft,phase:'review'}:draft
+      }else scene.runtime.formationDraft=null
+    }
     return true
   }
 

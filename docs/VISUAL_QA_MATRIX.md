@@ -24,11 +24,13 @@ inspection tools, not gameplay evidence.
 | march-route-prompt | strategy | route prompt | route geometry remains runtime scaffold |
 | army-menu | strategy | army command menu | uses a local qaFixture army |
 | field-battle-speed | field-battle | battle-speed selection | synthetic armies; no original damage formula |
-| field-battle-formation | field-battle | squad formation | squad allocation still uncalibrated |
+| field-battle-formation | field-battle | editable officer / squad-type formation | capped engineering preview only; no troop changes |
+| field-battle-formation-review | field-battle | review tentative squad allocations | preview is never applied as tactical units |
 | field-battle-active | field-battle | battlefield controls | synthetic conflict; no AI or damage formula |
 | field-battle-move | field-battle | select commanding officer and destination cursor | temporary logical target only; no simulated movement or damage |
 | siege-speed | siege | battle-speed selection | uses a local qaFixture conflict |
-| siege-formation | siege | formation placeholder | no invented battle formula |
+| siege-formation | siege | editable officer / squad-type formation | no fabricated martial-rank limits or combat effects |
+| siege-formation-review | siege | review tentative squad allocations | preview does not change city defense or troop count |
 | duel-mode | duel | manual/auto choice | uses a local qaFixture conflict |
 | duel-manual | duel | duel arena and controls | combat outcome formulas remain uncalibrated |
 

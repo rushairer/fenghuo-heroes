@@ -29,10 +29,12 @@ test('visual QA state catalog covers setup, strategy, march, siege and duel scre
     'army-menu',
     'field-battle-speed',
     'field-battle-formation',
+    'field-battle-formation-review',
     'field-battle-active',
     'field-battle-move',
     'siege-speed',
     'siege-formation',
+    'siege-formation-review',
     'duel-mode',
     'duel-manual',
   ])
@@ -298,4 +300,28 @@ test('field move QA starts with a real known officer and a temporary cursor',()=
   assert.equal(app.scene.window,'move-destination')
   assert.equal(app.scene.runtime.moveDraft.officerName,'曹操')
   assert.deepEqual(app.scene.runtime.moveDraft.target,{x:56,y:104})
+})
+
+test('formation QA fixes a real draft and review screen for both battle types',()=>{
+  for(const [qa,kind,phase] of [
+    ['field-battle-formation','field','edit'],
+    ['field-battle-formation-review','field','review'],
+    ['siege-formation','siege','edit'],
+    ['siege-formation-review','siege','review'],
+  ]){
+    const app={
+      scene:{
+        phase:'speed',
+        conflict:{kind,attackerOfficers:['曹操','曹仁']},
+        runtime:{phase:'speed'},message:'stale',
+      },
+    }
+    assert.equal(applyVisualQaState(app,qa),true)
+    assert.equal(app.scene.phase,'formation')
+    assert.equal(app.scene.runtime.phase,'formation')
+    assert.equal(app.scene.runtime.formationDraft.phase,phase)
+    assert.equal(app.scene.runtime.formationDraft.rows.length,2)
+    assert.equal(app.scene.runtime.formationDraft.rows[0].officerName,'曹操')
+    assert.equal(initialSceneForVisualQa(qa),kind==='field'?'field-battle':'siege')
+  }
 })
