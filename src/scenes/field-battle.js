@@ -194,6 +194,7 @@ export class FieldBattleScene{
         return
       }
       const next=advanceFieldBattleDayRuntime(this.conflict)
+      this.runtime=ensureFieldBattleRuntime(this.conflict)
       this.message=next.segmentComplete
         ?'已記錄30日戰鬥段落。未校準戰略銜接與勝負，不會自動結算。'
         :`已手動進入第${this.runtime.day}日；戰鬥時鐘和交戰效果未校準，本次只重開命令。`
