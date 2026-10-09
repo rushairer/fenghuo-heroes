@@ -149,3 +149,33 @@ army roster and that the target stays on the provisional cursor grid;
 invented officers or out-of-bounds targets cannot enter a saved order.
 
 The deterministic inspection entry is `?qa=field-battle-move`.
+
+## 2026-10-09 — Shared editable squad formation (non-combat preview)
+
+Field battle and siege now share `src/game/battle-formation.js`.
+A formation draft is keyed to the *existing* attacker officer roster
+(no forged commanders). During preparation, A selects the next officer,
+UP/DOWN selects infantry/cavalry/archers, LEFT/RIGHT changes that
+officer's tentative squad count, C opens review and confirms, and
+B returns one step. The total is bounded at 15 for each commander
+unit; rank-specific ceilings, exact individual squad troop counts,
+and allocation conversion formulas remain unverified.
+
+`formationDraft` and `formationPlan` persist within `pendingConflict.runtime`
+and survive closing and reopening the application, including mid-edit
+restoration and subsequent reloading of the completed plan.
+Validation rejects enemy/unlisted officers, malformed values or excess
+squads. The confirmed plan is explicitly tagged
+`{status:'uncalibrated-preview',applied:false}` and has zero effect
+on city troops, strategic armies, tactics, formations on the battlefield,
+morale, damage, siege defense, or battle outcome.
+
+This is a user-operable *input and persistence layer* for subsequent
+Chinese-ROM calibration, not a claim that precise formation rules
+or combat itself are finished. The QA screenshots are available as
+`?qa=field-battle-formation`, `?qa=field-battle-formation-review`,
+`?qa=siege-formation`, and `?qa=siege-formation-review`.
+
+Field battle orders (including ambush and day advances) and siege
+attack intents now also roll back their runtime mutations if saving
+the player's battle state fails.

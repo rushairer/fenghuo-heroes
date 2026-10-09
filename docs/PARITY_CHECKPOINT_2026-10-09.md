@@ -107,3 +107,19 @@ event timing have been captured.
   low-tier observational leads, NOT permission to hard-code rules.
 - Full 1:1 gameplay remains blocked on direct Chinese-ROM geometry,
   scenario start state, battle effects and victory rules.
+
+## Follow-up battle formation pass — 2026-10-09
+
+- Introduced shared per-officer squad formation editing, limited by the
+  documented maximum of 15 without inventing military-rank limits.
+- Field and siege screens now support reversible category counts and an
+  explicit review before accepting an `applied:false` formation plan.
+- Both mid-edit and completed plans persist through actual GameStore
+  save/load and continue into the same pending battle.
+- Invalid injected officers/counts fail closed; no city resources, army
+  troops, or combat outcomes are modified by the formation screen.
+- Battle-day changes and ordinary field/siege command intents now
+  roll back on storage failures; no phantom attack sequence or skipped
+  day is accepted when a save did not succeed.
+- High-fidelity movement, rank restrictions, damage, capture and winner
+  remain BLOCKED until direct Chinese-ROM evidence exists.

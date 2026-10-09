@@ -162,3 +162,18 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 - [ ] Acquire independent 200/215 opening snapshots before enabling either production scenario.
 - [ ] Calibrate battle effects, victory/consequences, field-battle timing and strategic AI.
 
+
+### 2026-10-09 — Formation and battle command safety
+
+- [x] Shared interactive field/siege formation drafts with named officers,
+  infantry/cavalry/archer inputs, and a strict 15-squad upper bound
+  on the engineering preview.
+- [x] Confirmed draft and partially edited draft survive P/Continue saves;
+  source-backed officer roster and numeric bounds are enforced on restore.
+- [x] Deterministic editable and review QA entrypoints for both battle types.
+- [x] Atomic battle command/ambush/day increments and siege-attack intents,
+  with rollback on browser storage errors.
+- [ ] Exact original-game squad allocation numbers, martial-rank constraints
+  and troop/squad conversion per officer.
+- [ ] Source-confirmed squad position, actual movement, contact,
+  damage, battle winner and post-battle transfer.

@@ -122,3 +122,24 @@ clean-room implementation rather than restoring archived prototypes.
   single-press battle deletion.
 - Both battlefield entry and intentional cancellation must be atomic across
   army statuses, pendingConflict, logs and browser persistence.
+
+## Formation input and transactional battle persistence — 2026-10-09
+
+- Field and siege formation screens share the same named-officer draft.
+  A cycles existing army officers; UP/DOWN selects infantry/cavalry/archers;
+  LEFT/RIGHT changes only a provisional squad count; C previews and confirms,
+  B returns a step or backs out. The total may not exceed 15 per selected
+  command unit; officer-grade restrictions are NOT yet verified.
+- A confirmed formation is persisted as `formationPlan` with
+  `status:'uncalibrated-preview'` and `applied:false`. NEVER translate
+  it into physical tactical squads, troop consumption, speed, damage,
+  or victory until Chinese-ROM source evidence is recorded.
+- `formationDraft` is saved during editing and restored after P/Continue.
+  The formation reader rejects unknown officers, missing categories,
+  fractional/negative counts and over-15 totals on each officer row.
+- In field and siege scenes, order acceptance, day increments, ambush state
+  and siege attack sequence must be atomic with persistence. On write
+  failure, restore the last good runtime and retain the battle scene.
+- Keep deterministic QA at `field-battle-formation`,
+  `field-battle-formation-review`, `siege-formation`,
+  `siege-formation-review`. All use ephemeral QA storage.
