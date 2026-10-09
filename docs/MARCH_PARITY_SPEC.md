@@ -150,3 +150,13 @@ The production target is the Chinese-ROM experience, so runtime follows the Hong
 - These are runtime safety guarantees. The 100-garrison and 8-world-unit
   movement limits remain provisional pending direct original-game proof.
 
+
+## 2026-10-09 — Prevent phantom commanders
+
+The domain-layer march entrypoint now rejects non-string officer names and,
+when a faction opening roster exists, rejects names outside that roster.
+The 189 scaffold fallback only verifies membership in the provisional
+faction roster; it does **not** claim original city-specific placement.
+When source-backed city assignments are available, only named officers
+actually stationed in the departure city can lead an army. Failed validation
+happens before troops, gold, grain or army IDs are consumed.

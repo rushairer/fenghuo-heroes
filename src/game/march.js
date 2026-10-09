@@ -159,19 +159,26 @@ export function queueMarch(store, {
   if (!source || !city || source.owner !== store.humanFaction) throw new Error('必須從本國城池出陣。')
   if (!Array.isArray(route) || route.length < 2) throw new Error('請先用方框指定行軍路線。')
 
-  if(!Array.isArray(officerNames))throw new Error('出陣武將名單格式無效。')
-  const names=[...new Set(officerNames.map((name)=>String(name).trim()).filter(Boolean))]
+  if(!Array.isArray(officerNames)||officerNames.some((name)=>typeof name!=='string')){
+    throw new Error('出陣武將名單格式無效。')
+  }
+  const names=[...new Set(officerNames.map((name)=>name.trim()).filter(Boolean))]
   const deployed=deployedOfficerNames(store,store.humanFaction)
   const duplicate=names.find((name)=>deployed.has(name))
   if(duplicate)throw new Error(`${duplicate}已隨其他部隊出陣。`)
   const roster=openingOfficerListForCity(store,from)
-  if(roster.cityAssignmentVerified){
-    // Once the real scenario specifies per-city officer placement, a caller
-    // must choose a named officer stationed in the selected source city.
-    if(!names.length)throw new Error('已校準城池出陣必須選擇實際駐城武將。')
+  if(roster.cityAssignmentVerified&&!names.length){
+    throw new Error('已校準城池出陣必須選擇實際駐城武將。')
+  }
+  // Even the provisional 189 scaffold must not accept made-up commanders.
+  // The fallback only grants membership in this faction's opening roster;
+  // it must never imply verified officer-to-city placement.
+  if(names.length&&(roster.cityAssignmentVerified||roster.rows.length)){
     const allowed=new Set(roster.rows.map((row)=>row.name))
     const displaced=names.find((name)=>!allowed.has(name))
-    if(displaced)throw new Error(`${displaced}不在目前的出發城駐守。`)
+    if(displaced)throw new Error(roster.cityAssignmentVerified
+      ?`${displaced}不在目前的出發城駐守。`
+      :`${displaced}不屬於本勢力的暫定開局武將名冊。`)
   }
   const nOfficers=names.length||officerCount
   if(!Number.isSafeInteger(nOfficers)||nOfficers<1){

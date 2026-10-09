@@ -357,3 +357,20 @@ test('cancelled siege restores the exact pre-siege army status',()=>{
   cancelSiegeFromArmy(s)
   assert.equal(army.status,'marching')
 })
+
+test('scaffold cannot deploy invented or foreign commanders despite provisional city placement',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const before=structuredClone(s.state)
+  const valid={
+    from:'xuchang',route:[start,{x:start.x+8,y:start.y}],
+    troops:500,food:100,gold:0,
+  }
+  for(const officerNames of [['劉備'],['不存在'],['曹操','假武將'],[123]]){
+    assert.throws(()=>queueMarch(s,{...valid,officerNames}),/名冊|格式/)
+    assert.deepEqual(s.state,before)
+  }
+  const army=queueMarch(s,{...valid,officerNames:['曹操']})
+  assert.deepEqual(army.officerNames,['曹操'])
+  assert.equal(army.officerCount,1)
+})
