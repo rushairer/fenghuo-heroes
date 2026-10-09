@@ -127,9 +127,19 @@ export class SiegeScene{
         return
       }
       if(b==='A'||b==='C'||b==='START'){
-        const intent=queueSiegeAttackIntent(this.conflict)
+        const before=structuredClone(this.conflict.runtime)
+        let intent
+        try{
+          intent=queueSiegeAttackIntent(this.conflict)
+          this.saveRuntime()
+        }catch(error){
+          this.conflict.runtime=before
+          this.runtime=ensureSiegeRuntime(this.conflict)
+          this.message='攻城命令未保存：'+(error instanceof Error?error.message:'存儲不可用')
+          this.app.audio.alert()
+          return
+        }
         this.message=`第${intent.sequence}次攻城命令已受理；原版确认会降低城防并提高进入城内部队战的概率，但具体下降量和概率尚未校准，本次不修改数值。`
-        this.saveRuntime()
         this.app.audio.confirm()
       }
     }
