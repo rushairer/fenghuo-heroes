@@ -81,6 +81,25 @@ export class FieldBattleScene{
     this.app.store.save()
   }
 
+  persistBattleMutation(operation){
+    const previous=structuredClone(this.conflict.runtime)
+    const previousWindow=this.window
+    const previousPhase=this.phase
+    try{
+      const value=operation()
+      this.saveRuntime()
+      return {ok:true,value}
+    }catch(error){
+      this.conflict.runtime=previous
+      this.runtime=ensureFieldBattleRuntime(this.conflict)
+      this.window=previousWindow
+      this.phase=previousPhase
+      this.message='戰鬥命令未保存：'+(error instanceof Error?error.message:'存儲不可用')
+      this.app.audio.alert()
+      return {ok:false,value:null}
+    }
+  }
+
   update(_dt,input){
     const key=input.consume()
     if(!key)return
@@ -218,12 +237,11 @@ export class FieldBattleScene{
         this.app.audio.alert()
         return
       }
-      const next=advanceFieldBattleDayRuntime(this.conflict)
-      this.runtime=ensureFieldBattleRuntime(this.conflict)
-      this.message=next.segmentComplete
+      const applied=this.persistBattleMutation(()=>advanceFieldBattleDayRuntime(this.conflict))
+      if(!applied.ok)return
+      this.message=applied.value.segmentComplete
         ?'已記錄30日戰鬥段落。未校準戰略銜接與勝負，不會自動結算。'
         :`已手動進入第${this.runtime.day}日；戰鬥時鐘和交戰效果未校準，本次只重開命令。`
-      this.saveRuntime()
       this.app.audio.confirm()
       return
     }
@@ -378,26 +396,29 @@ export class FieldBattleScene{
       this.app.audio.alert()
       return
     }
-    setFieldBattleOrder(this.conflict,order)
+    const ambush=order.commandId==='wait'
+      ?fieldBattleAmbushState({
+        commandId:'wait',
+        ownTerrain:this.conflict.ownTerrain??null,
+        troops:this.conflict.attackerTroops??0,
+      }):null
+    const applied=this.persistBattleMutation(()=>{
+      setFieldBattleOrder(this.conflict,order)
+      if(ambush)setFieldBattleAmbush(this.conflict,ambush.active)
+    })
+    if(!applied.ok)return
     this.window=null
     if(order.commandId==='siege'){
       this.message='攻城命令已受理；城防下降與進入城內部隊戰的機率公式尚未校準。'
     }else if(order.commandId==='retreat'){
       this.message='退卻命令已受理；退卻路徑與完成判定尚未校準。'
     }else if(order.commandId==='wait'){
-      const ambush=fieldBattleAmbushState({
-        commandId:'wait',
-        ownTerrain:this.conflict.ownTerrain??null,
-        troops:this.conflict.attackerTroops??0,
-      })
-      setFieldBattleAmbush(this.conflict,ambush.active)
       this.message=ambush.active
         ?'待機命令已受理；符合森林且兵力5000以下條件，部隊進入伏兵狀態。伏兵戰鬥效果仍待校準。'
         :'待機命令已受理；目前不符合已確認的伏兵條件。'
     }else if(order.commandId==='end'){
       this.message='本戰鬥日命令已結束；按 START 手動進入下一日（工程控制，非原版計時）。'
     }
-    this.saveRuntime()
     this.app.audio.confirm()
   }
 
@@ -416,10 +437,10 @@ export class FieldBattleScene{
       this.app.audio.alert()
       return
     }
-    setFieldBattleOrder(this.conflict,order)
+    const applied=this.persistBattleMutation(()=>setFieldBattleOrder(this.conflict,order))
+    if(!applied.ok)return
     this.window=null
     this.message=`${tactic.label}命令已受理；成功率、士氣與兵力變化公式尚未校準，本次不修改數值。`
-    this.saveRuntime()
     this.app.audio.confirm()
   }
 
