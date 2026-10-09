@@ -1,5 +1,6 @@
 import { FIELD_BATTLE_COMMANDS, FIELD_BATTLE_TACTICS } from './field-battle-parity.js'
 import { OBSERVED_BATTLE_SEGMENT_DAYS, advanceBattleDay, battleDayState } from './battle-time-parity.js'
+import { normalizeFieldMoveDraft, validFieldMoveOrder } from './field-battle-move.js'
 
 const PHASES=new Set(['speed','formation','battle'])
 const SPEEDS=new Set(['normal','fast'])
@@ -14,6 +15,8 @@ export function ensureFieldBattleRuntime(conflict) {
       commandId:current.order.commandId,
       ...(current.order.commandId==='strategy'&&TACTICS.has(current.order.tacticId)
         ?{tacticId:current.order.tacticId}:{}),
+      ...(current.order.commandId==='move'&&validFieldMoveOrder(conflict,current.order.move)
+        ?{move:validFieldMoveOrder(conflict,current.order.move)}:{}),
     }
     :null
   const day=Math.min(OBSERVED_BATTLE_SEGMENT_DAYS,
@@ -28,6 +31,8 @@ export function ensureFieldBattleRuntime(conflict) {
     day,
     carryoverPending,
     ambush:Boolean(current.ambush),
+    moveDraft:carryoverPending||Boolean(current.ordersClosed)
+      ?null:normalizeFieldMoveDraft(conflict,current.moveDraft),
   }
   return conflict.runtime
 }
@@ -55,11 +60,20 @@ export function setFieldBattleOrder(conflict,order) {
   if(order.tacticId!=null&&(order.commandId!=='strategy'||!TACTICS.has(order.tacticId))){
     throw new Error('計略命令和戰術不相符。')
   }
+  const move=order.commandId==='move'?validFieldMoveOrder(conflict,order.move):null
+  if(order.commandId==='move'&&!move){
+    throw new Error('移動命令必須指定出征武將和合法的戰場目的地。')
+  }
+  if(order.commandId!=='move'&&order.move!=null){
+    throw new Error('只有移動命令可以指定戰場目的地。')
+  }
   runtime.order={
     commandId:order.commandId,
     ...(TACTICS.has(order.tacticId)?{tacticId:order.tacticId}:{}),
+    ...(move?{move}:{}),
   }
   runtime.ordersClosed=order.commandId==='end'
+  runtime.moveDraft=null
   return runtime
 }
 
@@ -109,6 +123,7 @@ export function advanceFieldBattleDayRuntime(conflict,delta=1){
     runtime.commandEpoch+=1
     runtime.ordersClosed=false
     runtime.order=null
+    runtime.moveDraft=null
     runtime.ambush=false
   }
   return Object.freeze({...next})
