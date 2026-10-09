@@ -1,6 +1,7 @@
 import { FIELD_BATTLE_COMMANDS, FIELD_BATTLE_TACTICS } from './field-battle-parity.js'
 import { OBSERVED_BATTLE_SEGMENT_DAYS, advanceBattleDay, battleDayState } from './battle-time-parity.js'
 import { normalizeFieldMoveDraft, validFieldMoveOrder } from './field-battle-move.js'
+import { normalizeFormationDraft, normalizeFormationPlan } from './battle-formation.js'
 
 const PHASES=new Set(['speed','formation','battle'])
 const SPEEDS=new Set(['normal','fast'])
@@ -33,6 +34,9 @@ export function ensureFieldBattleRuntime(conflict) {
     ambush:Boolean(current.ambush),
     moveDraft:carryoverPending||Boolean(current.ordersClosed)
       ?null:normalizeFieldMoveDraft(conflict,current.moveDraft),
+    formationPlan:normalizeFormationPlan(conflict,current.formationPlan),
+    formationDraft:current.phase==='battle'
+      ?null:normalizeFormationDraft(conflict,current.formationDraft),
   }
   return conflict.runtime
 }

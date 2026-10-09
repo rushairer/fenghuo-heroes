@@ -1,3 +1,5 @@
+import { normalizeFormationDraft, normalizeFormationPlan } from './battle-formation.js'
+
 const PHASES=new Set(['speed','formation','siege'])
 const SPEEDS=new Set(['normal','fast'])
 
@@ -22,6 +24,9 @@ export function ensureSiegeRuntime(conflict){
     lastAttackIntent:current.lastAttackIntent&&typeof current.lastAttackIntent==='object'
       ?{...current.lastAttackIntent}
       :null,
+    formationPlan:normalizeFormationPlan(conflict,current.formationPlan),
+    formationDraft:current.phase==='siege'
+      ?null:normalizeFormationDraft(conflict,current.formationDraft),
   }
   return conflict.runtime
 }
