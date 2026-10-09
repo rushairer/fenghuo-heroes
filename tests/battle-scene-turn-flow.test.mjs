@@ -80,3 +80,14 @@ test('siege scene refreshes its attack count on successive commands',()=>{
   assert.equal(store.pendingConflict,conflict)
   assert.ok(saves.length>=2)
 })
+
+test('manual day advancement reports the new day rather than a stale scene reference',()=>{
+  const conflict={kind:'field',runtime:{
+    phase:'battle',speed:'normal',day:8,ordersClosed:true,order:{commandId:'end'},
+  }}
+  const {scene,send}=battleScene(FieldBattleScene,conflict)
+  send('Enter')
+  assert.equal(scene.runtime.day,9)
+  assert.match(scene.message,/第9日/)
+  assert.equal(conflict.runtime.day,9)
+})

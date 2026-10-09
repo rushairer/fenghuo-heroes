@@ -109,3 +109,19 @@ safety control, not a claimed original-ROM key binding.
   or pretend the strategic-month handoff has been restored.
 - P saves and returns to title without resetting battle armies or results.
   Continue resumes the same pending conflict.
+
+## 2026-10-09 — Battle-day lifecycle invariants
+
+The observed 30-day segment is now enforced at the runtime boundary, not
+only by the scene. An explicit manual day advance requires `phase=battle`,
+a closed day (`end` command), and a one-day increment. Once the end order
+is accepted, no order may overwrite it until the next day. Day 30 disables
+additional advances, order reopening, or new orders until a separately
+verified strategic carryover mechanism exists.
+
+Legacy invalid saved battle-day numbers are bounded to day 30, with
+`carryoverPending` and `ordersClosed` normalized consistently.
+Only a valid strategy order may carry a known tactic ID.
+
+This improves deterministic state transitions and save integrity without
+inventing a duration, AI turn, casualties, or victory rules.

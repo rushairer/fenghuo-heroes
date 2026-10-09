@@ -70,3 +70,65 @@ test('next battle day reopens commands and clears transient order and ambush bef
   setFieldBattleAmbush(value,true)
   assert.equal(value.runtime.ambush,true)
 })
+
+test('runtime rejects unclosed-day advancement and preserves current battle day',()=>{
+  const value={kind:'field',runtime:{phase:'battle',speed:'normal',day:7}}
+  const before=fieldBattleRuntimeSnapshot(value)
+  assert.throws(()=>advanceFieldBattleDayRuntime(value,1),/先結束本日命令/)
+  assert.deepEqual(fieldBattleRuntimeSnapshot(value),before)
+  assert.throws(()=>advanceFieldBattleDayRuntime(value,0),/每次只能/)
+  assert.throws(()=>advanceFieldBattleDayRuntime(value,2),/每次只能/)
+  assert.equal(value.runtime.day,7)
+})
+
+test('end order prevents bypass via another order until explicitly advancing one day',()=>{
+  const value={kind:'field',runtime:{phase:'battle',speed:'normal',day:4}}
+  setFieldBattleOrder(value,{commandId:'end'})
+  const before=fieldBattleRuntimeSnapshot(value)
+  for(const commandId of ['move','wait','strategy','end']){
+    assert.throws(()=>setFieldBattleOrder(value,{commandId}),/本日命令已結束/)
+    assert.deepEqual(fieldBattleRuntimeSnapshot(value),before)
+  }
+  const next=advanceFieldBattleDayRuntime(value,1)
+  assert.equal(next.day,5)
+  assert.equal(value.runtime.ordersClosed,false)
+  assert.equal(value.runtime.order,null)
+  assert.equal(value.runtime.commandEpoch,1)
+  assert.deepEqual(setFieldBattleOrder(value,{commandId:'wait'}).order,{commandId:'wait'})
+})
+
+test('tactics are only permitted with strategy orders and never attached to a saved wait',()=>{
+  const value={kind:'field',runtime:{phase:'battle',speed:'normal',day:1}}
+  assert.throws(()=>setFieldBattleOrder(value,{commandId:'wait',tacticId:'fire'}),/計略命令/)
+  assert.throws(()=>setFieldBattleOrder(value,{commandId:'strategy',tacticId:'teleport'}),/計略命令/)
+  assert.equal(value.runtime.order,null)
+  setFieldBattleOrder(value,{commandId:'strategy',tacticId:'fire'})
+  assert.deepEqual(value.runtime.order,{commandId:'strategy',tacticId:'fire'})
+  value.runtime.order={commandId:'wait',tacticId:'chain'}
+  assert.deepEqual(ensureFieldBattleRuntime(value).order,{commandId:'wait'})
+})
+
+test('day thirty closes the evidence boundary for all entry points',()=>{
+  const value={kind:'field',runtime:{phase:'battle',speed:'normal',day:29,
+    order:{commandId:'end'},ordersClosed:true}}
+  const next=advanceFieldBattleDayRuntime(value,1)
+  assert.equal(next.day,30)
+  const before=fieldBattleRuntimeSnapshot(value)
+  assert.equal(before.carryoverPending,true)
+  assert.throws(()=>advanceFieldBattleDayRuntime(value,1),/30日段落/)
+  assert.throws(()=>reopenFieldBattleOrders(value),/30日段落/)
+  assert.throws(()=>setFieldBattleOrder(value,{commandId:'wait'}),/本日命令/)
+  assert.deepEqual(fieldBattleRuntimeSnapshot(value),before)
+})
+
+test('out-of-range saved days clamp to thirty and cannot leak open command state',()=>{
+  const value={kind:'field',runtime:{
+    phase:'battle',day:9000,ordersClosed:false,
+    carryoverPending:false,commandEpoch:Infinity,
+  }}
+  const snapshot=fieldBattleRuntimeSnapshot(value)
+  assert.equal(snapshot.day,30)
+  assert.equal(snapshot.carryoverPending,true)
+  assert.equal(snapshot.ordersClosed,true)
+  assert.equal(snapshot.commandEpoch,0)
+})
