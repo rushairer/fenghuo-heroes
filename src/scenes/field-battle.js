@@ -86,7 +86,14 @@ export class FieldBattleScene{
     if(this.pauseConfirm){
       if(b==='B'){this.pauseConfirm=false;this.app.audio.cancel();return}
       if(b==='C'||b==='START'){
-        this.saveRuntime()
+        try{
+          this.saveRuntime()
+        }catch(error){
+          this.pauseConfirm=false
+          this.message='保存戰鬥失敗：'+(error instanceof Error?error.message:'存儲無法寫入')
+          this.app.audio.alert()
+          return
+        }
         this.app.go('title',{force:true})
         this.app.audio.confirm()
       }
