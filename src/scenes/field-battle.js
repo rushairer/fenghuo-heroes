@@ -23,7 +23,6 @@ import {
 import { mdButton } from '../game/input.js'
 import {
   BATTLE_SQUAD_TYPES,
-  formationOfficerNames,
   formationRowSquads,
   initialFormationDraft,
   transitionFormationDraft,
