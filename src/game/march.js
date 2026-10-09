@@ -355,6 +355,32 @@ export function enemyCityNearArmy(store, armyId, tolerance = MARCH_RUNTIME_PROJE
   }) ?? null
 }
 
+// Combat references, army statuses and the command log must commit together.
+// Browser storage failures must never leave half-started or half-dismissed
+// battles in the live strategic state.
+function commitCombatTransition(store,armies,action){
+  const previousConflict=store.pendingConflict
+  const previousStatuses=armies.map((army)=>({
+    army,hadStatus:Object.hasOwn(army,'status'),status:army.status,
+  }))
+  const hadLog=Object.hasOwn(store.state,'log')
+  const previousLog=Array.isArray(store.state.log)?[...store.state.log]:store.state.log
+  try{
+    const value=action()
+    store.save()
+    return value
+  }catch(error){
+    store.pendingConflict=previousConflict
+    for(const entry of previousStatuses){
+      if(entry.hadStatus)entry.army.status=entry.status
+      else delete entry.army.status
+    }
+    if(hadLog)store.state.log=previousLog
+    else delete store.state.log
+    throw error
+  }
+}
+
 export function beginSiegeFromArmy(store, armyId, targetCityId) {
   if(store.pendingConflict)throw new Error('已有尚未結束的戰鬥。')
   const armies = ensureMarchState(store)
@@ -367,34 +393,36 @@ export function beginSiegeFromArmy(store, armyId, targetCityId) {
   const near = enemyCityNearArmy(store, armyId)
   if (!near || near.id !== targetCityId) throw new Error('部隊尚未接近敵城。')
   const previousArmyStatus=army.status??'waiting'
-  army.status = 'besieging'
-  store.pendingConflict = {
-    kind: 'siege',
-    previousArmyStatus,
-    armyId: army.id,
-    from: army.from,
-    target: targetCityId,
-    attacker: army.faction,
-    defender: target.owner,
-    attackerTroops: army.troops,
-    defenderTroops: target.troops,
-    defenderDefense:Number.isFinite(target.defense)?target.defense:null,
-    attackerOfficers: [...(army.officerNames ?? [])],
-  }
-  store.addLog(`${store.mapProfile?.cityById?.[targetCityId]?.name??targetCityId}攻城準備。`)
-  store.save()
-  return store.pendingConflict
+  return commitCombatTransition(store,[army],()=>{
+    army.status='besieging'
+    store.pendingConflict={
+      kind:'siege',
+      previousArmyStatus,
+      armyId:army.id,
+      from:army.from,
+      target:targetCityId,
+      attacker:army.faction,
+      defender:target.owner,
+      attackerTroops:army.troops,
+      defenderTroops:target.troops,
+      defenderDefense:Number.isFinite(target.defense)?target.defense:null,
+      attackerOfficers:[...(army.officerNames??[])],
+    }
+    store.addLog(`${store.mapProfile?.cityById?.[targetCityId]?.name??targetCityId}攻城準備。`)
+    return store.pendingConflict
+  })
 }
 
 export function cancelSiegeFromArmy(store) {
   const conflict = store.pendingConflict
   if (!conflict || conflict.kind !== 'siege') return false
   const army = ensureMarchState(store).find((item) => item.id === conflict.armyId)
-  if (army) army.status = conflict.previousArmyStatus ?? 'waiting'
-  store.pendingConflict = null
-  store.addLog(`${store.mapProfile?.cityById?.[conflict.target]?.name ?? conflict.target}中止攻城。`)
-  store.save()
-  return true
+  return commitCombatTransition(store,army?[army]:[],()=>{
+    if(army)army.status=conflict.previousArmyStatus??'waiting'
+    store.pendingConflict=null
+    store.addLog(`${store.mapProfile?.cityById?.[conflict.target]?.name??conflict.target}中止攻城。`)
+    return true
+  })
 }
 
 
@@ -415,40 +443,40 @@ export function beginFieldBattleFromArmies(store, attackerArmyId, defenderArmyId
     [attacker.id]:attacker.status??'waiting',
     [defender.id]:defender.status??'waiting',
   })
-  attacker.status='engaged'
-  defender.status='engaged'
-  store.pendingConflict={
-    kind:'field',
-    armyId:attacker.id,
-    attackerArmyId:attacker.id,
-    defenderArmyId:defender.id,
-    from:attacker.from,
-    attacker:attacker.faction,
-    defender:defender.faction,
-    attackerTroops:attacker.troops,
-    defenderTroops:defender.troops,
-    attackerOfficers:[...(attacker.officerNames??[])],
-    defenderOfficers:[...(defender.officerNames??[])],
-    previousArmyStatuses,
-    battleOrder:null,
-    battleSpeed:null,
-  }
-  store.addLog('與敵行軍部隊接觸，進入部隊戰。')
-  store.save()
-  return store.pendingConflict
+  return commitCombatTransition(store,[attacker,defender],()=>{
+    attacker.status='engaged'
+    defender.status='engaged'
+    store.pendingConflict={
+      kind:'field',
+      armyId:attacker.id,
+      attackerArmyId:attacker.id,
+      defenderArmyId:defender.id,
+      from:attacker.from,
+      attacker:attacker.faction,
+      defender:defender.faction,
+      attackerTroops:attacker.troops,
+      defenderTroops:defender.troops,
+      attackerOfficers:[...(attacker.officerNames??[])],
+      defenderOfficers:[...(defender.officerNames??[])],
+      previousArmyStatuses,
+      battleOrder:null,
+      battleSpeed:null,
+    }
+    store.addLog('與敵行軍部隊接觸，進入部隊戰。')
+    return store.pendingConflict
+  })
 }
 
 export function cancelFieldBattleFromArmies(store) {
   const conflict=store.pendingConflict
   if(!conflict||conflict.kind!=='field')return false
   const statuses=conflict.previousArmyStatuses??{}
-  for(const army of ensureMarchState(store)){
-    if(army.id===conflict.attackerArmyId||army.id===conflict.defenderArmyId){
-      army.status=statuses[army.id]??'waiting'
-    }
-  }
-  store.pendingConflict=null
-  store.addLog('部隊戰中止；未套用未校準的戰鬥結果。')
-  store.save()
-  return true
+  const participants=ensureMarchState(store).filter((army)=>
+    army.id===conflict.attackerArmyId||army.id===conflict.defenderArmyId)
+  return commitCombatTransition(store,participants,()=>{
+    for(const army of participants)army.status=statuses[army.id]??'waiting'
+    store.pendingConflict=null
+    store.addLog('部隊戰中止；未套用未校準的戰鬥結果。')
+    return true
+  })
 }
