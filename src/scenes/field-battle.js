@@ -22,6 +22,13 @@ import {
 } from '../game/field-battle-runtime.js'
 import { mdButton } from '../game/input.js'
 import {
+  BATTLE_SQUAD_TYPES,
+  formationOfficerNames,
+  formationRowSquads,
+  initialFormationDraft,
+  transitionFormationDraft,
+} from '../game/battle-formation.js'
+import {
   fieldMoveOfficers,
   initialFieldMoveDraft,
   transitionFieldMoveDraft,
@@ -36,6 +43,9 @@ export class FieldBattleScene{
     if(!this.conflict||this.conflict.kind!=='field'){app.go('strategy');return}
     this.runtime=ensureFieldBattleRuntime(this.conflict)
     this.phase=this.runtime.phase
+    if(this.phase==='formation'&&!this.runtime.formationDraft){
+      this.runtime.formationDraft=initialFormationDraft(this.conflict,this.runtime.formationPlan)
+    }
     this.speedIndex=Math.max(0,BATTLE_SPEEDS.findIndex((item)=>item.id===this.runtime.speed))
     this.window=this.runtime.moveDraft
       ?(this.runtime.moveDraft.phase==='officer'?'move-officer':'move-destination')
@@ -120,34 +130,30 @@ export class FieldBattleScene{
         return
       }
       if(b==='C'){
-        const speed=BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
-        setFieldBattleSpeed(this.conflict,speed)
-        setFieldBattlePhase(this.conflict,'formation')
-        this.phase='formation'
-        this.saveRuntime()
-        this.app.audio.confirm()
+        const prior=structuredClone(this.conflict.runtime)
+        try{
+          const speed=BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
+          setFieldBattleSpeed(this.conflict,speed)
+          setFieldBattlePhase(this.conflict,'formation')
+          this.runtime=ensureFieldBattleRuntime(this.conflict)
+          if(!this.runtime.formationDraft){
+            this.runtime.formationDraft=initialFormationDraft(this.conflict,this.runtime.formationPlan)
+          }
+          this.saveRuntime()
+          this.phase='formation'
+          this.app.audio.confirm()
+        }catch(error){
+          this.conflict.runtime=prior
+          this.runtime=ensureFieldBattleRuntime(this.conflict)
+          this.message='編成準備未保存：'+(error instanceof Error?error.message:'存儲不可用')
+          this.app.audio.alert()
+        }
       }
       return
     }
 
     if(this.phase==='formation'){
-      if(b==='B'){
-        setFieldBattlePhase(this.conflict,'speed')
-        this.phase='speed'
-        this.saveRuntime()
-        this.app.audio.cancel()
-        return
-      }
-      if(b==='C'){
-        const speed=this.runtime.speed??BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
-        battlePreparation(this.conflict,speed)
-        setFieldBattleSpeed(this.conflict,speed)
-        setFieldBattlePhase(this.conflict,'battle')
-        this.phase='battle'
-        this.message='小隊分兵與兵種上限受武官級影響；精確編成尚未校準，本輪保持原兵力進入控制層。'
-        this.saveRuntime()
-        this.app.audio.confirm()
-      }
+      this.updateFormation(b)
       return
     }
 
@@ -245,6 +251,48 @@ export class FieldBattleScene{
       if(b==='UP')this.scrollY=clamp(this.scrollY-1,-8,8)
       if(b==='DOWN')this.scrollY=clamp(this.scrollY+1,-8,8)
       this.app.audio.move()
+    }
+  }
+
+  updateFormation(button){
+    if(!this.runtime.formationDraft){
+      this.runtime.formationDraft=initialFormationDraft(this.conflict,this.runtime.formationPlan)
+    }
+    const previous=structuredClone(this.conflict.runtime)
+    const previousPhase=this.phase
+    try{
+      const result=transitionFormationDraft(this.conflict,this.runtime.formationDraft,button)
+      if(result.status==='ignored')return
+      if(result.status==='limit'){
+        this.message='每位武將目前最多只可編列 15 小隊；實際武官級與單隊兵數尚未校準。'
+        this.app.audio.alert()
+        return
+      }
+      if(result.status==='back'){
+        setFieldBattlePhase(this.conflict,'speed')
+      }else if(result.status==='updated'){
+        this.conflict.runtime.formationDraft=result.draft
+      }else if(result.status==='committed'){
+        const speed=this.runtime.speed??BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
+        battlePreparation(this.conflict,speed)
+        setFieldBattleSpeed(this.conflict,speed)
+        this.conflict.runtime.formationPlan=result.plan
+        this.conflict.runtime.formationDraft=null
+        setFieldBattlePhase(this.conflict,'battle')
+      }
+      this.saveRuntime()
+      this.phase=this.runtime.phase
+      if(result.status==='committed'){
+        this.message='已保存編成預覽。武官級、每小隊兵數與實際分兵尚未校準，不改變兵力或戰場小隊。'
+      }
+      if(result.status==='back'||button==='B')this.app.audio.cancel()
+      else this.app.audio.confirm()
+    }catch(error){
+      this.conflict.runtime=previous
+      this.runtime=ensureFieldBattleRuntime(this.conflict)
+      this.phase=previousPhase
+      this.message='編成未保存：'+(error instanceof Error?error.message:'存儲不可用')
+      this.app.audio.alert()
     }
   }
 
@@ -395,12 +443,33 @@ export class FieldBattleScene{
     }
 
     if(this.phase==='formation'){
-      r.panel(49,49,222,119,'#050505','#9b6514')
-      r.text('小隊編成',160,61,10,'#efd27d','center','top',SERIF,'700')
-      r.text(`每部隊最多 ${MAX_SQUADS_PER_UNIT} 小隊`,160,85,8,COLORS.cyan,'center')
-      r.text('騎兵／弓箭／步兵數受武官級限制',160,106,6.5,'#d8ccb0','center')
-      r.text('武官級與分配規則未校準，不造假分兵',160,123,6.2,'#a99d82','center')
-      r.text('C 進入控制層　B 返回',160,148,6,'#8e846f','center')
+      const draft=this.runtime.formationDraft
+      r.panel(35,37,250,152,'#050505','#9b6514')
+      r.text('小隊編成・工程預覽',160,46,10,'#efd27d','center','top',SERIF,'700')
+      r.text(`每武將最多 ${MAX_SQUADS_PER_UNIT} 小隊・非實際分兵`,160,65,6.6,COLORS.cyan,'center')
+      if(draft?.phase==='review'){
+        r.text('編成核對',160,84,9,COLORS.cyan,'center')
+        const totals=draft.rows.map((row)=>`${row.officerName}：${formationRowSquads(row)}`)
+        r.wrapText(totals.join('　')||'沒有具名武將，將保留零小隊預覽',160,104,219,12,7,'#e5d4ac','center')
+        r.text('C 確認預覽　B 返回調整',160,164,6.5,'#a99d82','center')
+      }else{
+        const rows=draft?.rows??[]
+        const index=draft?.officerIndex??0
+        const row=rows[index]
+        r.text(row?`${index+1}/${rows.length} 武將：${row.officerName}`:'缺少具名武將，無法分兵',160,83,8,COLORS.cyan,'center')
+        const selected=draft?.typeIndex??0
+        BATTLE_SQUAD_TYPES.forEach((type,i)=>{
+          const active=i===selected
+          r.text(`${active?'▶':'　'}${type.label}　${row?.[type.id]??0}`,110,98+i*16,8,active?COLORS.cyan:'#ddd0ad')
+        })
+        r.text(`合計 ${formationRowSquads(row)}/${MAX_SQUADS_PER_UNIT}`,160,149,7,'#e5d4ac','center')
+        r.text('A 換將　↑↓ 兵種　←→ 數量',160,166,6,'#a99d82','center')
+        r.text('C 核對　B 返回速度',160,179,6,'#a99d82','center')
+      }
+      if(this.message){
+        r.panel(37,86,246,67,'#050505','#9b6514')
+        r.wrapText(this.message,160,99,220,11,7,'#f0e4c5','center')
+      }
       if(this.pauseConfirm)this.drawPauseConfirm()
       return
     }
