@@ -125,3 +125,7 @@ Only a valid strategy order may carry a known tactic ID.
 
 This improves deterministic state transitions and save integrity without
 inventing a duration, AI turn, casualties, or victory rules.
+
+The old `reopenFieldBattleOrders` helper now delegates to the guarded
+one-day transition rather than resetting `ordersClosed` within the same
+day. It can no longer bypass an end-order or a day-30 carryover barrier.

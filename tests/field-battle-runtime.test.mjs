@@ -29,11 +29,13 @@ test('field battle runtime starts at speed selection and persists phase speed an
   })
 })
 
-test('end command closes ordering until a future calibrated battle-day boundary reopens it',()=>{
-  const value=conflict()
+test('end command closes ordering; legacy reopen must actually advance a day',()=>{
+  const value={kind:'field',runtime:{phase:'battle',speed:'normal',day:1}}
+  assert.throws(()=>reopenFieldBattleOrders(value),/先結束本日命令/)
   setFieldBattleOrder(value,{commandId:'end'})
   assert.equal(ensureFieldBattleRuntime(value).ordersClosed,true)
   reopenFieldBattleOrders(value)
+  assert.equal(ensureFieldBattleRuntime(value).day,2)
   assert.equal(ensureFieldBattleRuntime(value).ordersClosed,false)
   assert.equal(ensureFieldBattleRuntime(value).commandEpoch,1)
 })

@@ -63,12 +63,11 @@ export function setFieldBattleOrder(conflict,order) {
   return runtime
 }
 
+// Retained for existing integration points, but an order window can only
+// reopen by completing a real one-day transition. No same-day override.
 export function reopenFieldBattleOrders(conflict) {
-  const runtime=ensureFieldBattleRuntime(conflict)
-  if(runtime.carryoverPending)throw new Error('30日段落未交接，不能重開命令。')
-  runtime.commandEpoch+=1
-  runtime.ordersClosed=false
-  return runtime
+  advanceFieldBattleDayRuntime(conflict,1)
+  return ensureFieldBattleRuntime(conflict)
 }
 
 export function fieldBattleRuntimeSnapshot(conflict) {
