@@ -63,7 +63,9 @@ function validatedRoute(route,start){
 
 export function deployedOfficerNames(store, faction = store?.humanFaction) {
   const names=new Set()
-  for(const army of ensureMarchState(store)){
+  // Queries must not initialize army state: rejected dispatches are atomic.
+  const armies=Array.isArray(store?.state?.armies)?store.state.armies:[]
+  for(const army of armies){
     if(army.faction!==faction)continue
     for(const name of army.officerNames??[]){
       const normalized=String(name??'').trim()
@@ -192,6 +194,8 @@ export function queueMarch(store, {
   const nGold=allocation.gold
 
   // All checks are complete: no failing request may consume resources or IDs.
+  // Initialize persisted army identifiers only after every check succeeds.
+  ensureMarchState(store)
   source.troops -= nTroops
   source.food -= nFood
   source.gold -= nGold
