@@ -142,3 +142,55 @@ test('starvation observations are recorded but do not invent an effect formula',
   assert.equal(report.verified.starvationObservations,1)
   assert.equal(report.readiness.starvationEffects,false)
 })
+
+test('adjacency inference rejects contradictions even with an otherwise valid boundary pair',()=>{
+  const evidence=completeEvidence()
+  for(const gridDistance of [0,1]){
+    const report=validateMarchEvidence({
+      ...evidence,
+      adjacencyChecks:[...evidence.adjacencyChecks,{
+        targetKind:'army',gridDistance,commandAvailable:false,
+        sourceId:source.id,frameRef:'contradiction-'+gridDistance,verified:true,
+      }],
+    })
+    assert.equal(report.inferred.enemyArmyAdjacencyGrid,null)
+    assert.equal(report.readiness.enemyArmyAdjacency,false)
+    assert.equal(report.readiness.enemyCityAdjacency,true)
+  }
+})
+
+test('duplicated source/frame observations cannot satisfy independent timing windows',()=>{
+  const evidence=completeEvidence()
+  for(const field of ['movementWindows','monthlyExecutionWindows']){
+    const first=evidence[field][0]
+    evidence[field]=[first,{...first,frameRef:' '+first.frameRef+' '}]
+  }
+  const report=validateMarchEvidence(evidence)
+  assert.equal(report.duplicateObservations.movementWindows.length,1)
+  assert.equal(report.duplicateObservations.monthlyExecutionWindows.length,1)
+  assert.equal(report.readiness.routeNodeDays,false)
+  assert.equal(report.readiness.executionDaysPerEvenMonth,false)
+  assert.equal(report.readiness.routeStep,true)
+})
+
+test('duplicate verified frame identities block the affected domain even with other valid records',()=>{
+  const evidence=completeEvidence()
+  evidence.adjacencyChecks.push({...evidence.adjacencyChecks[0]})
+  evidence.routeSteps.push({...evidence.routeSteps[0]})
+  const report=validateMarchEvidence(evidence)
+  assert.equal(report.duplicateObservations.armyAdjacencyChecks.length,1)
+  assert.equal(report.duplicateObservations.routeSteps.length,1)
+  assert.equal(report.inferred.enemyArmyAdjacencyGrid,null)
+  assert.equal(report.inferred.routeStepWorld,null)
+  assert.equal(report.inferred.enemyCityAdjacencyGrid,3)
+  assert.equal(report.readiness.enemyCityAdjacency,false)
+  assert.equal(report.readiness.routeNodeDays,true)
+})
+
+test('different adjacency target kinds may use the same source frame',()=>{
+  const evidence=completeEvidence()
+  evidence.adjacencyChecks[2]={...evidence.adjacencyChecks[2],frameRef:evidence.adjacencyChecks[0].frameRef}
+  const report=validateMarchEvidence(evidence)
+  assert.equal(report.readiness.enemyArmyAdjacency,true)
+  assert.equal(report.readiness.enemyCityAdjacency,true)
+})

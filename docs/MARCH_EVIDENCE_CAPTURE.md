@@ -164,3 +164,21 @@ Useful as a behavioral lead but not enough for exact numeric calibration:
 
 Never derive movement timing from the current remake and then feed it back as original
 evidence.
+
+## Audit integrity
+
+A direct audit now reports `duplicateObservations` for repeated verified
+source/frame identities (with target kind included for adjacency). Repeated
+identities block inference in the affected domain, even if other records would
+otherwise be sufficient. Deduplicate or resolve conflicting records through the
+merge workflow before re-auditing. Individual verified-record counts are not
+independent-observation counts when duplicate identities are present.
+
+Adjacency threshold inference requires **all** verified available distances to
+be below **all** verified unavailable distances, with the nearest boundary
+separated by exactly one grid cell. An unavailable command at a smaller or equal
+distance invalidates the single-threshold model; retain such observations for
+further research rather than filtering them out.
+
+This is evidence validation only; no runtime movement or combat constants are
+changed.

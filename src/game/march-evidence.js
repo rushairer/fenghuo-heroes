@@ -111,6 +111,20 @@ function duplicateSourceIds(sources){
   return [...new Set(ids)].filter((id)=>ids.filter((candidate)=>candidate===id).length>1)
 }
 
+// One source/frame pair is one observation within each domain. Adjacency
+// additionally distinguishes the target kind, as the capture merge does.
+function duplicateObservationKeys(items,adjacency=false){
+  const seen=new Set(),duplicates=new Set()
+  for(const {record} of items){
+    const parts=[record.sourceId,record.frameRef.trim()]
+    if(adjacency)parts.push(record.targetKind)
+    const key=JSON.stringify(parts)
+    if(seen.has(key))duplicates.add(key)
+    seen.add(key)
+  }
+  return Object.freeze([...duplicates])
+}
+
 function uniqueNumber(values){
   const finite=values.filter(Number.isFinite)
   const unique=[...new Set(finite)]
@@ -145,7 +159,8 @@ function inferAdjacencyThreshold(validChecks,targetKind){
   const negative=checks.filter(({record})=>!record.commandAvailable).map(({record})=>record.gridDistance)
   if(!positive.length||!negative.length)return null
   const maxPositive=Math.max(...positive)
-  const minNegative=Math.min(...negative.filter((distance)=>distance>maxPositive))
+  // Any unavailable distance at or below an available distance contradicts a single threshold.
+  const minNegative=Math.min(...negative)
   if(!Number.isFinite(minNegative)||minNegative!==maxPositive+1)return null
   return maxPositive
 }
@@ -184,13 +199,22 @@ export function validateMarchEvidence(evidence={}){
     .filter((item)=>item.report.ok)
 
   const sourceLedgerValid=invalidSources.length===0&&duplicateSources.length===0
-  const routeStepWorld=sourceLedgerValid?inferRouteStepWorld(validRouteSteps):null
-  const enemyArmyAdjacencyGrid=sourceLedgerValid?inferAdjacencyThreshold(validAdjacencyChecks,'army'):null
-  const enemyCityAdjacencyGrid=sourceLedgerValid?inferAdjacencyThreshold(validAdjacencyChecks,'city'):null
+  const duplicateObservations=Object.freeze({
+    routeSteps:duplicateObservationKeys(validRouteSteps),
+    movementWindows:duplicateObservationKeys(validMovementWindows),
+    monthlyExecutionWindows:duplicateObservationKeys(validMonthlyExecutionWindows),
+    armyAdjacencyChecks:duplicateObservationKeys(validAdjacencyChecks.filter(({record})=>record.targetKind==='army'),true),
+    cityAdjacencyChecks:duplicateObservationKeys(validAdjacencyChecks.filter(({record})=>record.targetKind==='city'),true),
+    starvationObservations:duplicateObservationKeys(validStarvationObservations),
+  })
+  const canInfer=(domain)=>sourceLedgerValid&&duplicateObservations[domain].length===0
+  const routeStepWorld=canInfer('routeSteps')?inferRouteStepWorld(validRouteSteps):null
+  const enemyArmyAdjacencyGrid=canInfer('armyAdjacencyChecks')?inferAdjacencyThreshold(validAdjacencyChecks,'army'):null
+  const enemyCityAdjacencyGrid=canInfer('cityAdjacencyChecks')?inferAdjacencyThreshold(validAdjacencyChecks,'city'):null
   const inferred=Object.freeze({
     routeStepWorld,
-    routeNodeDays:sourceLedgerValid?inferRouteNodeDays(validMovementWindows):null,
-    executionDaysPerEvenMonth:sourceLedgerValid?inferMonthlyExecutionDays(validMonthlyExecutionWindows):null,
+    routeNodeDays:canInfer('movementWindows')?inferRouteNodeDays(validMovementWindows):null,
+    executionDaysPerEvenMonth:canInfer('monthlyExecutionWindows')?inferMonthlyExecutionDays(validMonthlyExecutionWindows):null,
     enemyArmyAdjacencyGrid,
     enemyArmyAdjacencyWorld:routeStepWorld!=null&&enemyArmyAdjacencyGrid!=null
       ?routeStepWorld*enemyArmyAdjacencyGrid
@@ -205,6 +229,7 @@ export function validateMarchEvidence(evidence={}){
     sourceLedgerValid,
     invalidSourceCount:invalidSources.length,
     duplicateSourceIds:Object.freeze(duplicateSources),
+    duplicateObservations,
     routeStepReports:Object.freeze(routeStepReports),
     movementWindowReports:Object.freeze(movementWindowReports),
     monthlyExecutionWindowReports:Object.freeze(monthlyExecutionWindowReports),
