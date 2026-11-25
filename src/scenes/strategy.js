@@ -337,7 +337,19 @@ export class StrategyScene{
   updateInfo(b){if(b==='LEFT'){this.infoTab=(this.infoTab+2)%3;this.app.audio.move()}if(b==='RIGHT'){this.infoTab=(this.infoTab+1)%3;this.app.audio.move()}if(b==='B'||b==='A'||b==='C')this.closeInfo()}
   requestFinishTurn(){if(this.app.store.mode==='inspection'&&this.app.store.isLastHumanTurn){this.saveIndex=0;this.view='save';this.app.audio.confirm();return}this.finishTurn()}
   updateSave(b){if(['LEFT','RIGHT','UP','DOWN'].includes(b)){this.saveIndex=1-this.saveIndex;this.app.audio.move()}if(b==='B'){this.view='map';this.app.audio.cancel();return}if(b==='A'||b==='C'||b==='START'){if(this.saveIndex===0)this.app.store.save();this.finishTurn()}}
-  finishTurn(){this.app.store.finishCurrentTurn();this.app.audio.confirm();this.resetForActiveTurn()}
+  finishTurn(){
+    try{this.app.store.finishCurrentTurn()}
+    catch(error){
+      this.message=error.message??'本月結束失敗，請重試。'
+      this.messageReturnView='map'
+      this.view='message'
+      this.app.audio.alert()
+      return false
+    }
+    this.app.audio.confirm()
+    this.resetForActiveTurn()
+    return true
+  }
   resetForActiveTurn(){this.view='map';this.stage=this.app.store.mode==='inspection'?'survey':'march';this.category=this.app.store.inspectionCategoryForActive()??'domestic';this.menuIndex=0;this.commandSubmenu=[];this.infoReturnView='map';this.infoCommandCity=null;this.infoCommandBrowse=false;this.taxRateDraft=0;this.taxRateOriginal=null;this.transportSource=null;this.transportDestination=null;this.transportHint='';this.transportLoadIndex=0;this.actionDraft=null;this.transferDraft=null;this.messageReturnView='map';this.targetCity=null;this.marchFrom=null;this.snapCursorToOwnedCity()}
   snapCursorToOwnedCity(){const store=this.app.store,city=this.mapCities().find((c)=>store.state.cities[c.id].owner===store.humanFaction);if(city){const p=cityWorldPoint(city);store.setCursor(p.x,p.y)}}
   draw(){if(!this.app.store.hasGame())return;const r=this.app.r;r.clear('#8f6f43');this.drawWorld();this.drawDialog();if(this.view==='category')this.drawCategory();if(this.view==='target')this.drawTargetHint();if(this.view==='commands')this.drawCommands();if(this.view==='action-draft')this.drawActionDraft();if(this.view==='transfer-draft')this.drawTransferDraft();if(this.view==='tax-rate')this.drawTaxRate();if(this.view==='transport-target')this.drawTransportTargetHint();if(this.view==='transport-load')this.drawTransportLoad();if(this.view==='message')this.drawMessage();if(this.view==='info')this.drawInfo();if(this.view==='city-status')this.drawCityStatus();if(this.view==='save')this.drawSave();r.scanlines(.018)}

@@ -2,7 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { drawStrategyPanel, drawStrategyTextWindow } from '../game/ui-art.js'
-import { advanceMarchArmies,armyAt,beginFieldBattleFromArmies,beginSiegeFromArmy,canSplitArmy,dailyFoodFor,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../game/march.js'
+import { armyAt,beginFieldBattleFromArmies,beginSiegeFromArmy,canSplitArmy,dailyFoodFor,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../game/march.js'
 import { MARCH_SUPPLY_OPTIONS, marchSupplyOrder, villageAtArmy } from '../game/march-supply.js'
 import { MARCH_RUNTIME_PROJECTION } from '../game/march-runtime-projection.js'
 import { MAP_VIEW_H, MAP_VIEW_W, cameraFor,cityWorldPoint,isVisible,toScreen } from '../game/world.js'
@@ -85,21 +85,6 @@ export class StrategyScene extends BaseStrategyScene{
     }
     this.view='map'
     this.app.audio.confirm()
-  }
-  finishTurn(){
-    const store=this.app.store
-    // Check conflicts before changing the world: GameStore itself rejects
-    // month advancement with an unresolved conflict.
-    if(store.pendingConflict){
-      this.message='戰鬥尚未結束，不能推進本月。'
-      this.messageReturnView='map'
-      this.view='message'
-      this.app.audio.alert()
-      return false
-    }
-    if(store.mode==='march'&&store.isLastHumanTurn)advanceMarchArmies(store)
-    super.finishTurn()
-    return true
   }
   resetForActiveTurn(){super.resetForActiveTurn();this.marchArmyId=null;this.marchRoute=[];this.marchRouteReason='move';this.supplyMenuIndex=0}
   draw(){super.draw();if(this.view==='march-compose')this.drawMarchCompose();if(this.view==='march-route')this.drawMarchRouteHint();if(this.view==='army-menu')this.drawArmyMenu();if(this.view==='supply-menu')this.drawSupplyMenu()}

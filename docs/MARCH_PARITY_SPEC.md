@@ -173,3 +173,13 @@ happens before troops, gold, grain or army IDs are consumed.
 - Rerouting an army likewise rolls back its route/index/status and log on
   failed save. Invalid orders and failed persistence cannot change the
   strategic state. Regression tests include first army and later armies.
+
+## Atomic strategic turn completion
+
+The final human's even-month completion now executes march movement inside
+`GameStore.finishCurrentTurn()`, then advances the calendar and persists both
+in one write. A failed write restores army positions, ration/starvation
+counters, statuses, turn metadata and log; retrying cannot consume a second
+monthly movement window. Earlier human turns do not move armies. This closes
+an existing runtime integrity defect without changing provisional timing or
+introducing original-game combat or starvation formulas.

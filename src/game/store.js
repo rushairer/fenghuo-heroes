@@ -3,6 +3,7 @@ import { assertRuntimeMapProfile } from './map-profile-validation.js'
 import { ORIGINAL_189_RULERS } from './original-data.js'
 import { defaultScenarioStartStateFactory } from './scenario-start-state.js'
 import { isTaxRate } from './tax-parity.js'
+import { executeMarchTurn } from './march.js'
 import { assertSavedGameState } from './save-validation.js'
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 
@@ -186,8 +187,50 @@ export class GameStore {
     this.assertState()
     throw new Error('舊版通用即時戰鬥結算已退休；戰鬥結果必須由校準後的野戰／攻城狀態機提交。')
   }
-  finishCurrentTurn(){this.assertState();if(this.pendingConflict)throw new Error('戰鬥尚未結束，不能推進戰略回合。');const previousMode=this.mode,previousFaction=this.humanFaction;if(!this.isLastHumanTurn){this.state.activeHumanIndex+=1;this.addLog(`${this.state.year}年${this.state.month}月：輪到 ${this.humanFaction}。`);this.save();return{monthAdvanced:false,previousMode,previousFaction,nextFaction:this.humanFaction}}this.state.activeHumanIndex=0;this.state.month+=1;if(this.state.month>12){this.state.month=1;this.state.year+=1}this.state.inspectionCategories={};this.addLog(`${this.state.year}年${this.state.month}月 ${this.mode==='inspection'?'視察情況':'行軍'}`);this.save();return{monthAdvanced:true,previousMode,previousFaction,nextFaction:this.humanFaction}}
-  advanceMonth(){this.assertState();this.state.activeHumanIndex=this.state.humanFactions.length-1;return this.finishCurrentTurn()}
+  finishCurrentTurn(){
+    this.assertState()
+    if(this.pendingConflict)throw new Error('戰鬥尚未結束，不能推進戰略回合。')
+    const previousMode=this.mode,previousFaction=this.humanFaction
+    const monthAdvanced=this.isLastHumanTurn
+    // Keep the existing army references alive while rolling back the scalar
+    // movement fields and turn metadata on a failed browser write.
+    const previous={...this.state,log:[...this.state.log]}
+    const armies=(this.state.armies??[]).map(army=>[army,{...army}])
+    try{
+      if(!monthAdvanced){
+        this.state.activeHumanIndex+=1
+        this.addLog(`${this.state.year}年${this.state.month}月：輪到 ${this.humanFaction}。`)
+      }else{
+        if(previousMode==='march'){
+          const events=executeMarchTurn(this)
+          if(events.length)this.addLog(`行軍部隊移動：${events.length}隊。`)
+        }
+        this.state.activeHumanIndex=0
+        this.state.month+=1
+        if(this.state.month>12){this.state.month=1;this.state.year+=1}
+        this.state.inspectionCategories={}
+        this.addLog(`${this.state.year}年${this.state.month}月 ${this.mode==='inspection'?'視察情況':'行軍'}`)
+      }
+      // Movement and calendar advancement are one durable transition.
+      this.save()
+      return {monthAdvanced,previousMode,previousFaction,nextFaction:this.humanFaction}
+    }catch(error){
+      for(const [army,before] of armies){
+        for(const key of Object.keys(army))if(!Object.hasOwn(before,key))delete army[key]
+        Object.assign(army,before)
+      }
+      for(const key of Object.keys(this.state))if(!Object.hasOwn(previous,key))delete this.state[key]
+      Object.assign(this.state,previous)
+      throw error
+    }
+  }
+  advanceMonth(){
+    this.assertState()
+    const previousIndex=this.state.activeHumanIndex
+    this.state.activeHumanIndex=this.state.humanFactions.length-1
+    try{return this.finishCurrentTurn()}
+    catch(error){this.state.activeHumanIndex=previousIndex;throw error}
+  }
   save(){if(this.state&&this.storage?.setItem){const payload={...this.state,pendingConflict:this.pendingConflict??null};this.storage.setItem(SAVE_KEY,JSON.stringify(payload))}}
   load(){
     if(!this.storage?.getItem)return false
