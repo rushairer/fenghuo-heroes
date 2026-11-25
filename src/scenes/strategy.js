@@ -206,9 +206,14 @@ export class StrategyScene{
     }
   }
   beginTransportTargeting(){
+    this.transportSource=null
+    this.transportDestination=null
+    this.transportHint=''
+    this.transportLoadIndex=0
     const destinations=transportEligibleDestinations(this.app.store,this.targetCity)
     if(!destinations.length){
       this.message='運輸至少需要另一座本國城市；目前沒有可選目的地。'
+      this.messageReturnView='commands'
       this.view='message'
       this.app.audio.alert()
       return
@@ -232,7 +237,9 @@ export class StrategyScene{
     if(b==='DOWN')this.moveCursor(0,1)
     if(b==='B'){
       this.view='commands'
+      this.transportSource=null
       this.transportDestination=null
+      this.transportLoadIndex=0
       this.transportHint=''
       this.app.audio.cancel()
       return
@@ -268,11 +275,22 @@ export class StrategyScene{
     }
     if(b==='B'){
       this.view='transport-target'
+      this.transportDestination=null
+      this.transportLoadIndex=0
       this.transportHint='選擇另一座本國城市。'
       this.app.audio.cancel()
       return
     }
     if(!isInspectionConfirmButton(b))return
+    const targetStatus=transportTargetStatus(this.app.store,this.transportSource,this.transportDestination)
+    if(!targetStatus.ok){
+      this.transportDestination=null
+      this.transportLoadIndex=0
+      this.transportHint=targetStatus.reason
+      this.view='transport-target'
+      this.app.audio.alert()
+      return
+    }
     const option=options[this.transportLoadIndex]
     const status=transportLoadStatus(this.app.store,this.transportSource,option?.id)
     if(!status.ok){
@@ -282,7 +300,12 @@ export class StrategyScene{
     }
     const from=this.cityById(this.transportSource)?.name??this.transportSource
     const to=this.cityById(this.transportDestination)?.name??this.transportDestination
-    this.message=`運輸：${from} → ${to}，${option.label}。原作裝載檔位已校準；運輸隊移動與截獲時序尚未校準，本次不扣除資源。`
+    this.message=`運輸預覽：${from} → ${to}，${option.label}。運輸尚未執行，不扣除資源。`
+    this.messageReturnView='commands'
+    this.transportSource=null
+    this.transportDestination=null
+    this.transportLoadIndex=0
+    this.transportHint=''
     this.view='message'
     this.app.audio.confirm()
   }

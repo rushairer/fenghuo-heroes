@@ -33,3 +33,7 @@ References:
 The exact transport-unit route, numerical movement rate, dispatch timing and delivery timing still need direct gameplay calibration. The overlap trigger for interception is now modeled, but the destination of captured cargo (marching unit vs. another settlement rule) remains unverified. Until the full map-unit lifecycle is verified, choosing a cargo option does **not** subtract resources or create a fake transport unit.
 
 This boundary is intentional: transport may only mutate resources once the map-unit lifecycle is evidence-backed.
+
+## Preview workflow safeguards
+
+The load confirmation revalidates the destination's current ownership. A stale destination returns to targeting without dispatch or resource mutation. Cancelling the load clears its destination; cancelling targeting clears the transport draft. The unexecuted preview and a no-destination message both return to the source command menu. These are engineering interaction safeguards, not newly verified original transport lifecycle rules.
