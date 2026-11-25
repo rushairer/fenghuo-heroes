@@ -177,3 +177,8 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
   and troop/squad conversion per officer.
 - [ ] Source-confirmed squad position, actual movement, contact,
   damage, battle winner and post-battle transfer.
+
+### Information browser command-context integrity
+
+- [x] Preserve the source city when opening the repeatable 情報 command from domestic, diplomacy or military menus; inspecting another city's status/officer list must not replace the command target on exit.
+- [x] Return to owned-city targeting if the original source is no longer owned. This is an interaction integrity fix, not a new original-game rule or economy effect.

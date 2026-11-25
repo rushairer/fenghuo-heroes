@@ -60,14 +60,7 @@ export class StrategyScene extends InfoStrategyScene {
       return
     }
     if(b==='B'){
-      const returnView=this.infoReturnView??'map'
-      this.view=returnView
-      if(returnView==='commands'){
-        this.infoReturnView='map'
-        this.infoCommandBrowse=false
-      }
-      this.app.audio.cancel()
-      return
+      return this.closeInfo()
     }
     // Manual evidence assigns selection to C on this list. A is intentionally
     // left unused rather than acting as a modern secondary confirm button.
