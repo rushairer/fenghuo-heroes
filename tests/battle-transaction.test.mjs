@@ -111,3 +111,29 @@ test('failed field-battle abort keeps the same persistent conflict and original 
   assert.equal(attacker.status,'marching')
   assert.equal(enemy.status,'waiting')
 })
+
+
+test('combat initiation cannot bypass the march-only phase',()=>{
+  const {store,storage,attacker,enemy}=fieldCampaign()
+  store.finishCurrentTurn()
+  assert.equal(store.mode,'inspection')
+  const before=structuredClone(store.state),raw=storage.getItem(SAVE_KEY)
+  assert.throws(()=>beginFieldBattleFromArmies(store,attacker.id,enemy.id),/行軍月/)
+  assert.throws(()=>beginSiegeFromArmy(store,attacker.id,'xinye'),/行軍月/)
+  assert.deepEqual(store.state,before)
+  assert.equal(store.pendingConflict,null)
+  assert.equal(storage.getItem(SAVE_KEY),raw)
+})
+
+test('rejected battle initiation cannot initialize missing army state',()=>{
+  const storage=new FlakyStorage()
+  const store=new GameStore(storage)
+  store.newGame({scenarioYear:189,humanFactions:['cao']})
+  store.finishCurrentTurn()
+  const before=structuredClone(store.state),raw=storage.getItem(SAVE_KEY)
+  assert.throws(()=>beginFieldBattleFromArmies(store,'missing','enemy'),/無可攻擊/)
+  assert.throws(()=>beginSiegeFromArmy(store,'missing','xinye'),/無可攻擊/)
+  assert.deepEqual(store.state,before)
+  assert.equal(store.pendingConflict,null)
+  assert.equal(storage.getItem(SAVE_KEY),raw)
+})

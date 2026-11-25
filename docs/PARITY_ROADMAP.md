@@ -182,3 +182,10 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 
 - [x] Preserve the source city when opening the repeatable 情報 command from domestic, diplomacy or military menus; inspecting another city's status/officer list must not replace the command target on exit.
 - [x] Return to owned-city targeting if the original source is no longer owned. This is an interaction integrity fix, not a new original-game rule or economy effect.
+
+
+### March and battle entry integrity
+
+- [x] Atomic standalone march stepping, including storage-failure rollback of all army movement and ration fields.
+- [x] Reject new field/siege encounters outside the march phase and preserve uninitialized army state on rejected entry.
+- [ ] Calibrate actual battle effects and original movement timing from direct target-edition evidence.

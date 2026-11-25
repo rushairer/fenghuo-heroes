@@ -338,10 +338,26 @@ export function executeMarchTurn(store, days = MARCH_RUNTIME_PROJECTION.executio
 }
 
 export function advanceMarchArmies(store, days = MARCH_RUNTIME_PROJECTION.executionDaysPerEvenMonth) {
-  const events = executeMarchTurn(store, days)
-  if (events.length) store.addLog(`行軍部隊移動：${events.length}隊。`)
-  store.save()
-  return events.map((event) => event.armyId)
+  store.assertState()
+  // The standalone stepping API has the same persistence guarantees as
+  // GameStore.finishCurrentTurn; do not commit a partially saved movement.
+  const state=store.state
+  const previous={...state,log:Array.isArray(state.log)?[...state.log]:state.log}
+  const armies=(Array.isArray(state.armies)?state.armies:[]).map(army=>[army,{...army}])
+  try{
+    const events=executeMarchTurn(store,days)
+    if(events.length)store.addLog(`行軍部隊移動：${events.length}隊。`)
+    store.save()
+    return events.map(event=>event.armyId)
+  }catch(error){
+    for(const [army,before] of armies){
+      for(const key of Object.keys(army))if(!Object.hasOwn(before,key))delete army[key]
+      Object.assign(army,before)
+    }
+    for(const key of Object.keys(state))if(!Object.hasOwn(previous,key))delete state[key]
+    Object.assign(state,previous)
+    throw error
+  }
 }
 
 export function enemyCityNearArmy(store, armyId, tolerance = MARCH_RUNTIME_PROJECTION.enemyCityAdjacencyWorld) {
@@ -382,8 +398,10 @@ function commitCombatTransition(store,armies,action){
 }
 
 export function beginSiegeFromArmy(store, armyId, targetCityId) {
+  store.assertState()
   if(store.pendingConflict)throw new Error('已有尚未結束的戰鬥。')
-  const armies = ensureMarchState(store)
+  if(store.mode!=='march')throw new Error('只有行軍月可以發動攻城。')
+  const armies=Array.isArray(store.state.armies)?store.state.armies:[]
   const army = armies.find((item) => item.id === armyId && item.faction === store.humanFaction)
   const target = store.state.cities[targetCityId]
   if (!army || !target || target.owner === army.faction) throw new Error('目前無可攻擊的敵城。')
@@ -427,11 +445,13 @@ export function cancelSiegeFromArmy(store) {
 
 
 export function beginFieldBattleFromArmies(store, attackerArmyId, defenderArmyId) {
-  const armies=ensureMarchState(store)
+  store.assertState()
+  if(store.pendingConflict)throw new Error('已有尚未結束的戰鬥。')
+  if(store.mode!=='march')throw new Error('只有行軍月可以發動部隊戰。')
+  const armies=Array.isArray(store.state.armies)?store.state.armies:[]
   const attacker=armies.find((item)=>item.id===attackerArmyId&&item.faction===store.humanFaction)
   const defender=armies.find((item)=>item.id===defenderArmyId&&item.faction!==store.humanFaction)
   if(!attacker||!defender)throw new Error('目前無可攻擊的敵行軍部隊。')
-  if(store.pendingConflict)throw new Error('已有尚未結束的戰鬥。')
   if([attacker,defender].some((army)=>army.status==='engaged'||army.status==='besieging')){
     throw new Error('戰鬥中的部隊不可重複發動攻擊。')
   }

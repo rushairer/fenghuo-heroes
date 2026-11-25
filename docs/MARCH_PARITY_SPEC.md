@@ -183,3 +183,14 @@ counters, statuses, turn metadata and log; retrying cannot consume a second
 monthly movement window. Earlier human turns do not move armies. This closes
 an existing runtime integrity defect without changing provisional timing or
 introducing original-game combat or starvation formulas.
+
+
+## March and combat entry transaction boundary
+
+The standalone `advanceMarchArmies` stepping API restores army object identity,
+route position, provisions, starvation counters, log and uninitialized army/ID
+fields on a failed save. The production monthly transition remains the single
+save in `GameStore.finishCurrentTurn`. Field/siege initiation is restricted to
+the march phase and rejected entry does not initialize an absent army ledger.
+These are runtime integrity fixes; no new combat result or timing formula is
+inferred.

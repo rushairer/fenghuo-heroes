@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { GameStore } from '../src/game/store.js'
-import { queueMarch,rerouteArmy } from '../src/game/march.js'
+import { advanceMarchArmies,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { cityWorldPoint } from '../src/game/world.js'
 
 const SAVE_KEY='fenghuo-heroes.cleanroom.v4'
@@ -95,4 +95,35 @@ test('unknown army reroute has no initialization or storage side effects',()=>{
   assert.throws(()=>rerouteArmy(store,'missing',[start,{x:start.x+8,y:start.y}]),/找不到/)
   assert.deepEqual(store.state,before)
   assert.equal(storage.getItem(SAVE_KEY),bytes)
+})
+
+
+test('standalone march stepping rolls back all army movement and rations on write failure',()=>{
+  const {store,storage,start,order}=campaign()
+  const first=queueMarch(store,{...order,food:1,route:[start,{x:start.x+8,y:start.y},{x:start.x+16,y:start.y}]})
+  const second=queueMarch(store,{...order,officerNames:['曹仁'],route:[start,{x:start.x,y:start.y+8}]})
+  const before=structuredClone(store.state),raw=storage.getItem(SAVE_KEY)
+  storage.fail=true
+  assert.throws(()=>advanceMarchArmies(store,1),/QuotaExceededError/)
+  assert.deepEqual(store.state,before)
+  assert.equal(store.state.armies[0],first)
+  assert.equal(store.state.armies[1],second)
+  assert.equal(storage.getItem(SAVE_KEY),raw)
+  storage.fail=false
+  assert.deepEqual(advanceMarchArmies(store,1),[first.id,second.id])
+  assert.equal(first.routeIndex,1)
+  assert.equal(first.food,0)
+  assert.equal(first.starvingDaysTotal,1)
+  assert.equal(second.routeIndex,1)
+  assert.equal(second.food,94)
+  assert.equal(store.state.month,2)
+})
+
+test('failed empty march stepping does not initialize army state or IDs',()=>{
+  const {store,storage}=campaign()
+  const before=structuredClone(store.state),raw=storage.getItem(SAVE_KEY)
+  storage.fail=true
+  assert.throws(()=>advanceMarchArmies(store,1),/QuotaExceededError/)
+  assert.deepEqual(store.state,before)
+  assert.equal(storage.getItem(SAVE_KEY),raw)
 })
