@@ -194,3 +194,14 @@ save in `GameStore.finishCurrentTurn`. Field/siege initiation is restricted to
 the march phase and rejected entry does not initialize an absent army ledger.
 These are runtime integrity fixes; no new combat result or timing formula is
 inferred.
+
+
+## Explicit siege target and read-only map queries
+
+- Army hit testing, friendly stacks and enemy proximity queries are read-only;
+  they do not create an army list or reset the next army ID.
+- Siege entry validates the explicitly requested enemy city's position instead
+  of requiring it to be the first nearby city in map iteration order. The
+  current single-target menu still uses the existing first-match discovery.
+- No original distance, target ordering or combat outcome is inferred from
+  this engineering correction; the existing projection remains provisional.

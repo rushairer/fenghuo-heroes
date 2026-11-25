@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { CITIES } from '../src/game/data.js'
 import { GameStore } from '../src/game/store.js'
-import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,beginFieldBattleFromArmies,beginSiegeFromArmy,cancelFieldBattleFromArmies,cancelSiegeFromArmy,dailyFoodFor,deployedOfficerNames,enemyArmyNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
+import { MARCH_COMMAND_EVIDENCE,MARCH_COMMAND_ORDER,advanceMarchArmies,armyAt,beginFieldBattleFromArmies,beginSiegeFromArmy,cancelFieldBattleFromArmies,cancelSiegeFromArmy,dailyFoodFor,deployedOfficerNames,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,executeMarchTurn,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../src/game/march.js'
 import { WORLD_W, cityWorldPoint } from '../src/game/world.js'
 import { MARCH_RUNTIME_PROJECTION } from '../src/game/march-runtime-projection.js'
 
@@ -383,4 +383,38 @@ test('querying deployed officer names never constructs army state on an untouche
   assert.deepEqual(store.state,before)
   assert.equal('nextArmyId' in store.state,false)
   assert.equal('armies' in store.state,false)
+})
+
+
+test('map army and proximity queries never initialize absent army state',()=>{
+  const store=marchingCaoStore()
+  delete store.state.armies
+  delete store.state.nextArmyId
+  const before=structuredClone(store.state)
+  assert.equal(armyAt(store,100,100),null)
+  assert.deepEqual(friendlyArmyStack(store,'missing'),[])
+  assert.equal(enemyArmyNearArmy(store,'missing'),null)
+  assert.equal(enemyCityNearArmy(store,'missing'),null)
+  assert.deepEqual(store.state,before)
+})
+
+test('explicit siege target is validated independently of the first nearby enemy city',()=>{
+  // Synthetic geometry exercises overlapping provisional ranges; not original data.
+  const cities=[{id:'first',name:'First',x:50,y:50},{id:'second',name:'Second',x:54,y:50},{id:'far',name:'Far',x:150,y:150}]
+  const army={id:'army-1',faction:'cao',from:'home',x:100,y:100,status:'waiting',troops:500,officerNames:['曹操']}
+  const store={
+    mode:'march',humanFaction:'cao',pendingConflict:null,
+    mapProfile:{cities,cityById:Object.fromEntries(cities.map(city=>[city.id,city]))},
+    state:{armies:[army],cities:Object.fromEntries(cities.map(city=>[city.id,{owner:'liu',troops:400,defense:50}])),log:[]},
+    assertState(){},addLog(message){this.state.log.push(message)},save(){},
+  }
+  assert.equal(enemyCityNearArmy(store,army.id)?.id,'first')
+  const before=structuredClone(store.state)
+  assert.throws(()=>beginSiegeFromArmy(store,army.id,'far'),/尚未接近敵城/)
+  assert.deepEqual(store.state,before)
+  assert.equal(store.pendingConflict,null)
+  assert.equal(beginSiegeFromArmy(store,army.id,'second').target,'second')
+  assert.equal(army.status,'besieging')
+  assert.equal(cancelSiegeFromArmy(store),true)
+  assert.equal(army.status,'waiting')
 })

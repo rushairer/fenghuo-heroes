@@ -75,8 +75,12 @@ export function deployedOfficerNames(store, faction = store?.humanFaction) {
   return names
 }
 
+function readArmies(store){
+  return Array.isArray(store?.state?.armies)?store.state.armies:[]
+}
+
 export function armyAt(store, x, y, tolerance = 10, faction = store.humanFaction) {
-  return ensureMarchState(store).find((army) =>
+  return readArmies(store).find((army) =>
     army.faction === faction && Math.abs(army.x - x) <= tolerance && Math.abs(army.y - y) <= tolerance
   ) ?? null
 }
@@ -118,7 +122,7 @@ export function marchCommandOptions({
 export const MARCH_ADJACENCY_STEP = MARCH_RUNTIME_PROJECTION.enemyArmyAdjacencyWorld
 
 export function friendlyArmyStack(store, armyId) {
-  const armies = ensureMarchState(store)
+  const armies = readArmies(store)
   const army = armies.find((item) => item.id === armyId)
   if (!army) return Object.freeze([])
   return Object.freeze(
@@ -133,7 +137,7 @@ export function canSplitArmy(store,armyId){
 }
 
 export function enemyArmyNearArmy(store, armyId, tolerance = MARCH_ADJACENCY_STEP) {
-  const armies = ensureMarchState(store)
+  const armies = readArmies(store)
   const army = armies.find((item) => item.id === armyId)
   if (!army) return null
   return armies.find((item) => {
@@ -360,15 +364,19 @@ export function advanceMarchArmies(store, days = MARCH_RUNTIME_PROJECTION.execut
   }
 }
 
+function isEnemyCityInRange(store,army,city,tolerance){
+  const runtime=store.state.cities[city.id]
+  if(!runtime||runtime.owner===army.faction)return false
+  const point=cityWorldPoint(city)
+  return Math.abs(point.x-army.x)<=tolerance&&Math.abs(point.y-army.y)<=tolerance
+}
+
 export function enemyCityNearArmy(store, armyId, tolerance = MARCH_RUNTIME_PROJECTION.enemyCityAdjacencyWorld) {
-  const army = ensureMarchState(store).find((item) => item.id === armyId)
+  const army = readArmies(store).find((item) => item.id === armyId)
   if (!army) return null
-  return (store.mapProfile?.cities??[]).find((city) => {
-    const runtime = store.state.cities[city.id]
-    if (!runtime || runtime.owner === army.faction) return false
-    const point = cityWorldPoint(city)
-    return Math.abs(point.x - army.x) <= tolerance && Math.abs(point.y - army.y) <= tolerance
-  }) ?? null
+  return (store.mapProfile?.cities??[]).find((city)=>
+    isEnemyCityInRange(store,army,city,tolerance)
+  ) ?? null
 }
 
 // Combat references, army statuses and the command log must commit together.
@@ -408,8 +416,10 @@ export function beginSiegeFromArmy(store, armyId, targetCityId) {
   if(army.status==='engaged'||army.status==='besieging'){
     throw new Error('已進入戰鬥的部隊不可重複發動攻城。')
   }
-  const near = enemyCityNearArmy(store, armyId)
-  if (!near || near.id !== targetCityId) throw new Error('部隊尚未接近敵城。')
+  const targetCity=(store.mapProfile?.cities??[]).find((city)=>city.id===targetCityId)
+  if(!targetCity||!isEnemyCityInRange(store,army,targetCity,MARCH_RUNTIME_PROJECTION.enemyCityAdjacencyWorld)){
+    throw new Error('部隊尚未接近敵城。')
+  }
   const previousArmyStatus=army.status??'waiting'
   return commitCombatTransition(store,[army],()=>{
     army.status='besieging'
