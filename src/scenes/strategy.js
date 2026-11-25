@@ -5,7 +5,7 @@ import { monthlyCommandPrompt } from '../game/chinese-copy-parity.js'
 import { CHINESE_COPY_GAPS } from '../game/chinese-copy-gaps.js'
 import { TARGET_INSPECTION_PALETTE, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawTargetMountainRange } from '../game/map-art.js'
 import { inspectionCommandItems, inspectionCommandPath, isInspectionConfirmButton } from '../game/inspection-command-parity.js'
-import { inspectionActionDraftSummary, inspectionDraftCommand, newInspectionActionDraft, transitionInspectionActionDraft } from '../game/inspection-action-draft.js'
+import { inspectionActionDraftStatus, inspectionActionDraftSummary, inspectionDraftCommand, newInspectionActionDraft, transitionInspectionActionDraft } from '../game/inspection-action-draft.js'
 import { inspectionTransferDraftSummary, newInspectionTransferDraft, transitionInspectionTransferDraft } from '../game/inspection-transfer-draft.js'
 import { adjustTaxRate } from '../game/tax-parity.js'
 import { PRESENTATION_HILL_CLUSTERS, PRESENTATION_MOUNTAIN_RANGES } from '../game/strategy-map-presentation.js'
@@ -107,7 +107,12 @@ export class StrategyScene{
     if(!this.actionDraft){this.view='commands';return}
     const gold=this.app.store.state.cities[this.actionDraft.cityId]?.gold
     let result
-    try{result=transitionInspectionActionDraft(this.actionDraft,button,gold)}
+    try{
+      const check=button==='C'?inspectionActionDraftStatus(this.app.store,this.actionDraft):null
+      result=check&&!check.ok
+        ?{status:'invalid',reason:check.reason,draft:this.actionDraft}
+        :transitionInspectionActionDraft(this.actionDraft,button,gold)
+    }
     catch(error){
       this.message=error instanceof Error?error.message:'內政命令準備資料無效。'
       this.messageReturnView='commands'

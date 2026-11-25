@@ -192,3 +192,14 @@ Rules for later work:
 - 稅率只能在單數月的已選擇「內政」命令階段被寫入，其他命令分類及行軍月均拒絕。
 - 允許的持久配置仍是 0 至 99 整數；設定時不做未校準的稅收／統治力即時結算。
 - 此權限校驗位於 GameStore 層，而不只在界面菜單中，避免從其他入口繞過月別與分類限制。
+
+
+### Domestic draft integrity
+
+- 開發／福利／教育 candidates exclude officers currently deployed in armies,
+  consistently with the existing transfer draft guard. Confirmations recheck
+  the active inspection phase, current city ownership and live officer roster.
+- If the treasury becomes empty while editing, retain the last draft and show
+  an error; confirmation requires a positive safe-integer amount within budget.
+- These guards prevent invalid previews; they do not establish original-game
+  officer action eligibility or implement any numerical effects.

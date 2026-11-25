@@ -60,3 +60,33 @@ test('an unaffordable draft returns a visible message to the menu',()=>{
   scene.updateMessage('C')
   assert.equal(scene.view,'commands')
 })
+
+
+test('domestic action confirmation rejects a lost city and never executes',()=>{
+  const scene=makeScene()
+  scene.beginInspectionActionDraft('develop')
+  scene.updateActionDraft('C')
+  scene.updateActionDraft('C')
+  scene.app.store.state.cities.xuchang.owner='liu'
+  const before=structuredClone(scene.app.store.state)
+  scene.updateActionDraft('C')
+  assert.equal(scene.view,'message')
+  assert.match(scene.message,/不是本國/)
+  scene.updateMessage('C')
+  assert.equal(scene.view,'action-draft')
+  assert.equal(scene.actionDraft.phase,'review')
+  assert.deepEqual(scene.app.store.state,before)
+})
+
+test('domestic action confirmation rejects an officer deployed after selection',()=>{
+  const scene=makeScene()
+  scene.beginInspectionActionDraft('welfare')
+  const name=scene.actionDraft.candidates[0].name
+  scene.app.store.state.armies=[{faction:'cao',officerNames:[name]}]
+  scene.updateActionDraft('C')
+  assert.equal(scene.view,'message')
+  assert.match(scene.message,/武將已不可/)
+  scene.updateMessage('C')
+  assert.equal(scene.view,'action-draft')
+  assert.equal(scene.actionDraft.phase,'officer')
+})

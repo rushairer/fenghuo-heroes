@@ -14,8 +14,13 @@ export function inspectionDraftCommand(commandId){
 
 function eligibleRows(store,cityId,command){
   const projection=openingOfficerListForCity(store,cityId)
+  const owner=store.state.cities[cityId]?.owner
+  const deployed=new Set((store.state.armies??[])
+    .filter((army)=>army.faction===owner)
+    .flatMap((army)=>army.officerNames??[]))
   const rows=projection.rows.filter((row)=>
-    command.officerRole!=='target-non-ruler'||row.role!=='君主'
+    !deployed.has(row.name)&&
+    (command.officerRole!=='target-non-ruler'||row.role!=='君主')
   )
   return Object.freeze({
     rows:Object.freeze(rows.map(({name,role})=>Object.freeze({name,role}))),
@@ -49,6 +54,24 @@ export function newInspectionActionDraft(store,cityId,commandId){
   })
 }
 
+// Revalidate live eligibility before each forward confirmation. The roster
+// snapshot is for selection only, never a grant of continuing eligibility.
+export function inspectionActionDraftStatus(store,draft){
+  const command=inspectionDraftCommand(draft?.commandId)
+  if(!command||store?.mode!=='inspection'){
+    return Object.freeze({ok:false,reason:'只有視察月才能準備內政命令。'})
+  }
+  const city=store.state?.cities?.[draft.cityId]
+  if(!city||city.owner!==store.humanFaction){
+    return Object.freeze({ok:false,reason:'命令城已不是本國城市。'})
+  }
+  const selected=draft.candidates?.[draft.officerIndex]
+  if(!selected||!eligibleRows(store,draft.cityId,command).rows.some((row)=>row.name===selected.name)){
+    return Object.freeze({ok:false,reason:'選擇的武將已不可執行此命令。'})
+  }
+  return Object.freeze({ok:true,reason:''})
+}
+
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value))
 
 // This reducer is deliberately read-only. The operator can cancel at every step;
@@ -77,15 +100,16 @@ export function transitionInspectionActionDraft(draft,button,availableGold){
   }else if(draft.phase==='gold'){
     const delta={LEFT:-1,RIGHT:1,UP:100,DOWN:-100}[button]
     if(delta!==undefined){
-      const gold=budget>=1?clamp(draft.gold+delta,1,budget):0
+      if(budget<1)return Object.freeze({status:'invalid',reason:'城內已無可投入的金。',draft})
+      const gold=clamp(draft.gold+delta,1,budget)
       return Object.freeze({status:'updated',draft:Object.freeze({...draft,gold})})
     }
     if(button==='C'){
-      if(budget<1||draft.gold>budget)return Object.freeze({status:'invalid',reason:'投入金額已超過城內現有金。',draft})
+      if(budget<1||!Number.isSafeInteger(draft.gold)||draft.gold<1||draft.gold>budget)return Object.freeze({status:'invalid',reason:'投入金額已超過城內現有金。',draft})
       return Object.freeze({status:'updated',draft:Object.freeze({...draft,phase:'review'})})
     }
   }else if(draft.phase==='review'&&button==='C'){
-    if(budget<1||draft.gold>budget)return Object.freeze({status:'invalid',reason:'投入金額已超過城內現有金。',draft})
+    if(budget<1||!Number.isSafeInteger(draft.gold)||draft.gold<1||draft.gold>budget)return Object.freeze({status:'invalid',reason:'投入金額已超過城內現有金。',draft})
     return Object.freeze({status:'preview-only',draft})
   }
   return Object.freeze({status:'ignored',draft})

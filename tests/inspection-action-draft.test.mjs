@@ -95,3 +95,28 @@ test('read-only preparation cannot be used to mutate a saved game',()=>{
   }
   assert.equal(JSON.stringify(store.state),before)
 })
+
+
+test('zero balance does not create a zero investment or permit invalid review',()=>{
+  const store=setup()
+  let draft=newInspectionActionDraft(store,'xuchang','develop')
+  draft=step(draft,'C',10).draft
+  const result=step(draft,'LEFT',0)
+  assert.equal(result.status,'invalid')
+  assert.equal(result.draft.gold,1)
+  assert.equal(step({...draft,gold:0},'C',10).status,'invalid')
+  assert.equal(step({...draft,phase:'review',gold:0},'C',10).status,'invalid')
+  assert.equal(step({...draft,gold:1.5},'C',10).status,'invalid')
+  assert.equal(step(draft,'C',10).status,'updated')
+})
+
+test('deployed officers are excluded from domestic action drafts',()=>{
+  const store=setup()
+  const initial=newInspectionActionDraft(store,'xuchang','develop')
+  const name=initial.candidates[0].name
+  store.state.armies=[{faction:'cao',officerNames:[name]}]
+  for(const command of ['develop','welfare','educate']){
+    const draft=newInspectionActionDraft(store,'xuchang',command)
+    assert.ok(draft.candidates.every(row=>row.name!==name))
+  }
+})
