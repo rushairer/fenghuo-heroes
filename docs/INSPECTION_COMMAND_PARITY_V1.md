@@ -203,3 +203,10 @@ Rules for later work:
   an error; confirmation requires a positive safe-integer amount within budget.
 - These guards prevent invalid previews; they do not establish original-game
   officer action eligibility or implement any numerical effects.
+
+
+### Transfer draft phase and destination integrity
+
+- Forward confirmation is restricted to the live inspection phase; backing out remains available.
+- Officer selection requires at least one still-owned destination in the draft, not ownership of the default selected destination. On entering destination selection, recover a stale default by selecting the first remaining eligible city.
+- Destination and review confirmations continue to validate the selected city and the live officer roster. No transfer effect, cost or timing is inferred.

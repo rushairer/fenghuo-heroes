@@ -40,6 +40,7 @@ export function newInspectionTransferDraft(store,sourceId){
 
 export function inspectionTransferDraftStatus(store,draft){
   if(!draft||!store?.state)return Object.freeze({ok:false,reason:'調動準備資料不存在。'})
+  if(store.mode!=='inspection')return Object.freeze({ok:false,reason:'只有視察月才能準備調動。'})
   const from=store.state.cities[draft.sourceId]
   if(!from||from.owner!==store.humanFaction){
     return Object.freeze({ok:false,reason:'調動出發城已不是本國城市。'})
@@ -49,9 +50,14 @@ export function inspectionTransferDraftStatus(store,draft){
   if(!candidate||!live.rows.some((row)=>row.name===candidate.name)){
     return Object.freeze({ok:false,reason:'武將已不可從此城調動。'})
   }
-  const destination=draft.destinations?.[draft.destinationIndex]
-  if(!destination||destination.id===draft.sourceId||
-    store.state.cities[destination.id]?.owner!==store.humanFaction){
+  const isEligibleDestination=(destination)=>destination&&destination.id!==draft.sourceId&&
+    store.state.cities[destination.id]?.owner===store.humanFaction
+  // The officer step does not commit a destination. Do not let a stale
+  // default selection prevent access to another still-eligible city.
+  const destinationValid=draft.phase==='officer'
+    ?draft.destinations?.some(isEligibleDestination)
+    :isEligibleDestination(draft.destinations?.[draft.destinationIndex])
+  if(!destinationValid){
     return Object.freeze({ok:false,reason:'調動目的地必須是另一座本國城市。'})
   }
   return Object.freeze({ok:true,reason:''})
@@ -79,9 +85,15 @@ export function transitionInspectionTransferDraft(store,draft,button){
   if(button!=='C')return Object.freeze({status:'ignored',draft})
   const check=inspectionTransferDraftStatus(store,draft)
   if(!check.ok)return Object.freeze({status:'invalid',reason:check.reason,draft})
-  if(draft.phase==='officer')return Object.freeze({
-    status:'updated',draft:Object.freeze({...draft,phase:'destination'}),
-  })
+  if(draft.phase==='officer'){
+    const eligible=(destination)=>destination&&destination.id!==draft.sourceId&&
+      store.state.cities[destination.id]?.owner===store.humanFaction
+    const destinationIndex=eligible(draft.destinations[draft.destinationIndex])
+      ?draft.destinationIndex:draft.destinations.findIndex(eligible)
+    return Object.freeze({
+      status:'updated',draft:Object.freeze({...draft,phase:'destination',destinationIndex}),
+    })
+  }
   if(draft.phase==='destination')return Object.freeze({
     status:'updated',draft:Object.freeze({...draft,phase:'review'}),
   })

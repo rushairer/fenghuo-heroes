@@ -91,3 +91,45 @@ test('source-backed transfer candidates come only from the documented city place
   assert.deepEqual(draft.candidates.map((row)=>row.name),['曹仁'])
   assert.equal(inspectionTransferDraftSummary(draft).evidence,'source-backed-city-officers')
 })
+
+
+test('transfer draft cannot advance outside inspection, but can still cancel',()=>{
+  const s=store()
+  let draft=newInspectionTransferDraft(s,'xuchang')
+  draft=step(s,draft,'C').draft
+  draft=step(s,draft,'C').draft
+  s.finishCurrentTurn()
+  const before=structuredClone(s.state)
+  assert.equal(s.mode,'march')
+  assert.equal(step(s,draft,'C').status,'invalid')
+  assert.match(inspectionTransferDraftStatus(s,draft).reason,/視察月/)
+  assert.equal(step(s,draft,'B').draft.phase,'destination')
+  assert.deepEqual(s.state,before)
+})
+
+test('officer confirmation recovers a stale default destination when another city is eligible',()=>{
+  const s=store()
+  s.state.cities.xinye.owner='cao'
+  const draft=newInspectionTransferDraft(s,'xuchang')
+  assert.equal(draft.destinations.length,2)
+  s.state.cities[draft.destinations[0].id].owner='liu'
+  const before=structuredClone(s.state)
+  const next=step(s,draft,'C')
+  assert.equal(next.status,'updated')
+  assert.equal(next.draft.phase,'destination')
+  assert.equal(next.draft.destinationIndex,1)
+  const review=step(s,next.draft,'C')
+  assert.equal(review.draft.phase,'review')
+  assert.equal(step(s,review.draft,'C').status,'preview-only')
+  assert.deepEqual(s.state,before)
+})
+
+test('officer confirmation rejects a transfer with no remaining eligible destination',()=>{
+  const s=store()
+  const draft=newInspectionTransferDraft(s,'xuchang')
+  s.state.cities.chenliu.owner='liu'
+  const result=step(s,draft,'C')
+  assert.equal(result.status,'invalid')
+  assert.equal(result.draft,draft)
+  assert.match(result.reason,/目的地/)
+})
