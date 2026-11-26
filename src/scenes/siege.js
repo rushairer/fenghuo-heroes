@@ -6,13 +6,14 @@ import { mdButton } from '../game/input.js'
 import {
   BATTLE_SQUAD_TYPES,
   formationRowSquads,
+  formationOfficerNames,
   initialFormationDraft,
   transitionFormationDraft,
 } from '../game/battle-formation.js'
 import { cancelSiegeFromArmy } from '../game/march.js'
 import { OFFICER_STATUS_FIELDS } from '../game/officer-roster.js'
 import { siegeInspectionRows, siegeStrengthRows } from '../game/siege-inspection.js'
-import { confirmSiegeCommander, cycleSiegeCommander, ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed, siegeCommanderCandidate } from '../game/siege-runtime.js'
+import { advanceSiegeOrderDay, confirmSiegeCommander, cycleSiegeCommander, ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed, siegeCommanderCandidate } from '../game/siege-runtime.js'
 
 export class SiegeScene{
   constructor(app){
@@ -30,6 +31,8 @@ export class SiegeScene{
     this.retreatConfirm=false
     this.inspection=null
     this.inspectionIndex=0
+    this.orderMenu=false
+    this.orderIndex=0
   }
 
   saveRuntime(){
@@ -130,6 +133,10 @@ export class SiegeScene{
         this.updateInspection(b)
         return
       }
+      if(this.orderMenu){
+        this.updateOrders(b)
+        return
+      }
       if(b==='A'||b==='START'){
         this.inspection=b==='A'?'strength':'roster'
         this.inspectionIndex=0
@@ -141,22 +148,64 @@ export class SiegeScene{
         return
       }
       if(b==='C'){
-        const before=structuredClone(this.conflict.runtime)
-        let intent
-        try{
-          intent=queueSiegeAttackIntent(this.conflict)
-          this.saveRuntime()
-        }catch(error){
-          this.conflict.runtime=before
-          this.runtime=ensureSiegeRuntime(this.conflict)
-          this.message='攻城命令未保存：'+(error instanceof Error?error.message:'存儲不可用')
-          this.app.audio.alert()
-          return
-        }
-        this.message=`第${intent.sequence}次攻城命令已受理；原版确认会降低城防并提高进入城内部队战的概率，但具体下降量和概率尚未校准，本次不修改数值。`
+        this.orderMenu=true
+        this.orderIndex=0
         this.app.audio.confirm()
       }
     }
+  }
+
+  updateOrders(button){
+    const names=formationOfficerNames(this.conflict)
+    const count=names.length+1
+    if(button==='B'){
+      this.orderMenu=false
+      this.app.audio.cancel()
+      return
+    }
+    if(button==='UP'||button==='DOWN'){
+      this.orderIndex=(this.orderIndex+count+(button==='UP'?-1:1))%count
+      this.app.audio.move()
+      return
+    }
+    if(button!=='C')return
+    const before=structuredClone(this.conflict.runtime)
+    const endDay=this.orderIndex===names.length
+    try{
+      if(endDay){
+        const day=advanceSiegeOrderDay(this.conflict)
+        this.saveRuntime()
+        this.message='工程預覽：進入第'+day+'日，未結算戰鬥。'
+      }else{
+        const intent=queueSiegeAttackIntent(this.conflict,names[this.orderIndex])
+        this.saveRuntime()
+        this.message=intent.officerName+' 第'+intent.day+'日攻城命令已記錄；未結算城防或戰果。'
+      }
+      this.orderMenu=false
+      this.app.audio.confirm()
+    }catch(error){
+      this.conflict.runtime=before
+      this.runtime=ensureSiegeRuntime(this.conflict)
+      this.message='攻城命令未保存：'+(error instanceof Error?error.message:'存儲不可用')
+      this.app.audio.alert()
+    }
+  }
+
+  drawOrders(){
+    const r=this.app.r
+    const names=formationOfficerNames(this.conflict)
+    const rows=[...names,null]
+    const start=Math.max(0,Math.min(rows.length-8,this.orderIndex-3))
+    r.panel(18,20,284,176,'#050505','#9b6514')
+    r.text('第'+this.runtime.day+'日・部隊命令（預覽）',160,30,10,'#efd27d','center')
+    rows.slice(start,start+8).forEach((name,i)=>{
+      const active=start+i===this.orderIndex
+      const used=this.runtime.usedOfficerNames.includes(name)
+      const label=name===null?'結束本日・工程推進':name+(used?'　已命令':'　攻城')
+      r.text((active?'▶ ':'　')+label,34,48+i*15,8,active?COLORS.cyan:used?'#8e846f':'#ddd0ad')
+    })
+    r.text('每支具名部隊每日一次；未校準戰鬥效果',160,173,6,'#a99d82','center')
+    r.text('↑↓ 選擇　C 決定　B 返回',160,185,6,'#a99d82','center')
   }
 
   updateInspection(button){
@@ -336,12 +385,13 @@ export class SiegeScene{
       r.text('最多 15 小隊・武官級限制未校準',160,196,6,'#cfc19f','center')
     }else{
       r.text(`主帥 ${this.runtime.commanderPreview?.officerName??'—'}（預覽）`,160,174,6.5,'#e5d4ac','center')
-      r.text(`攻城命令 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,185,7.5,COLORS.cyan,'center')
-      r.text('C 攻城　A 戰力　START 武將　B 中止確認',160,196,6.5,'#cfc19f','center')
+      r.text(`第${this.runtime.day}日　攻城 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,185,7.5,COLORS.cyan,'center')
+      r.text('C 命令　A 戰力　START 武將　B 中止確認',160,196,6.5,'#cfc19f','center')
       r.text('未校準城防下降量與入城戰概率不做假結算',160,210,5.8,'#8e846f','center')
     }
 
     if(this.inspection&&this.phase==='siege')this.drawInspection()
+    if(this.orderMenu&&this.phase==='siege')this.drawOrders()
 
     if(this.message){
       r.panel(40,75,240,64,'#000','#b07118',smallPanel)

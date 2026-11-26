@@ -65,16 +65,20 @@ test('a day-30 boundary pauses rather than inventing a winner or dropping the co
 
 test('siege scene refreshes its attack count on successive commands',()=>{
   const conflict={
-    kind:'siege',attackerTroops:1200,defenderTroops:800,defenderDefense:40,
+    kind:'siege',attackerOfficers:['曹操','曹仁'],attackerTroops:1200,defenderTroops:800,defenderDefense:40,
     runtime:{phase:'siege',speed:'normal'},
   }
   const {scene,send,saves,store}=battleScene(SiegeScene,conflict)
-  send('c')
+  send('c');send('c')
   assert.equal(scene.runtime.attackOrders,1)
   assert.equal(scene.runtime.lastAttackIntent.sequence,1)
   send('c') // dismiss message
-  send('c')
+  send('c');send('c') // same unit, same day: reject
+  assert.equal(scene.runtime.attackOrders,1)
+  send('c') // dismiss rejection, stay in menu
+  send('ArrowDown');send('c')
   assert.equal(scene.runtime.attackOrders,2)
+  assert.equal(scene.runtime.lastAttackIntent.officerName,'曹仁')
   assert.equal(scene.runtime.defenseRateSnapshot,40)
   assert.equal(scene.runtime.lastAttackIntent.numericDelta,null)
   assert.equal(store.pendingConflict,conflict)

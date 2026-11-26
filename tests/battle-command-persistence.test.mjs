@@ -92,7 +92,9 @@ test('field wait ambush and tactic intents commit together with storage',()=>{
 test('siege attack sequence and last intent are restored if persistence fails',()=>{
   const {conflict,scene,press,setFail}=harness('siege')
   press('c')
+  press('c')
   assert.equal(scene.runtime.attackOrders,0)
+  assert.deepEqual(scene.runtime.usedOfficerNames,[])
   assert.equal(scene.runtime.lastAttackIntent,null)
   assert.match(scene.message,/攻城命令未保存/)
   assert.equal('winner' in conflict,false)
@@ -101,7 +103,25 @@ test('siege attack sequence and last intent are restored if persistence fails',(
   press('c')
   assert.equal(scene.runtime.attackOrders,1)
   assert.deepEqual(scene.runtime.lastAttackIntent,{
-    sequence:1,effect:'lower-defense-rate',numericDelta:null,entryBattleProbability:null,
+    sequence:1,day:1,officerName:'曹操',effect:'lower-defense-rate',numericDelta:null,entryBattleProbability:null,
   })
   assert.equal(conflict.defenderTroops,1200)
+})
+
+test('siege manual day advance rolls back the day and unit usage on a failed save',()=>{
+  const {scene,press,setFail}=harness('siege')
+  setFail(false)
+  press('c');press('c');press('c')
+  assert.deepEqual(scene.runtime.usedOfficerNames,['曹操'])
+  press('c');press('ArrowDown')
+  setFail(true)
+  press('c')
+  assert.equal(scene.runtime.day,1)
+  assert.deepEqual(scene.runtime.usedOfficerNames,['曹操'])
+  assert.equal(scene.orderMenu,true)
+  press('c')
+  setFail(false)
+  press('c')
+  assert.equal(scene.runtime.day,2)
+  assert.deepEqual(scene.runtime.usedOfficerNames,[])
 })

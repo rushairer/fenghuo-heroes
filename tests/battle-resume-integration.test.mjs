@@ -18,6 +18,7 @@ import {
 } from '../src/game/field-battle-runtime.js'
 import {
   ensureSiegeRuntime,
+  advanceSiegeOrderDay,
   queueSiegeAttackIntent,
   setSiegePhase,
   setSiegeSpeed,
@@ -106,8 +107,9 @@ test('siege orders and defense snapshot survive save/load without imaginary casu
   const conflict=beginSiegeFromArmy(store,army.id,'xinye')
   setSiegeSpeed(conflict,'fast')
   setSiegePhase(conflict,'siege')
-  queueSiegeAttackIntent(conflict)
-  queueSiegeAttackIntent(conflict)
+  queueSiegeAttackIntent(conflict,'曹操')
+  advanceSiegeOrderDay(conflict)
+  queueSiegeAttackIntent(conflict,'曹操')
   store.save()
 
   const restored=new GameStore(storage)
@@ -117,6 +119,9 @@ test('siege orders and defense snapshot survive save/load without imaginary casu
   assert.equal(runtime.phase,'siege')
   assert.equal(runtime.speed,'fast')
   assert.equal(runtime.attackOrders,2)
+  assert.equal(runtime.day,2)
+  assert.deepEqual(runtime.usedOfficerNames,['曹操'])
+  assert.throws(()=>queueSiegeAttackIntent(restored.pendingConflict,'曹操'),/本日已接受/)
   assert.equal(runtime.lastAttackIntent.numericDelta,null)
   assert.equal(runtime.defenseRateSnapshot,targetState.defense)
   assert.deepEqual(restored.state.cities.xinye,targetState)

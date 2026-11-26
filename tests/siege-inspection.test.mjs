@@ -29,6 +29,8 @@ test('START inspects named participants without issuing or saving any siege orde
   assert.deepEqual(conflict,before)
   assert.equal(saves(),0)
   press('c')
+  assert.equal(scene.orderMenu,true)
+  press('c')
   assert.equal(scene.runtime.attackOrders,1)
   assert.equal(saves(),1)
 })

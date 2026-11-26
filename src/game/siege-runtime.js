@@ -11,6 +11,8 @@ export const SIEGE_RUNTIME_EVIDENCE=Object.freeze({
   commander:'attacker-commander-guards-headquarters-and-may-move',
   commanderDefeat:'attacker-loses-surviving-officers-captured',
   deploymentPoints:'map-specific-triangle-markers',
+  unitOrdersPerDay:1,
+  dayAdvance:'explicit-engineering-preview',
   numericDefenseDelta:'unverified',
   entryBattleProbability:'unverified',
 })
@@ -18,7 +20,13 @@ export const SIEGE_RUNTIME_EVIDENCE=Object.freeze({
 export function ensureSiegeRuntime(conflict){
   if(!conflict||conflict.kind!=='siege')throw new Error('攻城資料不存在。')
   const current=conflict.runtime&&typeof conflict.runtime==='object'?conflict.runtime:{}
+  const day=Number.isSafeInteger(current.day)&&current.day>=1?current.day:1
+  const names=formationOfficerNames(conflict)
+  const usedOfficerNames=Array.isArray(current.usedOfficerNames)
+    ?[...new Set(current.usedOfficerNames.filter(name=>names.includes(name)))]:[]
   conflict.runtime={
+    day,
+    usedOfficerNames,
     phase:PHASES.has(current.phase)?current.phase:'speed',
     speed:SPEEDS.has(current.speed)?current.speed:null,
     attackOrders:Math.max(0,Math.floor(Number(current.attackOrders)||0)),
@@ -88,12 +96,17 @@ export function setSiegeSpeed(conflict,speed){
   return runtime
 }
 
-export function queueSiegeAttackIntent(conflict){
+export function queueSiegeAttackIntent(conflict,officerName){
   const runtime=ensureSiegeRuntime(conflict)
   if(runtime.phase!=='siege')throw new Error('尚未進入攻城階段。')
+  if(!formationOfficerNames(conflict).includes(officerName))throw new Error('必須指定參戰的己方武將。')
+  if(runtime.usedOfficerNames.includes(officerName))throw new Error('此部隊本日已接受命令。')
+  runtime.usedOfficerNames.push(officerName)
   runtime.attackOrders+=1
   runtime.lastAttackIntent={
     sequence:runtime.attackOrders,
+    day:runtime.day,
+    officerName,
     effect:'lower-defense-rate',
     numericDelta:null,
     entryBattleProbability:null,
@@ -101,11 +114,24 @@ export function queueSiegeAttackIntent(conflict){
   return Object.freeze({...runtime.lastAttackIntent})
 }
 
+// Explicit preview transition only: no automatic clock, movement, resource
+// consumption or battle result is inferred from an incremented command day.
+export function advanceSiegeOrderDay(conflict){
+  const runtime=ensureSiegeRuntime(conflict)
+  if(runtime.phase!=='siege')throw new Error('尚未進入攻城階段。')
+  if(runtime.day>=Number.MAX_SAFE_INTEGER)throw new Error('戰鬥日數超出範圍。')
+  runtime.day+=1
+  runtime.usedOfficerNames=[]
+  return runtime.day
+}
+
 export function siegeRuntimeSnapshot(conflict){
   const runtime=ensureSiegeRuntime(conflict)
   return Object.freeze({
     phase:runtime.phase,
     speed:runtime.speed,
+    day:runtime.day,
+    usedOfficerNames:Object.freeze([...runtime.usedOfficerNames]),
     attackOrders:runtime.attackOrders,
     defenseRateSnapshot:runtime.defenseRateSnapshot,
     lastAttackIntent:runtime.lastAttackIntent?Object.freeze({...runtime.lastAttackIntent}):null,

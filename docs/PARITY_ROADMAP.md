@@ -232,3 +232,10 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 - [x] Active siege A compares known army strength; START opens a participant roster and C displays unknown-safe officer status. B closes inspection without aborting or issuing an attack.
 - [ ] Replace provisional roster selection with original spatial cursor targeting on either side; calibrate defender roster, officer values and battle geometry.
 - [ ] Enforce documented one-order-per-unit-per-day in a named unit/day runtime, not a global attack limit.
+
+### Siege unit/day command limit
+
+- [x] Production siege C opens a named-unit command picker, preserving A/START inspection and B cancellation.
+- [x] Enforce one recorded attack intent per named attacker per preview day, persist the usage ledger, and permit different units to receive orders on the same day.
+- [x] Explicit engineering day advance and rollback on failed storage; legacy anonymous attack counts are not retroactively assigned.
+- [ ] Calibrate physical unit identity/selection, other order types, day timing, movement and combat effects. No actual siege resolution or original clock is claimed.
