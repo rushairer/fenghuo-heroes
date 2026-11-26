@@ -82,3 +82,16 @@ test('strength inspection displays real army ledger amounts and leaves them unto
   assert.equal(saves(),0)
   assert.deepEqual({state:scene.app.store.state,conflict},before)
 })
+
+test('A toggles the strength comparison without entering a command or saving',()=>{
+  const {scene,conflict,press,saves}=harness()
+  const before=structuredClone(conflict)
+  press('z')
+  assert.equal(scene.inspection,'strength')
+  press('z')
+  assert.equal(scene.inspection,null)
+  assert.equal(scene.orderMenu,false)
+  assert.equal(scene.retreatConfirm,false)
+  assert.equal(saves(),0)
+  assert.deepEqual(conflict,before)
+})

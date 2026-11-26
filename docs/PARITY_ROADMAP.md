@@ -245,3 +245,8 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 
 - [x] Read actual attacking army funds and provisions in preparation/strength inspection, with separate commander role and no invented camp position or duplicate resource ownership.
 - [ ] Capture map-specific deployment triangles, headquarters placement, commander movement and combat-driven resource consumption; implement physical deployment and defeat only when verified.
+
+### Siege monthly boundary
+
+- [x] Manual-confirmed monthly carryover rule is represented by a bounded engineering preview sharing the field-battle day-30 stop. No unlimited attack-day loop, no fabricated result; save/Continue retains the unresolved siege. A toggles strength inspection.
+- [ ] Implement actual strategic intermission/resumption and original clock only after controlled Chinese-edition observations. The exact siege day cutoff is not established by the manual.

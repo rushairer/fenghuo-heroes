@@ -63,3 +63,5 @@ Active siege daily command preview: after confirming `?qa=siege-formation-review
 
 
 Headquarters ledger inspection: in `?qa=siege-formation-review`, verify the army funds/provisions line and the uncalibrated camp position notice. Confirm and dismiss the message, then A opens strength inspection with the same balances. B closes it without spending funds or recording an attack. The camp is not a placed tactical unit.
+
+Siege monthly boundary: open `?qa=siege-month-boundary` (day 29). Press C, choose 結束本日・工程推進 and confirm; the preview stops on day 30. Dismiss the message, then C cannot open orders, while A toggles strength inspection and START still opens the roster. No actual month advancement or combat result is simulated.

@@ -100,3 +100,22 @@ for(const [kind,Scene,active] of [
     assert.equal(again.state.armies.find((x)=>x.id===army.id).troops,beforeArmy.troops)
   })
 }
+
+test('siege preview month boundary survives real GameStore save and Continue',()=>{
+  const {store,storage,army}=game('siege')
+  store.pendingConflict.runtime={phase:'siege',speed:'normal',day:29}
+  const before=structuredClone(store.state)
+  const scene=new SiegeScene(appFor(store))
+  press(scene,'c');press(scene,'ArrowDown');press(scene,'c')
+  assert.equal(scene.runtime.carryoverPending,true)
+  const restored=new GameStore(storage)
+  assert.equal(restored.load(),true)
+  const resumed=new SiegeScene(appFor(restored))
+  assert.equal(resumed.runtime.day,30)
+  assert.equal(resumed.runtime.carryoverPending,true)
+  assert.equal(restored.state.armies.find(x=>x.id===army.id).status,'besieging')
+  assert.deepEqual(restored.state,before)
+  press(resumed,'c')
+  assert.equal(resumed.orderMenu,false)
+  assert.throws(()=>restored.finishCurrentTurn(),/戰鬥尚未結束/)
+})

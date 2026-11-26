@@ -24,6 +24,7 @@ export const BATTLE_VISUAL_QA_STATES = Object.freeze([
   'siege-speed',
   'siege-formation',
   'siege-formation-review',
+  'siege-month-boundary',
   'duel-weapon',
   'duel-mode',
   'duel-manual',

@@ -24,6 +24,7 @@ test('siege runtime persists preparation speed and defense snapshot',()=>{
     phase:'speed',
     speed:null,
     day:1,
+    carryoverPending:false,
     usedOfficerNames:[],
     attackOrders:0,
     defenseRateSnapshot:42,
@@ -147,4 +148,29 @@ test('headquarters never fabricates resources, position or a commander from inco
   assert.equal(siegeHeadquartersProjection(store,value).gold,null)
   assert.equal(siegeHeadquartersProjection(store,value).food,null)
   assert.equal(siegeHeadquartersProjection(store,{kind:'field'}),null)
+})
+
+test('siege month boundary stops the preview clock and orders without resolving combat',()=>{
+  const value={...conflict(),attackerOfficers:['曹操'],runtime:{phase:'siege',day:29}}
+  queueSiegeAttackIntent(value,'曹操')
+  assert.equal(advanceSiegeOrderDay(value),30)
+  const before=structuredClone(value)
+  assert.equal(value.runtime.carryoverPending,true)
+  assert.throws(()=>advanceSiegeOrderDay(value),/30日工程段落/)
+  assert.throws(()=>queueSiegeAttackIntent(value,'曹操'),/30日工程段落/)
+  assert.deepEqual(value,before)
+  assert.equal(value.defenderDefense,42)
+  assert.equal(value.winner,undefined)
+})
+
+test('legacy siege days beyond the preview boundary cannot reopen orders',()=>{
+  const value={...conflict(),attackerOfficers:['曹操'],runtime:{
+    phase:'siege',day:55,carryoverPending:false,attackOrders:12,usedOfficerNames:['曹操'],
+  }}
+  const runtime=ensureSiegeRuntime(value)
+  assert.equal(runtime.day,30)
+  assert.equal(runtime.carryoverPending,true)
+  assert.equal(runtime.attackOrders,12)
+  assert.deepEqual(runtime.usedOfficerNames,['曹操'])
+  assert.throws(()=>queueSiegeAttackIntent(value,'曹操'),/30日工程段落/)
 })

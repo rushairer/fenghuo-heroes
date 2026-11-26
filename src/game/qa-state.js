@@ -1,6 +1,7 @@
 import { ensureMarchState } from './march.js'
 import { CLOSE_FORMATION_QA } from './close-battle-formation.js'
 import { initialFormationDraft } from './battle-formation.js'
+import { OBSERVED_BATTLE_SEGMENT_DAYS } from './battle-time-parity.js'
 import { initialFieldMoveDraft, transitionFieldMoveDraft } from './field-battle-move.js'
 import { officerStatusProjection } from './officer-roster.js'
 import {
@@ -161,7 +162,7 @@ export function applyVisualQaState(app, qaState) {
 
   if(qaState.startsWith('siege-')){
     if(!('phase' in scene)||!scene.conflict)return false
-    const phase=qaState.startsWith('siege-formation')?'formation':'speed'
+    const phase=qaState==='siege-month-boundary'?'siege':qaState.startsWith('siege-formation')?'formation':'speed'
     scene.phase=phase
     scene.speedIndex=0
     scene.message=''
@@ -172,6 +173,14 @@ export function applyVisualQaState(app, qaState) {
         scene.runtime.formationDraft=qaState==='siege-formation-review'
           ?{...draft,phase:'review'}:draft
       }else scene.runtime.formationDraft=null
+      if(qaState==='siege-month-boundary'){
+        scene.runtime.day=OBSERVED_BATTLE_SEGMENT_DAYS-1
+        scene.runtime.carryoverPending=false
+        scene.runtime.usedOfficerNames=[]
+        scene.runtime.speed='normal'
+        scene.orderMenu=false
+        scene.inspection=null
+      }
     }
     return true
   }

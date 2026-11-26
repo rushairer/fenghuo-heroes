@@ -95,3 +95,23 @@ test('manual day advancement reports the new day rather than a stale scene refer
   assert.match(scene.message,/第9日/)
   assert.equal(conflict.runtime.day,9)
 })
+
+test('siege reaches the preview month boundary without discarding the conflict or blocking inspection',()=>{
+  const conflict={kind:'siege',attackerOfficers:['曹操'],attackerTroops:1200,
+    defenderTroops:800,defenderDefense:40,runtime:{phase:'siege',speed:'normal',day:29}}
+  const {scene,send,saves,store,navigation}=battleScene(SiegeScene,conflict)
+  send('c');send('ArrowDown');send('c')
+  assert.equal(scene.runtime.day,30)
+  assert.equal(scene.runtime.carryoverPending,true)
+  assert.match(scene.message,/跨月續戰/)
+  send('c');send('c')
+  assert.equal(scene.orderMenu,false)
+  assert.equal(saves.length,1)
+  send('c');send('z')
+  assert.equal(scene.inspection,'strength')
+  send('z');send('Enter')
+  assert.equal(scene.inspection,'roster')
+  assert.equal(store.pendingConflict,conflict)
+  assert.equal(conflict.defenderDefense,40)
+  assert.deepEqual(navigation,[])
+})

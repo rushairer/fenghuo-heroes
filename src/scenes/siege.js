@@ -148,6 +148,11 @@ export class SiegeScene{
         return
       }
       if(b==='C'){
+        if(this.runtime.carryoverPending){
+          this.message='30日工程段落已結束；跨月續戰尚未校準。'
+          this.app.audio.alert()
+          return
+        }
         this.orderMenu=true
         this.orderIndex=0
         this.app.audio.confirm()
@@ -175,7 +180,9 @@ export class SiegeScene{
       if(endDay){
         const day=advanceSiegeOrderDay(this.conflict)
         this.saveRuntime()
-        this.message='工程預覽：進入第'+day+'日，未結算戰鬥。'
+        this.message=this.runtime.carryoverPending
+          ?'30日工程段落已結束；保留攻城，待校準跨月續戰。'
+          :'工程預覽：進入第'+day+'日，未結算戰鬥。'
       }else{
         const intent=queueSiegeAttackIntent(this.conflict,names[this.orderIndex])
         this.saveRuntime()
@@ -209,7 +216,7 @@ export class SiegeScene{
   }
 
   updateInspection(button){
-    if(button==='B'){
+    if(button==='B'||(button==='A'&&this.inspection==='strength')){
       this.inspection=this.inspection==='officer'?'roster':null
       this.app.audio.cancel()
       return
@@ -240,7 +247,7 @@ export class SiegeScene{
       const hq=siegeHeadquartersProjection(this.app.store,this.conflict)
       r.text('大本營・軍資金 '+(hq.gold??'—')+'　兵糧 '+(hq.food??'—'),32,151,8,'#ddd0ad')
       r.text('主帥 '+(hq.commanderName??'—')+'　位置未校準',32,164,6.5,'#a99d82')
-      r.text('B 返回',160,181,7,'#a99d82','center')
+      r.text('A / B 返回',160,181,7,'#a99d82','center')
       return
     }
     const rows=siegeInspectionRows(this.conflict)
@@ -391,8 +398,8 @@ export class SiegeScene{
     }else{
       r.text(`主帥 ${this.runtime.commanderPreview?.officerName??'—'}（預覽）`,160,174,6.5,'#e5d4ac','center')
       r.text(`第${this.runtime.day}日　攻城 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,185,7.5,COLORS.cyan,'center')
-      r.text('C 命令　A 戰力　START 武將　B 中止確認',160,196,6.5,'#cfc19f','center')
-      r.text('未校準城防下降量與入城戰概率不做假結算',160,210,5.8,'#8e846f','center')
+      r.text(this.runtime.carryoverPending?'A 戰力　START 武將　B 中止確認':'C 命令　A 戰力　START 武將　B 中止確認',160,196,6.5,'#cfc19f','center')
+      r.text(this.runtime.carryoverPending?'30日工程段落已結束・跨月續戰未校準':'未校準城防下降量與入城戰概率不做假結算',160,210,5.8,'#8e846f','center')
     }
 
     if(this.inspection&&this.phase==='siege')this.drawInspection()

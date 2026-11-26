@@ -35,6 +35,7 @@ test('visual QA state catalog covers setup, strategy, march, siege and duel scre
     'siege-speed',
     'siege-formation',
     'siege-formation-review',
+    'siege-month-boundary',
     'duel-weapon',
     'duel-mode',
     'duel-manual',
@@ -337,4 +338,14 @@ test('duel weapon QA starts before mode choice and never preselects a weapon',()
   assert.equal(app.scene.weaponSelect,true)
   assert.equal(app.scene.modeSelect,false)
   assert.equal(app.scene.selectedWeapon,null)
+})
+
+test('siege month-boundary QA opens one day before the engineering stop',()=>{
+  const app={scene:{phase:'speed',conflict:{kind:'siege'},runtime:{phase:'speed'}}}
+  assert.equal(initialSceneForVisualQa('siege-month-boundary'),'siege')
+  assert.equal(applyVisualQaState(app,'siege-month-boundary'),true)
+  assert.equal(app.scene.phase,'siege')
+  assert.equal(app.scene.runtime.day,29)
+  assert.equal(app.scene.runtime.carryoverPending,false)
+  assert.equal(storageForVisualQa('siege-month-boundary',{}),null)
 })

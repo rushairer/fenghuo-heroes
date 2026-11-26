@@ -125,3 +125,22 @@ test('siege manual day advance rolls back the day and unit usage on a failed sav
   assert.equal(scene.runtime.day,2)
   assert.deepEqual(scene.runtime.usedOfficerNames,[])
 })
+
+test('failed siege boundary save restores the prior day and daily order usage',()=>{
+  const {scene,press,setFail}=harness('siege')
+  scene.runtime.day=29
+  setFail(false)
+  press('c');press('c');press('c')
+  press('c');press('ArrowDown')
+  setFail(true)
+  press('c')
+  assert.equal(scene.runtime.day,29)
+  assert.equal(scene.runtime.carryoverPending,false)
+  assert.deepEqual(scene.runtime.usedOfficerNames,['曹操'])
+  assert.equal(scene.orderMenu,true)
+  press('c')
+  setFail(false)
+  press('c')
+  assert.equal(scene.runtime.day,30)
+  assert.equal(scene.runtime.carryoverPending,true)
+})

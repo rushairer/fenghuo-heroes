@@ -1,4 +1,5 @@
 import { formationOfficerNames, normalizeFormationDraft, normalizeFormationPlan } from './battle-formation.js'
+import { OBSERVED_BATTLE_SEGMENT_DAYS } from './battle-time-parity.js'
 
 const PHASES=new Set(['speed','formation','siege'])
 const SPEEDS=new Set(['normal','fast'])
@@ -13,6 +14,8 @@ export const SIEGE_RUNTIME_EVIDENCE=Object.freeze({
   deploymentPoints:'map-specific-triangle-markers',
   unitOrdersPerDay:1,
   dayAdvance:'explicit-engineering-preview',
+  carryover:'manual-confirmed-monthly-resumption',
+  previewSegmentDays:OBSERVED_BATTLE_SEGMENT_DAYS,
   numericDefenseDelta:'unverified',
   entryBattleProbability:'unverified',
 })
@@ -20,12 +23,16 @@ export const SIEGE_RUNTIME_EVIDENCE=Object.freeze({
 export function ensureSiegeRuntime(conflict){
   if(!conflict||conflict.kind!=='siege')throw new Error('攻城資料不存在。')
   const current=conflict.runtime&&typeof conflict.runtime==='object'?conflict.runtime:{}
-  const day=Number.isSafeInteger(current.day)&&current.day>=1?current.day:1
+  // Same conservative preview boundary as field battle; the manual confirms
+  // monthly resumption, not an exact 30-day siege clock.
+  const day=Number.isSafeInteger(current.day)&&current.day>=1
+    ?Math.min(current.day,OBSERVED_BATTLE_SEGMENT_DAYS):1
   const names=formationOfficerNames(conflict)
   const usedOfficerNames=Array.isArray(current.usedOfficerNames)
     ?[...new Set(current.usedOfficerNames.filter(name=>names.includes(name)))]:[]
   conflict.runtime={
     day,
+    carryoverPending:day>=OBSERVED_BATTLE_SEGMENT_DAYS,
     usedOfficerNames,
     phase:PHASES.has(current.phase)?current.phase:'speed',
     speed:SPEEDS.has(current.speed)?current.speed:null,
@@ -99,6 +106,7 @@ export function setSiegeSpeed(conflict,speed){
 export function queueSiegeAttackIntent(conflict,officerName){
   const runtime=ensureSiegeRuntime(conflict)
   if(runtime.phase!=='siege')throw new Error('尚未進入攻城階段。')
+  if(runtime.carryoverPending)throw new Error('30日工程段落已結束，待校準跨月續戰。')
   if(!formationOfficerNames(conflict).includes(officerName))throw new Error('必須指定參戰的己方武將。')
   if(runtime.usedOfficerNames.includes(officerName))throw new Error('此部隊本日已接受命令。')
   runtime.usedOfficerNames.push(officerName)
@@ -119,8 +127,9 @@ export function queueSiegeAttackIntent(conflict,officerName){
 export function advanceSiegeOrderDay(conflict){
   const runtime=ensureSiegeRuntime(conflict)
   if(runtime.phase!=='siege')throw new Error('尚未進入攻城階段。')
-  if(runtime.day>=Number.MAX_SAFE_INTEGER)throw new Error('戰鬥日數超出範圍。')
+  if(runtime.carryoverPending)throw new Error('30日工程段落已結束，待校準跨月續戰。')
   runtime.day+=1
+  runtime.carryoverPending=runtime.day>=OBSERVED_BATTLE_SEGMENT_DAYS
   runtime.usedOfficerNames=[]
   return runtime.day
 }
@@ -131,6 +140,7 @@ export function siegeRuntimeSnapshot(conflict){
     phase:runtime.phase,
     speed:runtime.speed,
     day:runtime.day,
+    carryoverPending:runtime.carryoverPending,
     usedOfficerNames:Object.freeze([...runtime.usedOfficerNames]),
     attackOrders:runtime.attackOrders,
     defenseRateSnapshot:runtime.defenseRateSnapshot,
