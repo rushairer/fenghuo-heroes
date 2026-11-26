@@ -94,3 +94,34 @@ test('sub-200 garrison prevents opening a march draft at all',()=>{
   assert.match(scene.message,/兵力不足/)
   assert.deepEqual(signals,['alert'])
 })
+
+test('march officer picker removes newly unavailable officers and clamps its cursor before handling input',()=>{
+  const store=new GameStore(null)
+  store.newGame({humanFactions:['cao']})
+  store.finishCurrentTurn()
+  const scene=sceneWithStore(store,'xuchang')
+  scene.app.audio={confirm(){},move(){},alert(){},cancel(){}}
+  scene.beginMarchCompose('xuchang')
+  scene.availableOfficerNames=()=>['夏侯惇']
+  scene.selectedOfficerNames=['曹操']
+  scene.officerCursor=5
+  scene.view='march-officers'
+  scene.updateMarchOfficers({consume:()=> 'c'})
+  assert.equal(scene.officerCursor,0)
+  assert.deepEqual(scene.selectedOfficerNames,['夏侯惇'])
+})
+
+test('route confirmation refuses to proceed after all selected officers become unavailable',()=>{
+  const store=new GameStore(null)
+  store.newGame({humanFactions:['cao']})
+  store.finishCurrentTurn()
+  const scene=sceneWithStore(store,'xuchang')
+  scene.app.audio={confirm(){},move(){},alert(){},cancel(){}}
+  scene.beginMarchCompose('xuchang')
+  scene.availableOfficerNames=()=>[]
+  scene.composeFocus=4
+  scene.updateMarchCompose('C')
+  assert.equal(scene.view,'message')
+  assert.deepEqual(scene.selectedOfficerNames,[])
+  assert.match(scene.message,/沒有可出陣/)
+})
