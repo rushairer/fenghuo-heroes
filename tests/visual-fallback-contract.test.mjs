@@ -224,7 +224,7 @@ test('duel hit feedback is localized to the struck fighter without changing comb
   assert.match(source,/drawDuelHitSpark/)
   assert.match(source,/this\.hitSide='player'/)
   assert.match(source,/this\.hitSide='enemy'/)
-  assert.match(source,/x:this\.hitSide==='player'\?this\.px:this\.ex/)
+  assert.match(source,/x:this\.hitSide==='player'\?playerX:enemyX/)
 })
 
 
@@ -258,7 +258,7 @@ test('localized duel hit spark is drawn above the screen flash and stale hit sid
 test('duel proximity cue is presentation-only and derives from existing fighter positions',()=>{
   const source=read('src/scenes/duel.js')
   assert.match(source,/drawDuelSpacingCue/)
-  assert.match(source,/leftX:this\.px,rightX:this\.ex/)
+  assert.match(source,/leftX:playerX,rightX:enemyX/)
   assert.doesNotMatch(source,/duelSpacingCueGeometry.*damage/)
 })
 
@@ -288,8 +288,8 @@ test('river shoreline accent is layered as a visible ring between outer and inne
 test('duel weapon contact cue reads only existing spacing and attack presentation state',()=>{
   const source=read('src/scenes/duel.js')
   assert.match(source,/drawDuelWeaponContact/)
-  assert.match(source,/leftX:this\.px/)
-  assert.match(source,/rightX:this\.ex/)
+  assert.match(source,/leftX:playerX/)
+  assert.match(source,/rightX:enemyX/)
   assert.match(source,/playerAttacking:this\.attackCd>160/)
   assert.match(source,/enemyAttacking:this\.enemyCd>500/)
 })
