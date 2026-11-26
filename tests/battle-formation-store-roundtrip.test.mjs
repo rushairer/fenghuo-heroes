@@ -93,6 +93,9 @@ for(const [kind,Scene,active] of [
     assert.equal(again.load(),true)
     assert.equal(again.pendingConflict.runtime.formationDraft,null)
     assert.deepEqual(again.pendingConflict.runtime.formationPlan,resumed.runtime.formationPlan)
+    if(kind==='siege')assert.deepEqual(again.pendingConflict.runtime.commanderPreview,{
+      officerName:'曹操',status:'uncalibrated-preview',applied:false,
+    })
     assert.equal(again.pendingConflict.runtime.phase,active)
     assert.equal(again.state.armies.find((x)=>x.id===army.id).troops,beforeArmy.troops)
   })

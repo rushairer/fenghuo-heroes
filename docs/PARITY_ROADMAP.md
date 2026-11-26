@@ -223,3 +223,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Close unit-combat formation selection
 - [x] Isolated normal-speed five-slot selection preview; left/right and C follow HK manual pp. 32–33. Fast speed cannot select formations.
 - [ ] Measure the five original formations and their order, integrate the close unit-combat contact transition and individual squad commands, and apply verified battle effects.
+
+### Siege commander preparation
+- [x] Production siege allocation review can select and persist a named attacker commander as an unapplied preview; legacy saves remain compatible.
+- [ ] Capture original headquarters placement and map-specific deployment points; implement commander movement, defeat and prisoner consequences only after calibration.

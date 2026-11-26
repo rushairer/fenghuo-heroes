@@ -10,7 +10,7 @@ import {
   transitionFormationDraft,
 } from '../game/battle-formation.js'
 import { cancelSiegeFromArmy } from '../game/march.js'
-import { ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed } from '../game/siege-runtime.js'
+import { confirmSiegeCommander, cycleSiegeCommander, ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed, siegeCommanderCandidate } from '../game/siege-runtime.js'
 
 export class SiegeScene{
   constructor(app){
@@ -152,6 +152,12 @@ export class SiegeScene{
     const previous=structuredClone(this.conflict.runtime)
     const previousPhase=this.phase
     try{
+      if(button==='A'&&this.runtime.formationDraft.phase==='review'){
+        if(!cycleSiegeCommander(this.conflict)){this.app.audio.alert();return}
+        this.saveRuntime()
+        this.app.audio.move()
+        return
+      }
       const result=transitionFormationDraft(this.conflict,this.runtime.formationDraft,button)
       if(result.status==='ignored')return
       if(result.status==='limit'){
@@ -167,6 +173,7 @@ export class SiegeScene{
         const speed=this.runtime.speed??BATTLE_SPEEDS[this.speedIndex]?.id??'normal'
         battlePreparation(this.conflict,speed)
         setSiegeSpeed(this.conflict,speed)
+        confirmSiegeCommander(this.conflict)
         this.conflict.runtime.formationPlan=result.plan
         this.conflict.runtime.formationDraft=null
         setSiegePhase(this.conflict,'siege')
@@ -243,9 +250,10 @@ export class SiegeScene{
       if(draft?.phase==='review'){
         r.text('編成核對',160,72,8,COLORS.cyan,'center')
         const totals=draft.rows.map((row)=>`${row.officerName} ${formationRowSquads(row)}`)
-        r.wrapText(totals.join('　')||'無具名武將，不建立假小隊',160,91,220,12,7,'#e5d4ac','center')
+        r.text('主帥：'+(siegeCommanderCandidate(this.conflict)??'—'),160,86,8,COLORS.cyan,'center')
+        r.wrapText(totals.join('　')||'無具名武將，不建立假小隊',160,102,220,10,7,'#e5d4ac','center')
         r.text('未進行實際分兵與損耗',160,140,6.5,'#a99d82','center')
-        r.text('C 確認預覽　B 返回調整',160,179,7,COLORS.cyan,'center')
+        r.text('A 換主帥　C 確認　B 返回',160,179,7,COLORS.cyan,'center')
       }else{
         const row=draft?.rows?.[draft.officerIndex??0]
         r.text(row?`${(draft.officerIndex??0)+1}/${draft.rows.length} ${row.officerName}`:'無具名出征武將',160,70,8,COLORS.cyan,'center')
@@ -259,7 +267,8 @@ export class SiegeScene{
       }
       r.text('最多 15 小隊・武官級限制未校準',160,196,6,'#cfc19f','center')
     }else{
-      r.text(`攻城命令 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,178,7.5,COLORS.cyan,'center')
+      r.text(`主帥 ${this.runtime.commanderPreview?.officerName??'—'}（預覽）`,160,174,6.5,'#e5d4ac','center')
+      r.text(`攻城命令 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,185,7.5,COLORS.cyan,'center')
       r.text('C / A 攻城　B 中止確認',160,196,6.5,'#cfc19f','center')
       r.text('未校準城防下降量與入城戰概率不做假結算',160,210,5.8,'#8e846f','center')
     }

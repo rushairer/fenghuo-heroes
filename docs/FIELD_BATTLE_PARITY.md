@@ -219,3 +219,24 @@ preview conventions. Fast speed cannot select or commit a formation.
 Selection is local and never accesses campaign state or applies a battle
 effect. This is separate from pre-battle squad allocation and must not
 be linked to a real contact or result before target evidence is obtained.
+
+## Siege commander selection preview
+
+Indexed HK manual printed pp. 28–29 and the corresponding JP siege section
+describe choosing an attacker commander, a headquarters that stores funds
+and provisions and cannot move after placement, a commander who may move,
+and map-specific triangle deployment points. Defeat of the commander
+ends the attack and surviving officers become prisoners. These are
+documented rules, not yet implemented consequences.
+
+The existing production siege formation review now lets the player cycle
+through named attacker officers with A and confirm the highlighted commander
+along with the existing allocation preview. This key mapping, initial
+highlight and combined review are engineering UI conventions, not measured
+original controls. The draft persists across P/Continue; the confirmed
+commanderPreview is unapplied, and invalid names are rejected on normalization.
+Legacy saves do not gain an invented confirmed commander. No headquarters
+coordinates, movement, resource relocation, casualties or capture outcomes
+are created. The existing siege-formation-review QA exposes the selector.
+Direct map captures and a calibrated tactical battle engine are still
+required for headquarters placement and unit deployment.
