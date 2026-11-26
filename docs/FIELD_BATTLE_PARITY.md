@@ -179,3 +179,20 @@ or combat itself are finished. The QA screenshots are available as
 Field battle orders (including ambush and day advances) and siege
 attack intents now also roll back their runtime mutations if saving
 the player's battle state fails.
+
+
+## Recorded unit destinations across battle days
+
+The indexed Japanese manual, printed page 30, states that movement continues
+toward the destination after orders close, and new orders can be given on a
+new battle day. Previously the runtime kept only the latest global command,
+so another officer's move or the end command discarded earlier destinations.
+The runtime now retains the last recorded move per participating officer in
+`recordedMoves`, independently of the transient order window. Valid legacy
+move orders migrate on load, and invalid or nonparticipant entries are
+filtered. The officer picker displays the last recorded target, explicitly
+not the unit's actual position. Closing orders, advancing a manual day and
+saving do not erase these records. This is an input record, not an active
+path or proof of arrival; other command interactions, physical movement,
+squad speed and combat outcomes remain uncalibrated. The JP manual is an
+interaction lead; direct Chinese-edition verification remains outstanding.

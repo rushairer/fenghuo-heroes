@@ -8,6 +8,19 @@ const SPEEDS=new Set(['normal','fast'])
 const COMMANDS=new Set(FIELD_BATTLE_COMMANDS.map((item)=>item.id))
 const TACTICS=new Set(FIELD_BATTLE_TACTICS.map((item)=>item.id))
 
+// Keep the last recorded destination per named participant. These are
+// semantic observations of player input, not active simulated movement.
+function recordedMoveOrders(conflict,records,order){
+  const moves=new Map()
+  for(const candidate of Array.isArray(records)?records:[]){
+    const move=validFieldMoveOrder(conflict,candidate)
+    if(move)moves.set(move.officerName,move)
+  }
+  // Legacy saves only retained the last command. Recover that move if present.
+  if(order?.commandId==='move'&&order.move)moves.set(order.move.officerName,order.move)
+  return [...moves.values()]
+}
+
 export function ensureFieldBattleRuntime(conflict) {
   if(!conflict||conflict.kind!=='field')throw new Error('部隊戰資料不存在。')
   const current=conflict.runtime&&typeof conflict.runtime==='object'?conflict.runtime:{}
@@ -27,6 +40,7 @@ export function ensureFieldBattleRuntime(conflict) {
     phase:PHASES.has(current.phase)?current.phase:'speed',
     speed:SPEEDS.has(current.speed)?current.speed:null,
     order,
+    recordedMoves:recordedMoveOrders(conflict,current.recordedMoves,order),
     ordersClosed:carryoverPending||Boolean(current.ordersClosed),
     commandEpoch:Number.isSafeInteger(current.commandEpoch)&&current.commandEpoch>=0?current.commandEpoch:0,
     day,
@@ -76,6 +90,7 @@ export function setFieldBattleOrder(conflict,order) {
     ...(TACTICS.has(order.tacticId)?{tacticId:order.tacticId}:{}),
     ...(move?{move}:{}),
   }
+  if(move)runtime.recordedMoves=recordedMoveOrders(conflict,runtime.recordedMoves,runtime.order)
   runtime.ordersClosed=order.commandId==='end'
   runtime.moveDraft=null
   return runtime

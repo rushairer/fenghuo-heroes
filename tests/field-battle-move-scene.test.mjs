@@ -105,3 +105,20 @@ test('failed save while selecting an actor restores prior stage and order',()=>{
   assert.equal(conflict.runtime.order,null)
   assert.match(scene.message,/disk full/)
 })
+
+
+test('failed move confirmation restores the previously recorded destination',()=>{
+  const {scene,store,conflict,press}=harness()
+  scene.window='command';scene.commandIndex=0;scene.executeCommand()
+  press('c');press('c')
+  const before=structuredClone(conflict.runtime.recordedMoves)
+  assert.equal(before.length,1)
+  press('x')
+  scene.window='command';scene.commandIndex=0;scene.executeCommand()
+  press('c');press('ArrowRight')
+  store.save=()=>{throw new Error('disk full')}
+  press('c')
+  assert.deepEqual(conflict.runtime.recordedMoves,before)
+  assert.equal(scene.window,'move-destination')
+  assert.match(scene.message,/disk full/)
+})

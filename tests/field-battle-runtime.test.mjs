@@ -134,3 +134,30 @@ test('out-of-range saved days clamp to thirty and cannot leak open command state
   assert.equal(snapshot.ordersClosed,true)
   assert.equal(snapshot.commandEpoch,0)
 })
+
+
+test('recorded destinations survive other officers, end orders, day changes and reload',()=>{
+  const value={kind:'field',attackerOfficers:['曹操','曹仁'],runtime:{phase:'battle',day:3}}
+  const issue=(officerName,x)=>setFieldBattleOrder(value,{commandId:'move',move:{officerName,target:{x,y:104}}})
+  issue('曹操',56)
+  issue('曹仁',64)
+  issue('曹操',72)
+  setFieldBattleOrder(value,{commandId:'end'})
+  advanceFieldBattleDayRuntime(value,1)
+  const restored=JSON.parse(JSON.stringify(value))
+  assert.equal(ensureFieldBattleRuntime(restored).order,null)
+  assert.deepEqual(restored.runtime.recordedMoves,[
+    {officerName:'曹操',target:{x:72,y:104}},
+    {officerName:'曹仁',target:{x:64,y:104}},
+  ])
+  assert.equal(restored.runtime.day,4)
+})
+
+test('legacy last move migrates and malformed or absent participants are discarded',()=>{
+  const value={kind:'field',attackerOfficers:['曹操'],runtime:{phase:'battle',day:2,
+    order:{commandId:'move',move:{officerName:'曹操',target:{x:56,y:104}}},
+    recordedMoves:[{officerName:'敵將',target:{x:56,y:104}},{officerName:'曹操',target:{x:57,y:104}}]}}
+  assert.deepEqual(ensureFieldBattleRuntime(value).recordedMoves,[{officerName:'曹操',target:{x:56,y:104}}])
+  value.attackerOfficers=[]
+  assert.deepEqual(ensureFieldBattleRuntime(value).recordedMoves,[])
+})

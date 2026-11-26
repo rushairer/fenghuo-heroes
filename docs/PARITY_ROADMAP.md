@@ -203,3 +203,11 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 - [ ] Verify Chinese-edition weapon names, officer inventories, weapon
   selection controls/layout, and strength/weight effects from direct captures.
 - [ ] Connect calibrated inventories and duel results to the strategic battle.
+
+
+### Field battle destination continuity
+
+- [x] Retain last recorded destinations for each named participant across
+  subsequent orders, day boundaries and save/load; expose in the move picker.
+- [ ] Calibrate actual persistent movement, arrival, cancellation by other
+  orders, and interactions with terrain/combat from Chinese-edition evidence.

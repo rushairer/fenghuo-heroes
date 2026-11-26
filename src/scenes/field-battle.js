@@ -536,9 +536,12 @@ export class FieldBattleScene{
       const start=Math.max(0,Math.min(candidates.length-7,cursor-3))
       r.panel(70,37,180,149,'#050505','#9b6514')
       r.text('選擇出陣武將',160,46,10,'#efd27d','center')
+      r.text('右側為上次記錄目標（非實際位置）',160,59,5.5,'#a99d82','center')
       candidates.slice(start,start+7).forEach((name,i)=>{
         const active=start+i===cursor
-        r.text(`${active?'▶':'　'}${name}`,100,68+i*14,8,active?COLORS.cyan:'#ddd0ad')
+        r.text(`${active?'▶':'　'}${name}`,83,68+i*14,8,active?COLORS.cyan:'#ddd0ad')
+        const recorded=this.runtime.recordedMoves.find((move)=>move.officerName===name)
+        if(recorded)r.text(`${recorded.target.x},${recorded.target.y}`,238,68+i*14,6.5,'#a99d82','right')
       })
       r.text('C 指定位置　B 返回命令',160,173,6,'#a99d82','center')
     }
