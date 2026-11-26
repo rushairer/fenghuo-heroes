@@ -19,3 +19,22 @@ export function autoDuelIntent(elapsedMs, distance) {
   if (phase === 4) return Object.freeze({ move:0, guard:false, attack:'low' })
   return Object.freeze({ move:0, guard:false, attack:'middle' })
 }
+
+// Original play material confirms horizontal scrolling, not the arena width
+// or camera rule. Keep these preview values isolated from original statistics.
+export const DUEL_VIEWPORT = Object.freeze({
+  width:320,
+  worldWidth:640,
+  edgePadding:28,
+  evidence:'horizontal-scroll-confirmed; geometry-and-camera-provisional',
+})
+
+export function duelCameraX(playerX,enemyX){
+  return Math.max(0,Math.min(DUEL_VIEWPORT.worldWidth-DUEL_VIEWPORT.width,
+    (playerX+enemyX)/2-DUEL_VIEWPORT.width/2))
+}
+
+export function duelStartingPositions(){
+  const center=DUEL_VIEWPORT.worldWidth/2
+  return Object.freeze({playerX:center-82,enemyX:center+82})
+}

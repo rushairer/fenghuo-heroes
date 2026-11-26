@@ -622,7 +622,7 @@ export function drawDuelArena(r,{
   c.fillStyle='#4e3b31'
   c.fillRect((x+18)*S,(y+46)*S,(width-36)*S,50*S)
   c.fillStyle='#2d221d'
-  c.fillRect((x+132)*S,(y+55)*S,56*S,41*S)
+  c.fillRect((x+width/2-28)*S,(y+55)*S,56*S,41*S)
 
   for(const px of duelArenaPosts(width-40,20)){
     const worldX=x+20+px
@@ -727,10 +727,10 @@ export function drawDuelArena(r,{
   // Central gate depth.
   c.fillStyle='#1f1714'
   c.beginPath()
-  c.moveTo((x+138)*S,(y+96)*S)
-  c.lineTo((x+138)*S,(y+67)*S)
-  c.quadraticCurveTo((x+160)*S,(y+49)*S,(x+182)*S,(y+67)*S)
-  c.lineTo((x+182)*S,(y+96)*S)
+  c.moveTo((x+width/2-22)*S,(y+96)*S)
+  c.lineTo((x+width/2-22)*S,(y+67)*S)
+  c.quadraticCurveTo((x+width/2)*S,(y+49)*S,(x+width/2+22)*S,(y+67)*S)
+  c.lineTo((x+width/2+22)*S,(y+96)*S)
   c.closePath()
   c.fill()
 

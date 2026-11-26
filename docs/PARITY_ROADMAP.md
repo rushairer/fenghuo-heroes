@@ -189,3 +189,9 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 - [x] Atomic standalone march stepping, including storage-failure rollback of all army movement and ration fields.
 - [x] Reject new field/siege encounters outside the march phase and preserve uninitialized army state on rejected entry.
 - [ ] Calibrate actual battle effects and original movement timing from direct target-edition evidence.
+
+### Duel horizontal movement
+
+- [x] Implement a scrolling duel arena with world-space fighters and fixed HUD.
+- [ ] Measure original arena width, camera behavior and weapon-dependent movement.
+- [ ] Integrate duels into the field battle lifecycle only with source-backed consequences.

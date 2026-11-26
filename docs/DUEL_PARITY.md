@@ -35,3 +35,15 @@ Still provisional:
 Those values must not be described as original-game values until measured from real gameplay or supported by the manual.
 
 The previous generic `GameStore.resolveConflict()` path used arbitrary troop multipliers and is retired. A future duel may affect a larger field battle only after the original consequence rules are evidence-backed.
+
+## Horizontal arena scrolling
+
+The duel preview now uses persistent world-space fighter positions and a
+bounded horizontal camera. Both fighters, the arena, spacing indicators,
+weapon contact and hit sparks share the same screen projection; the HUD
+remains fixed. Initial fighter screen positions are unchanged. Manual and
+automatic movement use the extended world bounds. The 640-wide world and
+midpoint camera are explicitly provisional engineering geometry, not
+measured original values; no damage, reach, weapon or strategic outcome
+formula has changed. The known horizontal-scrolling behavior is now
+interactive rather than a fixed one-screen arena. QA: `?qa=duel-manual`.

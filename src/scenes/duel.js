@@ -3,7 +3,7 @@ import { drawDuelWeaponContact } from '../game/duel-contact-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
 import { drawDuelSpacingCue } from '../game/duel-spacing-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
-import { DUEL_COMMANDS, DUEL_MODES, autoDuelIntent, cycleDuelMode } from '../game/duel-parity.js'
+import { DUEL_COMMANDS, DUEL_MODES, DUEL_VIEWPORT, autoDuelIntent, cycleDuelMode, duelCameraX, duelStartingPositions } from '../game/duel-parity.js'
 import { mdButton } from '../game/input.js'
 
 export class DuelScene{
@@ -11,7 +11,8 @@ export class DuelScene{
     this.app=app
     this.c=app.store.pendingConflict
     if(!this.c){app.go('strategy');return}
-    this.px=78;this.ex=242;this.php=100;this.ehp=100
+    const start=duelStartingPositions()
+    this.px=start.playerX;this.ex=start.enemyX;this.php=100;this.ehp=100
     this.attackCd=0;this.enemyCd=0;this.guard=false
     this.result=null;this.timer=0;this.commandOpen=false;this.commandIndex=0
     this.message='';this.enemyRage=0;this.hitFlash=0;this.hitSide=null
@@ -64,7 +65,7 @@ export class DuelScene{
   }
 
   updateManualPlayer(dt,input){
-    if(input.isDown('ArrowLeft'))this.px=Math.max(28,this.px-.06*dt)
+    if(input.isDown('ArrowLeft'))this.px=Math.max(DUEL_VIEWPORT.edgePadding,this.px-.06*dt)
     if(input.isDown('ArrowRight'))this.px=Math.min(this.ex-22,this.px+.06*dt)
     this.guard=input.isDown('c')||input.isDown('C')
     let key=input.consume()
@@ -89,7 +90,7 @@ export class DuelScene{
     const intent=autoDuelIntent(this.autoElapsed,distance)
     this.guard=intent.guard
     if(intent.move>0)this.px=Math.min(this.ex-22,this.px+.045*dt)
-    else if(intent.move<0)this.px=Math.max(28,this.px-.04*dt)
+    else if(intent.move<0)this.px=Math.max(DUEL_VIEWPORT.edgePadding,this.px-.04*dt)
     if(intent.attack&&this.attackCd<=0)this.attack(intent.attack,false)
   }
 
@@ -97,7 +98,7 @@ export class DuelScene{
     const d=this.ex-this.px,rage=this.enemyRage>0?1.65:1
     if(d>40)this.ex-=.024*rage*dt
     else if(d<27)this.ex+=.034*dt
-    this.ex=Math.max(this.px+22,Math.min(292,this.ex))
+    this.ex=Math.max(this.px+22,Math.min(DUEL_VIEWPORT.worldWidth-DUEL_VIEWPORT.edgePadding,this.ex))
     if(d<43&&this.enemyCd<=0){
       this.enemyCd=this.enemyRage>0?430:720
       const dmg=this.guard?2:this.enemyRage>0?12:8
@@ -139,22 +140,24 @@ export class DuelScene{
     const r=this.app.r,c=r.ctx
     const smallPanel=this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6})
     r.clear('#221510')
-    drawDuelArena(r,{x:0,y:38,width:320,height:152})
+    const cameraX=duelCameraX(this.px,this.ex)
+    const playerX=this.px-cameraX,enemyX=this.ex-cameraX
+    drawDuelArena(r,{x:-cameraX,y:38,width:DUEL_VIEWPORT.worldWidth,height:152})
     r.panel(6,5,308,31,'#050505','#7c5014',smallPanel)
     r.text(`${this.app.store.mapProfile?.cityById?.[this.c?.target]?.name??''} · 一騎討ち`,160,9,10,'#f1d477','center','top',SERIF,'700')
     r.text(`我方 ${String(this.php).padStart(3)}      敵方 ${String(this.ehp).padStart(3)}`,160,24,6.5,'#e8dec4','center')
     const af=FACTION_BY_ID[this.c?.attacker],df=FACTION_BY_ID[this.c?.defender]
-    drawDuelSpacingCue(r,{leftX:this.px,rightX:this.ex,y:171})
+    drawDuelSpacingCue(r,{leftX:playerX,rightX:enemyX,y:171})
     drawDuelFighter(r,{
-      x:this.px,y:160,color:af?.color??'#587cc7',flip:false,
+      x:playerX,y:160,color:af?.color??'#587cc7',flip:false,
       guard:this.guard,attacking:this.attackCd>160,
     })
     drawDuelFighter(r,{
-      x:this.ex,y:160,color:df?.color??'#b75f52',flip:true,
+      x:enemyX,y:160,color:df?.color??'#b75f52',flip:true,
       guard:false,attacking:this.enemyCd>500,
     })
     drawDuelMotionCue(r,{
-      x:this.px,
+      x:playerX,
       y:160,
       flip:false,
       attacking:this.attackCd>160,
@@ -162,7 +165,7 @@ export class DuelScene{
       color:af?.color??'#f0d28a',
     })
     drawDuelMotionCue(r,{
-      x:this.ex,
+      x:enemyX,
       y:160,
       flip:true,
       attacking:this.enemyCd>500,
@@ -170,8 +173,8 @@ export class DuelScene{
       color:df?.color??'#f0d28a',
     })
     drawDuelWeaponContact(r,{
-      leftX:this.px,
-      rightX:this.ex,
+      leftX:playerX,
+      rightX:enemyX,
       y:141,
       playerAttacking:this.attackCd>160,
       enemyAttacking:this.enemyCd>500,
@@ -179,7 +182,7 @@ export class DuelScene{
     if(this.hitFlash>0){c.save();c.globalAlpha=Math.min(.35,this.hitFlash/300);c.fillStyle='#fff2bf';c.fillRect(0,0,320*r.S,224*r.S);c.restore()}
     if(this.hitFlash>0&&this.hitSide){
       drawDuelHitSpark(r,{
-        x:this.hitSide==='player'?this.px:this.ex,
+        x:this.hitSide==='player'?this.px:enemyX,
         y:126,
         intensity:Math.min(1,this.hitFlash/120),
         color:this.hitSide==='player'?'#ffe2a6':'#fff0bd',
