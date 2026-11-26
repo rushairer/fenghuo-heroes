@@ -216,3 +216,10 @@ matches retain stable array order. The production map command and status
 preview use the same query. This corrects the existing browser interaction;
 it does not establish the original game's cursor radius or stack-selection
 rules, or change march movement/attack distances.
+
+## Production route projection and officer-selection consistency
+
+- The production route-prompt scene reads the same `MARCH_RUNTIME_PROJECTION.routeStepWorld` value as the domain route validator. Route editing and command validation therefore cannot drift through separate hard-coded grid sizes.
+- The officer picker refreshes the live eligible roster before handling each input, removes selections that became unavailable, and clamps its cursor to a valid row.
+- March composition confirmation and final route submission revalidate the selected officers. If all selected officers have become unavailable, route submission is rejected before the army command is queued.
+- These are consistency safeguards only. They do not change the original game's uncalibrated route size, timing, officer placement or dispatch rules.
