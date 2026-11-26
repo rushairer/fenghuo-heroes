@@ -62,6 +62,18 @@ export class StrategyScene extends MarchStrategyScene {
     return Math.max(1, this.selectedOfficerNames.length)
   }
 
+  reconcileMarchOfficers(available) {
+    const allowed=new Set(available)
+    this.selectedOfficerNames=this.selectedOfficerNames.filter((name)=>allowed.has(name))
+    this.officerCursor=available.length
+      ?Math.max(0,Math.min(this.officerCursor,available.length-1))
+      :0
+    const city=this.app.store.state.cities[this.marchFrom]
+    const count=this.officerCount()
+    this.marchFoodDays=Math.min(this.marchFoodDays,maxFoodDaysForStock(this.marchTroops,count,city?.food??0))
+    this.marchFood=foodForDays(this.marchTroops,count,this.marchFoodDays)
+  }
+
   beginMarchCompose(cityId) {
     const city = this.app.store.state.cities[cityId]
     if(!city||!Number.isSafeInteger(city.troops)||city.troops<200){
@@ -125,6 +137,7 @@ export class StrategyScene extends MarchStrategyScene {
       return
     }
     if ((b === 'C' || b === 'A' || b === 'START') && this.composeFocus === 4) {
+      this.reconcileMarchOfficers(this.availableOfficerNames())
       if(!this.selectedOfficerNames.length){
         this.message='沒有可出陣的武將。已隨其他部隊出陣的武將不能重複編入。'
         this.view='message'
@@ -141,6 +154,7 @@ export class StrategyScene extends MarchStrategyScene {
     const b = mdButton(key)
     if (b === 'HD') return this.app.toggleHd()
     const available = this.availableOfficerNames()
+    this.reconcileMarchOfficers(available)
     if (!available.length) {
       this.view = 'march-compose'
       return
@@ -233,6 +247,8 @@ export class StrategyScene extends MarchStrategyScene {
       if (this.marchArmyId) {
         rerouteArmy(this.app.store, this.marchArmyId, this.marchRoute)
       } else {
+        this.reconcileMarchOfficers(this.availableOfficerNames())
+        if(!this.selectedOfficerNames.length)throw new Error('沒有可出陣的武將。')
         queueMarch(this.app.store, {
           from:this.marchFrom,
           route:this.marchRoute,
