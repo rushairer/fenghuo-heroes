@@ -182,7 +182,7 @@ export class DuelScene{
     if(this.hitFlash>0){c.save();c.globalAlpha=Math.min(.35,this.hitFlash/300);c.fillStyle='#fff2bf';c.fillRect(0,0,320*r.S,224*r.S);c.restore()}
     if(this.hitFlash>0&&this.hitSide){
       drawDuelHitSpark(r,{
-        x:this.hitSide==='player'?this.px:enemyX,
+        x:this.hitSide==='player'?playerX:enemyX,
         y:126,
         intensity:Math.min(1,this.hitFlash/120),
         color:this.hitSide==='player'?'#ffe2a6':'#fff0bd',
