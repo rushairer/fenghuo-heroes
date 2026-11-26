@@ -248,3 +248,8 @@ HK manual printed pp. 28–29 confirms A opens the comparative strength window; 
 ## Siege daily named-unit command preview
 
 The HK manual pp. 28–29 rule limits each friendly unit to one command per day, not one command across the whole army. Active siege C now opens a provisional named-attacker unit picker; C records that unit's attack intent, while B closes the picker without aborting the siege. An already commanded unit cannot accept another attack on the same day; other units remain eligible. The day and used officer names survive save/Continue. Legacy aggregate attack counts are retained but cannot be attributed to a unit retroactively. The explicit `結束本日・工程推進` row advances the preview day and clears only that day's usage; it is not a verified original clock or battle simulation. No city defense, resources, troops or combat outcome are changed. Actual spatial unit identity, command families, siege-day duration and intermission remain uncalibrated.
+
+
+## Siege headquarters logistics projection
+
+HK manual pp. 28–29 distinguishes the stationary headquarters after placement from the mobile commander and assigns funds/provisions to the headquarters. Formation review and active siege strength inspection now show the matching attacking army's actual gold and food, explicitly as a read-only ledger projection. Unknown or invalid balances remain unknown; zero is preserved. The commander is a separate role, not a camp position. No duplicate resource ledger, tactical camp entity, transfer, placement, movement or combat consequence is created. Save/Continue re-reads the same army ledger; daily command intents do not consume these resources. Exact deployment triangles and headquarters placement still require direct Chinese-edition captures.

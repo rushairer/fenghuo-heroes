@@ -11,6 +11,7 @@ import {
   setSiegePhase,
   setSiegeSpeed,
   siegeRuntimeSnapshot,
+  siegeHeadquartersProjection,
 } from '../src/game/siege-runtime.js'
 
 function conflict(){
@@ -113,4 +114,37 @@ test('legacy siege counters do not invent a unit assignment; saved unit usage is
   value.runtime.usedOfficerNames=['曹操','曹操','劉備',null]
   assert.deepEqual(ensureSiegeRuntime(value).usedOfficerNames,['曹操'])
   assert.throws(()=>queueSiegeAttackIntent(value,'曹操'),/本日已接受/)
+})
+
+test('headquarters reads only matching attacking army resources; commander and camp roles stay separate',()=>{
+  const value={...conflict(),armyId:'a',attacker:'cao',attackerOfficers:['曹操','曹仁'],
+    runtime:{phase:'siege',commanderPreview:{officerName:'曹仁'}}}
+  const store={state:{armies:[
+    {id:'b',faction:'cao',gold:999,food:999},
+    {id:'a',faction:'cao',gold:0,food:80},
+  ]}}
+  const before=structuredClone({store,value})
+  assert.deepEqual(siegeHeadquartersProjection(store,value),{
+    commanderName:'曹仁',commanderMayMove:true,fixedAfterPlacement:true,
+    position:null,deployed:false,resourceSource:'attacker-army-ledger',gold:0,food:80,
+  })
+  assert.deepEqual({store,value},before)
+  store.state.armies[1].food=65
+  assert.equal(siegeHeadquartersProjection(store,value).food,65)
+})
+
+test('headquarters never fabricates resources, position or a commander from incomplete data',()=>{
+  const value={...conflict(),armyId:'a',attacker:'cao',attackerOfficers:['曹操'],
+    runtime:{commanderPreview:{officerName:'劉備'},headquarters:{x:1,y:2}}}
+  const store={state:{armies:[{id:'a',faction:'liu',gold:100,food:100}]}}
+  assert.deepEqual(siegeHeadquartersProjection(store,value),{
+    commanderName:null,commanderMayMove:true,fixedAfterPlacement:true,
+    position:null,deployed:false,resourceSource:'unavailable',gold:null,food:null,
+  })
+  store.state.armies[0].faction='cao'
+  store.state.armies[0].food=-1
+  store.state.armies[0].gold=0.5
+  assert.equal(siegeHeadquartersProjection(store,value).gold,null)
+  assert.equal(siegeHeadquartersProjection(store,value).food,null)
+  assert.equal(siegeHeadquartersProjection(store,{kind:'field'}),null)
 })

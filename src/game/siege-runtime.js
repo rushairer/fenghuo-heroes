@@ -137,3 +137,26 @@ export function siegeRuntimeSnapshot(conflict){
     lastAttackIntent:runtime.lastAttackIntent?Object.freeze({...runtime.lastAttackIntent}):null,
   })
 }
+
+// Manual-confirmed headquarters role, projected from the actual besieging
+// army. The army ledger remains the sole resource owner until a calibrated
+// tactical transfer exists. No position or deployed entity is synthesized.
+export function siegeHeadquartersProjection(store,conflict){
+  if(conflict?.kind!=='siege')return null
+  const army=Array.isArray(store?.state?.armies)
+    ?store.state.armies.find(item=>item.id===conflict.armyId&&item.faction===conflict.attacker)
+    :null
+  const amount=value=>Number.isSafeInteger(value)&&value>=0?value:null
+  const candidate=conflict.runtime?.commanderPreview?.officerName
+  const commanderName=formationOfficerNames(conflict).includes(candidate)?candidate:null
+  return Object.freeze({
+    commanderName,
+    commanderMayMove:true,
+    fixedAfterPlacement:true,
+    position:null,
+    deployed:false,
+    resourceSource:army?'attacker-army-ledger':'unavailable',
+    gold:amount(army?.gold),
+    food:amount(army?.food),
+  })
+}

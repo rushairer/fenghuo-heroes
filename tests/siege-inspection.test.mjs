@@ -68,3 +68,17 @@ test('empty roster consumes confirmation without starting an attack',()=>{
   assert.equal(scene.runtime.attackOrders,0)
   assert.equal(saves(),0)
 })
+
+test('strength inspection displays real army ledger amounts and leaves them untouched',()=>{
+  const {scene,conflict,press,saves}=harness({armyId:'a',attacker:'cao'})
+  scene.app.store.state={armies:[{id:'a',faction:'cao',gold:0,food:125}]}
+  const labels=[]
+  scene.app.r={panel(){},text(label){labels.push(label)}}
+  const before=structuredClone({state:scene.app.store.state,conflict})
+  press('z')
+  scene.drawInspection()
+  assert.ok(labels.some(label=>label.includes('軍資金 0')&&label.includes('兵糧 125')))
+  press('x')
+  assert.equal(saves(),0)
+  assert.deepEqual({state:scene.app.store.state,conflict},before)
+})

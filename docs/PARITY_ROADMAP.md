@@ -239,3 +239,9 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 - [x] Enforce one recorded attack intent per named attacker per preview day, persist the usage ledger, and permit different units to receive orders on the same day.
 - [x] Explicit engineering day advance and rollback on failed storage; legacy anonymous attack counts are not retroactively assigned.
 - [ ] Calibrate physical unit identity/selection, other order types, day timing, movement and combat effects. No actual siege resolution or original clock is claimed.
+
+
+### Siege headquarters logistics projection
+
+- [x] Read actual attacking army funds and provisions in preparation/strength inspection, with separate commander role and no invented camp position or duplicate resource ownership.
+- [ ] Capture map-specific deployment triangles, headquarters placement, commander movement and combat-driven resource consumption; implement physical deployment and defeat only when verified.

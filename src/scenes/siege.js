@@ -13,7 +13,7 @@ import {
 import { cancelSiegeFromArmy } from '../game/march.js'
 import { OFFICER_STATUS_FIELDS } from '../game/officer-roster.js'
 import { siegeInspectionRows, siegeStrengthRows } from '../game/siege-inspection.js'
-import { advanceSiegeOrderDay, confirmSiegeCommander, cycleSiegeCommander, ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed, siegeCommanderCandidate } from '../game/siege-runtime.js'
+import { advanceSiegeOrderDay, confirmSiegeCommander, cycleSiegeCommander, ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed, siegeCommanderCandidate, siegeHeadquartersProjection } from '../game/siege-runtime.js'
 
 export class SiegeScene{
   constructor(app){
@@ -237,6 +237,9 @@ export class SiegeScene{
         r.text('兵力 '+(row.troops??'—')+'　攻擊力 '+(row.attack??'—'),32,y+14,8,'#ddd0ad')
         r.text('士氣 '+(row.morale??'—'),32,y+28,8,'#ddd0ad')
       })
+      const hq=siegeHeadquartersProjection(this.app.store,this.conflict)
+      r.text('大本營・軍資金 '+(hq.gold??'—')+'　兵糧 '+(hq.food??'—'),32,151,8,'#ddd0ad')
+      r.text('主帥 '+(hq.commanderName??'—')+'　位置未校準',32,164,6.5,'#a99d82')
       r.text('B 返回',160,181,7,'#a99d82','center')
       return
     }
@@ -369,7 +372,9 @@ export class SiegeScene{
         const totals=draft.rows.map((row)=>`${row.officerName} ${formationRowSquads(row)}`)
         r.text('主帥：'+(siegeCommanderCandidate(this.conflict)??'—'),160,86,8,COLORS.cyan,'center')
         r.wrapText(totals.join('　')||'無具名武將，不建立假小隊',160,102,220,10,7,'#e5d4ac','center')
-        r.text('未進行實際分兵與損耗',160,140,6.5,'#a99d82','center')
+        const hq=siegeHeadquartersProjection(this.app.store,this.conflict)
+        r.text('軍資金 '+(hq.gold??'—')+'　兵糧 '+(hq.food??'—')+'（軍隊帳冊）',160,128,6.5,'#a99d82','center')
+        r.text('大本營位置未校準；未分兵或轉移資源',160,140,6.5,'#a99d82','center')
         r.text('A 換主帥　C 確認　B 返回',160,179,7,COLORS.cyan,'center')
       }else{
         const row=draft?.rows?.[draft.officerIndex??0]

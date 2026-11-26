@@ -22,6 +22,7 @@ import {
   queueSiegeAttackIntent,
   setSiegePhase,
   setSiegeSpeed,
+  siegeHeadquartersProjection,
 } from '../src/game/siege-runtime.js'
 import { MARCH_RUNTIME_PROJECTION } from '../src/game/march-runtime-projection.js'
 import { cityWorldPoint } from '../src/game/world.js'
@@ -105,6 +106,11 @@ test('siege orders and defense snapshot survive save/load without imaginary casu
   advanceMarchArmies(store,route.length)
   const targetState=structuredClone(store.state.cities.xinye)
   const conflict=beginSiegeFromArmy(store,army.id,'xinye')
+  const beforeArmy=structuredClone(army)
+  const beforeHeadquarters=siegeHeadquartersProjection(store,conflict)
+  assert.equal(beforeHeadquarters.food,army.food)
+  assert.equal(beforeHeadquarters.gold,army.gold)
+  assert.equal(beforeHeadquarters.position,null)
   setSiegeSpeed(conflict,'fast')
   setSiegePhase(conflict,'siege')
   queueSiegeAttackIntent(conflict,'曹操')
@@ -125,6 +131,8 @@ test('siege orders and defense snapshot survive save/load without imaginary casu
   assert.equal(runtime.lastAttackIntent.numericDelta,null)
   assert.equal(runtime.defenseRateSnapshot,targetState.defense)
   assert.deepEqual(restored.state.cities.xinye,targetState)
+  assert.deepEqual(siegeHeadquartersProjection(restored,restored.pendingConflict),beforeHeadquarters)
+  assert.deepEqual(restored.state.armies.find(a=>a.id===army.id),beforeArmy)
 
   assert.equal(cancelSiegeFromArmy(restored),true)
   const again=new GameStore(storage)

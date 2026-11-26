@@ -60,3 +60,6 @@ inspection tools, not gameplay evidence.
 Active siege inspection: open `?qa=siege-formation-review`, confirm with C, dismiss the preview message with C, then use A for strength comparison or START for the participant roster. C opens a named officer and B returns. Verify no attack count change while inspecting and no retreat confirmation when closing the window. This is a provisional roster, not original spatial targeting.
 
 Active siege daily command preview: after confirming `?qa=siege-formation-review` and dismissing its message, press C to open the named-unit picker. C records an attack; dismiss the message and reopen C. The used unit is marked 已命令 and another confirmation is rejected without increasing the count. Select a different named unit where present. Select 結束本日・工程推進 to clear the daily usage and increment the preview day. B closes the picker without retreat; A/START on the root remain read-only. All of these are unapplied intents, not original day timing or physical unit deployment.
+
+
+Headquarters ledger inspection: in `?qa=siege-formation-review`, verify the army funds/provisions line and the uncalibrated camp position notice. Confirm and dismiss the message, then A opens strength inspection with the same balances. B closes it without spending funds or recording an attack. The camp is not a placed tactical unit.
