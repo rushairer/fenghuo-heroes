@@ -44,6 +44,6 @@ test('march runtime consumes projection values for execution and enemy-city prox
 
 test('production route prompt scene consumes the shared route-step projection',()=>{
   const source=readFileSync('src/scenes/strategy-parity.js','utf8')
-  assert.match(source,/const ROUTE_STEP = MARCH_RUNTIME_PROJECTION\\.routeStepWorld/)
+  assert.match(source,/const ROUTE_STEP = MARCH_RUNTIME_PROJECTION\.routeStepWorld/)
   assert.doesNotMatch(source,/const ROUTE_STEP = 8/)
 })
