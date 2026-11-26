@@ -254,3 +254,15 @@ They do NOT authorize production formula constants, stat caps, monthly
 income, rebellion probability or development/loyalty changes. A
 Chinese-ROM frame/RAM sweep must confirm exact limits, timing and
 effect formulas under recorded scenario and difficulty conditions.
+
+### Chinese-language screenshot references — direct UI evidence, scenario unknown
+
+The 2010-08-01 article https://fung2008.pixnet.net/blog/posts/3031736574 contains original-game Chinese-language screens. Directly inspected frames:
+
+- `三國誌列博_002.JPG` and `_003.JPG`: officer status (see `OFFICER_STATUS_PARITY_V1.md`). Valid for visible labels and panel anatomy; progressed campaign statistics are not opening data.
+- `_004.JPG`: https://pimg.1px.tw/fung2008/0d86819ed9f925aa58cf1d43c5cf03ef.jpg — march menu showing 移動 / 分散 and army summary. A single frame does not prove every command availability or exit rule.
+- `_012.JPG`: https://pimg.1px.tw/fung2008/d40a651053f29605272885e593605b78.jpg — final 統一度 display. Does not establish score formula or all victory conditions.
+
+The article's prose is a community lead, not evidence of exact combat, alliance or action eligibility formulas. No screenshot assets are copied into the repository.
+
+For the existing Chinese longplay BV1i4421F7cq, the published chapter list provides focused capture leads: P1 (189, 12:35) opening/economy; P4 (192, 25:34) defense battle; P18 (199 first half, 34:57) transport; P19 (199 second half, 35:30) succession. These are chapter descriptions, not verified gameplay frames or exact timing measurements.

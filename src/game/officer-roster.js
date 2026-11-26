@@ -1,14 +1,14 @@
 export const OFFICER_STATUS_FIELDS = Object.freeze([
-  Object.freeze({ id:'level', label:'等級' }),
-  Object.freeze({ id:'rank', label:'官位' }),
-  Object.freeze({ id:'civilExperience', label:'文官值' }),
-  Object.freeze({ id:'militaryExperience', label:'武官值' }),
+  Object.freeze({ id:'level', label:'水平' }),
+  Object.freeze({ id:'rank', label:'官職' }),
+  Object.freeze({ id:'civilExperience', label:'文官級' }),
+  Object.freeze({ id:'militaryExperience', label:'武官級' }),
   Object.freeze({ id:'stamina', label:'體力' }),
   Object.freeze({ id:'force', label:'武力' }),
   Object.freeze({ id:'intelligence', label:'知力' }),
-  Object.freeze({ id:'virtue', label:'德' }),
+  Object.freeze({ id:'virtue', label:'德育' }),
   Object.freeze({ id:'loyalty', label:'忠誠度' }),
-  Object.freeze({ id:'command', label:'統率力' }),
+  Object.freeze({ id:'command', label:'率兵力' }),
   Object.freeze({ id:'mobility', label:'機動力' }),
   Object.freeze({ id:'troops', label:'兵力' }),
   Object.freeze({ id:'morale', label:'士氣' }),
@@ -82,8 +82,8 @@ export function openingOfficerListForCity(store, cityId) {
   })
 }
 
-// The Japanese retail manual documents the complete status-field vocabulary and
-// ordering. Chinese-ROM per-officer values have not yet been transcribed, so the
+// The Japanese manual documents the status semantics; direct Chinese-release
+// screenshots establish the displayed labels. Chinese-ROM per-officer values have not yet been transcribed, so the
 // projection exposes the verified schema while deliberately leaving every value
 // empty instead of borrowing numbers from history books or another game.
 export function officerStatusProjection(row) {
@@ -93,6 +93,6 @@ export function officerStatusProjection(row) {
     name:row.name,
     role:row.role,
     ...status,
-    evidence:'name-role-only; status-schema-jp-manual',
+    evidence:'name-role-only; status-labels-zh-frame',
   })
 }

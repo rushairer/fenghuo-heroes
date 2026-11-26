@@ -20,19 +20,18 @@ confirm button on these screens.
 
 ## Confirmed status vocabulary
 
-The Japanese retail manual explicitly documents these officer-status fields, in this
-order:
+The Japanese retail manual establishes the field semantics. Chinese-release screenshots of 劉備 and 關羽 establish the displayed labels below (not a single linear reading order):
 
-1. 等級
-2. 官位
-3. 文官值
-4. 武官值
+1. 水平
+2. 官職
+3. 文官級
+4. 武官級
 5. 體力
 6. 武力
 7. 知力
-8. 德
+8. 德育
 9. 忠誠度
-10. 統率力
+10. 率兵力
 11. 機動力
 12. 兵力
 13. 士氣
@@ -60,10 +59,7 @@ Therefore:
 Seven 189 selectable-ruler HD portrait candidates already exist in the repository.
 They remain `planned`.
 
-The manual confirms the officer-status screen exists, but the project does not yet have
-sufficient visual evidence for the exact portrait placement, crop, and dimensions on
-the Chinese ROM status screen. Do not enable the portraits merely because assets are
-available.
+Direct Chinese-release screenshots now establish the upper-left portrait slot and the light three-column status layout. The scene reserves that slot without enabling unreviewed portrait art; exact native-frame crop and HD portrait matching remain open. The visible second stamina and attack numeric slots and multiple weapon lines are reserved without inventing their values or semantics.
 
 ## Non-goals of this slice
 
@@ -71,7 +67,15 @@ This slice does not claim:
 
 - per-city officer assignment is verified;
 - officer status values are verified;
-- portrait geometry is verified;
+- exact native-frame portrait geometry is verified;
 - current map geometry is original-game-accurate.
 
 It only restores the evidence-backed field vocabulary and interaction structure.
+
+## Direct Chinese-release screenshot references (2010-08-01)
+
+- Article: https://fung2008.pixnet.net/blog/posts/3031736574
+- 劉備 frame (`三國誌列博_002.JPG`): https://pimg.1px.tw/fung2008/48e8bf3fa604ec35ae90be5aea02f039.jpg
+- 關羽 frame (`三國誌列博_003.JPG`): https://pimg.1px.tw/fung2008/dbf73972b31d017d3c3b8582f7598f98.jpg
+
+These are direct displayed Chinese-language UI references, not opening-state captures. The level-18 characters are progressed campaign examples; their stats MUST NOT be used as 189 starting values. Frame geometry is projected approximately from the published 640px-wide images. The repository retains only URLs, independently implemented geometry and visible field labels, not the images.

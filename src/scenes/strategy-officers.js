@@ -236,29 +236,52 @@ export class StrategyScene extends InfoStrategyScene {
   drawOfficerStatus() {
     const r=this.app.r
     const row=this.officerStatusRow
-    drawStrategyPanel(r,34,26,252,166,'#020202','#b07118')
+    // Chinese-release screenshots (劉備 and 關羽): full-screen light panel,
+    // upper portrait/header and three independently ruled lower columns.
+    // Coordinates are an approximate 320x224 projection of the published
+    // 640px-wide captures, not a calibrated native-frame crop.
+    r.clear('#000')
+    r.fillRect(8,4,304,212,'#d7d7d7')
+    r.strokeRect(8,4,304,212,'#20c9e8',1)
+    r.strokeRect(10,6,300,208,'#fff',1)
     if(!row){
-      r.text('武將資料尚未建立',160,89,9,'#d9cba8','center')
-      r.text('B 返回',160,178,6,'#887f6d','center')
+      r.text('武將資料尚未建立',160,96,10,'#111','center')
       return
     }
-    r.text(row.name,160,36,15,'#efd27d','center','top',SERIF,'700')
-    r.text(row.role,160,56,7,row.role==='君主'?COLORS.cyan:'#d9cba8','center')
-    r.line(47,68,273,68,'#72501b',.7)
-
-    const columns=[OFFICER_STATUS_FIELDS.slice(0,8),OFFICER_STATUS_FIELDS.slice(8)]
-    columns.forEach((fields,col)=>{
-      const labelX=49+col*121
-      const valueX=151+col*121
-      fields.forEach((field,index)=>{
-        const y=75+index*10.5
-        const value=row[field.id]
-        r.text(field.label,labelX,y,6.1,'#9e947e')
-        r.text(value??'—',valueX,y,6.5,value==null?'#8f8674':'#eee2c3','right')
-      })
-    })
-
-    r.text('原版欄位已核對 · 中文版數值未校準',160,163,5.2,'#8c8474','center')
-    r.text('B 返回武將一覽',160,178,6,'#887f6d','center')
+    const ink='#111'
+    const label=(id)=>OFFICER_STATUS_FIELDS.find(field=>field.id===id).label
+    const field=(id,x,y,valueX,value=row[id])=>{
+      r.text(label(id),x,y,11,ink)
+      r.text(value??'—',valueX,y,11,ink,'right')
+    }
+    // Leave the portrait slot empty until a matching HD redraw is accepted.
+    r.fillRect(16,12,48,64,'#b9b9b9')
+    r.strokeRect(16,12,48,64,'#fff',1)
+    r.text(row.name,72,12,14,ink)
+    field('level',144,12,222)
+    field('rank',144,36,302,row.role==='君主'?'君主':row.rank)
+    field('civilExperience',136,60,219)
+    field('militaryExperience',224,60,303)
+    r.line(11,94,309,94,ink,1)
+    r.line(108,94,108,214,ink,1)
+    r.line(204,94,204,214,ink,1)
+    field('stamina',15,98,103)
+    // The capture shows two numeric slots for stamina and attack, and a
+    // multi-line weapon list. Secondary values have no calibrated semantics.
+    r.line(71,116,103,116,ink,.5)
+    r.text('—',103,120,11,ink,'right')
+    field('force',15,144,103)
+    field('intelligence',15,168,103)
+    field('virtue',15,192,103)
+    for(const [i,id] of ['loyalty','command','mobility','troops','morale'].entries()){
+      field(id,112,98+i*23.5,200)
+    }
+    field('attack',208,98,304)
+    r.text('—',304,122,11,ink,'right')
+    field('weapon',208,146,304)
+    r.text('—',304,170,11,ink,'right')
+    r.text('—',304,194,11,ink,'right')
+    // Non-original diagnostics remain outside the measured content area.
+    r.text('數值／畫像未校準　B 返回',160,218,4.5,'#d7d7d7','center')
   }
 }

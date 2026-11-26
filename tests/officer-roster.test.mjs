@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { OFFICER_STATUS_FIELDS, openingOfficerListForCity, openingOfficerRows, officerStatusProjection } from '../src/game/officer-roster.js'
 import { GameStore } from '../src/game/store.js'
+import { StrategyScene } from '../src/scenes/strategy-officers.js'
 
 class MemoryStorage{constructor(){this.m=new Map()}getItem(k){return this.m.get(k)??null}setItem(k,v){this.m.set(k,v)}removeItem(k){this.m.delete(k)}}
 
@@ -46,20 +47,20 @@ test('country-status drilldown uses opening faction roster without pretending ci
   assert.deepEqual(projection.rows.map((row)=>row.name),['劉備','關羽','張飛'])
 })
 
-test('manual-backed officer status schema preserves all fifteen original fields',()=>{
+test('Chinese-release status screenshot preserves all fifteen named fields',()=>{
   assert.deepEqual(
     OFFICER_STATUS_FIELDS.map(({id,label})=>[id,label]),
     [
-      ['level','等級'],
-      ['rank','官位'],
-      ['civilExperience','文官值'],
-      ['militaryExperience','武官值'],
+      ['level','水平'],
+      ['rank','官職'],
+      ['civilExperience','文官級'],
+      ['militaryExperience','武官級'],
       ['stamina','體力'],
       ['force','武力'],
       ['intelligence','知力'],
-      ['virtue','德'],
+      ['virtue','德育'],
       ['loyalty','忠誠度'],
-      ['command','統率力'],
+      ['command','率兵力'],
       ['mobility','機動力'],
       ['troops','兵力'],
       ['morale','士氣'],
@@ -88,7 +89,7 @@ test('officer status leaves unverified Chinese-ROM character values empty',()=>{
     morale:null,
     attack:null,
     weapon:null,
-    evidence:'name-role-only; status-schema-jp-manual',
+    evidence:'name-role-only; status-labels-zh-frame',
   })
 })
 
@@ -154,4 +155,15 @@ test('source-backed officer roles do not depend on an opening-roster name heuris
     {name:'甲',role:'君主'},
     {name:'乙',role:'武將'},
   ])
+})
+
+test('officer status draws the Chinese three-column screen without fabricated values',()=>{
+  const texts=[],lines=[]
+  const r={clear(){},fillRect(){},strokeRect(){},line(...args){lines.push(args)},text(...args){texts.push(args)}}
+  StrategyScene.prototype.drawOfficerStatus.call({app:{r},officerStatusRow:officerStatusProjection({name:'劉備',role:'君主'})})
+  for(const label of ['水平','官職','文官級','武官級','德育','率兵力'])assert.ok(texts.some(t=>t[0]===label),label)
+  assert.ok(lines.some(l=>l[0]===108&&l[2]===108))
+  assert.ok(lines.some(l=>l[0]===204&&l[2]===204))
+  assert.ok(texts.filter(t=>t[0]==='—').length>=15)
+  assert.ok(!texts.some(t=>t[0]==='15000'))
 })
