@@ -80,9 +80,20 @@ function readArmies(store){
 }
 
 export function armyAt(store, x, y, tolerance = 10, faction = store.humanFaction) {
-  return readArmies(store).find((army) =>
-    army.faction === faction && Math.abs(army.x - x) <= tolerance && Math.abs(army.y - y) <= tolerance
-  ) ?? null
+  // Neighboring armies may share the cursor's hit region. Prefer the
+  // closest marker instead of letting array order hide an exact hit.
+  // Keep the existing square hit region and stable order for equal distances.
+  let nearest=null
+  let nearestDistance=Infinity
+  for(const army of readArmies(store)){
+    if(army.faction!==faction)continue
+    const distance=Math.max(Math.abs(army.x-x),Math.abs(army.y-y))
+    if(distance<=tolerance&&distance<nearestDistance){
+      nearest=army
+      nearestDistance=distance
+    }
+  }
+  return nearest
 }
 
 export const MARCH_COMMAND_EVIDENCE = Object.freeze({

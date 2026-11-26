@@ -418,3 +418,22 @@ test('explicit siege target is validated independently of the first nearby enemy
   assert.equal(cancelSiegeFromArmy(store),true)
   assert.equal(army.status,'waiting')
 })
+
+
+test('army cursor prefers the nearest friendly marker within overlapping hit regions',()=>{
+  const armies=[
+    {id:'first',faction:'cao',x:80,y:96},
+    {id:'second',faction:'cao',x:88,y:96},
+    {id:'enemy',faction:'liu',x:92,y:96},
+  ]
+  const store={humanFaction:'cao',state:{armies}}
+  const before=structuredClone(store.state)
+  assert.equal(armyAt(store,88,96,12)?.id,'second')
+  assert.equal(armyAt(store,80,96,12)?.id,'first')
+  assert.equal(armyAt(store,86,96,12)?.id,'second')
+  assert.equal(armyAt(store,92,96,12)?.id,'second')
+  assert.equal(armyAt(store,92,96,12,'liu')?.id,'enemy')
+  assert.equal(armyAt(store,84,96,12)?.id,'first')
+  assert.equal(armyAt(store,120,96,12),null)
+  assert.deepEqual(store.state,before)
+})

@@ -205,3 +205,14 @@ inferred.
   current single-target menu still uses the existing first-match discovery.
 - No original distance, target ordering or combat outcome is inferred from
   this engineering correction; the existing projection remains provisional.
+
+
+## Overlapping army cursor hit regions
+
+Army selection uses the closest friendly marker within the existing square
+hit region. An adjacent army at the cursor's exact position is no longer
+shadowed by a previously created army. Equal-distance and same-position
+matches retain stable array order. The production map command and status
+preview use the same query. This corrects the existing browser interaction;
+it does not establish the original game's cursor radius or stack-selection
+rules, or change march movement/attack distances.

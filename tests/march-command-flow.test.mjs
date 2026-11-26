@@ -55,3 +55,18 @@ test('supply command enters the village supply menu instead of a placeholder mes
   assert.equal(scene.view,'supply-menu')
   assert.equal(scene.supplyMenuIndex,0)
 })
+
+
+test('map confirmation opens the army actually under the cursor rather than an adjacent earlier army',()=>{
+  const scene=marchScene()
+  const store=scene.app.store
+  store.state.armies[1].x=88
+  store.state.cursor={x:88,y:96}
+  scene.stage='march'
+  scene.view='map'
+  scene.marchArmyId=null
+  scene.updateMap('C')
+  assert.equal(scene.view,'army-menu')
+  assert.equal(scene.marchArmyId,'a2')
+  assert.equal(scene.armyMenuIndex,0)
+})
