@@ -25,16 +25,19 @@ export class DuelScene{
     if(this.weaponSelect){this.updateWeaponSelect(input);return}
     if(this.modeSelect){this.updateModeSelect(input);return}
     if(this.result){this.timer+=dt;if(this.timer>950)this.app.go('siege');return}
+    // Both control modes accept the player's A command. The existing QA
+    // simulation stays stopped while the command window is open.
+    if(this.commandOpen){this.updateCommandMenu(input);return}
+    if(this.autoMode&&this.updateAutoInput(input))return
     this.attackCd=Math.max(0,this.attackCd-dt)
     this.enemyCd=Math.max(0,this.enemyCd-dt)
     this.enemyRage=Math.max(0,this.enemyRage-dt)
     this.hitFlash=Math.max(0,this.hitFlash-dt)
     if(this.hitFlash===0)this.hitSide=null
 
-    if(this.commandOpen){this.updateCommandMenu(input);return}
-
     if(this.autoMode)this.updateAutoPlayer(dt)
     else this.updateManualPlayer(dt,input)
+    if(this.commandOpen)return
 
     this.updateEnemy(dt)
     if(this.ehp<=0)this.finish(true)
@@ -81,6 +84,23 @@ export class DuelScene{
     }
   }
 
+  openCommandMenu(){
+    this.commandOpen=true
+    this.commandIndex=0
+    this.message=''
+    this.app.audio.confirm()
+  }
+
+  updateAutoInput(input){
+    const key=input.consume()
+    const b=mdButton(key)
+    if(b==='HD'){this.app.toggleHd();return false}
+    if(b==='A'){this.openCommandMenu();return true}
+    // Auto mode owns movement, attack and defence. Discard other manual
+    // input instead of letting it accumulate and replay after a menu opens.
+    return false
+  }
+
   updateCommandMenu(input){
     const key=input.consume();if(!key)return
     const b=mdButton(key)
@@ -88,7 +108,7 @@ export class DuelScene{
     if(b==='UP'){this.commandIndex=(this.commandIndex+DUEL_COMMANDS.length-1)%DUEL_COMMANDS.length;this.app.audio.move()}
     if(b==='DOWN'){this.commandIndex=(this.commandIndex+1)%DUEL_COMMANDS.length;this.app.audio.move()}
     if(b==='B'){this.commandOpen=false;this.message='';this.app.audio.cancel()}
-    if(b==='C'||b==='A')this.executeCommand()
+    if(b==='C')this.executeCommand()
   }
 
   updateManualPlayer(dt,input){
@@ -100,7 +120,7 @@ export class DuelScene{
       const b=mdButton(key)
       if(b==='HD')this.app.toggleHd()
       if(b==='A'){
-        this.commandOpen=true;this.commandIndex=0;this.message='';this.app.audio.confirm();break
+        this.openCommandMenu();break
       }
       if(b==='B'&&this.attackCd<=0){
         const stance=input.isDown('ArrowUp')?'high':input.isDown('ArrowDown')?'low':'middle'
@@ -216,7 +236,7 @@ export class DuelScene{
       })
     }
     r.fillRect(0,190,320,34,'rgba(10,8,6,.82)')
-    r.text(this.autoMode&&!this.modeSelect?'自動一騎討ち中':'← → 移動　B+↑/↓ 上下段攻擊　B 中段　C 防禦　A 命令',160,197,6.2,'#eadbb9','center')
+    r.text(this.autoMode&&!this.modeSelect?'自動一騎討ち中　A 命令':'← → 移動　B+↑/↓ 上下段攻擊　B 中段　C 防禦　A 命令',160,197,6.2,'#eadbb9','center')
     if(this.message)r.text(this.message,160,211,6.5,this.enemyRage>0?'#ff9d72':'#cfc19f','center')
     if(this.commandOpen){r.panel(108,61,104,88,'#000','#a96e16',smallPanel);r.text('命令',160,69,9,'#f0d57f','center');DUEL_COMMANDS.forEach((cmd,i)=>r.text(`${i===this.commandIndex?'▶':'　'}${cmd}`,126,88+i*14,8,i===this.commandIndex?COLORS.cyan:'#ddd0ad'))}
     if(this.weaponSelect)this.drawWeaponSelect()

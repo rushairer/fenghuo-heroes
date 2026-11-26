@@ -266,3 +266,15 @@ The 2010-08-01 article https://fung2008.pixnet.net/blog/posts/3031736574 contain
 The article's prose is a community lead, not evidence of exact combat, alliance or action eligibility formulas. No screenshot assets are copied into the repository.
 
 For the existing Chinese longplay BV1i4421F7cq, the published chapter list provides focused capture leads: P1 (189, 12:35) opening/economy; P4 (192, 25:34) defense battle; P18 (199 first half, 34:57) transport; P19 (199 second half, 35:30) succession. These are chapter descriptions, not verified gameplay frames or exact timing measurements.
+
+### HK manual indexed text: battle follow-up
+
+The indexed HK manual text for printed pp. 30–36 is available even
+though direct page-image retrieval returned HTTP 403. It independently
+corroborates destination continuity across days (pp. 30–31) and player
+commands during automatic duels (pp. 34–36). The close unit-combat
+formation selector has five choices and is available at normal battle
+speed (pp. 32–33); this is distinct from the earlier squad-count
+preparation UI. Exact formation geometry, weapon and officer values,
+and Chinese screen layouts still require legible page images or ROM
+captures. Do not use OCR associations as verified numerical records.

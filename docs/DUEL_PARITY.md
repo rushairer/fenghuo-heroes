@@ -66,3 +66,18 @@ non-QA duel cannot proceed. Existing damage, movement and strategic outcome
 behavior remains unchanged; no weapon-specific combat parameters are inferred.
 QA: `?qa=duel-weapon`, with existing `?qa=duel-mode` and `?qa=duel-manual`
 still available as direct entrypoints.
+
+## Chinese-edition confirmation: commands during automatic duels
+
+The HK Traditional Chinese manual (printed pp. 34–36, indexed text,
+https://segaretro.org/images/c/c3/Sangokushiretsuden_md_HK_manual.pdf.pdf)
+confirms that automatic control leaves command selection to the player;
+A opens the command window and C confirms the highlighted command.
+Previously the automatic update path never consumed player input, making
+the command menu inaccessible after choosing auto. Both control modes
+now use the same command menu, and auto consumes non-command input
+without applying manual movement or attacks. The existing QA simulation
+pauses while this menu is open; exact original menu timing remains
+unmeasured. The change does not calibrate the existing preview's combat
+numbers or apply any strategic outcomes. Use ?qa=duel-mode, select
+自動, and press Z (MD A) during the fight.

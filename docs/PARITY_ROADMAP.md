@@ -211,3 +211,11 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
   subsequent orders, day boundaries and save/load; expose in the move picker.
 - [ ] Calibrate actual persistent movement, arrival, cancellation by other
   orders, and interactions with terrain/combat from Chinese-edition evidence.
+
+### Automatic duel player command control
+
+- [x] HK manual pp. 34–36 confirms that automatic duels still accept player
+  commands. A opens the shared command menu; C confirms. Automatic
+  simulation no longer starves the input queue.
+- [ ] Calibrate actual weapon effects, manual directional defence, command
+  timing and consequences before connecting the duel to the strategic battle.

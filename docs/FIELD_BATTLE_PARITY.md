@@ -196,3 +196,15 @@ saving do not erase these records. This is an input record, not an active
 path or proof of arrival; other command interactions, physical movement,
 squad speed and combat outcomes remain uncalibrated. The JP manual is an
 interaction lead; direct Chinese-edition verification remains outstanding.
+
+## Target-edition corroboration
+
+Indexed HK manual pp. 30–31 independently confirms that the selected
+unit continues toward its destination after commands close and that
+new orders are possible when the day changes. It also describes using
+a map cursor to choose the unit before selecting the destination; the
+current named-officer list remains a provisional interaction, not that
+measured spatial selection. Printed pp. 32–33 describe five formations
+in the separate close unit-combat screen, available at normal speed.
+Do not conflate these formations with the earlier squad allocation
+preview. Actual tactical geometry and combat effects remain blocked.
