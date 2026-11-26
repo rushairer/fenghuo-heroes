@@ -6,9 +6,10 @@ import { drawStrategyPanel } from '../game/ui-art.js'
 import { dailyFoodFor, deployedOfficerNames, queueMarch, rerouteArmy } from '../game/march.js'
 import { foodForDays, maxFoodDaysForStock } from '../game/parity.js'
 import { cityWorldPoint } from '../game/world.js'
+import { MARCH_RUNTIME_PROJECTION } from '../game/march-runtime-projection.js'
 import { StrategyScene as MarchStrategyScene } from './strategy-march.js'
 
-const ROUTE_STEP = 8
+const ROUTE_STEP = MARCH_RUNTIME_PROJECTION.routeStepWorld
 
 export class StrategyScene extends MarchStrategyScene {
   constructor(app) {
