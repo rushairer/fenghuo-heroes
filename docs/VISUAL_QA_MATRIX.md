@@ -31,6 +31,7 @@ inspection tools, not gameplay evidence.
 | siege-speed | siege | battle-speed selection | uses a local qaFixture conflict |
 | siege-formation | siege | editable officer / squad-type formation | no fabricated martial-rank limits or combat effects |
 | siege-formation-review | siege | review tentative squad allocations | preview does not change city defense or troop count |
+| close-battle-formation | close-battle-qa | normal-speed five-slot formation selection | standalone ordinal preview; no geometry or battle effects |
 | duel-weapon | duel | weapon picker before control mode | synthetic categories only; no weapon effects |
 | duel-mode | duel | manual/auto choice | uses a local qaFixture conflict |
 | duel-manual | duel | duel arena and controls | combat outcome formulas remain uncalibrated |

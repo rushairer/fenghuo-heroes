@@ -38,6 +38,7 @@ test('visual QA state catalog covers setup, strategy, march, siege and duel scre
     'duel-weapon',
     'duel-mode',
     'duel-manual',
+    'close-battle-formation',
   ])
 })
 
@@ -53,6 +54,8 @@ test('QA states resolve to deterministic initial scenes',()=>{
   assert.equal(initialSceneForVisualQa('duel-weapon'),'duel')
   assert.equal(initialSceneForVisualQa('duel-mode'),'duel')
   assert.equal(initialSceneForVisualQa('unknown'),'title')
+  assert.equal(initialSceneForVisualQa(null),'title')
+  assert.equal(initialSceneForVisualQa('close-battle-formation'),'close-battle-qa')
 })
 
 test('title QA states fix phase, selection and blink state',()=>{

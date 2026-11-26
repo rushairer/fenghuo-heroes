@@ -7,6 +7,8 @@ import { applyVisualQaState, initialSceneForVisualQa, storageForVisualQa } from 
 import { makeRenderer } from './game/render.js'
 import { GameStore } from './game/store.js'
 import { DuelScene } from './scenes/duel.js'
+import { CloseBattleQaScene } from './scenes/close-battle-qa.js'
+import { CLOSE_FORMATION_QA } from './game/close-battle-formation.js'
 import { FieldBattleScene } from './scenes/field-battle.js'
 import { PlayerCountScene } from './scenes/player-count.js'
 import { SetupScene } from './scenes/setup.js'
@@ -22,6 +24,7 @@ class App {
     this.r.syncResolution({pixelPreview:!this.hd})
     const params=new URLSearchParams(location.search)
     const qa=params.get('qa')
+    this.qa=qa
     this.store=new GameStore(storageForVisualQa(qa,window.localStorage))
     this.audio=new AudioBus()
     this.input=new Input(window)
@@ -33,7 +36,8 @@ class App {
     this.frame=this.frame.bind(this)
 
     const forced=params.get('scene')
-    const initial=forced??initialSceneForVisualQa(qa)
+    const initial=qa===CLOSE_FORMATION_QA?'close-battle-qa':
+      forced==='close-battle-qa'?'title':forced??initialSceneForVisualQa(qa)
 
     const qaNeedsGame=['strategy','siege','duel','field-battle'].includes(initial)
     if(qa&&qaNeedsGame){
@@ -47,6 +51,7 @@ class App {
     else if(initial==='siege')this.go('siege')
     else if(initial==='field-battle')this.go('field-battle')
     else if(initial==='duel')this.go('duel')
+    else if(initial==='close-battle-qa')this.go('close-battle-qa')
     else this.go('title')
 
     if(qa)applyVisualQaState(this,qa)
@@ -58,6 +63,7 @@ class App {
   }
 
   go(name,{force=false}={}) {
+    if(name==='close-battle-qa'&&this.qa!==CLOSE_FORMATION_QA)return false
     if(name==='strategy'&&this.store.pendingConflict?.kind==='field')name='field-battle'
     if(name==='strategy'&&this.store.pendingConflict?.kind==='siege')name='siege'
     const fromStrategy=this.scene instanceof StrategyScene
@@ -75,6 +81,7 @@ class App {
       siege:SiegeScene,
       duel:DuelScene,
       'field-battle':FieldBattleScene,
+      'close-battle-qa':CloseBattleQaScene,
     }
     const Scene=scenes[name]
     if(!Scene)throw new Error(`Unknown scene ${name}`)

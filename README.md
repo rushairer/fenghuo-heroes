@@ -237,3 +237,5 @@ B 可返回上一階段。當前上限是每個暫定武將單位 15 小隊，
 `?qa=field-battle-formation-review`、
 `?qa=siege-formation`、
 `?qa=siege-formation-review`。
+
+`?qa=close-battle-formation`：獨立接戰陣形操作預覽，普通速度可左右選擇五個暫定編號並以 C 確認；快速不開放選擇。未校準陣形形狀或戰鬥效果，不接入正式存檔。

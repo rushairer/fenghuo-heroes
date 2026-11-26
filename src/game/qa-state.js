@@ -1,4 +1,5 @@
 import { ensureMarchState } from './march.js'
+import { CLOSE_FORMATION_QA } from './close-battle-formation.js'
 import { initialFormationDraft } from './battle-formation.js'
 import { initialFieldMoveDraft, transitionFieldMoveDraft } from './field-battle-move.js'
 import { officerStatusProjection } from './officer-roster.js'
@@ -29,6 +30,7 @@ export const VISUAL_QA_STATES = Object.freeze([
   ...INSPECTION_VISUAL_QA_STATES,
   ...MARCH_VISUAL_QA_STATES,
   ...BATTLE_VISUAL_QA_STATES,
+  CLOSE_FORMATION_QA,
 ])
 
 const STRATEGY_QA_STATES=new Set([
@@ -43,6 +45,8 @@ const STRATEGY_QA_STATES=new Set([
 ])
 
 export function initialSceneForVisualQa(qaState) {
+  if(typeof qaState!=='string')return 'title'
+  if(qaState===CLOSE_FORMATION_QA)return 'close-battle-qa'
   if(qaState==='player-count')return 'players'
   if(qaState==='setup')return 'setup'
   if(qaState.startsWith('field-battle-'))return 'field-battle'
@@ -95,6 +99,11 @@ export function applyVisualQaState(app, qaState) {
   if (!VISUAL_QA_STATES.includes(qaState)) return false
   const scene=app?.scene
   if (!scene) return false
+  if(qaState===CLOSE_FORMATION_QA){
+    if(typeof scene.resetPreview!=='function')return false
+    scene.resetPreview()
+    return true
+  }
 
   if (qaState==='title-splash'||qaState==='title-menu') {
     if (!('phase' in scene)) return false

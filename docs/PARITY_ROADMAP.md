@@ -219,3 +219,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
   simulation no longer starves the input queue.
 - [ ] Calibrate actual weapon effects, manual directional defence, command
   timing and consequences before connecting the duel to the strategic battle.
+
+### Close unit-combat formation selection
+- [x] Isolated normal-speed five-slot selection preview; left/right and C follow HK manual pp. 32–33. Fast speed cannot select formations.
+- [ ] Measure the five original formations and their order, integrate the close unit-combat contact transition and individual squad commands, and apply verified battle effects.

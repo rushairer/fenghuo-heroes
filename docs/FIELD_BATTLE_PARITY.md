@@ -208,3 +208,14 @@ measured spatial selection. Printed pp. 32–33 describe five formations
 in the separate close unit-combat screen, available at normal speed.
 Do not conflate these formations with the earlier squad allocation
 preview. Actual tactical geometry and combat effects remain blocked.
+
+## Close unit-combat formation selector
+HK manual printed pp. 32–33 specifies five choices, horizontal direction
+selection, C confirmation and availability only at normal battle speed.
+The separate `?qa=close-battle-formation` scene exercises this contract.
+The five slots are numbered QA placeholders, not reconstructed shapes or
+original menu order; bounded cursor behavior and B back are engineering
+preview conventions. Fast speed cannot select or commit a formation.
+Selection is local and never accesses campaign state or applies a battle
+effect. This is separate from pre-battle squad allocation and must not
+be linked to a real contact or result before target evidence is obtained.
