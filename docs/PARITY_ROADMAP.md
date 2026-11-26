@@ -227,3 +227,8 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Siege commander preparation
 - [x] Production siege allocation review can select and persist a named attacker commander as an unapplied preview; legacy saves remain compatible.
 - [ ] Capture original headquarters placement and map-specific deployment points; implement commander movement, defeat and prisoner consequences only after calibration.
+
+### Siege read-only battle inspection
+- [x] Active siege A compares known army strength; START opens a participant roster and C displays unknown-safe officer status. B closes inspection without aborting or issuing an attack.
+- [ ] Replace provisional roster selection with original spatial cursor targeting on either side; calibrate defender roster, officer values and battle geometry.
+- [ ] Enforce documented one-order-per-unit-per-day in a named unit/day runtime, not a global attack limit.

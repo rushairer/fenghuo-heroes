@@ -10,6 +10,8 @@ import {
   transitionFormationDraft,
 } from '../game/battle-formation.js'
 import { cancelSiegeFromArmy } from '../game/march.js'
+import { OFFICER_STATUS_FIELDS } from '../game/officer-roster.js'
+import { siegeInspectionRows, siegeStrengthRows } from '../game/siege-inspection.js'
 import { confirmSiegeCommander, cycleSiegeCommander, ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed, siegeCommanderCandidate } from '../game/siege-runtime.js'
 
 export class SiegeScene{
@@ -26,6 +28,8 @@ export class SiegeScene{
     this.message=''
     this.pauseConfirm=false
     this.retreatConfirm=false
+    this.inspection=null
+    this.inspectionIndex=0
   }
 
   saveRuntime(){
@@ -122,11 +126,21 @@ export class SiegeScene{
     }
 
     if(this.phase==='siege'){
+      if(this.inspection){
+        this.updateInspection(b)
+        return
+      }
+      if(b==='A'||b==='START'){
+        this.inspection=b==='A'?'strength':'roster'
+        this.inspectionIndex=0
+        this.app.audio.confirm()
+        return
+      }
       if(b==='B'){
         this.requestRetreat()
         return
       }
-      if(b==='A'||b==='C'||b==='START'){
+      if(b==='C'){
         const before=structuredClone(this.conflict.runtime)
         let intent
         try{
@@ -143,6 +157,60 @@ export class SiegeScene{
         this.app.audio.confirm()
       }
     }
+  }
+
+  updateInspection(button){
+    if(button==='B'){
+      this.inspection=this.inspection==='officer'?'roster':null
+      this.app.audio.cancel()
+      return
+    }
+    if(this.inspection!=='roster')return
+    const rows=siegeInspectionRows(this.conflict)
+    if(!rows.length)return
+    if(button==='UP'||button==='DOWN'){
+      this.inspectionIndex=(this.inspectionIndex+rows.length+(button==='UP'?-1:1))%rows.length
+      this.app.audio.move()
+    }else if(button==='C'&&rows[this.inspectionIndex]){
+      this.inspection='officer'
+      this.app.audio.confirm()
+    }
+  }
+
+  drawInspection(){
+    const r=this.app.r
+    r.panel(18,20,284,176,'#050505','#9b6514')
+    if(this.inspection==='strength'){
+      r.text('戰力比較',160,30,10,'#efd27d','center')
+      siegeStrengthRows(this.conflict).forEach((row,index)=>{
+        const y=56+index*48
+        r.text(row.side==='attacker'?'攻方':'守方',32,y,9,COLORS.cyan)
+        r.text('兵力 '+(row.troops??'—')+'　攻擊力 '+(row.attack??'—'),32,y+14,8,'#ddd0ad')
+        r.text('士氣 '+(row.morale??'—'),32,y+28,8,'#ddd0ad')
+      })
+      r.text('B 返回',160,181,7,'#a99d82','center')
+      return
+    }
+    const rows=siegeInspectionRows(this.conflict)
+    if(this.inspection==='roster'){
+      r.text('參戰武將・名冊預覽',160,30,10,'#efd27d','center')
+      const start=Math.max(0,Math.min(rows.length-8,this.inspectionIndex-3))
+      rows.slice(start,start+8).forEach((row,i)=>{
+        const active=start+i===this.inspectionIndex
+        r.text((active?'▶ ':'　')+(row.side==='attacker'?'攻方　':'守方　')+row.status.name,34,48+i*15,8,active?COLORS.cyan:'#ddd0ad')
+      })
+      if(!rows.length)r.text('無已記錄的參戰武將',160,86,8,'#ddd0ad','center')
+      r.text('未記錄的守將不補造；戰場位置未校準',160,173,6,'#a99d82','center')
+      r.text('C 查看　B 返回',160,185,6,'#a99d82','center')
+      return
+    }
+    const row=rows[this.inspectionIndex]
+    r.text(row?.status.name??'—',160,30,11,'#efd27d','center')
+    OFFICER_STATUS_FIELDS.forEach((field,i)=>{
+      const x=30+(i%2)*140,y=49+Math.floor(i/2)*15
+      r.text(field.label+'　'+(row?.status[field.id]??'—'),x,y,8,'#ddd0ad')
+    })
+    r.text('個別武將數值未校準　B 返回',160,183,6,'#a99d82','center')
   }
 
   updateFormation(button){
@@ -269,9 +337,11 @@ export class SiegeScene{
     }else{
       r.text(`主帥 ${this.runtime.commanderPreview?.officerName??'—'}（預覽）`,160,174,6.5,'#e5d4ac','center')
       r.text(`攻城命令 ${this.runtime.attackOrders} 次　城防 ${this.runtime.defenseRateSnapshot??'—'}`,160,185,7.5,COLORS.cyan,'center')
-      r.text('C / A 攻城　B 中止確認',160,196,6.5,'#cfc19f','center')
+      r.text('C 攻城　A 戰力　START 武將　B 中止確認',160,196,6.5,'#cfc19f','center')
       r.text('未校準城防下降量與入城戰概率不做假結算',160,210,5.8,'#8e846f','center')
     }
+
+    if(this.inspection&&this.phase==='siege')this.drawInspection()
 
     if(this.message){
       r.panel(40,75,240,64,'#000','#b07118',smallPanel)

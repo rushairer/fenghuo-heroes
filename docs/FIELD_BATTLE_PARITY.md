@@ -240,3 +240,7 @@ coordinates, movement, resource relocation, casualties or capture outcomes
 are created. The existing siege-formation-review QA exposes the selector.
 Direct map captures and a calibrated tactical battle engine are still
 required for headquarters placement and unit deployment.
+
+## Siege battle inspection controls
+
+HK manual printed pp. 28–29 confirms A opens the comparative strength window; START then cursor selection and C opens an officer's status on either side. In the active production siege scene, A and START now enter read-only inspection rather than registering attack intents. B closes the inspection before the existing engineering abort confirmation can be reached. Until tactical positions are verified, START uses an explicitly provisional named-participant list instead of spatial hit testing. Only recorded conflict participants are shown; absent defenders and unverified individual statistics remain unknown. C on the root active scene still records an unapplied siege attack intent. Inspection does not save, consume commands or change the conflict. The documented one-order-per-unit-per-day siege rule still requires a unit-targeted order runtime and day transition; do not implement it as a global attack cap.

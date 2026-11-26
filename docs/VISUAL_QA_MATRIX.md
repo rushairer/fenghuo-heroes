@@ -56,3 +56,5 @@ inspection tools, not gameplay evidence.
 - Terrain/city fallback: scalable Canvas vector artwork.
 - Duel/siege fallback: scalable Canvas vector artwork.
 - Backing store: adaptive 6× baseline, up to 10× on large/high-DPR displays.
+
+Active siege inspection: open `?qa=siege-formation-review`, confirm with C, dismiss the preview message with C, then use A for strength comparison or START for the participant roster. C opens a named officer and B returns. Verify no attack count change while inspecting and no retreat confirmation when closing the window. This is a provisional roster, not original spatial targeting.
