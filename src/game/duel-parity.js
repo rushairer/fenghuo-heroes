@@ -38,3 +38,16 @@ export function duelStartingPositions(){
   const center=DUEL_VIEWPORT.worldWidth/2
   return Object.freeze({playerX:center-82,enemyX:center+82})
 }
+
+// JP manual p.35 describes weapon selection before control-mode selection.
+ // The target-edition inventory and weapon effects are not calibrated. Only
+ // isolated visual QA receives synthetic category choices, not real equipment.
+export const DUEL_QA_WEAPONS=Object.freeze([
+  Object.freeze({id:'qa-sword',label:'劍'}),
+  Object.freeze({id:'qa-spear',label:'槍'}),
+  Object.freeze({id:'qa-blade',label:'大刀'}),
+])
+
+export function duelWeaponOptions(conflict){
+  return conflict?.qaFixture===true?DUEL_QA_WEAPONS:Object.freeze([])
+}

@@ -47,7 +47,7 @@ export function initialSceneForVisualQa(qaState) {
   if(qaState==='setup')return 'setup'
   if(qaState.startsWith('field-battle-'))return 'field-battle'
   if(qaState.startsWith('siege-'))return 'siege'
-  if(qaState==='duel-mode'||qaState==='duel-manual')return 'duel'
+  if(qaState==='duel-weapon'||qaState==='duel-mode'||qaState==='duel-manual')return 'duel'
   if(STRATEGY_QA_STATES.has(qaState))return 'strategy'
   return 'title'
 }
@@ -167,8 +167,11 @@ export function applyVisualQaState(app, qaState) {
     return true
   }
 
-  if(qaState==='duel-mode'||qaState==='duel-manual'){
+  if(qaState==='duel-weapon'||qaState==='duel-mode'||qaState==='duel-manual'){
     if(!('modeSelect' in scene)||!scene.c)return false
+    scene.weaponSelect=qaState==='duel-weapon'
+    scene.weaponIndex=0
+    scene.selectedWeapon=scene.weaponSelect?null:scene.weaponOptions?.[0]??null
     scene.modeSelect=qaState==='duel-mode'
     scene.modeIndex=0
     scene.autoMode=false

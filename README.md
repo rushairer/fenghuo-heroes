@@ -83,6 +83,7 @@ npm run check
 - `?qa=siege-speed`
 - `?qa=siege-formation`
 - `?qa=siege-formation-review`
+- `?qa=duel-weapon`
 - `?qa=duel-mode`
 - `?qa=duel-manual`
 

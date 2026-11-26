@@ -195,3 +195,11 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 - [x] Implement a scrolling duel arena with world-space fighters and fixed HUD.
 - [ ] Measure original arena width, camera behavior and weapon-dependent movement.
 - [ ] Integrate duels into the field battle lifecycle only with source-backed consequences.
+
+### Duel weapon-selection flow
+
+- [x] Add a weapon-selection stage before control-mode choice in the isolated
+  duel QA; no synthetic equipment enters production campaigns.
+- [ ] Verify Chinese-edition weapon names, officer inventories, weapon
+  selection controls/layout, and strength/weight effects from direct captures.
+- [ ] Connect calibrated inventories and duel results to the strategic battle.

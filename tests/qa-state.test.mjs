@@ -35,6 +35,7 @@ test('visual QA state catalog covers setup, strategy, march, siege and duel scre
     'siege-speed',
     'siege-formation',
     'siege-formation-review',
+    'duel-weapon',
     'duel-mode',
     'duel-manual',
   ])
@@ -49,6 +50,7 @@ test('QA states resolve to deterministic initial scenes',()=>{
   assert.equal(initialSceneForVisualQa('inspection-develop'),'strategy')
   assert.equal(initialSceneForVisualQa('field-battle-active'),'field-battle')
   assert.equal(initialSceneForVisualQa('siege-speed'),'siege')
+  assert.equal(initialSceneForVisualQa('duel-weapon'),'duel')
   assert.equal(initialSceneForVisualQa('duel-mode'),'duel')
   assert.equal(initialSceneForVisualQa('unknown'),'title')
 })
@@ -324,4 +326,12 @@ test('formation QA fixes a real draft and review screen for both battle types',(
     assert.equal(app.scene.runtime.formationDraft.rows[0].officerName,'曹操')
     assert.equal(initialSceneForVisualQa(qa),kind==='field'?'field-battle':'siege')
   }
+})
+
+test('duel weapon QA starts before mode choice and never preselects a weapon',()=>{
+  const app={scene:{c:{qaFixture:true},modeSelect:true,weaponOptions:[{id:'qa-sword'}],selectedWeapon:{id:'qa-sword'}}}
+  assert.equal(applyVisualQaState(app,'duel-weapon'),true)
+  assert.equal(app.scene.weaponSelect,true)
+  assert.equal(app.scene.modeSelect,false)
+  assert.equal(app.scene.selectedWeapon,null)
 })

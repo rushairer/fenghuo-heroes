@@ -3,7 +3,7 @@ import { drawDuelWeaponContact } from '../game/duel-contact-art.js'
 import { COLORS, SERIF } from '../game/constants.js'
 import { drawDuelSpacingCue } from '../game/duel-spacing-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
-import { DUEL_COMMANDS, DUEL_MODES, DUEL_VIEWPORT, autoDuelIntent, cycleDuelMode, duelCameraX, duelStartingPositions } from '../game/duel-parity.js'
+import { DUEL_COMMANDS, DUEL_MODES, DUEL_VIEWPORT, duelWeaponOptions, autoDuelIntent, cycleDuelMode, duelCameraX, duelStartingPositions } from '../game/duel-parity.js'
 import { mdButton } from '../game/input.js'
 
 export class DuelScene{
@@ -16,10 +16,13 @@ export class DuelScene{
     this.attackCd=0;this.enemyCd=0;this.guard=false
     this.result=null;this.timer=0;this.commandOpen=false;this.commandIndex=0
     this.message='';this.enemyRage=0;this.hitFlash=0;this.hitSide=null
-    this.modeSelect=true;this.modeIndex=0;this.autoMode=false;this.autoElapsed=0
+    this.weaponOptions=duelWeaponOptions(this.c)
+    this.weaponSelect=true;this.weaponIndex=0;this.selectedWeapon=null
+    this.modeSelect=false;this.modeIndex=0;this.autoMode=false;this.autoElapsed=0
   }
 
   update(dt,input){
+    if(this.weaponSelect){this.updateWeaponSelect(input);return}
     if(this.modeSelect){this.updateModeSelect(input);return}
     if(this.result){this.timer+=dt;if(this.timer>950)this.app.go('siege');return}
     this.attackCd=Math.max(0,this.attackCd-dt)
@@ -38,13 +41,37 @@ export class DuelScene{
     else if(this.php<=0)this.finish(false)
   }
 
+  updateWeaponSelect(input){
+    const key=input.consume();if(!key)return
+    const b=mdButton(key)
+    if(b==='HD'){this.app.toggleHd();return}
+    if(b==='B'){this.app.audio.cancel();this.app.go('siege');return}
+    const count=this.weaponOptions.length
+    if(!count){
+      if(b==='A'||b==='C'||b==='START')this.app.audio.alert()
+      return
+    }
+    if(b==='UP'||b==='LEFT'||b==='DOWN'||b==='RIGHT'){
+      const delta=b==='UP'||b==='LEFT'?-1:1
+      this.weaponIndex=(this.weaponIndex+delta+count)%count
+      this.app.audio.move()
+      return
+    }
+    if(b==='A'||b==='C'||b==='START'){
+      this.selectedWeapon=this.weaponOptions[this.weaponIndex]
+      this.weaponSelect=false
+      this.modeSelect=true
+      this.app.audio.confirm()
+    }
+  }
+
   updateModeSelect(input){
     const key=input.consume();if(!key)return
     const b=mdButton(key)
     if(b==='HD'){this.app.toggleHd();return}
     if(b==='UP'||b==='LEFT'){this.modeIndex=cycleDuelMode(this.modeIndex,-1);this.app.audio.move();return}
     if(b==='DOWN'||b==='RIGHT'){this.modeIndex=cycleDuelMode(this.modeIndex,1);this.app.audio.move();return}
-    if(b==='B'){this.app.audio.cancel();this.app.go('siege');return}
+    if(b==='B'){this.modeSelect=false;this.weaponSelect=true;this.app.audio.cancel();return}
     if(b==='A'||b==='C'||b==='START'){
       this.autoMode=DUEL_MODES[this.modeIndex].id==='auto'
       this.modeSelect=false
@@ -192,9 +219,25 @@ export class DuelScene{
     r.text(this.autoMode&&!this.modeSelect?'自動一騎討ち中':'← → 移動　B+↑/↓ 上下段攻擊　B 中段　C 防禦　A 命令',160,197,6.2,'#eadbb9','center')
     if(this.message)r.text(this.message,160,211,6.5,this.enemyRage>0?'#ff9d72':'#cfc19f','center')
     if(this.commandOpen){r.panel(108,61,104,88,'#000','#a96e16',smallPanel);r.text('命令',160,69,9,'#f0d57f','center');DUEL_COMMANDS.forEach((cmd,i)=>r.text(`${i===this.commandIndex?'▶':'　'}${cmd}`,126,88+i*14,8,i===this.commandIndex?COLORS.cyan:'#ddd0ad'))}
-    if(this.modeSelect)this.drawModeSelect()
+    if(this.weaponSelect)this.drawWeaponSelect()
+    else if(this.modeSelect)this.drawModeSelect()
     if(this.result)r.shadowText(this.result,160,102,34,this.result==='勝'?'#ffe36a':'#da6558','center','middle')
     r.scanlines(.018)
+  }
+
+  drawWeaponSelect(){
+    const r=this.app.r
+    const smallPanel=this.app.assets?.getNineSlice('ui.panels.small',{sourceSlice:32,destEdge:6})
+    r.panel(76,56,168,110,'#000','#a96e16',smallPanel)
+    r.text('選擇武器',160,65,10,'#f0d57f','center','top',SERIF,'700')
+    if(!this.weaponOptions.length){
+      r.text('武將武器資料尚未校準',160,102,8,'#ddd0ad','center')
+      r.text('B 返回',160,150,6,'#918775','center')
+      return
+    }
+    this.weaponOptions.forEach((weapon,i)=>r.text(`${i===this.weaponIndex?'▶':'　'}${weapon.label}`,112,85+i*16,9,i===this.weaponIndex?COLORS.cyan:'#ddd0ad'))
+    r.text('測試武器類型 · 未套用數值',160,137,6,'#918775','center')
+    r.text('C / A 決定　B 返回',160,150,6,'#918775','center')
   }
 
   drawModeSelect(){

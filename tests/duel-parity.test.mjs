@@ -47,3 +47,43 @@ test('manual duel movement and enemy retreat can leave the original fixed viewpo
   assert.equal(scene.c,conflict)
   assert.deepEqual(conflict,{kind:'siege'})
 })
+
+test('QA duel selects a weapon before manual/auto and returns to the weapon picker',async()=>{
+  const {DuelScene}=await import('../src/scenes/duel.js')
+  const conflict={kind:'siege',qaFixture:true}
+  const scene=new DuelScene({store:{pendingConflict:conflict},audio:{move(){},confirm(){},cancel(){},alert(){}}})
+  const press=(key)=>scene.update(16,{consume:()=>key,isDown:()=>false})
+  assert.equal(scene.weaponSelect,true)
+  assert.equal(scene.modeSelect,false)
+  press('ArrowDown')
+  press('c')
+  assert.equal(scene.selectedWeapon.id,'qa-spear')
+  assert.equal(scene.modeSelect,true)
+  assert.equal(scene.php,100)
+  assert.equal(scene.ehp,100)
+  press('x')
+  assert.equal(scene.weaponSelect,true)
+  assert.equal(scene.modeSelect,false)
+  assert.equal(scene.weaponIndex,1)
+  press('c')
+  press('ArrowDown')
+  press('c')
+  assert.equal(scene.autoMode,true)
+  assert.equal(scene.modeSelect,false)
+  assert.deepEqual(conflict,{kind:'siege',qaFixture:true})
+})
+
+test('duel with no calibrated inventory cannot borrow QA weapons or start fighting',async()=>{
+  const {DuelScene}=await import('../src/scenes/duel.js')
+  const conflict={kind:'siege'}
+  const signals=[]
+  const scene=new DuelScene({store:{pendingConflict:conflict},go:target=>signals.push(target),audio:{alert(){signals.push('alert')},cancel(){}}})
+  scene.update(1000,{consume:()=> 'c'})
+  assert.equal(scene.weaponOptions.length,0)
+  assert.equal(scene.weaponSelect,true)
+  assert.equal(scene.modeSelect,false)
+  assert.equal(scene.php,100)
+  scene.update(16,{consume:()=> 'x'})
+  assert.deepEqual(signals,['alert','siege'])
+  assert.deepEqual(conflict,{kind:'siege'})
+})

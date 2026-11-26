@@ -47,3 +47,22 @@ midpoint camera are explicitly provisional engineering geometry, not
 measured original values; no damage, reach, weapon or strategic outcome
 formula has changed. The known horizontal-scrolling behavior is now
 interactive rather than a fixed one-screen arena. QA: `?qa=duel-manual`.
+
+## Weapon selection before control mode
+
+The indexed text of the Japanese MD manual, printed page 35
+(https://segaretro.org/images/8/8a/Sangokushiretsuden_md_jp_manual.pdf),
+describes selecting an owned weapon before choosing manual/automatic control.
+It mentions sword, spear and long-blade families, three strength grades per
+family, attack-power effects and weight-dependent movement. The scan itself
+returned HTTP 403 during this review; the indexed text establishes a JP
+interaction lead, not exact Chinese-edition labels, layout, inventory or stats.
+
+The isolated duel QA now enters a weapon picker before mode selection. The
+three category examples are explicitly synthetic QA options and are never
+used as a real officer inventory. Selection persists locally through mode
+selection, and B returns to the picker. With no calibrated inventory, a
+non-QA duel cannot proceed. Existing damage, movement and strategic outcome
+behavior remains unchanged; no weapon-specific combat parameters are inferred.
+QA: `?qa=duel-weapon`, with existing `?qa=duel-mode` and `?qa=duel-manual`
+still available as direct entrypoints.
