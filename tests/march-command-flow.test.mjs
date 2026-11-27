@@ -2,7 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { StrategyScene } from '../src/scenes/strategy-march.js'
 import { StrategyScene as ProductionStrategyScene } from '../src/scenes/strategy-full-map.js'
-import { rerouteArmy } from '../src/game/march.js'
+import { queueMarch, rerouteArmy } from '../src/game/march.js'
+import { GameStore } from '../src/game/store.js'
+import { cityWorldPoint } from '../src/game/world.js'
 
 function marchScene(){
   const scene=Object.create(StrategyScene.prototype)
@@ -142,4 +144,60 @@ test('cycling a stack preserves an existing army ID sequence',()=>{
   scene.updateArmyMenu('RIGHT')
   assert.equal(scene.marchArmyId,'a2')
   assert.deepEqual(scene.app.store.state,before)
+})
+
+test('production city dispatch remains reachable under a queued army and creates a separate named army',()=>{
+  const store=new GameStore(null)
+  store.newGame({scenarioYear:189,humanFactions:['cao']})
+  store.finishCurrentTurn()
+  const start=cityWorldPoint(store.mapProfile.cityById.xuchang)
+  const first=queueMarch(store,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],
+    troops:500,food:100,gold:0,officerNames:['曹操']})
+  store.setCursor(start.x,start.y)
+  const scene=Object.create(ProductionStrategyScene.prototype)
+  scene.app={store,audio:{move(){},cancel(){},confirm(){},alert(){}}}
+  scene.stage='march'
+  scene.view='map'
+  const before=structuredClone(store.state)
+  scene.updateMap('C')
+  assert.equal(scene.view,'army-menu')
+  assert.equal(scene.marchArmyId,first.id)
+  const options=scene.armyMenuOptions(first)
+  scene.armyMenuIndex=options.findIndex(item=>item.id==='city-dispatch')
+  assert.ok(scene.armyMenuIndex>=0)
+  scene.updateArmyMenu('C')
+  assert.equal(scene.view,'march-compose')
+  assert.equal(scene.marchFrom,'xuchang')
+  assert.equal(scene.marchArmyId,null)
+  assert.ok(scene.selectedOfficerNames.length>0)
+  assert.ok(!scene.selectedOfficerNames.includes('曹操'))
+  assert.deepEqual(store.state,before)
+  const expected={troops:scene.marchTroops,food:scene.marchFood,gold:scene.marchGold}
+  scene.beginNewMarchRoute()
+  scene.updateMarchRoute('DOWN')
+  scene.updateMarchRoute('C')
+  assert.equal(scene.view,'message')
+  assert.equal(store.state.armies.length,2)
+  assert.deepEqual(store.state.armies[0],before.armies[0])
+  const second=store.state.armies[1]
+  assert.notEqual(second.id,first.id)
+  assert.equal(second.from,'xuchang')
+  assert.ok(!second.officerNames.includes('曹操'))
+  for(const field of ['troops','food','gold']){
+    assert.equal(store.state.cities.xuchang[field],before.cities.xuchang[field]-expected[field])
+  }
+})
+
+test('city dispatch shortcut is absent when the selected city is foreign or out of range',()=>{
+  const scene=marchScene()
+  const store=scene.app.store
+  store.state.cursor={x:80,y:96}
+  store.state.cities.home={owner:'cao'}
+  store.cityAt=()=>({id:'home',name:'城'})
+  const army=store.state.armies[0]
+  assert.ok(!scene.armyMenuOptions(army).some(item=>item.id==='city-dispatch'))
+  store.state.cities.home.owner='liu'
+  assert.ok(scene.armyMenuOptions(army).some(item=>item.id==='city-dispatch'))
+  store.cityAt=()=>null
+  assert.ok(!scene.armyMenuOptions(army).some(item=>item.id==='city-dispatch'))
 })

@@ -262,3 +262,15 @@ Duplicate or malformed identities fail save validation and live dispatch
 rather than silently renaming participants referenced by pending battles.
 A failed save restores the original sequence, resources and army references.
 These are persistence invariants, not original-game mechanics.
+
+## City dispatch beneath overlapping army markers
+
+The existing map hit regions can cover both an owned city and a friendly
+army, including immediately after a dispatch while that army is still at
+the departure city. Army-first selection previously hid the city dispatch
+workflow at the same cursor position. The army menu now exposes an explicit
+city dispatch navigation row when the cursor also targets an owned city.
+It uses the existing production composition, officer eligibility, route
+and atomic resource-debit workflow. The previous army remains untouched.
+This row is an engineering accessibility fix, not a measured original
+menu command. The original army-command order remains unchanged.

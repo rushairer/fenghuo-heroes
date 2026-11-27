@@ -281,3 +281,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Army identity and legacy dispatch integrity
 - [x] Reject ambiguous army IDs on save load and before dispatch; preserve raw saves and existing references.
 - [x] Derive the next generated ID from both the stored sequence and issued IDs, without reusing an active ID or debiting resources on failure. Legacy missing/stale counters remain loadable.
+
+### City dispatch beneath army markers
+- [x] Preserve access to the existing named-officer dispatch workflow when a friendly army obscures an owned city; the previous army and its resources remain independent.
+- [ ] Verify original city/army overlap selection controls from target-edition frames; the additional navigation row is an engineering convention.

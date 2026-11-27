@@ -17,16 +17,33 @@ export class StrategyScene extends BaseStrategyScene{
   beginNewMarchRoute(){const point=cityWorldPoint(this.app.store.mapProfile.cityById[this.marchFrom]);this.marchRoute=[{...point}];this.app.store.setCursor(point.x,point.y);this.view='march-route';this.app.audio.confirm()}
   beginArmyRoute(army,reason='move'){this.marchArmyId=army.id;this.marchRouteReason=reason;this.marchFrom=army.from;this.marchRoute=[{x:army.x,y:army.y}];this.app.store.setCursor(army.x,army.y);this.view='march-route';this.app.audio.confirm()}
   updateMarchRoute(b){if(['LEFT','RIGHT','UP','DOWN'].includes(b)){const dx=b==='LEFT'?-1:b==='RIGHT'?1:0,dy=b==='UP'?-1:b==='DOWN'?1:0,s=this.app.store.state;this.app.store.setCursor(s.cursor.x+dx*routeStep,s.cursor.y+dy*routeStep);const p=this.app.store.state.cursor,last=this.marchRoute[this.marchRoute.length-1];if(!last||last.x!==p.x||last.y!==p.y)this.marchRoute.push({x:p.x,y:p.y});this.app.audio.move();return}if(b==='B'){if(this.marchRoute.length>1){this.marchRoute.pop();const p=this.marchRoute[this.marchRoute.length-1];this.app.store.setCursor(p.x,p.y)}else this.view=this.marchArmyId?'army-menu':'march-compose';this.app.audio.cancel();return}if(b!=='C'&&b!=='START')return;if(this.marchRoute.length<2){this.app.audio.alert();return}try{if(this.marchArmyId)rerouteArmy(this.app.store,this.marchArmyId,this.marchRoute,{reason:this.marchRouteReason});else queueMarch(this.app.store,{from:this.marchFrom,route:this.marchRoute,troops:this.marchTroops,food:this.marchFood,gold:this.marchGold,officerCount:1});this.message='行軍路線已決定。部隊將在本月命令結束後移動。';this.marchArmyId=null;this.marchRoute=[];this.view='message';this.app.audio.confirm()}catch(error){this.message=error instanceof Error?error.message:'行軍命令失敗。';this.view='message';this.app.audio.alert()}}
+  // The existing map hit region can cover a city and an army at once.
+  // Keep the army menu accessible but allow the existing city dispatch
+  // workflow as a separate engineering navigation option.
+  marchCityUnderCursor(){
+    const store=this.app.store
+    const point=store.state?.cursor
+    if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return null
+    const city=store.cityAt?.(point.x,point.y,12)
+    return city&&store.state.cities[city.id]?.owner===store.humanFaction?city:null
+  }
   armyMenuOptions(army){
     const enemyArmy=enemyArmyNearArmy(this.app.store,army.id)
     const enemyCity=enemyCityNearArmy(this.app.store,army.id)
-    return marchCommandOptions({
+    const options=marchCommandOptions({
       canSplit:canSplitArmy(this.app.store,army.id),
       inVillage:Boolean(villageAtArmy(this.app.store,army.id)),
       enemyArmyAdjacent:Boolean(enemyArmy),
       enemyCityAdjacent:Boolean(enemyCity),
       enemyCityName:enemyCity?.name??'',
     })
+    const city=this.marchCityUnderCursor()
+    if(!city)return options
+    // Not part of the original manual's army-command vocabulary.
+    return Object.freeze([...options.slice(0,-1),
+      Object.freeze({id:'city-dispatch',label:'城池出陣 '+city.name}),
+      options[options.length-1],
+    ])
   }
   updateArmyMenu(b){
     const army=readArmies(this.app.store).find((item)=>item.id===this.marchArmyId)
@@ -50,6 +67,14 @@ export class StrategyScene extends BaseStrategyScene{
     if(b==='B'){this.view='map';this.app.audio.cancel();return}
     if(b!=='A'&&b!=='C')return
     const action=options[this.armyMenuIndex].id
+    if(action==='city-dispatch'){
+      const city=this.marchCityUnderCursor()
+      if(!city||this.app.store.pendingConflict||this.app.store.mode!=='march'){
+        this.app.audio.alert()
+        return
+      }
+      return this.beginMarchCompose(city.id)
+    }
     if(action==='move')return this.beginArmyRoute(army,'move')
     if(action==='split'){
       if(!canSplitArmy(this.app.store,army.id)){this.app.audio.alert();return}
