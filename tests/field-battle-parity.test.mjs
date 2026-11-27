@@ -100,3 +100,10 @@ test('forest wait at five thousand troops or less enters documented ambush state
   assert.equal(fieldBattleAmbushState({commandId:'move',ownTerrain:'forest',troops:3000}).active,false)
   assert.equal(fieldBattleAmbushState({commandId:'wait',ownTerrain:'plain',troops:3000}).active,false)
 })
+
+test('forest wait cannot activate ambush from unknown or invalid troop counts',()=>{
+  for(const troops of [undefined,null,NaN,Infinity,-1,1.5,'3000']){
+    assert.equal(fieldBattleAmbushState({commandId:'wait',ownTerrain:'forest',troops}).active,false)
+  }
+  assert.equal(fieldBattleAmbushState({commandId:'wait',ownTerrain:'forest',troops:0}).active,true)
+})

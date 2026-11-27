@@ -1,4 +1,4 @@
-import { FIELD_BATTLE_COMMANDS, FIELD_BATTLE_TACTICS } from './field-battle-parity.js'
+import { FIELD_BATTLE_COMMANDS, FIELD_BATTLE_TACTICS, fieldBattleCommandAvailable, fieldBattleCommandContext, fieldBattleTacticAvailable } from './field-battle-parity.js'
 import { OBSERVED_BATTLE_SEGMENT_DAYS, advanceBattleDay, battleDayState } from './battle-time-parity.js'
 import { normalizeFieldMoveDraft, validFieldMoveOrder } from './field-battle-move.js'
 import { normalizeFormationDraft, normalizeFormationPlan } from './battle-formation.js'
@@ -24,29 +24,33 @@ function recordedMoveOrders(conflict,records,order){
 export function ensureFieldBattleRuntime(conflict) {
   if(!conflict||conflict.kind!=='field')throw new Error('部隊戰資料不存在。')
   const current=conflict.runtime&&typeof conflict.runtime==='object'?conflict.runtime:{}
-  const order=current.order&&COMMANDS.has(current.order.commandId)
+  // A saved incomplete move or tactic is not a real accepted order.
+  // Do not re-evaluate historical valid orders against today's conditions.
+  const phase=PHASES.has(current.phase)?current.phase:'speed'
+  const saved=current.order
+  const move=saved?.commandId==='move'?validFieldMoveOrder(conflict,saved.move):null
+  const order=phase==='battle'&&saved&&COMMANDS.has(saved.commandId)&&
+    (saved.commandId!=='move'||move)&&
+    (saved.commandId!=='strategy'||TACTICS.has(saved.tacticId))
     ?{
-      commandId:current.order.commandId,
-      ...(current.order.commandId==='strategy'&&TACTICS.has(current.order.tacticId)
-        ?{tacticId:current.order.tacticId}:{}),
-      ...(current.order.commandId==='move'&&validFieldMoveOrder(conflict,current.order.move)
-        ?{move:validFieldMoveOrder(conflict,current.order.move)}:{}),
-    }
-    :null
+      commandId:saved.commandId,
+      ...(saved.commandId==='strategy'?{tacticId:saved.tacticId}:{}),
+      ...(move?{move}:{}),
+    }:null
   const day=Math.min(OBSERVED_BATTLE_SEGMENT_DAYS,
     Math.max(1,Math.floor(Number(current.day)||1)))
   const carryoverPending=day>=OBSERVED_BATTLE_SEGMENT_DAYS
   conflict.runtime={
-    phase:PHASES.has(current.phase)?current.phase:'speed',
+    phase,
     speed:SPEEDS.has(current.speed)?current.speed:null,
     order,
     recordedMoves:recordedMoveOrders(conflict,current.recordedMoves,order),
-    ordersClosed:carryoverPending||Boolean(current.ordersClosed),
+    ordersClosed:carryoverPending||Boolean(current.ordersClosed)||order?.commandId==='end',
     commandEpoch:Number.isSafeInteger(current.commandEpoch)&&current.commandEpoch>=0?current.commandEpoch:0,
     day,
     carryoverPending,
     ambush:Boolean(current.ambush),
-    moveDraft:carryoverPending||Boolean(current.ordersClosed)
+    moveDraft:phase!=='battle'||carryoverPending||Boolean(current.ordersClosed)||order?.commandId==='end'
       ?null:normalizeFieldMoveDraft(conflict,current.moveDraft),
     formationPlan:normalizeFormationPlan(conflict,current.formationPlan),
     formationDraft:current.phase==='battle'
@@ -72,10 +76,12 @@ export function setFieldBattleSpeed(conflict,speed) {
 export function setFieldBattleOrder(conflict,order) {
   const runtime=ensureFieldBattleRuntime(conflict)
   if(!order||!COMMANDS.has(order.commandId))throw new Error('未知的部隊戰命令。')
+  if(runtime.phase!=='battle')throw new Error('尚未進入部隊戰階段。')
   if(runtime.ordersClosed||runtime.carryoverPending){
     throw new Error('本日命令已結束，必須先進入下一個戰鬥日。')
   }
-  if(order.tacticId!=null&&(order.commandId!=='strategy'||!TACTICS.has(order.tacticId))){
+  if((order.commandId==='strategy'&&!TACTICS.has(order.tacticId))||
+    (order.commandId!=='strategy'&&order.tacticId!=null)){
     throw new Error('計略命令和戰術不相符。')
   }
   const move=order.commandId==='move'?validFieldMoveOrder(conflict,order.move):null
@@ -84,6 +90,13 @@ export function setFieldBattleOrder(conflict,order) {
   }
   if(order.commandId!=='move'&&order.move!=null){
     throw new Error('只有移動命令可以指定戰場目的地。')
+  }
+  const context=fieldBattleCommandContext(conflict,runtime)
+  if(!fieldBattleCommandAvailable(order.commandId,context)){
+    throw new Error('此命令目前條件未滿足。')
+  }
+  if(order.commandId==='strategy'&&!fieldBattleTacticAvailable(order.tacticId,context)){
+    throw new Error('此計略目前條件未滿足。')
   }
   runtime.order={
     commandId:order.commandId,

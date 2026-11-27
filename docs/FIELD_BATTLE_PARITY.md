@@ -268,3 +268,19 @@ The newly inspected Chinese battle still and Japanese corroboration (see evidenc
 ## Tactical movement capture
 
 `tools/battle-movement-capture.html` now records two local frames with the same unit marker and two stationary landmarks. It rejects inconsistent landmark translations, exports native-pixel relative displacement as an unverified candidate, and never modifies campaign state. See `docs/BATTLE_MOVEMENT_CAPTURE.md`. The original p. 24 ration formula is already implemented for march; no consumption is connected to the artificial battle-day bridge.
+
+## Field command admission integrity
+
+The original command prerequisites already documented above are now checked
+by the field runtime as well as the UI, using one context projection. A
+command cannot be accepted during preparation; strategy requires a known
+tactic, a represented range condition and the documented terrain rule.
+Siege and retreat require their represented contact/unlock flags. Unknown
+or string-valued flags do not unlock commands. These are existing engineering
+condition inputs, not newly verified tactical distances or clocks. Restoring
+an incomplete move/tactic drops that order; a saved end order still closes
+the day even if its redundant flag is missing. A previously accepted valid
+tactic is not retroactively rejected because its historical context is absent.
+Unknown or malformed troop counts cannot activate the forest-wait ambush
+condition. No actual terrain, movement, damage, food debit or winner is
+introduced.

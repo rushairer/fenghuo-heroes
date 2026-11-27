@@ -262,3 +262,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Tactical movement observation acquisition
 - [x] Local two-frame capture and camera-translation rejection using two stationary landmarks; export unverified native-pixel observations only.
 - [ ] Collect repeatable Chinese-edition movement and contact pairs and measure the original clock before enabling real tactical simulation.
+
+### Field command admission integrity
+- [x] Enforce existing phase, contact, retreat and tactic conditions at command commit, not only at the UI; reject incomplete saved orders and keep saved end barriers. Unknown troop counts do not activate ambush.
+- [ ] Replace provisional condition flags with calibrated tactical entity/terrain/range inputs and actual battle effects.

@@ -61,6 +61,20 @@ export function commandWindowPausesBattle() {
   return true
 }
 
+// Conditions represented by the conflict, not truthy arbitrary values or
+// UI-local flags. These remain engineering inputs until tactical geometry
+// and the original retreat clock are calibrated.
+export function fieldBattleCommandContext(conflict,runtime=conflict?.runtime){
+  return Object.freeze({
+    retreatUnlocked:conflict?.retreatUnlocked===true,
+    strategyAvailable:conflict?.strategyAvailable===true,
+    siegeAvailable:conflict?.enemyCityAdjacent===true,
+    ordersClosed:runtime?.ordersClosed===true||runtime?.carryoverPending===true,
+    enemyTerrain:conflict?.enemyTerrain??null,
+    ownTerrain:conflict?.ownTerrain??null,
+  })
+}
+
 export function fieldBattleCommandAvailable(commandId,{
   retreatUnlocked=false,
   strategyAvailable=false,
@@ -116,9 +130,9 @@ export function fieldBattleStatusProjection(conflict) {
 export function fieldBattleAmbushState({
   commandId,
   ownTerrain=null,
-  troops=0,
+  troops=null,
 }={}) {
-  const eligible=commandId==='wait'&&ownTerrain==='forest'&&Math.max(0,Math.floor(Number(troops)||0))<=5000
+  const eligible=commandId==='wait'&&ownTerrain==='forest'&&Number.isSafeInteger(troops)&&troops>=0&&troops<=5000
   return Object.freeze({
     eligible,
     active:eligible,

@@ -104,6 +104,8 @@ test('tactics are only permitted with strategy orders and never attached to a sa
   assert.throws(()=>setFieldBattleOrder(value,{commandId:'wait',tacticId:'fire'}),/計略命令/)
   assert.throws(()=>setFieldBattleOrder(value,{commandId:'strategy',tacticId:'teleport'}),/計略命令/)
   assert.equal(value.runtime.order,null)
+  value.strategyAvailable=true
+  value.enemyTerrain='forest'
   setFieldBattleOrder(value,{commandId:'strategy',tacticId:'fire'})
   assert.deepEqual(value.runtime.order,{commandId:'strategy',tacticId:'fire'})
   value.runtime.order={commandId:'wait',tacticId:'chain'}
@@ -160,4 +162,46 @@ test('legacy last move migrates and malformed or absent participants are discard
   assert.deepEqual(ensureFieldBattleRuntime(value).recordedMoves,[{officerName:'曹操',target:{x:56,y:104}}])
   value.attackerOfficers=[]
   assert.deepEqual(ensureFieldBattleRuntime(value).recordedMoves,[])
+})
+
+test('field runtime enforces phase, contact, retreat and tactic prerequisites at commit',()=>{
+  const value={kind:'field',runtime:{phase:'formation',speed:'normal'}}
+  assert.throws(()=>setFieldBattleOrder(value,{commandId:'wait'}),/尚未進入/)
+  setFieldBattlePhase(value,'battle')
+  const before=fieldBattleRuntimeSnapshot(value)
+  for(const order of [{commandId:'siege'},{commandId:'retreat'},{commandId:'strategy',tacticId:'fire'}]){
+    assert.throws(()=>setFieldBattleOrder(value,order),/條件未滿足/)
+    assert.deepEqual(fieldBattleRuntimeSnapshot(value),before)
+  }
+  assert.throws(()=>setFieldBattleOrder(value,{commandId:'strategy'}),/計略命令/)
+  value.strategyAvailable='true'
+  value.enemyTerrain='forest'
+  assert.throws(()=>setFieldBattleOrder(value,{commandId:'strategy',tacticId:'fire'}),/條件未滿足/)
+  value.strategyAvailable=true
+  value.enemyTerrain='plain'
+  assert.throws(()=>setFieldBattleOrder(value,{commandId:'strategy',tacticId:'fire'}),/計略目前條件/)
+  value.enemyTerrain='river'
+  assert.deepEqual(setFieldBattleOrder(value,{commandId:'strategy',tacticId:'chain'}).order,{commandId:'strategy',tacticId:'chain'})
+  value.enemyCityAdjacent=true
+  assert.equal(setFieldBattleOrder(value,{commandId:'siege'}).order.commandId,'siege')
+  value.retreatUnlocked=true
+  assert.equal(setFieldBattleOrder(value,{commandId:'retreat'}).order.commandId,'retreat')
+  assert.equal(value.winner,undefined)
+})
+
+test('restore drops incomplete tactics and preparation moves but retains a saved end barrier',()=>{
+  const value={kind:'field',attackerOfficers:['曹操'],runtime:{phase:'battle',order:{commandId:'strategy'}}}
+  assert.equal(ensureFieldBattleRuntime(value).order,null)
+  value.runtime.order={commandId:'strategy',tacticId:'fire'}
+  assert.deepEqual(ensureFieldBattleRuntime(value).order,{commandId:'strategy',tacticId:'fire'})
+  value.runtime.phase='formation'
+  value.runtime.order={commandId:'move',move:{officerName:'曹操',target:{x:56,y:104}}}
+  value.runtime.moveDraft={phase:'officer',officerIndex:0}
+  assert.equal(ensureFieldBattleRuntime(value).order,null)
+  assert.equal(value.runtime.moveDraft,null)
+  value.runtime.phase='battle'
+  value.runtime.order={commandId:'end'}
+  value.runtime.ordersClosed=false
+  assert.equal(ensureFieldBattleRuntime(value).ordersClosed,true)
+  assert.throws(()=>setFieldBattleOrder(value,{commandId:'wait'}),/本日命令已結束/)
 })

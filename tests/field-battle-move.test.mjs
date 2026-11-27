@@ -88,7 +88,7 @@ test('battle runtime sanitizes malformed saved movement orders and stale drafts'
   value.runtime.order={commandId:'move',move:{officerName:'捏造',target:{x:400,y:100}}}
   const state=ensureFieldBattleRuntime(value)
   assert.equal(state.moveDraft,null)
-  assert.deepEqual(state.order,{commandId:'move'})
+  assert.equal(state.order,null)
   assert.equal(normalizeFieldMoveDraft(value,{phase:'officer',officerIndex:99}),null)
   assert.equal(validFieldMoveOrder(value,{officerName:'曹操',target:{x:999,y:104}}),null)
   assert.throws(()=>setFieldBattleOrder(value,{

@@ -7,6 +7,7 @@ import {
   FIELD_BATTLE_TACTICS,
   fieldBattleAmbushState,
   fieldBattleCommandAvailable,
+  fieldBattleCommandContext,
   fieldBattleInputAction,
   fieldBattleOrder,
   fieldBattleStatusProjection,
@@ -55,25 +56,15 @@ export class FieldBattleScene{
     this.scrollX=0
     this.scrollY=0
     this.message=''
-    this.retreatUnlocked=Boolean(this.conflict.retreatUnlocked)
     this.pauseConfirm=false
   }
 
   commandContext(){
-    return {
-      retreatUnlocked:this.retreatUnlocked,
-      strategyAvailable:Boolean(this.conflict.strategyAvailable),
-      siegeAvailable:Boolean(this.conflict.enemyCityAdjacent),
-      ordersClosed:Boolean(this.runtime.ordersClosed),
-    }
+    return fieldBattleCommandContext(this.conflict,this.runtime)
   }
 
   tacticContext(){
-    return {
-      strategyAvailable:Boolean(this.conflict.strategyAvailable),
-      enemyTerrain:this.conflict.enemyTerrain??null,
-      ownTerrain:this.conflict.ownTerrain??null,
-    }
+    return this.commandContext()
   }
 
   saveRuntime(){
@@ -400,7 +391,7 @@ export class FieldBattleScene{
       ?fieldBattleAmbushState({
         commandId:'wait',
         ownTerrain:this.conflict.ownTerrain??null,
-        troops:this.conflict.attackerTroops??0,
+        troops:this.conflict.attackerTroops,
       }):null
     const applied=this.persistBattleMutation(()=>{
       setFieldBattleOrder(this.conflict,order)
