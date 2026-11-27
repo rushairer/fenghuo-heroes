@@ -127,3 +127,52 @@ test('failed empty march stepping does not initialize army state or IDs',()=>{
   assert.deepEqual(store.state,before)
   assert.equal(storage.getItem(SAVE_KEY),raw)
 })
+
+test('legacy missing or stale army sequence advances beyond all existing generated IDs on dispatch',()=>{
+  for(const counter of [undefined,1]){
+    const {store,storage,order}=campaign()
+    const first=queueMarch(store,order)
+    first.id='army-9'
+    if(counter===undefined)delete store.state.nextArmyId
+    else store.state.nextArmyId=counter
+    store.save()
+    const restored=new GameStore(storage)
+    assert.equal(restored.load(),true)
+    const next=queueMarch(restored,{...order,officerNames:['曹仁']})
+    assert.equal(next.id,'army-10')
+    assert.equal(restored.state.nextArmyId,11)
+    assert.deepEqual(restored.state.armies.map(a=>a.id),['army-9','army-10'])
+    assert.equal(new GameStore(storage).load(),true)
+  }
+})
+
+test('failed dispatch rolls back a repaired sequence; exhausted IDs cannot debit city resources',()=>{
+  const {store,storage,order}=campaign()
+  const first=queueMarch(store,order)
+  store.state.nextArmyId=1
+  store.save()
+  const before=structuredClone(store.state),raw=storage.getItem(SAVE_KEY)
+  storage.fail=true
+  assert.throws(()=>queueMarch(store,{...order,officerNames:['曹仁']}),/QuotaExceededError/)
+  assert.deepEqual(store.state,before)
+  assert.equal(store.state.armies[0],first)
+  assert.equal(storage.getItem(SAVE_KEY),raw)
+  storage.fail=false
+  assert.equal(queueMarch(store,{...order,officerNames:['曹仁']}).id,'army-2')
+  store.state.nextArmyId=Number.MAX_SAFE_INTEGER
+  const exhausted=structuredClone(store.state)
+  const bytes=storage.getItem(SAVE_KEY)
+  assert.throws(()=>queueMarch(store,{...order,officerNames:[]}),/編號已達上限/)
+  assert.deepEqual(store.state,exhausted)
+  assert.equal(storage.getItem(SAVE_KEY),bytes)
+})
+
+test('ambiguous live army identities prevent dispatch before any resource debit',()=>{
+  const {store,storage,order}=campaign()
+  const first=queueMarch(store,order)
+  store.state.armies.push({...first})
+  const before=structuredClone(store.state),raw=storage.getItem(SAVE_KEY)
+  assert.throws(()=>queueMarch(store,{...order,officerNames:['曹仁']}),/duplicate-army-id/)
+  assert.deepEqual(store.state,before)
+  assert.equal(storage.getItem(SAVE_KEY),raw)
+})

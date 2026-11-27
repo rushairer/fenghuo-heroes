@@ -251,3 +251,14 @@ Army selection and rendering use the non-initializing `readArmies` lookup. A
 stale menu or absent ledger does not initialize `armies` or `nextArmyId`.
 Explicit march initialization remains separate. This closes the stacked-army
 selection regression without changing resources or original-game rules.
+
+### Army identity and legacy dispatch integrity
+
+The generated army ID sequence is allocated without mutating the campaign,
+using both the saved next ID and the highest existing generated ID. A
+legacy missing or stale sequence is repaired only when dispatch commits.
+An exhausted sequence rejects dispatch before any city resource debit.
+Duplicate or malformed identities fail save validation and live dispatch
+rather than silently renaming participants referenced by pending battles.
+A failed save restores the original sequence, resources and army references.
+These are persistence invariants, not original-game mechanics.

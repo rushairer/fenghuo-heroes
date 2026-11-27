@@ -161,3 +161,15 @@ test('legacy scaffold 189 save without scenario state tag is safely backfilled',
   assert.equal(restored.load(),true)
   assert.equal(restored.state.scenarioStateId,'runtime-scaffold:189')
 })
+
+test('invalid or duplicate army identities fail closed without renaming battle participants or erasing bytes',()=>{
+  for(const armies of [[null],[{id:''}],[{id:5}],[{id:' army-1 '}],
+    [{id:'army-1',faction:'cao'},{id:'army-1',faction:'liu'}]]){
+    const {storage,value,store}=corrupt(raw=>{raw.armies=armies})
+    const before=structuredClone(store.state)
+    assert.equal(store.load(),false)
+    assert.deepEqual(store.state,before)
+    assert.equal(storage.getItem(SAVE_KEY),value)
+    assert.equal(storage.removals,0)
+  }
+})

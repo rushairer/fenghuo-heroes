@@ -277,3 +277,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 
 ### March read-only lookup integrity
 - [x] Keep army selection and map rendering independent of mutable march initialization; preserve absent ledgers and existing army ID sequences.
+
+### Army identity and legacy dispatch integrity
+- [x] Reject ambiguous army IDs on save load and before dispatch; preserve raw saves and existing references.
+- [x] Derive the next generated ID from both the stored sequence and issued IDs, without reusing an active ID or debiting resources on failure. Legacy missing/stale counters remain loadable.

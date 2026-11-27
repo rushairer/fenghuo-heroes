@@ -1,5 +1,6 @@
 import { WORLD_H, WORLD_W } from './world.js'
 import { FACTION_BY_ID } from './data.js'
+import { armyIdentityErrors } from './army-identity.js'
 
 // Validation precedes assigning an untrusted browser save to GameStore.
 // This is a structural compatibility gate, NOT canonical scenario evidence.
@@ -67,7 +68,7 @@ export function validateSavedGameState(state,mapProfile){
     }
   }
 
-  if(state.armies!=null&&!Array.isArray(state.armies))errors.push('invalid-armies')
+  errors.push(...armyIdentityErrors(state.armies))
   if(state.nextArmyId!=null&&!count(state.nextArmyId,1,Number.MAX_SAFE_INTEGER)){
     errors.push('invalid-next-army-id')
   }

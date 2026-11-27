@@ -1,6 +1,7 @@
 import { WORLD_H, WORLD_W, cityWorldPoint } from './world.js'
 import { MARCH_RUNTIME_PROJECTION } from './march-runtime-projection.js'
 import { openingOfficerListForCity } from './officer-roster.js'
+import { nextArmyIdentity } from './army-identity.js'
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
@@ -181,6 +182,7 @@ export function queueMarch(store, {
     throw new Error('出陣武將名單格式無效。')
   }
   const names=[...new Set(officerNames.map((name)=>name.trim()).filter(Boolean))]
+  const identity=nextArmyIdentity(store.state)
   const deployed=deployedOfficerNames(store,store.humanFaction)
   const duplicate=names.find((name)=>deployed.has(name))
   if(duplicate)throw new Error(`${duplicate}已隨其他部隊出陣。`)
@@ -219,14 +221,16 @@ export function queueMarch(store, {
   const oldNextId=state.nextArmyId
   const hadLog=Object.hasOwn(state,'log')
   const oldLog=Array.isArray(state.log)?[...state.log]:state.log
+  const previousResources={troops:source.troops,food:source.food,gold:source.gold}
   let army
   try{
     const armies=ensureMarchState(store)
+    state.nextArmyId=identity.nextArmyId
     source.troops-=nTroops
     source.food-=nFood
     source.gold-=nGold
     army={
-      id:`army-${state.nextArmyId++}`,
+      id:identity.id,
       faction:store.humanFaction,
       from,
       x:start.x,
@@ -249,9 +253,7 @@ export function queueMarch(store, {
     store.addLog(`${city.name}軍出陣。武將${nOfficers} 兵${nTroops} 米${nFood}`)
     store.save()
   }catch(error){
-    source.troops+=nTroops
-    source.food+=nFood
-    source.gold+=nGold
+    Object.assign(source,previousResources)
     if(hadArmies){
       if(Array.isArray(originalArmies))originalArmies.length=oldArmyCount
       state.armies=originalArmies
