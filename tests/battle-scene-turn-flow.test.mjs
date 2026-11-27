@@ -115,3 +115,23 @@ test('siege reaches the preview month boundary without discarding the conflict o
   assert.equal(conflict.defenderDefense,40)
   assert.deepEqual(navigation,[])
 })
+
+test('siege move cursor can cancel and commit without applying physical combat',()=>{
+  const conflict={kind:'siege',attackerOfficers:['曹操','曹仁'],attackerTroops:1200,defenderDefense:40,
+    runtime:{phase:'siege',speed:'normal'}}
+  const {scene,send,store}=battleScene(SiegeScene,conflict)
+  send('c');send('ArrowRight');send('c');send('ArrowRight');send('x')
+  assert.equal(scene.runtime.moveDraft,null)
+  assert.deepEqual(scene.runtime.usedOfficerNames,[])
+  send('c');send('ArrowRight')
+  const before=structuredClone(conflict.runtime)
+  store.save=()=>{throw Error('quota')}
+  send('c')
+  assert.deepEqual(conflict.runtime,before)
+  store.save=()=>{}
+  send('c');send('c')
+  assert.deepEqual(scene.runtime.recordedMoves,[{officerName:'曹操',target:{x:64,y:104}}])
+  assert.deepEqual(scene.runtime.usedOfficerNames,['曹操'])
+  assert.equal(scene.runtime.attackOrders,0)
+  assert.equal(conflict.defenderDefense,40)
+})

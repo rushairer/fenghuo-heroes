@@ -10,10 +10,11 @@ import {
   initialFormationDraft,
   transitionFormationDraft,
 } from '../game/battle-formation.js'
+import { FIELD_MOVE_GRID, fieldMoveOfficers, transitionFieldMoveDraft } from '../game/field-battle-move.js'
 import { cancelSiegeFromArmy } from '../game/march.js'
 import { OFFICER_STATUS_FIELDS } from '../game/officer-roster.js'
 import { siegeInspectionRows, siegeStrengthRows } from '../game/siege-inspection.js'
-import { advanceSiegeOrderDay, confirmSiegeCommander, cycleSiegeCommander, ensureSiegeRuntime, queueSiegeAttackIntent, setSiegePhase, setSiegeSpeed, siegeCommanderCandidate, siegeHeadquartersProjection } from '../game/siege-runtime.js'
+import { advanceSiegeOrderDay, confirmSiegeCommander, cycleSiegeCommander, ensureSiegeRuntime, queueSiegeAttackIntent, queueSiegeMoveIntent, setSiegePhase, setSiegeSpeed, siegeCommanderCandidate, siegeHeadquartersProjection } from '../game/siege-runtime.js'
 
 export class SiegeScene{
   constructor(app){
@@ -31,8 +32,9 @@ export class SiegeScene{
     this.retreatConfirm=false
     this.inspection=null
     this.inspectionIndex=0
-    this.orderMenu=false
-    this.orderIndex=0
+    this.orderMenu=Boolean(this.runtime.moveDraft)
+    this.orderIndex=Math.max(0,formationOfficerNames(this.conflict).indexOf(this.runtime.moveDraft?.officerName))
+    this.orderKind=this.runtime.moveDraft?'move':'attack'
   }
 
   saveRuntime(){
@@ -155,12 +157,14 @@ export class SiegeScene{
         }
         this.orderMenu=true
         this.orderIndex=0
+        this.orderKind='attack'
         this.app.audio.confirm()
       }
     }
   }
 
   updateOrders(button){
+    if(this.runtime.moveDraft){this.updateMoveDestination(button);return}
     const names=formationOfficerNames(this.conflict)
     const count=names.length+1
     if(button==='B'){
@@ -170,6 +174,11 @@ export class SiegeScene{
     }
     if(button==='UP'||button==='DOWN'){
       this.orderIndex=(this.orderIndex+count+(button==='UP'?-1:1))%count
+      this.app.audio.move()
+      return
+    }
+    if(button==='LEFT'||button==='RIGHT'){
+      this.orderKind=this.orderKind==='attack'?'move':'attack'
       this.app.audio.move()
       return
     }
@@ -183,6 +192,15 @@ export class SiegeScene{
         this.message=this.runtime.carryoverPending
           ?'30日工程段落已結束；保留攻城，待校準跨月續戰。'
           :'工程預覽：進入第'+day+'日，未結算戰鬥。'
+      }else if(this.orderKind==='move'){
+        const name=names[this.orderIndex]
+        if(this.runtime.usedOfficerNames.includes(name))throw new Error('此部隊本日已接受命令。')
+        const officerIndex=fieldMoveOfficers(this.conflict).indexOf(name)
+        const result=transitionFieldMoveDraft(this.conflict,{phase:'officer',officerIndex,officerName:null,target:null},'C')
+        this.conflict.runtime.moveDraft=result.draft
+        this.saveRuntime()
+        this.app.audio.confirm()
+        return
       }else{
         const intent=queueSiegeAttackIntent(this.conflict,names[this.orderIndex])
         this.saveRuntime()
@@ -198,7 +216,48 @@ export class SiegeScene{
     }
   }
 
+  updateMoveDestination(button){
+    const before=structuredClone(this.conflict.runtime)
+    try{
+      const result=transitionFieldMoveDraft(this.conflict,this.runtime.moveDraft,button)
+      if(result.status==='ignored')return
+      if(result.status==='committed'){
+        const move=queueSiegeMoveIntent(this.conflict,result.order.move)
+        this.saveRuntime()
+        this.orderMenu=false
+        this.message=move.officerName+' 移動目的地已記錄；未移動實際部隊。'
+        this.app.audio.confirm()
+      }else{
+        this.conflict.runtime.moveDraft=button==='B'?null:result.draft
+        this.saveRuntime()
+        if(button==='B')this.app.audio.cancel()
+        else this.app.audio.move()
+      }
+    }catch(error){
+      this.conflict.runtime=before
+      this.runtime=ensureSiegeRuntime(this.conflict)
+      this.message='移動命令未保存：'+(error instanceof Error?error.message:'存儲不可用')
+      this.app.audio.alert()
+    }
+  }
+
+  drawMoveDestination(){
+    const r=this.app.r
+    const {officerName,target}=this.runtime.moveDraft
+    const g=FIELD_MOVE_GRID
+    r.panel(8,23,304,169,'#050505','#9b6514')
+    for(let x=g.minX;x<=g.maxX;x+=g.step){
+      for(let y=g.minY;y<=g.maxY;y+=g.step)r.text('·',x,y,5,'#514829','center')
+    }
+    r.text('◇',target.x,target.y,12,COLORS.cyan,'center')
+    r.panel(18,7,284,20,'#050505','#9b6514')
+    r.text(officerName+'・移動目的地（工程座標）',160,12,8,'#efd27d','center')
+    r.panel(18,192,284,22,'#050505','#9b6514')
+    r.text(target.x+','+target.y+'　方向鍵移動　C 決定　B 返回',160,199,7,'#ddd0ad','center')
+  }
+
   drawOrders(){
+    if(this.runtime.moveDraft){this.drawMoveDestination();return}
     const r=this.app.r
     const names=formationOfficerNames(this.conflict)
     const rows=[...names,null]
@@ -208,11 +267,12 @@ export class SiegeScene{
     rows.slice(start,start+8).forEach((name,i)=>{
       const active=start+i===this.orderIndex
       const used=this.runtime.usedOfficerNames.includes(name)
-      const label=name===null?'結束本日・工程推進':name+(used?'　已命令':'　攻城')
+      const prior=this.runtime.recordedMoves.find(move=>move.officerName===name)
+      const label=name===null?'結束本日・工程推進':name+(used?'　已命令':this.orderKind==='move'?'　移動':'　攻城')+(prior?'　('+prior.target.x+','+prior.target.y+')':'')
       r.text((active?'▶ ':'　')+label,34,48+i*15,8,active?COLORS.cyan:used?'#8e846f':'#ddd0ad')
     })
     r.text('每支具名部隊每日一次；未校準戰鬥效果',160,173,6,'#a99d82','center')
-    r.text('↑↓ 選擇　C 決定　B 返回',160,185,6,'#a99d82','center')
+    r.text('↑↓ 選將　←→ 攻城/移動　C 決定　B 返回',160,185,6,'#a99d82','center')
   }
 
   updateInspection(button){

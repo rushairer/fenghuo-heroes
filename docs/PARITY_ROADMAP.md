@@ -250,3 +250,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 
 - [x] Manual-confirmed monthly carryover rule is represented by a bounded engineering preview sharing the field-battle day-30 stop. No unlimited attack-day loop, no fabricated result; save/Continue retains the unresolved siege. A toggles strength inspection.
 - [ ] Implement actual strategic intermission/resumption and original clock only after controlled Chinese-edition observations. The exact siege day cutoff is not established by the manual.
+
+### Siege movement intent
+- [x] Reuse the field move cursor for named siege units; move and attack share the one-order-per-unit/day budget. Drafts and last destinations persist without moving troops.
+- [ ] Calibrate actual unit selection, map cells, deployment, movement/contact and cross-month resumption; the provisional cursor is not original geometry.

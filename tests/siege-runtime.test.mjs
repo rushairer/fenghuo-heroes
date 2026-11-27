@@ -8,6 +8,7 @@ import {
   siegeCommanderCandidate,
   ensureSiegeRuntime,
   queueSiegeAttackIntent,
+  queueSiegeMoveIntent,
   setSiegePhase,
   setSiegeSpeed,
   siegeRuntimeSnapshot,
@@ -173,4 +174,34 @@ test('legacy siege days beyond the preview boundary cannot reopen orders',()=>{
   assert.equal(runtime.attackOrders,12)
   assert.deepEqual(runtime.usedOfficerNames,['曹操'])
   assert.throws(()=>queueSiegeAttackIntent(value,'曹操'),/30日工程段落/)
+})
+
+test('siege move and attack share the daily unit budget; destinations survive day changes',()=>{
+  const value={...conflict(),attackerOfficers:['曹操','曹仁'],runtime:{phase:'siege'}}
+  const move={officerName:'曹操',target:{x:56,y:104}}
+  assert.deepEqual(queueSiegeMoveIntent(value,move),move)
+  assert.throws(()=>queueSiegeAttackIntent(value,'曹操'),/本日已接受/)
+  queueSiegeAttackIntent(value,'曹仁')
+  assert.throws(()=>queueSiegeMoveIntent(value,{...move,officerName:'曹仁'}),/本日已接受/)
+  advanceSiegeOrderDay(value)
+  assert.deepEqual(ensureSiegeRuntime(value).recordedMoves,[move])
+  assert.throws(()=>queueSiegeMoveIntent(value,{...move,target:{x:57,y:104}}),/無效/)
+  assert.throws(()=>queueSiegeMoveIntent(value,{...move,officerName:'劉備'}),/無效/)
+  const next={...move,target:{x:64,y:104}}
+  queueSiegeMoveIntent(value,next)
+  assert.deepEqual(value.runtime.recordedMoves,[next])
+  assert.equal(value.runtime.attackOrders,1)
+  assert.equal(value.defenderDefense,42)
+  value.runtime.day=30
+  assert.throws(()=>queueSiegeMoveIntent(value,move),/30日工程段落/)
+})
+test('siege move normalization removes invalid records and drafts',()=>{
+  const value={...conflict(),attackerOfficers:['曹操'],runtime:{phase:'siege',
+    recordedMoves:[{officerName:'劉備',target:{x:56,y:104}},
+      {officerName:'曹操',target:{x:56,y:104}},{officerName:'曹操',target:{x:64,y:104}}],
+    usedOfficerNames:['曹操'],
+    moveDraft:{phase:'destination',officerIndex:0,officerName:'曹操',target:{x:56,y:104}},
+  }}
+  assert.deepEqual(ensureSiegeRuntime(value).recordedMoves,[{officerName:'曹操',target:{x:64,y:104}}])
+  assert.equal(value.runtime.moveDraft,null)
 })

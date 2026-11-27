@@ -1,6 +1,8 @@
 import { formationOfficerNames, normalizeFormationDraft, normalizeFormationPlan } from './battle-formation.js'
 import { OBSERVED_BATTLE_SEGMENT_DAYS } from './battle-time-parity.js'
 
+import { validFieldMoveOrder, normalizeFieldMoveDraft } from './field-battle-move.js'
+
 const PHASES=new Set(['speed','formation','siege'])
 const SPEEDS=new Set(['normal','fast'])
 
@@ -30,7 +32,19 @@ export function ensureSiegeRuntime(conflict){
   const names=formationOfficerNames(conflict)
   const usedOfficerNames=Array.isArray(current.usedOfficerNames)
     ?[...new Set(current.usedOfficerNames.filter(name=>names.includes(name)))]:[]
+  const recordedMoves=[]
+  for(const candidate of Array.isArray(current.recordedMoves)?current.recordedMoves:[]){
+    const move=validFieldMoveOrder(conflict,candidate)
+    if(!move)continue
+    const index=recordedMoves.findIndex(item=>item.officerName===move.officerName)
+    if(index<0)recordedMoves.push(move)
+    else recordedMoves[index]=move
+  }
+  const draft=normalizeFieldMoveDraft(conflict,current.moveDraft)
   conflict.runtime={
+    recordedMoves,
+    moveDraft:current.phase==='siege'&&day<OBSERVED_BATTLE_SEGMENT_DAYS&&
+      draft?.phase==='destination'&&!usedOfficerNames.includes(draft.officerName)?draft:null,
     day,
     carryoverPending:day>=OBSERVED_BATTLE_SEGMENT_DAYS,
     usedOfficerNames,
@@ -110,6 +124,7 @@ export function queueSiegeAttackIntent(conflict,officerName){
   if(!formationOfficerNames(conflict).includes(officerName))throw new Error('必須指定參戰的己方武將。')
   if(runtime.usedOfficerNames.includes(officerName))throw new Error('此部隊本日已接受命令。')
   runtime.usedOfficerNames.push(officerName)
+  if(runtime.moveDraft?.officerName===officerName)runtime.moveDraft=null
   runtime.attackOrders+=1
   runtime.lastAttackIntent={
     sequence:runtime.attackOrders,
@@ -122,6 +137,22 @@ export function queueSiegeAttackIntent(conflict,officerName){
   return Object.freeze({...runtime.lastAttackIntent})
 }
 
+// Move and attack share the same unit/day budget. No physical motion is applied.
+export function queueSiegeMoveIntent(conflict,candidate){
+  const runtime=ensureSiegeRuntime(conflict)
+  if(runtime.phase!=='siege')throw new Error('尚未進入攻城階段。')
+  if(runtime.carryoverPending)throw new Error('30日工程段落已結束，待校準跨月續戰。')
+  const move=validFieldMoveOrder(conflict,candidate)
+  if(!move)throw new Error('移動武將或目的地無效。')
+  if(runtime.usedOfficerNames.includes(move.officerName))throw new Error('此部隊本日已接受命令。')
+  runtime.usedOfficerNames.push(move.officerName)
+  const index=runtime.recordedMoves.findIndex(item=>item.officerName===move.officerName)
+  if(index<0)runtime.recordedMoves.push(move)
+  else runtime.recordedMoves[index]=move
+  runtime.moveDraft=null
+  return move
+}
+
 // Explicit preview transition only: no automatic clock, movement, resource
 // consumption or battle result is inferred from an incremented command day.
 export function advanceSiegeOrderDay(conflict){
@@ -131,6 +162,7 @@ export function advanceSiegeOrderDay(conflict){
   runtime.day+=1
   runtime.carryoverPending=runtime.day>=OBSERVED_BATTLE_SEGMENT_DAYS
   runtime.usedOfficerNames=[]
+  runtime.moveDraft=null
   return runtime.day
 }
 
