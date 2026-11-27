@@ -45,3 +45,19 @@ export function countryOverviewWindow(rows,cursor,pageSize=COUNTRY_OVERVIEW_PAGE
     rows:Object.freeze(rows.slice(start,start+size)),
   })
 }
+
+export const COUNTRY_OVERVIEW_FIELDS=Object.freeze(['name','industry','officerCount','rule','taxRate'])
+
+// HK manual p.14 confirms field ordering, not the initial direction or tie
+// behavior. Use a deterministic provisional order; unknown values stay last
+// and are never inferred from hidden runtime data.
+export function sortCountryOverviewRows(rows,field,ascending=false) {
+  if(!COUNTRY_OVERVIEW_FIELDS.slice(1).includes(field))return [...rows]
+  const known=row=>row.visible&&Number.isFinite(row[field])
+  return [...rows].sort((a,b)=>{
+    const ak=known(a),bk=known(b)
+    if(ak!==bk)return ak?-1:1
+    if(ak&&bk&&a[field]!==b[field])return ascending?a[field]-b[field]:b[field]-a[field]
+    return a.number-b.number
+  })
+}

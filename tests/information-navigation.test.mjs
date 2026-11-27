@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { GameStore } from '../src/game/store.js'
 import { StrategyScene } from '../src/scenes/strategy-full-map.js'
-import { WORLD_W, WORLD_H } from '../src/game/world.js'
+import { WORLD_W, WORLD_H, cityWorldPoint } from '../src/game/world.js'
 
 function fixture(){
   const store=new GameStore(null)
@@ -90,3 +90,34 @@ test('officer status handles a changed or empty live roster without inventing a 
   assert.equal(scene.officerStatusRow,null)
   assert.equal(scene.officerListCursor,0)
 })
+
+test('survey overview sorts fields with A/C while preserving selected city and campaign state',()=>{
+  const {scene,store}=fixture()
+  scene.view='info'
+  scene.countryOverviewCursor=1
+  const selected=scene.countryOverviewProjection()[1].cityId
+  const before=structuredClone(store.state)
+  press(scene,'ArrowRight')
+  press(scene,'z')
+  assert.equal(scene.countryOverviewSortField,'industry')
+  assert.equal(scene.countryOverviewAscending,false)
+  assert.equal(scene.countryOverviewProjection()[scene.countryOverviewCursor].cityId,selected)
+  press(scene,'c')
+  assert.equal(scene.countryOverviewAscending,true)
+  assert.equal(scene.countryOverviewProjection()[scene.countryOverviewCursor].cityId,selected)
+  assert.deepEqual(store.state,before)
+})
+
+for(const button of ['z','c']){
+  test('survey country name '+button+' returns to the selected map city without entering commands',()=>{
+    const {scene,store}=fixture()
+    scene.view='info'
+    const city=store.mapProfile.cities.find(c=>store.state.cities[c.id].owner!=='liu')
+    scene.countryOverviewCursor=store.mapProfile.cities.findIndex(c=>c.id===city.id)
+    const before=structuredClone(store.state)
+    press(scene,button)
+    assert.equal(scene.view,'map')
+    assert.equal(scene.stage,'survey')
+    assert.deepEqual(store.state,{...before,cursor:cityWorldPoint(city)})
+  })
+}

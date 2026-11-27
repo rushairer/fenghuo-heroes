@@ -1,7 +1,8 @@
 import { COLORS, SERIF } from '../game/constants.js'
-import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor } from '../game/country-overview.js'
+import { COUNTRY_OVERVIEW_PAGE_SIZE, COUNTRY_OVERVIEW_FIELDS, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor, sortCountryOverviewRows } from '../game/country-overview.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
+import { cityWorldPoint } from '../game/world.js'
 import { drawStrategyPanel } from '../game/ui-art.js'
 import { OFFICER_STATUS_FIELDS, stationedOfficerListForCity, officerStatusProjection } from '../game/officer-roster.js'
 import { StrategyScene as InfoStrategyScene } from './strategy-info.js'
@@ -15,6 +16,9 @@ export class StrategyScene extends InfoStrategyScene {
     this.officerListCursor=0
     this.officerStatusRow=null
     this.countryOverviewCursor=0
+    this.countryOverviewColumn=0
+    this.countryOverviewSortField=null
+    this.countryOverviewAscending=false
     this.cityStatusReturnView='map'
   }
 
@@ -35,6 +39,9 @@ export class StrategyScene extends InfoStrategyScene {
   }
 
   syncCountryOverviewCursorToMap() {
+    this.countryOverviewColumn=0
+    this.countryOverviewSortField=null
+    this.countryOverviewAscending=false
     const state=this.app.store.state
     const current=this.app.store.cityAt(state.cursor.x,state.cursor.y,12)
     if(!current)return
@@ -43,12 +50,24 @@ export class StrategyScene extends InfoStrategyScene {
     if(index>=0)this.countryOverviewCursor=index
   }
 
+  countryOverviewProjection() {
+    const rows=countryOverviewRows(this.app.store,{revealAll:this.infoCommandBrowse})
+    return sortCountryOverviewRows(rows,this.countryOverviewSortField,this.countryOverviewAscending)
+  }
+
   updateCountryOverview(input) {
     const key=input.consume()
     if(!key)return
     const b=mdButton(key)
     if(b==='HD')return this.app.toggleHd()
-    const rows=countryOverviewRows(this.app.store,{revealAll:this.infoCommandBrowse})
+    const rows=this.countryOverviewProjection()
+    const surveyOverview=this.stage==='survey'&&!this.infoCommandBrowse
+    if(surveyOverview&&(b==='LEFT'||b==='RIGHT')){
+      const column=this.countryOverviewColumn??0
+      this.countryOverviewColumn=moveCountryOverviewCursor(column,b==='LEFT'?-1:1,COUNTRY_OVERVIEW_FIELDS.length)
+      this.app.audio.move()
+      return
+    }
     if(b==='UP'&&rows.length){
       this.countryOverviewCursor=moveCountryOverviewCursor(this.countryOverviewCursor,-1,rows.length)
       this.app.audio.move()
@@ -62,12 +81,29 @@ export class StrategyScene extends InfoStrategyScene {
     if(b==='B'){
       return this.closeInfo()
     }
-    // Manual evidence assigns selection to C on this list. A is intentionally
-    // left unused rather than acting as a modern secondary confirm button.
+    // HK manual p.14: A/C on a field changes its order; on a country
+    // name it returns to the map at that country. Keep the separate 情報
+    // command's existing drilldown and command-source restoration intact.
+    if(surveyOverview&&(b==='A'||b==='C')){
+      const row=rows[this.countryOverviewCursor]
+      if(!row){this.app.audio.alert();return}
+      const field=COUNTRY_OVERVIEW_FIELDS[this.countryOverviewColumn??0]
+      if(field==='name'){
+        const city=this.app.store.mapProfile?.cityById?.[row.cityId]
+        if(!city){this.app.audio.alert();return}
+        const point=cityWorldPoint(city)
+        this.app.store.setCursor(point.x,point.y)
+        this.closeInfo()
+        return
+      }
+      this.countryOverviewAscending=this.countryOverviewSortField===field?!this.countryOverviewAscending:false
+      this.countryOverviewSortField=field
+      this.countryOverviewCursor=this.countryOverviewProjection().findIndex(candidate=>candidate.cityId===row.cityId)
+      this.app.audio.confirm()
+      return
+    }
     if(b!=='C')return
-    // The documented 情報 command is a repeatable status browser even during
-    // the command phase. Ordinary command-phase overview access remains read-only.
-    if(this.stage!=='survey'&&!this.infoCommandBrowse){this.app.audio.alert();return}
+    if(!this.infoCommandBrowse){this.app.audio.alert();return}
     const row=rows[this.countryOverviewCursor]
     if(!row){this.app.audio.alert();return}
     this.targetCity=row.cityId
@@ -174,31 +210,36 @@ export class StrategyScene extends InfoStrategyScene {
 
   drawCountryOverview() {
     const r=this.app.r
-    const rows=countryOverviewRows(this.app.store,{revealAll:this.infoCommandBrowse})
+    const rows=this.countryOverviewProjection()
+    const surveyOverview=this.stage==='survey'&&!this.infoCommandBrowse
+    const column=surveyOverview?(this.countryOverviewColumn??0):0
     const page=countryOverviewWindow(rows,this.countryOverviewCursor,COUNTRY_OVERVIEW_PAGE_SIZE)
     drawStrategyPanel(r,24,18,272,174,'#020202','#b07118')
     r.text('統治國一覽',160,27,11,'#efd27d','center','top',SERIF,'700')
     r.line(37,44,283,44,'#72501b',.7)
-    r.text('國',51,50,6,'#8f8674')
-    r.text('產值',149,50,5.7,'#8f8674','right')
-    r.text('將',180,50,5.7,'#8f8674','right')
-    r.text('統治',220,50,5.7,'#8f8674','right')
-    r.text('稅率',261,50,5.7,'#8f8674','right')
+    const headings=[['國',70],['產值',149],['將',180],['統治',220],['稅率',261]]
+    headings.forEach(([label,x],i)=>{
+      const sorted=surveyOverview&&this.countryOverviewSortField===COUNTRY_OVERVIEW_FIELDS[i]
+      r.text(label+(sorted?(this.countryOverviewAscending?'↑':'↓'):''),x,50,5.7,
+        surveyOverview&&column===i?COLORS.cyan:'#8f8674',i===0?'left':'right')
+    })
     page.rows.forEach((row,index)=>{
       const absolute=page.start+index
       const active=absolute===this.countryOverviewCursor
       const y=61+index*10.8
       if(active)r.text('▶',34,y,6.5,COLORS.cyan)
       const faction=FACTION_BY_ID[row.owner]??FACTION_BY_ID.neutral
-      const color=active?COLORS.cyan:'#e8dfc8'
-      r.text(String(row.number).padStart(2,'0'),48,y,6,color)
-      r.text(row.name,70,y,7.2,active?COLORS.cyan:(faction?.color??color))
-      r.text(row.industry??'—',149,y,6.5,color,'right')
-      r.text(row.officerCount??'—',180,y,6.5,color,'right')
-      r.text(row.rule??'—',220,y,6.5,color,'right')
-      r.text(row.taxRate==null?'—':`${row.taxRate}%`,261,y,6.5,color,'right')
+      const color='#e8dfc8'
+      const cellColor=i=>active&&column===i?COLORS.cyan:color
+      r.text(String(row.number).padStart(2,'0'),48,y,6,active?COLORS.cyan:color)
+      r.text(row.name,70,y,7.2,active&&column===0?COLORS.cyan:(faction?.color??color))
+      r.text(row.industry??'—',149,y,6.5,cellColor(1),'right')
+      r.text(row.officerCount??'—',180,y,6.5,cellColor(2),'right')
+      r.text(row.rule??'—',220,y,6.5,cellColor(3),'right')
+      r.text(row.taxRate==null?'—':`${row.taxRate}%`,261,y,6.5,cellColor(4),'right')
     })
-    const footer=(this.stage==='survey'||this.infoCommandBrowse)?'↑↓ 捲動　C 國狀態　B 返回':'↑↓ 捲動　B 返回'
+    const footer=surveyOverview?'方向鍵 選擇　A/C 排序・定位　B 返回':
+      this.infoCommandBrowse?'↑↓ 捲動　C 國狀態　B 返回':'↑↓ 捲動　B 返回'
     r.text(footer,160,178,6,'#887f6d','center')
   }
 

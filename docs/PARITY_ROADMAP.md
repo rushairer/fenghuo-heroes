@@ -302,3 +302,8 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 - [x] Restore directional full-map cursor browsing (HK manual p.15), reusing the current map cursor and provisional navigation step; START/B return without issuing a command or changing resources.
 - [x] Restore UP/DOWN officer-status browsing (HK manual pp.18–19) against the same roster as the list; returning preserves the selected officer and unknown values remain unknown.
 - [ ] Measure the original full-map cursor step, inset geometry, camera on return, officer list boundary behavior, and exact status-screen copy from direct Chinese-edition frames. The manual's indexed text confirms navigation but its scan was not accessible for frame measurement.
+
+### Country overview field ordering and map navigation
+- [x] HK manual p.14 documents horizontal/vertical list selection, A/C field ordering and A/C on a country name returning to its map location. Restore these on the survey overview, retaining the separate 情報 command's existing drilldown and source-city restoration.
+- [x] Sort only the visible projection, keep unknown values last, and retain the selected city across reordering without modifying campaign data.
+- [ ] Measure original column layout, sort direction/toggle/ties, cursor behavior after sorting and map return camera from direct HK/Chinese-edition frames. The deterministic descending-first sort and one-column-per-step interaction are provisional; indexed manual text confirms the actions but the page scan request returned HTTP 403.

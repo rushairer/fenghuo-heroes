@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor } from '../src/game/country-overview.js'
+import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor, sortCountryOverviewRows } from '../src/game/country-overview.js'
 import { buildCanonicalRuntimeMap } from '../src/game/canonical-map-profile.js'
 import { GameStore } from '../src/game/store.js'
 import { completeCanonicalMapEvidence } from './fixtures/canonical-map-evidence.mjs'
@@ -119,4 +119,20 @@ test('verified overview count follows stationed roster instead of stale opening 
   assert.deepEqual(countryOverviewRows(store).map(row=>row.officerCount),[1,null])
   assert.deepEqual(countryOverviewRows(store,{revealAll:true}).map(row=>row.officerCount),[1,1])
   assert.deepEqual(store.state,before)
+})
+
+test('country field sorting is stable, numeric, and keeps hidden or unknown fields last',()=>{
+  const rows=[
+    {number:1,visible:true,industry:2},
+    {number:2,visible:false,industry:999},
+    {number:3,visible:true,industry:10},
+    {number:4,visible:true,industry:null},
+    {number:5,visible:true,industry:10},
+    {number:6,visible:true,industry:0},
+  ]
+  const before=structuredClone(rows)
+  assert.deepEqual(sortCountryOverviewRows(rows,'industry').map(r=>r.number),[3,5,1,6,2,4])
+  assert.deepEqual(sortCountryOverviewRows(rows,'industry',true).map(r=>r.number),[6,1,3,5,2,4])
+  assert.deepEqual(sortCountryOverviewRows(rows,'name'),rows)
+  assert.deepEqual(rows,before)
 })
