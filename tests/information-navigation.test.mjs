@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { GameStore } from '../src/game/store.js'
+import { CITY_STATUS_PAGE_SIZE, cityStatusRows } from '../src/game/city-status.js'
 import { StrategyScene } from '../src/scenes/strategy-full-map.js'
 import { WORLD_W, WORLD_H, cityWorldPoint } from '../src/game/world.js'
 
@@ -121,3 +122,65 @@ for(const button of ['z','c']){
     assert.deepEqual(store.state,{...before,cursor:cityWorldPoint(city)})
   })
 }
+
+test('country status scrolls all manual fields without changing the campaign',()=>{
+  const {scene,store}=fixture()
+  const city=store.mapProfile.cities.find(c=>store.state.cities[c.id].owner==='liu')
+  const point=cityWorldPoint(city)
+  store.setCursor(point.x,point.y)
+  const before=structuredClone(store.state)
+  press(scene,'c')
+  assert.equal(scene.view,'city-status')
+  assert.equal(scene.targetCity,city.id)
+  const rows=scene.cityStatusProjection()
+  assert.deepEqual(rows.map(([label])=>label),['君主','太守','金','借債','米','民','產值','農業比','統治力','稅率','武將','士兵','防禦力'])
+  assert.equal(Object.fromEntries(rows).金,store.state.cities[city.id].gold)
+  for(const field of ['太守','借債','民','農業比'])assert.equal(Object.fromEntries(rows)[field],null)
+  press(scene,'ArrowUp')
+  assert.equal(scene.cityStatusScroll,0)
+  for(let i=0;i<20;i++)press(scene,'ArrowDown')
+  assert.equal(scene.cityStatusScroll,rows.length-CITY_STATUS_PAGE_SIZE)
+  press(scene,'z')
+  assert.equal(scene.view,'city-status')
+  press(scene,'c')
+  assert.equal(scene.view,'officer-list')
+  press(scene,'x')
+  assert.equal(scene.view,'city-status')
+  assert.equal(scene.cityStatusScroll,rows.length-CITY_STATUS_PAGE_SIZE)
+  press(scene,'x')
+  assert.equal(scene.view,'map')
+  press(scene,'c')
+  assert.equal(scene.cityStatusScroll,0)
+  assert.deepEqual(store.state,before)
+})
+
+test('intelligence country status scroll retains the selected city and returns to its overview',()=>{
+  const {scene,store}=fixture()
+  scene.stage='command'
+  scene.infoCommandBrowse=true
+  scene.view='info'
+  scene.countryOverviewCursor=1
+  scene.cityStatusScroll=7
+  const before=structuredClone(store.state)
+  press(scene,'c')
+  assert.equal(scene.view,'city-status')
+  assert.equal(scene.cityStatusScroll,0)
+  const target=scene.targetCity
+  press(scene,'ArrowDown')
+  assert.equal(scene.cityStatusScroll,1)
+  assert.equal(scene.targetCity,target)
+  press(scene,'x')
+  assert.equal(scene.view,'info')
+  assert.equal(scene.countryOverviewCursor,1)
+  assert.deepEqual(store.state,before)
+})
+
+test('country status uses a verified live officer count and rejects an unknown city',()=>{
+  const {store}=fixture()
+  const city=store.mapProfile.cities.find(c=>store.state.cities[c.id].owner==='liu')
+  store.state.scenarioOfficerPlacementStatus='source-backed-189'
+  store.state.cities[city.id].officers=['關羽']
+  store.state.cities[city.id].officerCount=99
+  assert.equal(Object.fromEntries(cityStatusRows(store,city.id)).武將,1)
+  assert.deepEqual(cityStatusRows(store,'not-a-city'),[])
+})

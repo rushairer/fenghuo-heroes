@@ -307,3 +307,8 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 - [x] HK manual p.14 documents horizontal/vertical list selection, A/C field ordering and A/C on a country name returning to its map location. Restore these on the survey overview, retaining the separate 情報 command's existing drilldown and source-city restoration.
 - [x] Sort only the visible projection, keep unknown values last, and retain the selected city across reordering without modifying campaign data.
 - [ ] Measure original column layout, sort direction/toggle/ties, cursor behavior after sorting and map return camera from direct HK/Chinese-edition frames. The deterministic descending-first sort and one-column-per-step interaction are provisional; indexed manual text confirms the actions but the page scan request returned HTTP 403.
+
+### Manual-backed country status scrolling
+- [x] Restore the HK manual pp.16–17 country-status field sequence and UP/DOWN scrolling in survey and explicit 情報 browsing. C opens the officer list, A remains unused, and B restores the originating view. Opening a new country resets the scroll; returning from its officer list retains it.
+- [x] Project existing runtime balances and known officer count without inventing the missing governor, debt, civilian population or agricultural ratio. The right-side panel and six visible rows are provisional presentation choices, not measured target geometry.
+- [ ] Verify original scroll increment, field layout, values and font metrics against direct Chinese-edition frames. Indexed text confirms the controls, but the page image request remains HTTP 403.

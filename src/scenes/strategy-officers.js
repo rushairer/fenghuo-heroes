@@ -1,6 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { COUNTRY_OVERVIEW_PAGE_SIZE, COUNTRY_OVERVIEW_FIELDS, countryOverviewRows, countryOverviewWindow, moveCountryOverviewCursor, sortCountryOverviewRows } from '../game/country-overview.js'
 import { FACTION_BY_ID } from '../game/data.js'
+import { CITY_STATUS_PAGE_SIZE, cityStatusRows, cityStatusScrollOffset } from '../game/city-status.js'
 import { mdButton } from '../game/input.js'
 import { cityWorldPoint } from '../game/world.js'
 import { drawStrategyPanel } from '../game/ui-art.js'
@@ -20,6 +21,7 @@ export class StrategyScene extends InfoStrategyScene {
     this.countryOverviewSortField=null
     this.countryOverviewAscending=false
     this.cityStatusReturnView='map'
+    this.cityStatusScroll=0
   }
 
   update(dt,input) {
@@ -33,7 +35,10 @@ export class StrategyScene extends InfoStrategyScene {
     if(b==='A')this.syncCountryOverviewCursorToMap()
     if(this.stage==='survey'&&b==='C'){
       const state=this.app.store.state
-      if(this.app.store.cityAt(state.cursor.x,state.cursor.y,12))this.cityStatusReturnView='map'
+      if(this.app.store.cityAt(state.cursor.x,state.cursor.y,12)){
+        this.cityStatusReturnView='map'
+        this.cityStatusScroll=0
+      }
     }
     return super.updateMap(b)
   }
@@ -108,6 +113,7 @@ export class StrategyScene extends InfoStrategyScene {
     if(!row){this.app.audio.alert();return}
     this.targetCity=row.cityId
     this.cityStatusReturnView='info'
+    this.cityStatusScroll=0
     this.view='city-status'
     this.app.audio.confirm()
   }
@@ -115,6 +121,11 @@ export class StrategyScene extends InfoStrategyScene {
   updateCityStatus(b) {
     const browseOnly=this.stage==='survey'||this.infoCommandBrowse
     if(!browseOnly)return super.updateCityStatus(b)
+    if(b==='UP'||b==='DOWN'){
+      this.cityStatusScroll=cityStatusScrollOffset(this.cityStatusScroll,b==='UP'?-1:1,this.cityStatusProjection().length)
+      this.app.audio.move()
+      return
+    }
     if(b==='B'){
       this.view=this.cityStatusReturnView==='info'?'info':'map'
       this.app.audio.cancel()
@@ -243,7 +254,12 @@ export class StrategyScene extends InfoStrategyScene {
     r.text(footer,160,178,6,'#887f6d','center')
   }
 
+  cityStatusProjection() {
+    return cityStatusRows(this.app.store,this.targetCity)
+  }
+
   drawCityStatus() {
+    if(this.stage==='survey'||this.infoCommandBrowse)return this.drawScrollableCityStatus()
     const r=this.app.r
     const city=this.app.store.mapProfile?.cityById?.[this.targetCity]
     const rt=this.app.store.state.cities[this.targetCity]
@@ -259,6 +275,24 @@ export class StrategyScene extends InfoStrategyScene {
     })
     const footer=(this.stage==='command'&&!this.infoCommandBrowse)?'C 繼續選命令　B 返回':'C 武將一覽　B 返回'
     r.text(footer,160,148,6,'#847b69','center')
+  }
+
+  drawScrollableCityStatus() {
+    const r=this.app.r
+    const city=this.app.store.mapProfile?.cityById?.[this.targetCity]
+    const rows=this.cityStatusProjection()
+    const start=cityStatusScrollOffset(this.cityStatusScroll,0,rows.length)
+    const end=Math.min(rows.length,start+CITY_STATUS_PAGE_SIZE)
+    drawStrategyPanel(r,170,23,142,176,'#020202','#b07118')
+    r.text(city?.name??'—',241,31,12,'#f0d477','center','top',SERIF,'700')
+    r.line(180,49,302,49,'#72501b',.7)
+    rows.slice(start,end).forEach(([label,value],i)=>{
+      const y=56+i*17
+      r.text(label,182,y,9,'#9e947e')
+      r.text(value??'—',298,y,9,'#eee2c3','right')
+    })
+    r.text(`${rows.length?start+1:0}–${end}/${rows.length}`,241,161,6,'#9e947e','center')
+    r.text('↑↓ 捲動　C 武將　B 返回',241,177,6,'#887f6d','center')
   }
 
   drawOfficerList() {

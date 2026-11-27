@@ -210,3 +210,15 @@ Rules for later work:
 - Forward confirmation is restricted to the live inspection phase; backing out remains available.
 - Officer selection requires at least one still-owned destination in the draft, not ownership of the default selected destination. On entering destination selection, recover a stale default by selecting the first remaining eligible city.
 - Destination and review confirmations continue to validate the selected city and the live officer roster. No transfer effect, cost or timing is inferred.
+
+### Country status browsing (HK manual pp.16–17)
+
+The survey and explicit 情報 country-status screens expose the documented
+field sequence and vertical scrolling, with A unused, C opening the
+officer list and B returning to the previous view. The scroll position is
+scene-local and never modifies campaign resources or command selection.
+Missing data (governor, debt, population, agricultural ratio) remains unknown;
+existing scaffold values are not original-game evidence. The six-row
+window and right-side placement are provisional pending direct frame
+measurement. The command-entry city status retains its existing behavior.
+Source: https://segaretro.org/images/c/c3/Sangokushiretsuden_md_HK_manual.pdf.pdf
