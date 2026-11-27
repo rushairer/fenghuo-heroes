@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Battle Movement Evidence</title><link rel="stylesheet" href="./index.css">
+<style>
+.controls,.frames{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+label{display:grid;gap:5px;margin:6px 0}input,select,button,textarea{font:inherit;padding:7px;max-width:100%}
+video,canvas{display:block;max-width:100%;height:auto;background:#000}canvas{cursor:crosshair;image-rendering:pixelated}
+video{max-height:420px}button{margin:4px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:860px){.controls,.frames{grid-template-columns:1fr}}
+</style></head>
+<body><main class="tools-app">
+<a href="./index.html">返回採集工具</a>
+<h1>戰場位移採集</h1>
+<p>使用同一戰鬥的兩張截圖或同一錄影的兩個時間點，依序標記兩個固定地標與同一部隊旗標。以固定地標抵消鏡頭平移。輸出僅為原始像素觀測，不是遊戲格距、速度或 canonical evidence。</p>
+<section class="controls">
+<label>Source ID<input id="source-id" placeholder="hk-battle-001"></label>
+<label>Source Ref<input id="source-ref" placeholder="合法錄影檔案或公開來源"></label>
+<label>Battle Ref<input id="battle-ref" placeholder="劇本、戰場與戰鬥識別"></label>
+<label>Unit Ref<input id="unit-ref" placeholder="同一具名武將或可識別部隊"></label>
+<label>戰鬥類型<select id="kind"><option value="unknown">未確認</option><option value="field">部隊戰</option><option value="siege">攻城</option></select></label>
+<label>戰鬥速度<select id="speed"><option value="unknown">未確認</option><option value="normal">普通</option><option value="fast">快速</option></select></label>
+</section>
+<label>本地錄影（選用）<input id="video-file" type="file" accept="video/*"></label>
+<video id="video" controls playsinline hidden></video>
+<div class="frames">
+<article id="before">
+<h2>前一幀</h2>
+<label>本地截圖<input data-image type="file" accept="image/*"></label>
+<button data-freeze type="button">擷取目前錄影畫面</button>
+<label>Frame Ref<input data-ref placeholder="唯一幀參考"></label>
+<label>畫面顯示的戰鬥日（未知留空）<input data-day type="number" min="1" step="1"></label>
+<canvas data-canvas hidden></canvas>
+<p data-prompt>載入畫面後依序點選：地標 A、地標 B、部隊旗標。</p>
+<button data-undo type="button">撤銷上一個點</button>
+</article>
+<article id="after">
+<h2>後一幀</h2>
+<label>本地截圖<input data-image type="file" accept="image/*"></label>
+<button data-freeze type="button">擷取目前錄影畫面</button>
+<label>Frame Ref<input data-ref placeholder="唯一幀參考"></label>
+<label>畫面顯示的戰鬥日（未知留空）<input data-day type="number" min="1" step="1"></label>
+<canvas data-canvas hidden></canvas>
+<p data-prompt>載入畫面後依序點選：地標 A、地標 B、部隊旗標。</p>
+<button data-undo type="button">撤銷上一個點</button>
+</article>
+</div>
+<button id="generate" type="button">計算並產生候選 JSON</button>
+<button id="download" type="button" disabled>儲存候選 JSON</button>
+<p id="status" role="status"></p>
+<pre id="output"></pre>
+<p>錄影時間不等於遊戲內的實際時間；剪輯、變速、暫停、不同鏡頭尺度或同一旗幟辨識錯誤都可能造成錯誤。只有在人工復核後才能進一步校準。媒體內容留在本機，不會寫入輸出。</p>
+</main><script type="module" src="./battle-movement-capture.js"></script></body></html>

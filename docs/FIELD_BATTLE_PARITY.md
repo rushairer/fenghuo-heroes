@@ -264,3 +264,7 @@ HK manual pp. 28–29 describes selecting a unit and movement destination with t
 ## Battle map presentation reference
 
 The newly inspected Chinese battle still and Japanese corroboration (see evidence catalog) establish a compact pennant/light lower strip and top-right day plaque, rather than full-width header and large rectangular side blocks. Active field-battle presentation now uses a clean-room vector marker approximating the observed 16 logical-pixel width and a fixed compact day plaque. The existing two side proxies retain their engineering anchors and faction colors; their labels 自/敵 deliberately do not pretend to be original unit numbers. The terrain, footer, exact flag colors, glyphs, unit count and positions are NOT calibrated. Preparation screens and move/attack mechanics are unchanged. Do not infer a tactical grid or a siege map from this frame.
+
+## Tactical movement capture
+
+`tools/battle-movement-capture.html` now records two local frames with the same unit marker and two stationary landmarks. It rejects inconsistent landmark translations, exports native-pixel relative displacement as an unverified candidate, and never modifies campaign state. See `docs/BATTLE_MOVEMENT_CAPTURE.md`. The original p. 24 ration formula is already implemented for march; no consumption is connected to the artificial battle-day bridge.

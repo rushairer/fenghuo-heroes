@@ -104,8 +104,9 @@ npm run check
 - Canonical Map Capture
 - Scenario Start-State Capture
 - March Observation Capture
+- Battle Movement Capture
 
-这三个工具都只生成 `verified:false` 候选；不会自动把人工抄录提升为 canonical evidence。
+这些工具都只生成 `verified:false` 候选；不会自动把人工抄录提升为 canonical evidence。
 
 ## 地图迁移审计
 

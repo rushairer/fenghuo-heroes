@@ -258,3 +258,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Battle-map visual reference acquisition
 - [x] Inspect Chinese-language battle frame from the 2010 PIXNET article and corroborating Japanese-language battle frame. Use compact flag silhouette and upper-right day plaque in the active field-battle scaffold; retain explicit side-proxy labels, not invented unit IDs.
 - [ ] Measure map-specific terrain, deployment markers, unit identity, camera travel and successive movement/contact frames; one still does not establish any simulation rule.
+
+### Tactical movement observation acquisition
+- [x] Local two-frame capture and camera-translation rejection using two stationary landmarks; export unverified native-pixel observations only.
+- [ ] Collect repeatable Chinese-edition movement and contact pairs and measure the original clock before enabling real tactical simulation.
