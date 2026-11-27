@@ -437,3 +437,45 @@ test('army cursor prefers the nearest friendly marker within overlapping hit reg
   assert.equal(armyAt(store,120,96,12),null)
   assert.deepEqual(store.state,before)
 })
+
+test('invalid strategic positions cannot open a field battle or siege',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const own=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:500,food:100,gold:0})
+  const enemy={id:'enemy-invalid',faction:'liu',x:start.x+8,y:start.y,status:'waiting',troops:500}
+  s.state.armies.push(enemy)
+  for(const x of [NaN,Infinity,undefined,String(start.x+8),start.x+0.5,-1,WORLD_W+1]){
+    enemy.x=x
+    const before=structuredClone(s.state)
+    assert.equal(enemyArmyNearArmy(s,own.id),null)
+    assert.throws(()=>beginFieldBattleFromArmies(s,own.id,enemy.id),/尚未進入可攻擊範圍/)
+    assert.equal(s.pendingConflict,null)
+    assert.deepEqual(s.state,before)
+  }
+  enemy.x=start.x+8
+  own.x=NaN
+  const before=structuredClone(s.state)
+  assert.equal(enemyCityNearArmy(s,own.id),null)
+  assert.throws(()=>beginSiegeFromArmy(s,own.id,'xinye'),/尚未接近敵城/)
+  assert.throws(()=>beginFieldBattleFromArmies(s,own.id,enemy.id),/尚未進入可攻擊範圍/)
+  assert.deepEqual(s.state,before)
+  own.x=start.x
+  assert.equal(enemyArmyNearArmy(s,own.id),enemy)
+  assert.equal(beginFieldBattleFromArmies(s,own.id,enemy.id).kind,'field')
+})
+
+test('battle cancellation does not initialize a legacy missing army sequence',()=>{
+  const s=marchingCaoStore()
+  const start=cityWorldPoint(city('xuchang'))
+  const own=queueMarch(s,{from:'xuchang',route:[start,{x:start.x+8,y:start.y}],troops:500,food:100,gold:0})
+  s.state.armies.push({id:'enemy',faction:'liu',x:start.x+8,y:start.y,status:'waiting',troops:500})
+  beginFieldBattleFromArmies(s,own.id,'enemy')
+  delete s.state.nextArmyId
+  assert.equal(cancelFieldBattleFromArmies(s),true)
+  assert.equal(Object.hasOwn(s.state,'nextArmyId'),false)
+  const target=cityWorldPoint(city('xinye'))
+  own.x=target.x;own.y=target.y
+  beginSiegeFromArmy(s,own.id,'xinye')
+  assert.equal(cancelSiegeFromArmy(s),true)
+  assert.equal(Object.hasOwn(s.state,'nextArmyId'),false)
+})

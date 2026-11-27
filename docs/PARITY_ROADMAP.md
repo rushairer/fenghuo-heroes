@@ -285,3 +285,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### City dispatch beneath army markers
 - [x] Preserve access to the existing named-officer dispatch workflow when a friendly army obscures an owned city; the previous army and its resources remain independent.
 - [ ] Verify original city/army overlap selection controls from target-edition frames; the additional navigation row is an engineering convention.
+
+### Encounter and completed-route integrity
+- [x] Share field encounter position validation between discovery and commit; reject malformed army coordinates in siege entry, preserve ration history at a restored final route node, and keep battle cancellation independent of ID initialization.
+- [ ] Calibrate original encounter timing, stationary rations and battle consequences from target-edition evidence.

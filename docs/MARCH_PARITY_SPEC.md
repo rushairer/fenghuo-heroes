@@ -274,3 +274,7 @@ It uses the existing production composition, officer eligibility, route
 and atomic resource-debit workflow. The previous army remains untouched.
 This row is an engineering accessibility fix, not a measured original
 menu command. The original army-command order remains unchanged.
+
+## Encounter and completed-route integrity
+
+Field battle lookup and admission share the same bounded integer-coordinate predicate; malformed saved coordinates cannot bypass the adjacency check. Siege admission also rejects invalid army coordinates. A restored marching army already at its final route node must still match that position; if valid, it changes to waiting without overwriting the last ration or starvation accounting. Battle cancellation reads existing armies without initializing the legacy ID counter. These changes enforce existing engineering projections, not newly calibrated original timing or combat effects.

@@ -149,16 +149,24 @@ export function canSplitArmy(store,armyId){
   return friendlyArmyStack(store,armyId).length>=2
 }
 
+// Both the menu and the command commit use the same existing map projection.
+function validArmyPoint(army){
+  return Boolean(army)&&Number.isSafeInteger(army.x)&&Number.isSafeInteger(army.y)&&
+    army.x>=0&&army.x<=WORLD_W&&army.y>=0&&army.y<=WORLD_H
+}
+
+function isEnemyArmyInRange(army,enemy,tolerance){
+  if(!validArmyPoint(army)||!validArmyPoint(enemy)||enemy.id===army.id||
+    enemy.faction===army.faction)return false
+  const distance=Math.max(Math.abs(enemy.x-army.x),Math.abs(enemy.y-army.y))
+  return distance>0&&distance<=tolerance
+}
+
 export function enemyArmyNearArmy(store, armyId, tolerance = MARCH_ADJACENCY_STEP) {
   const armies = readArmies(store)
   const army = armies.find((item) => item.id === armyId)
   if (!army) return null
-  return armies.find((item) => {
-    if (item.id === army.id || item.faction === army.faction) return false
-    const dx = Math.abs(item.x - army.x)
-    const dy = Math.abs(item.y - army.y)
-    return Math.max(dx, dy) > 0 && Math.max(dx, dy) <= tolerance
-  }) ?? null
+  return armies.find(item=>isEnemyArmyInRange(army,item,tolerance)) ?? null
 }
 
 export function queueMarch(store, {
@@ -309,7 +317,6 @@ function assertMarchExecutionReady(army){
   if(!Array.isArray(route)||!count(index)||index>=route.length||!point(route[index])){
     throw new Error('行軍部隊的路線或進度無效。')
   }
-  if(index===route.length-1)return
   if(!point(army)||army.x!==route[index].x||army.y!==route[index].y){
     throw new Error('行軍部隊的位置與路線進度不符。')
   }
@@ -339,6 +346,14 @@ export function executeMarchTurn(store, days = MARCH_RUNTIME_PROJECTION.executio
   }
   for(const army of moving)assertMarchExecutionReady(army)
   for (const army of moving) {
+    // A restored marching army may already be at the final route node.
+    // Normalize its status without recording an elapsed day or clearing
+    // the previous ration/starvation accounting.
+    if(army.routeIndex===army.route.length-1){
+      army.status='waiting'
+      events.push({armyId:army.id,steps:0,daysElapsed:0,foodConsumed:0,starvingDays:0,status:army.status})
+      continue
+    }
     const ration = dailyFoodFor(army.troops, army.officerCount)
     army.dailyFood = ration
     let steps = 0
@@ -412,7 +427,7 @@ export function advanceMarchArmies(store, days = MARCH_RUNTIME_PROJECTION.execut
 
 function isEnemyCityInRange(store,army,city,tolerance){
   const runtime=store.state.cities[city.id]
-  if(!runtime||runtime.owner===army.faction)return false
+  if(!runtime||!validArmyPoint(army)||runtime.owner===army.faction)return false
   const point=cityWorldPoint(city)
   return Math.abs(point.x-army.x)<=tolerance&&Math.abs(point.y-army.y)<=tolerance
 }
@@ -490,7 +505,7 @@ export function beginSiegeFromArmy(store, armyId, targetCityId) {
 export function cancelSiegeFromArmy(store) {
   const conflict = store.pendingConflict
   if (!conflict || conflict.kind !== 'siege') return false
-  const army = ensureMarchState(store).find((item) => item.id === conflict.armyId)
+  const army = readArmies(store).find((item) => item.id === conflict.armyId)
   return commitCombatTransition(store,army?[army]:[],()=>{
     if(army)army.status=conflict.previousArmyStatus??'waiting'
     store.pendingConflict=null
@@ -511,9 +526,7 @@ export function beginFieldBattleFromArmies(store, attackerArmyId, defenderArmyId
   if([attacker,defender].some((army)=>army.status==='engaged'||army.status==='besieging')){
     throw new Error('戰鬥中的部隊不可重複發動攻擊。')
   }
-  const dx=Math.abs(defender.x-attacker.x)
-  const dy=Math.abs(defender.y-attacker.y)
-  if(Math.max(dx,dy)===0||Math.max(dx,dy)>MARCH_ADJACENCY_STEP)throw new Error('敵部隊尚未進入可攻擊範圍。')
+  if(!isEnemyArmyInRange(attacker,defender,MARCH_ADJACENCY_STEP))throw new Error('敵部隊尚未進入可攻擊範圍。')
 
   const previousArmyStatuses=Object.freeze({
     [attacker.id]:attacker.status??'waiting',
@@ -547,7 +560,7 @@ export function cancelFieldBattleFromArmies(store) {
   const conflict=store.pendingConflict
   if(!conflict||conflict.kind!=='field')return false
   const statuses=conflict.previousArmyStatuses??{}
-  const participants=ensureMarchState(store).filter((army)=>
+  const participants=readArmies(store).filter((army)=>
     army.id===conflict.attackerArmyId||army.id===conflict.defenderArmyId)
   return commitCombatTransition(store,participants,()=>{
     for(const army of participants)army.status=statuses[army.id]??'waiting'

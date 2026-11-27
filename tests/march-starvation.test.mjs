@@ -100,3 +100,26 @@ test('invalid second army rejects the entire movement before any first-army debi
     assert.deepEqual(store.state,before)
   }
 })
+
+test('a restored army already at its last route node retains starvation accounting',()=>{
+  const store=storeWithFood(1)
+  executeMarchTurn(store,3)
+  const army=store.state.armies[0]
+  army.status='marching'
+  const before=structuredClone(army)
+  assert.deepEqual(executeMarchTurn(store,1),[{
+    armyId:'test-army',steps:0,daysElapsed:0,foodConsumed:0,starvingDays:0,status:'waiting',
+  }])
+  assert.deepEqual(army,{...before,status:'waiting'})
+})
+
+test('an exhausted route with mismatched coordinates is rejected before another army moves',()=>{
+  const store=storeWithFood(20)
+  const other=structuredClone(store.state.armies[0])
+  other.id='other'
+  other.routeIndex=other.route.length-1
+  store.state.armies.push(other)
+  const before=structuredClone(store.state)
+  assert.throws(()=>executeMarchTurn(store,1),/位置與路線進度不符/)
+  assert.deepEqual(store.state,before)
+})
