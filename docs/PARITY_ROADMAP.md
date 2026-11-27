@@ -293,3 +293,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Stationed officer read model
 - [x] Keep the verified city roster and visible country officer count consistent with named officers deployed on the strategy map; preserve opening assignments and unverified scaffold behavior.
 - [ ] Calibrate original驻城／出陣 display, return-to-city and officer reassignment effects from Chinese-edition frames.
+
+### Transport source and resource integrity
+- [x] Revalidate source city membership and ownership throughout transport targeting and load selection; discard stale drafts, reject malformed balances, and preserve campaign resources.
+- [ ] Capture allied vs. hostile overlap and the destination of seized cargo; do not treat the preview as a dispatched transport unit.

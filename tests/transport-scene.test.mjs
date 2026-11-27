@@ -81,3 +81,23 @@ test('transport without an eligible destination returns to the same command menu
   assert.equal(scene.view,'commands')
   assert.equal(scene.transportSource,null)
 })
+
+test('transport abandons a stale source at entry, targeting or cargo confirmation',()=>{
+  for(const stage of ['entry','target','load']){
+    const {scene,store,source,target}=fixture()
+    if(stage==='target')scene.beginTransportTargeting()
+    if(stage==='load')openLoad(scene,target)
+    store.state.cities[source.id].owner='liu'
+    const before=structuredClone(store.state)
+    if(stage==='entry')scene.beginTransportTargeting()
+    if(stage==='target')scene.updateTransportTarget('B')
+    if(stage==='load')scene.updateTransportLoad('C')
+    assert.equal(scene.view,'message')
+    assert.equal(scene.transportSource,null)
+    assert.equal(scene.transportDestination,null)
+    assert.equal(scene.targetCity,null)
+    assert.deepEqual(store.state,before)
+    scene.updateMessage('B')
+    assert.equal(scene.view,'target')
+  }
+})

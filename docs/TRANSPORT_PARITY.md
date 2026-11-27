@@ -37,3 +37,9 @@ This boundary is intentional: transport may only mutate resources once the map-u
 ## Preview workflow safeguards
 
 The load confirmation revalidates the destination's current ownership. A stale destination returns to targeting without dispatch or resource mutation. Cancelling the load clears its destination; cancelling targeting clears the transport draft. The unexecuted preview and a no-destination message both return to the source command menu. These are engineering interaction safeguards, not newly verified original transport lifecycle rules.
+
+A stale source city (missing from the active map or no longer owned by the active faction) now invalidates the entire draft and returns to city targeting. Non-integer, missing, negative or unsafe resource balances cannot authorize a cargo preview. Neither check mutates campaign resources.
+
+## Additional interception evidence lead (unverified)
+
+A Chinese-language 2010 play record (https://fung2008.pixnet.net/blog/posts/3031736574, strategy tip 7) distinguishes enemy shipments from allied shipments: the author reports that allied cargo cannot be seized. This is a community observation, not a calibrated alliance rule. The capture plan must compare hostile, allied and friendly overlaps and record the recipient's resource balances before and after each event. Do not interpret a different faction ID alone as a fully verified hostile relationship, or enable cargo transfer before that evidence is available.

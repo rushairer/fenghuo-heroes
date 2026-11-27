@@ -10,7 +10,7 @@ import { inspectionTransferDraftSummary, newInspectionTransferDraft, transitionI
 import { adjustTaxRate } from '../game/tax-parity.js'
 import { PRESENTATION_HILL_CLUSTERS, PRESENTATION_MOUNTAIN_RANGES } from '../game/strategy-map-presentation.js'
 import { drawStrategyPanel, drawStrategyTextWindow } from '../game/ui-art.js'
-import { TRANSPORT_LOAD_OPTIONS, transportEligibleDestinations, transportLoadStatus, transportTargetStatus } from '../game/transport-parity.js'
+import { TRANSPORT_LOAD_OPTIONS, transportEligibleDestinations, transportLoadStatus, transportSourceStatus, transportTargetStatus } from '../game/transport-parity.js'
 import { MAP_VIEW_H, MAP_VIEW_W, cameraFor, cityWorldPoint, isVisible, toScreen } from '../game/world.js'
 import { drawWorldRiver } from '../game/world-art.js'
 
@@ -211,11 +211,30 @@ export class StrategyScene{
       this.app.audio.alert()
     }
   }
+  // A stale command source cannot be recovered by choosing a new destination.
+  // Return to owned-city targeting instead of retaining an invalid draft.
+  validateTransportSource(sourceId){
+    const status=transportSourceStatus(this.app.store,sourceId)
+    if(status.ok)return true
+    this.transportSource=null
+    this.transportDestination=null
+    this.transportLoadIndex=0
+    this.transportHint=''
+    this.targetCity=null
+    this.commandSubmenu=[]
+    this.menuIndex=0
+    this.message=status.reason
+    this.messageReturnView='target'
+    this.view='message'
+    this.app.audio.alert()
+    return false
+  }
   beginTransportTargeting(){
     this.transportSource=null
     this.transportDestination=null
     this.transportHint=''
     this.transportLoadIndex=0
+    if(!this.validateTransportSource(this.targetCity))return
     const destinations=transportEligibleDestinations(this.app.store,this.targetCity)
     if(!destinations.length){
       this.message='運輸至少需要另一座本國城市；目前沒有可選目的地。'
@@ -237,6 +256,7 @@ export class StrategyScene{
     this.app.audio.confirm()
   }
   updateTransportTarget(b){
+    if(!this.validateTransportSource(this.transportSource))return
     if(b==='LEFT')this.moveCursor(-1,0)
     if(b==='RIGHT')this.moveCursor(1,0)
     if(b==='UP')this.moveCursor(0,-1)
@@ -266,6 +286,7 @@ export class StrategyScene{
     this.app.audio.confirm()
   }
   updateTransportLoad(b){
+    if(!this.validateTransportSource(this.transportSource))return
     const options=TRANSPORT_LOAD_OPTIONS
     if(b==='UP'||b==='LEFT'){
       this.transportLoadIndex=(this.transportLoadIndex-1+options.length)%options.length

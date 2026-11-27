@@ -8,6 +8,7 @@ import {
   transportEligibleDestinations,
   transportInterceptStatus,
   transportLoadStatus,
+  transportSourceStatus,
   transportTargetStatus,
 } from '../src/game/transport-parity.js'
 
@@ -100,4 +101,30 @@ test('captured transport payload is exposed without guessing where loot is depos
   assert.equal(TRANSPORT_EVIDENCE.interceptionTrigger,'same-map-cell-overlap')
   assert.equal(TRANSPORT_EVIDENCE.capturedCargoDestination,'unverified')
   assert.equal(TRANSPORT_EVIDENCE.transportRelativeSpeed,'faster-than-marching-army-observed')
+})
+
+test('transport source must exist in the active profile and retain active-faction ownership',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({scenarioYear:189,humanFactions:['cao']})
+  const [source,target]=s.mapProfile.cities.filter(city=>s.state.cities[city.id].owner==='cao').map(city=>city.id)
+  s.state.cities.ghost={owner:'cao',gold:10000,food:10000}
+  assert.equal(transportSourceStatus(s,'ghost').ok,false)
+  assert.deepEqual(transportEligibleDestinations(s,'ghost'),[])
+  s.state.cities[source].owner='liu'
+  assert.equal(transportSourceStatus(s,source).ok,false)
+  assert.equal(transportTargetStatus(s,source,target).ok,false)
+  assert.equal(transportLoadStatus(s,source,'gold').ok,false)
+})
+
+test('transport rejects missing or malformed balances without changing the source',()=>{
+  const s=new GameStore(new MemoryStorage())
+  s.newGame({scenarioYear:189,humanFactions:['cao']})
+  const source=s.mapProfile.cities.find(city=>s.state.cities[city.id].owner==='cao').id
+  for(const bad of [undefined,null,NaN,Infinity,'20000',-1,10000.5,Number.MAX_SAFE_INTEGER+1]){
+    s.state.cities[source].gold=bad
+    s.state.cities[source].food=20000
+    const before=structuredClone(s.state)
+    assert.equal(transportLoadStatus(s,source,'both').ok,false)
+    assert.deepEqual(s.state,before)
+  }
 })
