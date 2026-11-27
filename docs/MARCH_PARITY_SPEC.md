@@ -244,3 +244,10 @@ transaction; the same-position condition is rechecked at commit. Other armies
 and resource ledgers remain unchanged. This makes the documented conditional
 split command usable with either overlapping army. The cycling key mapping
 and stack geometry remain engineering conventions, not measured original input.
+
+### Read-only march menu and map rendering
+
+Army selection and rendering use the non-initializing `readArmies` lookup. A
+stale menu or absent ledger does not initialize `armies` or `nextArmyId`.
+Explicit march initialization remains separate. This closes the stacked-army
+selection regression without changing resources or original-game rules.

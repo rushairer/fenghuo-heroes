@@ -2,7 +2,7 @@ import { COLORS, SERIF } from '../game/constants.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { drawStrategyPanel, drawStrategyTextWindow } from '../game/ui-art.js'
-import { armyAt,beginFieldBattleFromArmies,beginSiegeFromArmy,canSplitArmy,dailyFoodFor,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,rerouteArmy } from '../game/march.js'
+import { armyAt,beginFieldBattleFromArmies,beginSiegeFromArmy,canSplitArmy,dailyFoodFor,enemyArmyNearArmy,enemyCityNearArmy,ensureMarchState,friendlyArmyStack,marchCommandOptions,queueMarch,readArmies,rerouteArmy } from '../game/march.js'
 import { MARCH_SUPPLY_OPTIONS, marchSupplyOrder, villageAtArmy } from '../game/march-supply.js'
 import { MARCH_RUNTIME_PROJECTION } from '../game/march-runtime-projection.js'
 import { MAP_VIEW_H, MAP_VIEW_W, cameraFor,cityWorldPoint,isVisible,toScreen } from '../game/world.js'
@@ -29,7 +29,7 @@ export class StrategyScene extends BaseStrategyScene{
     })
   }
   updateArmyMenu(b){
-    const army=ensureMarchState(this.app.store).find((item)=>item.id===this.marchArmyId)
+    const army=readArmies(this.app.store).find((item)=>item.id===this.marchArmyId)
     if(!army||army.faction!==this.app.store.humanFaction){this.view='map';return}
     // Exact overlap intentionally keeps one marker on the map. Cycle the
     // existing army identities rather than hiding every unit after the first.
@@ -100,13 +100,13 @@ export class StrategyScene extends BaseStrategyScene{
   }
   resetForActiveTurn(){super.resetForActiveTurn();this.marchArmyId=null;this.marchRoute=[];this.marchRouteReason='move';this.supplyMenuIndex=0}
   draw(){super.draw();if(this.view==='march-compose')this.drawMarchCompose();if(this.view==='march-route')this.drawMarchRouteHint();if(this.view==='army-menu')this.drawArmyMenu();if(this.view==='supply-menu')this.drawSupplyMenu()}
-  drawWorld(){super.drawWorld();const r=this.app.r,camera=cameraFor(this.app.store.state.cursor);for(const army of ensureMarchState(this.app.store)){const wp={x:army.x,y:army.y};if(!isVisible(wp,camera,12))continue;const p=toScreen(wp,camera),f=FACTION_BY_ID[army.faction];r.fillRect(p.x-4,p.y-5,8,8,'#14100d');r.fillRect(p.x-2,p.y-8,9,4,f?.color??'#888');r.strokeRect(p.x-5,p.y-6,10,10,army.starving?'#ff7a5e':'#e8d39a',.6)}if(this.view==='march-route'&&this.marchRoute.length>1){for(let i=1;i<this.marchRoute.length;i++){const a=toScreen(this.marchRoute[i-1],camera),b=toScreen(this.marchRoute[i],camera);r.line(a.x,a.y,b.x,b.y,'#fff08a',1.3,.95)}}}
+  drawWorld(){super.drawWorld();const r=this.app.r,camera=cameraFor(this.app.store.state.cursor);for(const army of readArmies(this.app.store)){const wp={x:army.x,y:army.y};if(!isVisible(wp,camera,12))continue;const p=toScreen(wp,camera),f=FACTION_BY_ID[army.faction];r.fillRect(p.x-4,p.y-5,8,8,'#14100d');r.fillRect(p.x-2,p.y-8,9,4,f?.color??'#888');r.strokeRect(p.x-5,p.y-6,10,10,army.starving?'#ff7a5e':'#e8d39a',.6)}if(this.view==='march-route'&&this.marchRoute.length>1){for(let i=1;i<this.marchRoute.length;i++){const a=toScreen(this.marchRoute[i-1],camera),b=toScreen(this.marchRoute[i],camera);r.line(a.x,a.y,b.x,b.y,'#fff08a',1.3,.95)}}}
   drawDialog(){if(this.stage!=='march')return super.drawDialog();const r=this.app.r,s=this.app.store.state,army=armyAt(this.app.store,s.cursor.x,s.cursor.y,12),city=this.app.store.cityAt(s.cursor.x,s.cursor.y,12),box=drawStrategyTextWindow(r,0,MAP_VIEW_H,MAP_VIEW_W,224-MAP_VIEW_H);if(army){r.text(`行軍部隊：兵${army.troops} 米${army.food}${army.starving?'（缺糧）':''}`,box.textX,box.primaryTextY,9,'#171717','left','top',SERIF,'600');r.text('C：顯示目前可用的部隊命令　START 結束本月',box.textX,box.secondaryTextY,6.5,'#423d37')}else{r.text(city?`行軍：${city.name}`:'行軍：選擇出發城或部隊。',box.textX,box.primaryTextY,9,'#171717','left','top',SERIF,'600');r.text('本國城池按 C 編成出陣　A 全體地圖　START 結束本月',box.textX,box.secondaryTextY,6.5,'#423d37')}}
   drawMarchCompose(){const r=this.app.r,city=this.app.store.mapProfile.cityById[this.marchFrom],daily=dailyFoodFor(this.marchTroops,1);drawStrategyPanel(r,72,42,176,126,'#000','#9b6514');r.text(`${city?.name??''} 出陣`,160,51,11,'#efd27d','center','top',SERIF,'700');const rows=[['兵力',this.marchTroops],['軍資金',this.marchGold],['兵糧',this.marchFood],['路線','指定']];rows.forEach(([label,value],i)=>{r.text(`${i===this.composeFocus?'▶':'　'}${label}`,99,76+i*19,8,i===this.composeFocus?COLORS.cyan:'#ddd0ad');r.text(value,218,76+i*19,8,i===this.composeFocus?COLORS.cyan:'#eee0bd','right')});r.text('武將 1（名冊待校準）',160,145,6,'#8e846f','center');r.text(`1日兵糧 = 兵${this.marchTroops}÷100 + 武將1 = ${daily}`,160,156,6,'#a99d82','center')}
   drawMarchRouteHint(){const r=this.app.r;drawStrategyPanel(r,59,184,202,31,'#000','#9b6514');r.text(`${this.marchRouteReason==='split'?'分散路線':'路線'} ${Math.max(0,this.marchRoute.length-1)} 格　方向鍵延伸`,160,192,7.5,COLORS.cyan,'center');r.text('B 撤回一格　C 決定路線',160,205,6,'#9c927f','center')}
   drawArmyMenu(){
     const r=this.app.r
-    const army=ensureMarchState(this.app.store).find((item)=>item.id===this.marchArmyId)
+    const army=readArmies(this.app.store).find((item)=>item.id===this.marchArmyId)
     if(!army)return
     const options=this.armyMenuOptions(army)
     const stack=friendlyArmyStack(this.app.store,army.id)

@@ -274,3 +274,6 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Overlapping army selection and split execution
 - [x] Cycle individual same-position friendly armies in the command menu; split reroutes only the selected existing army and rechecks stack eligibility at commit.
 - [ ] Measure original grouping/split controls and actual movement timing; no new troop division or original geometry is inferred.
+
+### March read-only lookup integrity
+- [x] Keep army selection and map rendering independent of mutable march initialization; preserve absent ledgers and existing army ID sequences.

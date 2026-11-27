@@ -123,3 +123,23 @@ test('split eligibility is rechecked when the route is committed',()=>{
   assert.throws(()=>rerouteArmy(store,'a1',[{x:80,y:96},{x:80,y:104}],{reason:'split'}),/分散命令/)
   assert.deepEqual(store.state,before)
 })
+
+test('missing army ledger stays absent when a stale army menu is updated or drawn',()=>{
+  const scene=marchScene()
+  const store=scene.app.store
+  delete store.state.armies
+  const before=structuredClone(store.state)
+  scene.updateArmyMenu('RIGHT')
+  assert.equal(scene.view,'map')
+  scene.drawArmyMenu()
+  assert.deepEqual(store.state,before)
+})
+
+test('cycling a stack preserves an existing army ID sequence',()=>{
+  const scene=marchScene()
+  scene.app.store.state.nextArmyId=71
+  const before=structuredClone(scene.app.store.state)
+  scene.updateArmyMenu('RIGHT')
+  assert.equal(scene.marchArmyId,'a2')
+  assert.deepEqual(scene.app.store.state,before)
+})

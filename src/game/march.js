@@ -75,7 +75,8 @@ export function deployedOfficerNames(store, faction = store?.humanFaction) {
   return names
 }
 
-function readArmies(store){
+// Read-only lookup: never allocate a ledger or consume/reset an army ID.
+export function readArmies(store){
   return Array.isArray(store?.state?.armies)?store.state.armies:[]
 }
 

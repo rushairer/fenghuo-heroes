@@ -1,7 +1,7 @@
 import { COLORS, SERIF } from '../game/constants.js'
 import { drawStrategyPanel } from '../game/ui-art.js'
 import { FACTION_BY_ID } from '../game/data.js'
-import { ensureMarchState } from '../game/march.js'
+import { readArmies } from '../game/march.js'
 import { TARGET_INSPECTION_PALETTE, drawTargetArmyFlag, drawTargetHillCluster, drawTargetInspectionFort, drawTargetMapCursor, drawTargetMountainRange, drawVectorVillage } from '../game/map-art.js'
 import { openingOfficerRows } from '../game/officer-roster.js'
 import { createTerrainGrain, drawTerrainEtching, drawTerrainGrain, drawTerrainMottle } from '../game/terrain-art.js'
@@ -154,7 +154,7 @@ export class StrategyScene extends ParityStrategyScene {
       drawVectorVillage(r,p.x,p.y,mapFirst?calibration.village.inspectionScale:calibration.village.standardScale,TARGET_INSPECTION_PALETTE)
     }
 
-    for(const army of ensureMarchState(this.app.store)){
+    for(const army of readArmies(this.app.store)){
       const wp={x:army.x,y:army.y}
       if(!isVisibleInView(wp,camera,viewHeight,16,viewScale))continue
       const p=projectToView(wp,camera,viewScale)
