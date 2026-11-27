@@ -254,3 +254,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Siege movement intent
 - [x] Reuse the field move cursor for named siege units; move and attack share the one-order-per-unit/day budget. Drafts and last destinations persist without moving troops.
 - [ ] Calibrate actual unit selection, map cells, deployment, movement/contact and cross-month resumption; the provisional cursor is not original geometry.
+
+### Battle-map visual reference acquisition
+- [x] Inspect Chinese-language battle frame from the 2010 PIXNET article and corroborating Japanese-language battle frame. Use compact flag silhouette and upper-right day plaque in the active field-battle scaffold; retain explicit side-proxy labels, not invented unit IDs.
+- [ ] Measure map-specific terrain, deployment markers, unit identity, camera travel and successive movement/contact frames; one still does not establish any simulation rule.

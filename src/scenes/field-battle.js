@@ -1,5 +1,6 @@
 import { BATTLE_SPEEDS, MAX_SQUADS_PER_UNIT, battlePreparation, cycleBattleSpeed } from '../game/battle-prep.js'
 import { COLORS, SERIF } from '../game/constants.js'
+import { drawBattleMapMarker, drawBattleMapDay } from '../game/battle-map-presentation.js'
 import { FACTION_BY_ID } from '../game/data.js'
 import {
   FIELD_BATTLE_COMMANDS,
@@ -448,10 +449,12 @@ export class FieldBattleScene{
     const af=FACTION_BY_ID[this.conflict?.attacker]
     const df=FACTION_BY_ID[this.conflict?.defender]
     r.clear('#6f603f')
-    r.fillRect(0,0,320,28,'#101010')
-    r.text(`部隊戰　第${this.runtime.day}日`,160,7,12,'#efd27d','center','top',SERIF,'700')
-    r.text(`${af?.label??''} ${this.conflict?.attackerTroops??0}`,12,18,6.5,af?.color??'#fff')
-    r.text(`${df?.label??''} ${this.conflict?.defenderTroops??0}`,308,18,6.5,df?.color??'#fff','right')
+    if(this.phase!=='battle'){
+      r.fillRect(0,0,320,28,'#101010')
+      r.text(`部隊戰　第${this.runtime.day}日`,160,7,12,'#efd27d','center','top',SERIF,'700')
+      r.text(`${af?.label??''} ${this.conflict?.attackerTroops??0}`,12,18,6.5,af?.color??'#fff')
+      r.text(`${df?.label??''} ${this.conflict?.defenderTroops??0}`,308,18,6.5,df?.color??'#fff','right')
+    }
 
     if(this.phase==='speed'){
       r.panel(86,62,148,92,'#050505','#9b6514')
@@ -496,12 +499,14 @@ export class FieldBattleScene{
 
     const offsetX=this.scrollX*3
     const offsetY=this.scrollY*3
-    r.fillRect(0,28,320,162,'#82734e')
+    r.fillRect(0,0,320,190,'#82734e')
     r.line(0,109+offsetY,320,89+offsetY,'#514829',2,.65)
-    r.fillRect(34+offsetX,92+offsetY,46,18,af?.color??'#587cc7')
-    r.fillRect(240+offsetX,72+offsetY,46,18,df?.color??'#b75f52')
-    r.text('自軍',57+offsetX,97+offsetY,7,'#fff','center')
-    r.text('敵軍',263+offsetX,77+offsetY,7,'#fff','center')
+    // Existing side proxies only: these anchors are not deployed officers.
+    drawBattleMapMarker(r,{x:57+offsetX,y:101+offsetY,color:af?.color??'#587cc7',label:'自'})
+    drawBattleMapMarker(r,{x:263+offsetX,y:81+offsetY,color:df?.color??'#b75f52',label:'敵'})
+    drawBattleMapDay(r,this.runtime.day)
+    r.fillRect(6,6,88,11,'#17150f')
+    r.text('工程預覽・非部隊位置',50,8,6,'#f0e4c5','center')
 
     const order=this.runtime.order
     const command=FIELD_BATTLE_COMMANDS.find((item)=>item.id===order?.commandId)

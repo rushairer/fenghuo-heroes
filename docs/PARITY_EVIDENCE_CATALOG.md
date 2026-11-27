@@ -278,3 +278,10 @@ speed (pp. 32–33); this is distinct from the earlier squad-count
 preparation UI. Exact formation geometry, weapon and officer values,
 and Chinese screen layouts still require legible page images or ROM
 captures. Do not use OCR associations as verified numerical records.
+
+### Battle-map reference frames (observed visual evidence only)
+
+- Chinese-language frame `三國誌列博_022.JPG`: https://pimg.1px.tw/fung2008/2509aea34f05dafbc9fd0501546f7b7b.jpg (article 2010-08-01). The displayed 640px-wide image contains a top-down terrain view, a walled enclosure, multiple compact red/blue flag markers with a light numeric strip, and a compact dark day label at upper right. One unobstructed marker is approximately 32px wide and 32–36px high, or about 16×16–18 logical pixels assuming the 2× horizontal scale. Vertical padding/crop and exact text metrics are not calibrated. Scenario, battle subtype, camera origin, number meaning, unit identity and deployment rules are unknown.
+- Japanese-language corroborating frame: https://p7.itc.cn/images01/20230926/cf58e6846cf546f1a87a5f91c67acff4.jpeg (article https://www.sohu.com/a/723579171_492137, 2023-09-26). Shows the same compact flag/number presentation and upper-right day plaque, with a bottom contact message. Japanese text does not establish Chinese copy or timing.
+
+These are externally hosted reference frames, not production assets or canonical geometry records. No image bytes are copied. The second frame is not a successive frame of the first; no speed, route, contact radius or combat formula can be inferred by comparing them.

@@ -67,3 +67,5 @@ Headquarters ledger inspection: in `?qa=siege-formation-review`, verify the army
 Siege monthly boundary: open `?qa=siege-month-boundary` (day 29). Press C, choose 結束本日・工程推進 and confirm; the preview stops on day 30. Dismiss the message, then C cannot open orders, while A toggles strength inspection and START still opens the roster. No actual month advancement or combat result is simulated.
 
 Siege movement: confirm `?qa=siege-formation-review`, dismiss the message, C opens orders, RIGHT toggles move, C opens the provisional destination grid. D-pad edits the target; B cancels, C records. Confirm that a move uses the same daily allowance as attack and P/Continue restores an unfinished target. No physical motion is applied.
+
+Active field-battle reference pass: `?qa=field-battle-active` — verify compact flag/light-strip side proxies, fixed upper-right day plaque while D-pad scrolls, and visible engineering-preview warning. A still opens strength, C opens orders. The two proxies are not deployed units; terrain and exact day glyphs remain uncalibrated. Compare the reference frames linked in the evidence catalog; no screenshot diff is claimed yet.
