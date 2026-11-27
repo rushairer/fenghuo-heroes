@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { OFFICER_STATUS_FIELDS, openingOfficerListForCity, openingOfficerRows, officerStatusProjection } from '../src/game/officer-roster.js'
+import { OFFICER_STATUS_FIELDS, openingOfficerListForCity, openingOfficerRows, officerStatusProjection, stationedOfficerListForCity } from '../src/game/officer-roster.js'
 import { GameStore } from '../src/game/store.js'
 import { StrategyScene } from '../src/scenes/strategy-officers.js'
 
@@ -166,4 +166,35 @@ test('officer status draws the Chinese three-column screen without fabricated va
   assert.ok(lines.some(l=>l[0]===204&&l[2]===204))
   assert.ok(texts.filter(t=>t[0]==='—').length>=15)
   assert.ok(!texts.some(t=>t[0]==='15000'))
+})
+
+test('verified city drilldown excludes deployed officers without changing opening assignments',()=>{
+  const store={state:{
+    scenarioOfficerPlacementStatus:'source-backed-189',
+    cities:{home:{owner:'liu',officers:[{name:'劉備',role:'ruler'},{name:'關羽',role:'officer'},{name:'張飛',role:'officer'}]}},
+    armies:[
+      {faction:'liu',officerNames:[' 關羽 '],status:'marching'},
+      {faction:'cao',officerNames:['張飛'],status:'waiting'},
+    ],
+  }}
+  const before=structuredClone(store.state)
+  assert.deepEqual(stationedOfficerListForCity(store,'home').rows.map(row=>row.name),['劉備','張飛'])
+  const scene=Object.create(StrategyScene.prototype)
+  scene.app={store}
+  scene.officerListCity='home'
+  assert.deepEqual(scene.officerListProjection().rows.map(row=>row.name),['劉備','張飛'])
+  assert.deepEqual(openingOfficerListForCity(store,'home').rows.map(row=>row.name),['劉備','關羽','張飛'])
+  assert.deepEqual(store.state,before)
+})
+
+test('scaffold officer drilldown stays an explicitly unverified faction roster',()=>{
+  const store={state:{
+    scenarioOfficerPlacementStatus:'provisional-roster-only',
+    cities:{home:{owner:'liu'}},
+    openingRosters:{liu:{ruler:'劉備',officers:['關羽']}},
+    armies:[{faction:'liu',officerNames:['關羽']}],
+  }}
+  const projection=stationedOfficerListForCity(store,'home')
+  assert.equal(projection.cityAssignmentVerified,false)
+  assert.deepEqual(projection.rows.map(row=>row.name),['劉備','關羽'])
 })

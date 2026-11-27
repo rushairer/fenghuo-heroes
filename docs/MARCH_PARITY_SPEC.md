@@ -278,3 +278,14 @@ menu command. The original army-command order remains unchanged.
 ## Encounter and completed-route integrity
 
 Field battle lookup and admission share the same bounded integer-coordinate predicate; malformed saved coordinates cannot bypass the adjacency check. Siege admission also rejects invalid army coordinates. A restored marching army already at its final route node must still match that position; if valid, it changes to waiting without overwriting the last ration or starvation accounting. Battle cancellation reads existing armies without initializing the legacy ID counter. These changes enforce existing engineering projections, not newly calibrated original timing or combat effects.
+
+## Stationed officer read model
+
+The verified city officer drilldown and country overview now exclude named
+officers deployed in an army of that faction, regardless of the army's
+march/wait/battle status. They read the existing army ledger without
+rewriting the opening assignment or persisted opening officer count. The
+scaffold still exposes only its explicitly unverified faction roster;
+it cannot establish a city headcount. This is an internal consistency
+projection, not evidence for the original return-to-city, transfer or
+post-battle officer-placement rules.

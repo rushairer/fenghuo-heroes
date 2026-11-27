@@ -82,6 +82,26 @@ export function openingOfficerListForCity(store, cityId) {
   })
 }
 
+// The opening assignment is evidence, not a live garrison roster. Keep it
+// intact for provenance while excluding named officers already on the map.
+// A scaffold faction roster cannot prove which officers are in a given city.
+export function stationedOfficerListForCity(store, cityId) {
+  const opening=openingOfficerListForCity(store,cityId)
+  if(!opening.cityAssignmentVerified)return opening
+  const armies=Array.isArray(store?.state?.armies)?store.state.armies:[]
+  const deployed=new Set()
+  for(const army of armies){
+    if(army?.faction!==opening.factionId||!Array.isArray(army.officerNames))continue
+    for(const name of army.officerNames){
+      if(typeof name==='string'&&name.trim())deployed.add(name.trim())
+    }
+  }
+  return Object.freeze({
+    ...opening,
+    rows:Object.freeze(opening.rows.filter(row=>!deployed.has(row.name))),
+  })
+}
+
 // The Japanese manual documents the status semantics; direct Chinese-release
 // screenshots establish the displayed labels. Chinese-ROM per-officer values have not yet been transcribed, so the
 // projection exposes the verified schema while deliberately leaving every value

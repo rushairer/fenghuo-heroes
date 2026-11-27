@@ -289,3 +289,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Encounter and completed-route integrity
 - [x] Share field encounter position validation between discovery and commit; reject malformed army coordinates in siege entry, preserve ration history at a restored final route node, and keep battle cancellation independent of ID initialization.
 - [ ] Calibrate original encounter timing, stationary rations and battle consequences from target-edition evidence.
+
+### Stationed officer read model
+- [x] Keep the verified city roster and visible country officer count consistent with named officers deployed on the strategy map; preserve opening assignments and unverified scaffold behavior.
+- [ ] Calibrate original驻城／出陣 display, return-to-city and officer reassignment effects from Chinese-edition frames.

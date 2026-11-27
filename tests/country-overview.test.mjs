@@ -97,3 +97,26 @@ test('country overview follows an injected canonical profile rather than global 
   assert.equal(rows[39].cityId,'zh-40')
   assert.equal(rows[0].name,profile.cities[0].name)
 })
+
+test('verified overview count follows stationed roster instead of stale opening count',()=>{
+  const store={
+    humanFaction:'liu',
+    mapProfile:{cities:[{id:'home',name:'代縣'},{id:'enemy',name:'許昌'}]},
+    state:{
+      scenarioOfficerPlacementStatus:'source-backed-189',
+      cities:{
+        home:{owner:'liu',officerCount:3,officers:['劉備','關羽','張飛']},
+        enemy:{owner:'cao',officerCount:2,officers:['曹操','曹仁']},
+      },
+      armies:[
+        {faction:'liu',officerNames:['關羽'],status:'marching'},
+        {faction:'liu',officerNames:['張飛'],status:'waiting'},
+        {faction:'cao',officerNames:['曹仁'],status:'engaged'},
+      ],
+    },
+  }
+  const before=structuredClone(store.state)
+  assert.deepEqual(countryOverviewRows(store).map(row=>row.officerCount),[1,null])
+  assert.deepEqual(countryOverviewRows(store,{revealAll:true}).map(row=>row.officerCount),[1,1])
+  assert.deepEqual(store.state,before)
+})

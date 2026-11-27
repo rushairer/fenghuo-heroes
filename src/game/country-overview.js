@@ -1,3 +1,5 @@
+import { stationedOfficerListForCity } from './officer-roster.js'
+
 export const COUNTRY_OVERVIEW_PAGE_SIZE=10
 
 export function countryOverviewRows(store,{revealAll=false}={}) {
@@ -9,6 +11,7 @@ export function countryOverviewRows(store,{revealAll=false}={}) {
     const runtime=state.cities[city.id]??{}
     const owner=runtime.owner??'neutral'
     const visible=revealAll||owner===humanFaction
+    const stationed=visible?stationedOfficerListForCity(store,city.id):null
     return Object.freeze({
       number:index+1,
       cityId:city.id,
@@ -16,7 +19,7 @@ export function countryOverviewRows(store,{revealAll=false}={}) {
       owner,
       visible,
       industry:visible?(runtime.development??null):null,
-      officerCount:visible?(runtime.officerCount??null):null,
+      officerCount:visible?(stationed?.cityAssignmentVerified?stationed.rows.length:runtime.officerCount??null):null,
       rule:visible?(runtime.rule??null):null,
       taxRate:visible?(runtime.taxRate??null):null,
     })

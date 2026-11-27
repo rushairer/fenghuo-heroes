@@ -3,7 +3,7 @@ import { COUNTRY_OVERVIEW_PAGE_SIZE, countryOverviewRows, countryOverviewWindow,
 import { FACTION_BY_ID } from '../game/data.js'
 import { mdButton } from '../game/input.js'
 import { drawStrategyPanel } from '../game/ui-art.js'
-import { OFFICER_STATUS_FIELDS, openingOfficerListForCity, officerStatusProjection } from '../game/officer-roster.js'
+import { OFFICER_STATUS_FIELDS, stationedOfficerListForCity, officerStatusProjection } from '../game/officer-roster.js'
 import { StrategyScene as InfoStrategyScene } from './strategy-info.js'
 
 const OFFICER_PAGE_SIZE=8
@@ -99,7 +99,7 @@ export class StrategyScene extends InfoStrategyScene {
   }
 
   officerListProjection() {
-    return openingOfficerListForCity(this.app.store,this.officerListCity)
+    return stationedOfficerListForCity(this.app.store,this.officerListCity)
   }
 
   updateOfficerList(input) {
@@ -211,7 +211,7 @@ export class StrategyScene extends InfoStrategyScene {
     drawStrategyPanel(r,46,27,228,164,'#020202','#b07118')
     r.text(`${city?.name??'—'} · 武將一覽`,160,36,10,'#efd27d','center','top',SERIF,'700')
     r.text(faction?.label??'',160,52,7,faction?.color??'#ddd','center')
-    r.text(projection.cityAssignmentVerified?'開局城市配屬已由證據校準':'暫顯勢力開局名冊 · 城市配屬未校準',160,63,5.5,'#918978','center')
+    r.text(projection.cityAssignmentVerified?'駐城名冊（已排除出陣武將）':'暫顯勢力開局名冊 · 城市配屬未校準',160,63,5.5,'#918978','center')
     r.line(60,73,260,73,'#72501b',.7)
 
     if(!rows.length){
