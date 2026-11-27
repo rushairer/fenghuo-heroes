@@ -140,7 +140,25 @@ export class StrategyScene extends InfoStrategyScene {
     if(b==='B'){
       this.view='officer-list'
       this.app.audio.cancel()
+      return
     }
+    if(b!=='UP'&&b!=='DOWN')return
+    // HK manual pp.18–19: browse other officers directly from the status
+    // screen. Resolve against the same live roster used by the list.
+    const rows=this.officerListProjection().rows
+    if(!rows.length){
+      this.officerListCursor=0
+      this.officerStatusRow=null
+      this.view='officer-list'
+      this.app.audio.alert()
+      return
+    }
+    const current=rows.findIndex(row=>row.name===this.officerStatusRow?.name)
+    const next=current<0?Math.max(0,Math.min(this.officerListCursor,rows.length-1)):
+      (current+rows.length+(b==='UP'?-1:1))%rows.length
+    this.officerListCursor=next
+    this.officerStatusRow=officerStatusProjection(rows[next])
+    this.app.audio.move()
   }
 
   draw() {
@@ -282,6 +300,6 @@ export class StrategyScene extends InfoStrategyScene {
     r.text('—',304,170,11,ink,'right')
     r.text('—',304,194,11,ink,'right')
     // Non-original diagnostics remain outside the measured content area.
-    r.text('數值／畫像未校準　B 返回',160,218,4.5,'#d7d7d7','center')
+    r.text('數值／畫像未校準　↑↓ 武將切換　B 返回',160,218,4.5,'#d7d7d7','center')
   }
 }

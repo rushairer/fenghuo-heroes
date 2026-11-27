@@ -28,8 +28,14 @@ export class StrategyScene extends OfficerStrategyScene {
       this.view='map'
       this.app.audio.cancel()
     }
-    // A/C and the d-pad remain intentionally unused here until exact original
-    // full-map cursor behavior is verified. This screen is no longer a tab bar.
+    // HK manual p.15 documents a movable cursor linked to the overview.
+    // Reuse the live strategy cursor and existing provisional map step/bounds;
+    // the original step size and return-camera behavior remain uncalibrated.
+    if(b==='LEFT')return this.moveCursor(-1,0)
+    if(b==='RIGHT')return this.moveCursor(1,0)
+    if(b==='UP')return this.moveCursor(0,-1)
+    if(b==='DOWN')return this.moveCursor(0,1)
+    // A/C do not issue orders from the map overview.
   }
 
   drawInfo() {
@@ -120,7 +126,7 @@ export class StrategyScene extends OfficerStrategyScene {
     drawTargetMountainRange(r,244,137,0,.48)
     r.text('山',258,131,7,'#e8dfc8')
     r.text('村庄位置待實機校準',264,151,5,'#837a69','center')
-    r.text('START / B 返回',160,178,6,'#887f6d','center')
+    r.text('方向鍵 移動　START / B 返回',160,178,6,'#887f6d','center')
   }
 
   drawFullMapRiver(bounds) {

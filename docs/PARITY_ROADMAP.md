@@ -297,3 +297,8 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Transport source and resource integrity
 - [x] Revalidate source city membership and ownership throughout transport targeting and load selection; discard stale drafts, reject malformed balances, and preserve campaign resources.
 - [ ] Capture allied vs. hostile overlap and the destination of seized cargo; do not treat the preview as a dispatched transport unit.
+
+### Manual-backed information navigation
+- [x] Restore directional full-map cursor browsing (HK manual p.15), reusing the current map cursor and provisional navigation step; START/B return without issuing a command or changing resources.
+- [x] Restore UP/DOWN officer-status browsing (HK manual pp.18–19) against the same roster as the list; returning preserves the selected officer and unknown values remain unknown.
+- [ ] Measure the original full-map cursor step, inset geometry, camera on return, officer list boundary behavior, and exact status-screen copy from direct Chinese-edition frames. The manual's indexed text confirms navigation but its scan was not accessible for frame measurement.
