@@ -67,3 +67,36 @@ test('starvation day totals accumulate across march turns without inventing attr
   // No soldier-loss formula has been verified yet, so accounting must not mutate troops.
   assert.equal(army.troops,100)
 })
+
+test('zero elapsed days preserve the last starvation accounting and route state',()=>{
+  const store=storeWithFood(1)
+  executeMarchTurn(store,1)
+  const before=structuredClone(store.state)
+  assert.equal(store.state.armies[0].starving,true)
+  assert.deepEqual(executeMarchTurn(store,0),[{
+    armyId:'test-army',steps:0,daysElapsed:0,foodConsumed:0,starvingDays:0,status:'marching',
+  }])
+  assert.deepEqual(store.state,before)
+})
+
+test('invalid second army rejects the entire movement before any first-army debit',()=>{
+  for(const invalidate of [
+    army=>{army.food=-1},
+    army=>{army.troops=NaN},
+    army=>{army.officerCount=1.5},
+    army=>{army.routeIndex=99},
+    army=>{army.x+=1},
+    army=>{army.route[1]=null},
+    army=>{army.route[1]={x:600,y:400}},
+    army=>{army.route[1]={x:500,y:400}},
+  ]){
+    const store=storeWithFood(20)
+    const other=structuredClone(store.state.armies[0])
+    other.id='other'
+    invalidate(other)
+    store.state.armies.push(other)
+    const before=structuredClone(store.state)
+    assert.throws(()=>executeMarchTurn(store,1),/行軍部隊/)
+    assert.deepEqual(store.state,before)
+  }
+})

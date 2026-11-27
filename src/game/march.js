@@ -291,25 +291,56 @@ export function rerouteArmy(store, armyId, route) {
   return army
 }
 
+// Saved routes are not passed through the new-order validator when resumed.
+// Validate all moving armies before changing the first army's food or position.
+// This only enforces existing engineering bounds; it adds no game formula.
+function assertMarchExecutionReady(army){
+  const count=value=>Number.isSafeInteger(value)&&value>=0
+  const point=value=>value&&Number.isSafeInteger(value.x)&&Number.isSafeInteger(value.y)&&
+    value.x>=0&&value.x<=WORLD_W&&value.y>=0&&value.y<=WORLD_H
+  if(!count(army.troops)||!count(army.food)||!count(army.officerCount)){
+    throw new Error('行軍部隊的兵力、兵糧或武將數無效。')
+  }
+  const route=army.route,index=army.routeIndex
+  if(!Array.isArray(route)||!count(index)||index>=route.length||!point(route[index])){
+    throw new Error('行軍部隊的路線或進度無效。')
+  }
+  if(index===route.length-1)return
+  if(!point(army)||army.x!==route[index].x||army.y!==route[index].y){
+    throw new Error('行軍部隊的位置與路線進度不符。')
+  }
+  const step=MARCH_RUNTIME_PROJECTION.routeStepWorld
+  for(let i=index+1;i<route.length;i++){
+    if(!point(route[i]))throw new Error('行軍部隊的路線座標無效。')
+    const distance=Math.max(Math.abs(route[i].x-route[i-1].x),Math.abs(route[i].y-route[i-1].y))
+    if(distance===0||distance>step)throw new Error('行軍部隊的路線節點超出每格步長或重複。')
+  }
+}
+
 export function executeMarchTurn(store, days = MARCH_RUNTIME_PROJECTION.executionDaysPerEvenMonth) {
   store.assertState()
   if(store.pendingConflict)throw new Error('戰鬥尚未結束，不能移動其他部隊。')
   if(store.mode!=='march')throw new Error('只有行軍月可以結算行軍移動。')
   if(!Number.isSafeInteger(days)||days<0)throw new Error('行軍日數必須是非負整數。')
   const events = []
-  const maxDays = Math.max(0, Math.floor(days))
-
-  for (const army of ensureMarchState(store)) {
-    if (army.status !== 'marching') continue
-
+  const maxDays = days
+  const moving=readArmies(store).filter(army=>army?.status==='marching')
+  const routeNodeDays=MARCH_RUNTIME_PROJECTION.routeNodeDays
+  // An elapsed window too short for one projected step must not clear
+  // starvation history or mark an army as having completed its march.
+  if(maxDays<routeNodeDays){
+    return moving.map(army=>({
+      armyId:army.id,steps:0,daysElapsed:0,foodConsumed:0,starvingDays:0,status:army.status,
+    }))
+  }
+  for(const army of moving)assertMarchExecutionReady(army)
+  for (const army of moving) {
     const ration = dailyFoodFor(army.troops, army.officerCount)
     army.dailyFood = ration
     let steps = 0
     let daysElapsed = 0
     let foodConsumed = 0
     let starvingDays = 0
-    const routeNodeDays=MARCH_RUNTIME_PROJECTION.routeNodeDays
-
     while (
       daysElapsed + routeNodeDays <= maxDays &&
       army.routeIndex < army.route.length - 1

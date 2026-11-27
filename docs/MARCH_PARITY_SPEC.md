@@ -223,3 +223,12 @@ rules, or change march movement/attack distances.
 - The officer picker refreshes the live eligible roster before handling each input, removes selections that became unavailable, and clamps its cursor to a valid row.
 - March composition confirmation and final route submission revalidate the selected officers. If all selected officers have become unavailable, route submission is rejected before the army command is queued.
 - These are consistency safeguards only. They do not change the original game's uncalibrated route size, timing, officer placement or dispatch rules.
+
+## Resumed march execution integrity
+
+Before applying an elapsed movement window, all marching armies are checked against
+the existing resource and route-step engineering bounds. A malformed later army
+must not partially debit an earlier army, teleport across a saved route or
+consume a negative ration balance. Zero elapsed movement preserves prior
+starvation accounting. These are integrity constraints on the existing playable
+projection, not a claim about the original movement rate or starvation effects.

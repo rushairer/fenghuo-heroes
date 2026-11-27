@@ -266,3 +266,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Field command admission integrity
 - [x] Enforce existing phase, contact, retreat and tactic conditions at command commit, not only at the UI; reject incomplete saved orders and keep saved end barriers. Unknown troop counts do not activate ambush.
 - [ ] Replace provisional condition flags with calibrated tactical entity/terrain/range inputs and actual battle effects.
+
+### Resumed march execution integrity
+- [x] Validate active routes and ration inputs before any army moves; zero elapsed movement preserves previous starvation state.
+- [ ] Calibrate return-to-city, stationary army provisions, actual movement timing and starvation consequences from direct target-edition observations.
