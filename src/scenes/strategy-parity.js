@@ -246,7 +246,7 @@ export class StrategyScene extends MarchStrategyScene {
     }
     try {
       if (this.marchArmyId) {
-        rerouteArmy(this.app.store, this.marchArmyId, this.marchRoute)
+        rerouteArmy(this.app.store, this.marchArmyId, this.marchRoute, {reason:this.marchRouteReason})
       } else {
         this.reconcileMarchOfficers(this.availableOfficerNames())
         if(!this.selectedOfficerNames.length)throw new Error('沒有可出陣的武將。')

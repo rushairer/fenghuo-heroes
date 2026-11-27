@@ -232,3 +232,15 @@ must not partially debit an earlier army, teleport across a saved route or
 consume a negative ration balance. Zero elapsed movement preserves prior
 starvation accounting. These are integrity constraints on the existing playable
 projection, not a claim about the original movement rate or starvation effects.
+
+## Stacked army selection and split confirmation
+
+The previous exact-hit rule still hid every friendly army after the first at
+an identical map point. In the march command menu, LEFT/RIGHT now cycles the
+existing friendly stack identities, resets the command selection and shows the
+selected officer (or army ID) and index. It changes no campaign state. Selecting
+分散 submits the chosen army's route through the existing persistent reroute
+transaction; the same-position condition is rechecked at commit. Other armies
+and resource ledgers remain unchanged. This makes the documented conditional
+split command usable with either overlapping army. The cycling key mapping
+and stack geometry remain engineering conventions, not measured original input.

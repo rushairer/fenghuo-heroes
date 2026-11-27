@@ -264,7 +264,7 @@ export function queueMarch(store, {
   return army
 }
 
-export function rerouteArmy(store, armyId, route) {
+export function rerouteArmy(store, armyId, route, {reason='move'}={}) {
   store.assertState?.()
   if(store.pendingConflict)throw new Error('戰鬥尚未結束，不能重新指定行軍路線。')
   if(store.mode!=='march')throw new Error('只有行軍月能調整行軍路線。')
@@ -272,6 +272,7 @@ export function rerouteArmy(store, armyId, route) {
     .find((item)=>item.id===armyId&&item.faction===store.humanFaction)
   if(!army)throw new Error('找不到可操作的行軍部隊。')
   if(army.status==='engaged'||army.status==='besieging')throw new Error('戰鬥中的部隊不能變更行軍路線。')
+  if(reason==='split'&&!canSplitArmy(store,armyId))throw new Error('分散命令需要至少兩支同位置的己方部隊。')
   const normalized=validatedRoute(route,{x:army.x,y:army.y})
   const oldRoute=army.route,oldIndex=army.routeIndex,oldStatus=army.status
   const oldLog=Array.isArray(store.state.log)?[...store.state.log]:store.state.log

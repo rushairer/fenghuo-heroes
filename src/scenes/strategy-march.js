@@ -16,7 +16,7 @@ export class StrategyScene extends BaseStrategyScene{
   updateMarchCompose(b){const city=this.app.store.state.cities[this.marchFrom];if(!city){this.view='map';return}if(b==='UP'){this.composeFocus=(this.composeFocus+3)%4;this.app.audio.move()}if(b==='DOWN'){this.composeFocus=(this.composeFocus+1)%4;this.app.audio.move()}if(b==='LEFT'||b==='RIGHT'){const d=b==='RIGHT'?1:-1;if(this.composeFocus===0)this.marchTroops=Math.max(100,Math.min(city.troops-100,this.marchTroops+d*100));if(this.composeFocus===1)this.marchGold=Math.max(0,Math.min(city.gold,this.marchGold+d*50));if(this.composeFocus===2)this.marchFood=Math.max(0,Math.min(city.food,this.marchFood+d*100));this.app.audio.move()}if(b==='B'){this.view='map';this.app.audio.cancel();return}if((b==='C'||b==='A'||b==='START')&&this.composeFocus===3)this.beginNewMarchRoute()}
   beginNewMarchRoute(){const point=cityWorldPoint(this.app.store.mapProfile.cityById[this.marchFrom]);this.marchRoute=[{...point}];this.app.store.setCursor(point.x,point.y);this.view='march-route';this.app.audio.confirm()}
   beginArmyRoute(army,reason='move'){this.marchArmyId=army.id;this.marchRouteReason=reason;this.marchFrom=army.from;this.marchRoute=[{x:army.x,y:army.y}];this.app.store.setCursor(army.x,army.y);this.view='march-route';this.app.audio.confirm()}
-  updateMarchRoute(b){if(['LEFT','RIGHT','UP','DOWN'].includes(b)){const dx=b==='LEFT'?-1:b==='RIGHT'?1:0,dy=b==='UP'?-1:b==='DOWN'?1:0,s=this.app.store.state;this.app.store.setCursor(s.cursor.x+dx*routeStep,s.cursor.y+dy*routeStep);const p=this.app.store.state.cursor,last=this.marchRoute[this.marchRoute.length-1];if(!last||last.x!==p.x||last.y!==p.y)this.marchRoute.push({x:p.x,y:p.y});this.app.audio.move();return}if(b==='B'){if(this.marchRoute.length>1){this.marchRoute.pop();const p=this.marchRoute[this.marchRoute.length-1];this.app.store.setCursor(p.x,p.y)}else this.view=this.marchArmyId?'army-menu':'march-compose';this.app.audio.cancel();return}if(b!=='C'&&b!=='START')return;if(this.marchRoute.length<2){this.app.audio.alert();return}try{if(this.marchArmyId)rerouteArmy(this.app.store,this.marchArmyId,this.marchRoute);else queueMarch(this.app.store,{from:this.marchFrom,route:this.marchRoute,troops:this.marchTroops,food:this.marchFood,gold:this.marchGold,officerCount:1});this.message='行軍路線已決定。部隊將在本月命令結束後移動。';this.marchArmyId=null;this.marchRoute=[];this.view='message';this.app.audio.confirm()}catch(error){this.message=error instanceof Error?error.message:'行軍命令失敗。';this.view='message';this.app.audio.alert()}}
+  updateMarchRoute(b){if(['LEFT','RIGHT','UP','DOWN'].includes(b)){const dx=b==='LEFT'?-1:b==='RIGHT'?1:0,dy=b==='UP'?-1:b==='DOWN'?1:0,s=this.app.store.state;this.app.store.setCursor(s.cursor.x+dx*routeStep,s.cursor.y+dy*routeStep);const p=this.app.store.state.cursor,last=this.marchRoute[this.marchRoute.length-1];if(!last||last.x!==p.x||last.y!==p.y)this.marchRoute.push({x:p.x,y:p.y});this.app.audio.move();return}if(b==='B'){if(this.marchRoute.length>1){this.marchRoute.pop();const p=this.marchRoute[this.marchRoute.length-1];this.app.store.setCursor(p.x,p.y)}else this.view=this.marchArmyId?'army-menu':'march-compose';this.app.audio.cancel();return}if(b!=='C'&&b!=='START')return;if(this.marchRoute.length<2){this.app.audio.alert();return}try{if(this.marchArmyId)rerouteArmy(this.app.store,this.marchArmyId,this.marchRoute,{reason:this.marchRouteReason});else queueMarch(this.app.store,{from:this.marchFrom,route:this.marchRoute,troops:this.marchTroops,food:this.marchFood,gold:this.marchGold,officerCount:1});this.message='行軍路線已決定。部隊將在本月命令結束後移動。';this.marchArmyId=null;this.marchRoute=[];this.view='message';this.app.audio.confirm()}catch(error){this.message=error instanceof Error?error.message:'行軍命令失敗。';this.view='message';this.app.audio.alert()}}
   armyMenuOptions(army){
     const enemyArmy=enemyArmyNearArmy(this.app.store,army.id)
     const enemyCity=enemyCityNearArmy(this.app.store,army.id)
@@ -30,7 +30,19 @@ export class StrategyScene extends BaseStrategyScene{
   }
   updateArmyMenu(b){
     const army=ensureMarchState(this.app.store).find((item)=>item.id===this.marchArmyId)
-    if(!army){this.view='map';return}
+    if(!army||army.faction!==this.app.store.humanFaction){this.view='map';return}
+    // Exact overlap intentionally keeps one marker on the map. Cycle the
+    // existing army identities rather than hiding every unit after the first.
+    if(b==='LEFT'||b==='RIGHT'){
+      const stack=friendlyArmyStack(this.app.store,army.id)
+      if(stack.length<2)return
+      const index=stack.findIndex(item=>item.id===army.id)
+      const next=stack[(index+stack.length+(b==='LEFT'?-1:1))%stack.length]
+      this.marchArmyId=next.id
+      this.armyMenuIndex=0
+      this.app.audio.move()
+      return
+    }
     const options=this.armyMenuOptions(army)
     this.armyMenuIndex=Math.max(0,Math.min(this.armyMenuIndex,options.length-1))
     if(b==='UP'){this.armyMenuIndex=(this.armyMenuIndex-1+options.length)%options.length;this.app.audio.move();return}
@@ -97,10 +109,15 @@ export class StrategyScene extends BaseStrategyScene{
     const army=ensureMarchState(this.app.store).find((item)=>item.id===this.marchArmyId)
     if(!army)return
     const options=this.armyMenuOptions(army)
-    const height=48+options.length*15
-    drawStrategyPanel(r,104,48,112,height,'#000','#9b6514')
-    r.text('行軍',160,56,9,'#efd27d','center')
-    options.forEach((option,i)=>r.text(`${i===this.armyMenuIndex?'▶':'　'}${option.label}`,119,76+i*15,8,i===this.armyMenuIndex?COLORS.cyan:'#ddd0ad'))
-    r.text(`兵${army.troops} 米${army.food}`,160,48+height-13,6,'#8e846f','center')
+    const stack=friendlyArmyStack(this.app.store,army.id)
+    const stacked=stack.length>1
+    const index=stack.findIndex(item=>item.id===army.id)
+    const height=(stacked?65:48)+options.length*15
+    const top=stacked?34:48
+    drawStrategyPanel(r,85,top,150,height,'#000','#9b6514')
+    r.text(stacked?`行軍 ${index+1}/${stack.length}`:'行軍',160,top+8,9,'#efd27d','center')
+    if(stacked)r.text(`${army.officerNames?.[0]??army.id}　←→ 換隊`,160,top+20,7,COLORS.cyan,'center')
+    options.forEach((option,i)=>r.text(`${i===this.armyMenuIndex?'▶':'　'}${option.label}`,100,top+(stacked?40:28)+i*15,8,i===this.armyMenuIndex?COLORS.cyan:'#ddd0ad'))
+    r.text(`兵${army.troops} 米${army.food}`,160,top+height-13,6,'#8e846f','center')
   }
 }

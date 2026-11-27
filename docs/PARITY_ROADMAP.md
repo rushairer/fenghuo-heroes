@@ -270,3 +270,7 @@ The repository does not distribute ROM dumps or extracted Sega artwork/audio. Wh
 ### Resumed march execution integrity
 - [x] Validate active routes and ration inputs before any army moves; zero elapsed movement preserves previous starvation state.
 - [ ] Calibrate return-to-city, stationary army provisions, actual movement timing and starvation consequences from direct target-edition observations.
+
+### Overlapping army selection and split execution
+- [x] Cycle individual same-position friendly armies in the command menu; split reroutes only the selected existing army and rechecks stack eligibility at commit.
+- [ ] Measure original grouping/split controls and actual movement timing; no new troop division or original geometry is inferred.
